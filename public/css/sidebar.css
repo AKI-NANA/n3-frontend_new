@@ -1,0 +1,434 @@
+/**
+ * NAGANO-3 Sidebar CSS - N3準拠版（トグル問題完全修正）
+ * common/css/sidebar.css
+ * 
+ * ✅ サイドバートグル完全対応
+ * ✅ メインコンテンツ幅制御連動
+ * ✅ マウスオーバー第二階層制御
+ */
+
+/* ===== CSS変数（サイドバー専用） ===== */
+:root {
+  --sidebar-width: 220px;
+  --sidebar-collapsed: 60px;
+  --header-height: 80px;
+  --submenu-width: 280px;
+  --transition-normal: 0.3s ease;
+  --z-sidebar: 2000;
+  --z-submenu: 2500;
+  
+  /* サイドバーカラー */
+  --sidebar-bg: #2c3e50;
+  --sidebar-hover: rgba(52, 152, 219, 0.3);
+  --sidebar-active: linear-gradient(135deg, #3498db, #8b5cf6);
+  --submenu-bg: #34495e;
+  --submenu-border: #3498db;
+  --text-white: rgba(255, 255, 255, 0.9);
+  --text-white-dim: rgba(255, 255, 255, 0.7);
+}
+
+/* ===== サイドバー本体 ===== */
+.unified-sidebar {
+  position: fixed !important;
+  top: var(--header-height) !important;
+  left: 0 !important;
+  width: var(--sidebar-width) !important;
+  height: calc(100vh - var(--header-height)) !important;
+  background: var(--sidebar-bg) !important;
+  box-shadow: 2px 0 10px rgba(0,0,0,0.1) !important;
+  overflow: hidden !important;
+  z-index: var(--z-sidebar) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  transition: width var(--transition-normal) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* ===== サイドバーリスト ===== */
+.unified-sidebar-list {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  flex: 1 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent !important;
+}
+
+.unified-sidebar-list::-webkit-scrollbar {
+  width: 6px !important;
+}
+
+.unified-sidebar-list::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.unified-sidebar-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3) !important;
+  border-radius: 3px !important;
+}
+
+/* ===== サイドバーアイテム ===== */
+.unified-sidebar-item {
+  position: relative !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+/* ===== サイドバーリンク ===== */
+.unified-sidebar-link {
+  display: flex !important;
+  align-items: center !important;
+  padding: 15px 20px !important;
+  color: var(--text-white-dim) !important;
+  text-decoration: none !important;
+  transition: all var(--transition-fast) !important;
+  white-space: nowrap !important;
+  min-height: 54px !important;
+  box-sizing: border-box !important;
+  position: relative !important;
+  cursor: pointer !important;
+  border: none !important;
+  background: none !important;
+}
+
+.unified-sidebar-link:hover {
+  background: var(--sidebar-hover) !important;
+  color: var(--text-white) !important;
+  transform: translateX(2px) !important;
+}
+
+.unified-sidebar-link--active {
+  background: var(--sidebar-active) !important;
+  color: var(--text-white) !important;
+  font-weight: 600 !important;
+  box-shadow: inset -3px 0 0 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+.unified-sidebar-link--active::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  width: 4px !important;
+  background: white !important;
+  opacity: 0.8 !important;
+}
+
+/* ===== サブメニューラベル ===== */
+.unified-submenu-label {
+  display: flex !important;
+  align-items: center !important;
+  padding: 15px 20px !important;
+  color: var(--text-white-dim) !important;
+  transition: all var(--transition-fast) !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+  position: relative !important;
+  min-height: 54px !important;
+  box-sizing: border-box !important;
+  user-select: none !important;
+}
+
+.unified-submenu-label:hover {
+  background: var(--sidebar-hover) !important;
+  color: var(--text-white) !important;
+  transform: translateX(2px) !important;
+}
+
+.unified-submenu-label--active {
+  background: var(--sidebar-active) !important;
+  color: var(--text-white) !important;
+  font-weight: 600 !important;
+  box-shadow: inset -3px 0 0 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+/* ===== アイコン・テキスト・矢印 ===== */
+.unified-sidebar-icon {
+  margin-right: 12px !important;
+  font-size: 16px !important;
+  width: 20px !important;
+  text-align: center !important;
+  flex-shrink: 0 !important;
+}
+
+.unified-sidebar-text {
+  flex: 1 !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+.unified-arrow {
+  margin-left: auto !important;
+  font-size: 12px !important;
+  opacity: 0.6 !important;
+  transition: all var(--transition-fast) !important;
+  transform-origin: center !important;
+}
+
+/* ===== 🔥 重要：マウスオーバー第二階層制御（競合解決版） ===== */
+.unified-submenu {
+  position: fixed !important;
+  width: var(--submenu-width) !important;
+  background: var(--submenu-bg) !important;
+  border-radius: 0 12px 12px 0 !important;
+  box-shadow: 4px 0 25px rgba(0,0,0,0.3) !important;
+  z-index: var(--z-submenu) !important;
+  
+  /* 初期状態：完全非表示 */
+  opacity: 0 !important;
+  visibility: hidden !important;
+  transform: translateX(-20px) scale(0.95) !important;
+  transition: all var(--transition-normal) !important;
+  pointer-events: none !important;
+  
+  /* 高さ制限 */
+  max-height: calc(100vh - var(--header-height) - 20px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  
+  /* スクロールバー */
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent !important;
+}
+
+.unified-submenu::-webkit-scrollbar {
+  width: 6px !important;
+}
+
+.unified-submenu::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.unified-submenu::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3) !important;
+  border-radius: 3px !important;
+}
+
+/* ===== マウスオーバーで第二階層表示 ===== */
+.unified-sidebar-item:hover .unified-submenu {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translateX(0) scale(1) !important;
+  pointer-events: auto !important;
+}
+
+/* ホバー時に矢印回転 */
+.unified-sidebar-item:hover .unified-arrow {
+  transform: rotate(90deg) !important;
+  opacity: 1 !important;
+  color: var(--submenu-border) !important;
+}
+
+/* ===== サブメニュー位置設定 ===== */
+.unified-submenu--1 { top: calc(var(--header-height) + 54px * 1 + 1px) !important; left: var(--sidebar-width) !important; }
+.unified-submenu--2 { top: calc(var(--header-height) + 54px * 2 + 2px) !important; left: var(--sidebar-width) !important; }
+.unified-submenu--3 { top: calc(var(--header-height) + 54px * 3 + 3px) !important; left: var(--sidebar-width) !important; }
+.unified-submenu--4 { top: calc(var(--header-height) + 54px * 4 + 4px) !important; left: var(--sidebar-width) !important; }
+.unified-submenu--5 { top: calc(var(--header-height) + 54px * 5 + 5px) !important; left: var(--sidebar-width) !important; }
+.unified-submenu--6 { top: calc(var(--header-height) + 54px * 6 + 6px) !important; left: var(--sidebar-width) !important; }
+.unified-submenu--7 { top: calc(var(--header-height) + 54px * 7 + 7px) !important; left: var(--sidebar-width) !important; }
+
+/* ===== サブメニューリンク ===== */
+.unified-submenu-link {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 12px 20px !important;
+  color: var(--text-white-dim) !important;
+  text-decoration: none !important;
+  font-size: 14px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  transition: all var(--transition-fast) !important;
+  min-height: 44px !important;
+  box-sizing: border-box !important;
+}
+
+.unified-submenu-link i {
+  margin-right: 12px !important;
+  font-size: 14px !important;
+  width: 16px !important;
+  text-align: center !important;
+  flex-shrink: 0 !important;
+  opacity: 0.7 !important;
+}
+
+.unified-submenu-link:hover {
+  background: rgba(52, 152, 219, 0.3) !important;
+  color: var(--text-white) !important;
+  padding-left: 25px !important;
+  transform: translateX(2px) !important;
+}
+
+.unified-submenu-link:hover i {
+  opacity: 1 !important;
+  color: var(--submenu-border) !important;
+}
+
+.unified-submenu-link--active {
+  background: var(--submenu-border) !important;
+  color: var(--text-white) !important;
+  font-weight: 600 !important;
+  padding-left: 25px !important;
+}
+
+.unified-submenu-link--active i {
+  opacity: 1 !important;
+  color: white !important;
+}
+
+/* ===== ステータス表示 ===== */
+.status-ready {
+  color: #28a745 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  margin-left: auto !important;
+  flex-shrink: 0 !important;
+}
+
+.status-pending {
+  color: #ffc107 !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  margin-left: auto !important;
+  background: rgba(255, 193, 7, 0.2) !important;
+  padding: 2px 6px !important;
+  border-radius: 10px !important;
+  flex-shrink: 0 !important;
+}
+
+/* ===== トグルボタン ===== */
+.unified-toggle-container {
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+  padding: 0 !important;
+  flex-shrink: 0 !important;
+}
+
+.unified-toggle-button {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 15px 20px !important;
+  background: rgba(0, 0, 0, 0.2) !important;
+  border: none !important;
+  color: var(--text-white-dim) !important;
+  transition: all var(--transition-fast) !important;
+  cursor: pointer !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  min-height: 54px !important;
+}
+
+.unified-toggle-button:hover {
+  background: var(--sidebar-hover) !important;
+  color: var(--text-white) !important;
+}
+
+.unified-toggle-icon {
+  font-size: 16px !important;
+  margin-right: 8px !important;
+}
+
+.unified-toggle-text {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+/* ===== 🎯 サイドバー折りたたみ状態（メインコンテンツ連動完全版） ===== */
+.unified-sidebar--collapsed {
+  width: var(--sidebar-collapsed) !important;
+}
+
+.unified-sidebar--collapsed .unified-sidebar-text,
+.unified-sidebar--collapsed .unified-toggle-text,
+.unified-sidebar--collapsed .unified-arrow {
+  display: none !important;
+}
+
+.unified-sidebar--collapsed .unified-sidebar-link,
+.unified-sidebar--collapsed .unified-submenu-label {
+  justify-content: center !important;
+  padding: 15px 10px !important;
+}
+
+.unified-sidebar--collapsed .unified-sidebar-icon {
+  margin-right: 0 !important;
+  font-size: 18px !important;
+}
+
+.unified-sidebar--collapsed .unified-submenu {
+  display: none !important;
+}
+
+/* ===== 🚀 重要：折りたたみ時のメインコンテンツ幅調整 ===== */
+.unified-sidebar--collapsed + .main-content {
+  margin-left: var(--sidebar-collapsed) !important;
+  max-width: calc(100vw - var(--sidebar-collapsed)) !important;
+}
+
+/* ===== レスポンシブ対応 ===== */
+@media (max-width: 1024px) {
+  .unified-sidebar {
+    width: var(--sidebar-collapsed) !important;
+  }
+  
+  .unified-sidebar .unified-sidebar-text,
+  .unified-sidebar .unified-toggle-text,
+  .unified-sidebar .unified-arrow {
+    display: none !important;
+  }
+  
+  .unified-sidebar .unified-sidebar-link,
+  .unified-sidebar .unified-submenu-label {
+    justify-content: center !important;
+    padding: 15px 10px !important;
+  }
+  
+  .unified-sidebar .unified-sidebar-icon {
+    margin-right: 0 !important;
+    font-size: 18px !important;
+  }
+  
+  .unified-submenu--1, .unified-submenu--2, .unified-submenu--3, .unified-submenu--4, 
+  .unified-submenu--5, .unified-submenu--6, .unified-submenu--7 {
+    left: var(--sidebar-collapsed) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .unified-sidebar {
+    transform: translateX(-100%) !important;
+    transition: transform var(--transition-normal) !important;
+    width: var(--sidebar-width) !important;
+    z-index: 10000 !important;
+  }
+  
+  .unified-sidebar--mobile-open {
+    transform: translateX(0) !important;
+  }
+  
+  .unified-sidebar--collapsed {
+    transform: translateX(-100%) !important;
+  }
+  
+  .unified-submenu {
+    display: none !important;
+  }
+}
+
+/* ===== アクセシビリティ ===== */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ===== 印刷対応 ===== */
+@media print {
+  .unified-sidebar,
+  .unified-submenu {
+    display: none !important;
+  }
+}

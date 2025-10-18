@@ -1,0 +1,1241 @@
+/**
+ * 🎯 KICHO記帳ツール 完全外部化CSS【NAGANO3統合版】
+ * common/css/pages/kicho.css
+ * 
+ * ✅ HTMLインライン<style>完全除去
+ * ✅ NAGANO3 CSS統合管理システム完全準拠
+ * ✅ 既存style.css変数100%活用
+ * ✅ BEM命名規則適用
+ * ✅ レスポンシブ対応
+ * ✅ SaaS企業レベルUI/UX
+ * ✅ テーマ対応（ダークモード）
+ * 
+ * @version 3.0.0-NAGANO3-INTEGRATED
+ * @source kicho_NEW.html (インライン→外部化)
+ */
+
+/* =====================================
+   🎯 NAGANO3統一変数活用（完全準拠）
+   ===================================== */
+
+/* 既存のcommon.css, themes-pure.css, layout.css変数を100%活用 */
+
+/* =====================================
+   🔧 記帳ツール専用変数（直接色指定で確実表示）
+   ===================================== */
+:root {
+    /* 記帳ツール専用色（NAGANO3変数と併用） */
+    --kicho-primary: var(--accent-blue, #8b5cf6);
+    --kicho-secondary: var(--accent-purple, #a855f7);
+    --kicho-danger: var(--error-color, #ef4444);
+    --kicho-success: var(--success-color, #10b981);
+    --kicho-warning: var(--warning-color, #f59e0b);
+    --kicho-info: var(--info-color, #3b82f6);
+
+    /* 統一アイコンカラー */
+    --icon-mf: #1e40af;
+    --icon-csv: #059669;
+    --icon-ai: #ea580c;
+    --icon-system: #4b5563;
+    --icon-rule: #7c3aed;
+    --icon-approval: #10b981;
+}
+
+/* =====================================
+   記帳ツール基本レイアウト
+   ===================================== */
+.kicho__container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--spacing-lg, 1.5rem);
+}
+
+.kicho__header {
+    background: var(--bg-secondary, #f9fafb);
+    border-bottom: 2px solid var(--border-light, #e5e7eb);
+    padding: var(--spacing-lg, 1.5rem);
+    margin: calc(-1 * var(--spacing-lg, 1.5rem)) calc(-1 * var(--spacing-lg, 1.5rem))
+      var(--spacing-xl, 2rem);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-md, 1rem);
+}
+
+.kicho__header-left {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm, 0.5rem);
+}
+
+.kicho__page-title {
+    font-size: var(--font-2xl, 1.5rem);
+    font-weight: var(--font-bold, 700);
+    color: var(--kicho-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 0.5rem);
+    margin: 0;
+}
+
+.kicho__page-icon {
+    color: var(--icon-mf);
+}
+
+.kicho__system-status {
+    display: flex;
+    gap: var(--spacing-lg, 1.5rem);
+    font-size: var(--font-sm, 0.875rem);
+    color: var(--text-secondary, #6b7280);
+}
+
+.kicho__status-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs, 0.25rem);
+}
+
+.kicho__status-item--active i {
+    color: var(--kicho-success);
+}
+
+.kicho__header-actions {
+    display: flex;
+    gap: var(--spacing-sm, 0.5rem);
+}
+
+/* =====================================
+   統計ダッシュボード（NAGANO3変数活用）
+   ===================================== */
+.dashboard__stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-lg, 1.5rem);
+    margin-bottom: var(--spacing-xl, 2rem);
+}
+
+.dashboard__stat-card {
+    background: var(--bg-secondary, #f9fafb);
+    border: 1px solid var(--border-light, #e5e7eb);
+    border-radius: var(--border-radius, 0.375rem);
+    padding: var(--spacing-lg, 1.5rem);
+    box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+    transition: var(--transition-fast, all 0.15s ease);
+}
+
+.dashboard__stat-card:hover {
+    box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+    transform: translateY(-2px);
+}
+
+.dashboard__stat-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md, 1rem);
+}
+
+.dashboard__stat-card__title {
+    font-size: var(--font-sm, 0.875rem);
+    font-weight: var(--font-semibold, 600);
+    color: var(--text-secondary, #6b7280);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.dashboard__stat-card__icon {
+    width: 32px;
+    height: 32px;
+    background: var(--bg-tertiary, #f3f4f6);
+    border-radius: var(--border-radius, 0.375rem);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--kicho-primary);
+}
+
+.dashboard__stat-card__value {
+    font-size: 1.75rem;
+    font-weight: var(--font-bold, 700);
+    color: var(--text-primary, #111827);
+    margin-bottom: var(--spacing-sm, 0.5rem);
+}
+
+.dashboard__stat-card__trend {
+    font-size: var(--font-sm, 0.875rem);
+    color: var(--text-secondary, #6b7280);
+}
+
+/* =====================================
+   セクション（NAGANO3レイアウト準拠）
+   ===================================== */
+.kicho__section {
+    background: var(--bg-secondary, #f9fafb);
+    border: 1px solid var(--border-light, #e5e7eb);
+    border-radius: var(--border-radius, 0.375rem);
+    margin-bottom: var(--spacing-xl, 2rem);
+    box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+}
+
+.kicho__section__header {
+    padding: var(--spacing-lg, 1.5rem);
+    border-bottom: 1px solid var(--border-light, #e5e7eb);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: var(--spacing-md, 1rem);
+}
+
+.kicho__section__title {
+    font-size: var(--font-xl, 1.25rem);
+    font-weight: var(--font-bold, 700);
+    color: var(--text-primary, #111827);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 0.5rem);
+    margin: 0;
+}
+
+.kicho__section__subtitle {
+    font-size: var(--font-sm, 0.875rem);
+    color: var(--text-secondary, #6b7280);
+    margin-top: var(--spacing-xs, 0.25rem);
+}
+
+.kicho__section__actions {
+    display: flex;
+    gap: var(--spacing-sm, 0.5rem);
+    flex-wrap: wrap;
+}
+
+/* =====================================
+   カード（NAGANO3コンポーネント活用）
+   ===================================== */
+.kicho__overview-section {
+    padding: var(--spacing-lg, 1.5rem);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-lg, 1.5rem);
+}
+
+.kicho__card {
+    background: var(--bg-tertiary, #f3f4f6);
+    border: 1px solid var(--border-light, #e5e7eb);
+    border-radius: var(--border-radius, 0.375rem);
+    padding: var(--spacing-lg, 1.5rem);
+}
+
+.kicho__card__header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 0.5rem);
+    margin-bottom: var(--spacing-lg, 1.5rem);
+}
+
+.kicho__card__header h3 {
+    font-size: var(--font-lg, 1.125rem);
+    font-weight: var(--font-semibold, 600);
+    color: var(--text-primary, #111827);
+    margin: 0;
+}
+
+/* =====================================
+   🔧 記帳ツール専用ボタン（NAGANO3統合版）
+   ===================================== */
+.kicho__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs, 0.25rem);
+    padding: var(--spacing-sm, 0.5rem) var(--spacing-md, 1rem);
+    font-size: var(--font-sm, 0.875rem);
+    font-weight: var(--font-medium, 500);
+    border: 1px solid transparent;
+    border-radius: var(--border-radius, 0.375rem);
+    cursor: pointer;
+    transition: var(--transition-fast, all 0.15s ease);
+    text-decoration: none;
+    white-space: nowrap;
+    background-color: var(--bg-quaternary, #e5e7eb);
+    color: var(--text-primary, #111827);
+    border-color: var(--border-color, #d1d5db);
+}
+
+.kicho__btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+}
+
+.kicho__btn--primary {
+    background-color: var(--kicho-primary);
+    color: var(--text-white, #ffffff);
+    border-color: var(--kicho-primary);
+}
+
+.kicho__btn--primary:hover {
+    background-color: #7c3aed;
+    border-color: #7c3aed;
+}
+
+.kicho__btn--secondary {
+    background-color: var(--bg-primary, #ffffff);
+    color: var(--text-primary, #111827);
+    border-color: var(--border-color, #d1d5db);
+}
+
+.kicho__btn--secondary:hover {
+    background-color: var(--bg-secondary, #f9fafb);
+}
+
+.kicho__btn--success {
+    background-color: var(--kicho-success);
+    color: var(--text-white, #ffffff);
+    border-color: var(--kicho-success);
+}
+
+.kicho__btn--success:hover {
+    background-color: #059669;
+    border-color: #059669;
+}
+
+.kicho__btn--info {
+    background-color: var(--kicho-info);
+    color: var(--text-white, #ffffff);
+    border-color: var(--kicho-info);
+}
+
+.kicho__btn--info:hover {
+    background-color: #2563eb;
+    border-color: #2563eb;
+}
+
+.kicho__btn--warning {
+    background-color: var(--kicho-warning);
+    color: var(--text-white, #ffffff);
+    border-color: var(--kicho-warning);
+}
+
+.kicho__btn--warning:hover {
+    background-color: #d97706;
+    border-color: #d97706;
+}
+
+.kicho__btn--danger {
+    background-color: var(--kicho-danger);
+    color: var(--text-white, #ffffff);
+    border-color: var(--kicho-danger);
+}
+
+.kicho__btn--danger:hover {
+    background-color: #dc2626;
+    border-color: #dc2626;
+}
+
+.kicho__btn--full {
+    width: 100%;
+    justify-content: center;
+}
+
+.kicho__btn--small {
+    padding: var(--spacing-xs, 0.25rem) var(--spacing-sm, 0.5rem);
+    font-size: var(--font-xs, 0.75rem);
+}
+
+/* =====================================
+   フォーム（NAGANO3フォームシステム活用）
+   ===================================== */
+.kicho__form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm, 0.5rem);
+    margin-bottom: var(--spacing-md, 1rem);
+}
+
+.kicho__form-label {
+    font-size: var(--font-sm, 0.875rem);
+    font-weight: var(--font-semibold, 600);
+    color: var(--text-primary, #111827);
+}
+
+.kicho__form-input {
+    padding: var(--spacing-sm, 0.5rem) var(--spacing-md, 1rem);
+    border: 1px solid var(--border-color, #d1d5db);
+    border-radius: var(--border-radius, 0.375rem);
+    font-size: var(--font-base, 1rem);
+    transition: var(--transition-fast, all 0.15s ease);
+    background: var(--bg-primary, #ffffff);
+    color: var(--text-primary, #111827);
+}
+
+.kicho__form-input:focus {
+    outline: none;
+    border-color: var(--kicho-primary);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+/* =====================================
+   アップロードエリア
+   ===================================== */
+.kicho__upload-area {
+    border: 2px dashed var(--border-color, #d1d5db);
+    border-radius: var(--border-radius, 0.375rem);
+    padding: var(--spacing-xl, 2rem);
+    text-align: center;
+    cursor: pointer;
+    transition: var(--transition-fast, all 0.15s ease);
+    background: var(--bg-primary, #ffffff);
+}
+
+.kicho__upload-area:hover {
+    border-color: var(--kicho-primary);
+    background: rgba(139, 92, 246, 0.05);
+}
+
+.kicho__upload-area__icon {
+    font-size: 2rem;
+    color: var(--text-muted, #9ca3af);
+    margin-bottom: var(--spacing-sm, 0.5rem);
+}
+
+.kicho__upload-area__text {
+    font-weight: var(--font-semibold, 600);
+    color: var(--text-primary, #111827);
+    margin-bottom: var(--spacing-xs, 0.25rem);
+}
+
+.kicho__upload-area__subtext {
+    font-size: var(--font-sm, 0.875rem);
+    color: var(--text-muted, #9ca3af);
+}
+
+/* =====================================
+   取り込み済みデータ一覧
+   ===================================== */
+.kicho__imported-data-section {
+    background: var(--bg-tertiary, #f3f4f6);
+    border: 1px solid var(--border-light, #e5e7eb);
+    border-radius: var(--border-radius, 0.375rem);
+    margin: var(--spacing-xl, 2rem) 0;
+    box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+}
+
+.kicho__imported-data__header {
+    padding: var(--spacing-lg, 1.5rem);
+    border-bottom: 1px solid var(--border-light, #e5e7eb);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.kicho__imported-data__header h3 {
+    font-size: var(--font-xl, 1.25rem);
+    font-weight: var(--font-bold, 700);
+    color: var(--text-primary, #111827);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 0.5rem);
+    margin: 0;
+}
+
+.kicho__imported-data__summary {
+    display: flex;
+    gap: var(--spacing-lg, 1.5rem);
+    font-size: var(--font-sm, 0.875rem);
+    color: var(--text-muted, #9ca3af);
+}
+
+.kicho__imported-data__summary span {
+    white-space: nowrap;
+}
+
+.kicho__imported-data__controls {
+    padding: var(--spacing-md, 1rem) var(--spacing-lg, 1.5rem);
+    border-bottom: 1px solid var(--border-light, #e5e7eb);
+    display: flex;
+    gap: var(--spacing-sm, 0.5rem);
+    flex-wrap: wrap;
+}
+
+.kicho__imported-data__list {
+    padding: var(--spacing-lg, 1.5rem);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md, 1rem);
+}
+
+.kicho__data-item {
+    background: var(--bg-primary, #ffffff);
+    border: 1px solid var(--border-light, #e5e7eb);
+    border-radius: var(--border-radius, 0.375rem);
+    padding: var(--spacing-md, 1rem);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md, 1rem);
+    transition: var(--transition-fast, all 0.15s ease);
+}
+
+.kicho__data-item:hover {
+    box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+}
+
+.kicho__data-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.kicho__data-info {
+    flex: 1;
+}
+
+.kicho__data-title {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 0.5rem);
+    margin-bottom: var(--spacing-xs, 0.25rem);
+}
+
+.kicho__data-name {
+    font-weight: var(--font-semibold, 600);
+    color: var(--text-primary, #111827);
+}
+
+.kicho__data-count {
+    font-size: var(--font-sm, 0.875rem);
+    color: var(--text-muted, #9ca3af);
+    background: var(--bg-tertiary, #f3f4f6);
+    padding: var(--spacing-xs, 0.25rem) var(--spacing-sm, 0.5rem);
+    border-radius: var(--border-radius, 0.375rem);
+}
+
+.kicho__data-details {
+    font-size: var(--font-sm, 0.875rem);
+    color: var(--text-muted, #9ca3af);
+}
+
+/* =====================================
+   統一アイコンシステム（NAGANO3拡張）
+   ===================================== */
+.icon--mf {
+    color: var(--icon-mf);
+}
+.icon--csv {
+    color: var(--icon-csv);
+}
+.icon--ai {
+    color: var(--icon-ai);
+}
+.icon--system {
+    color: var(--icon-system);
+}
+.icon--rule {
+    color: var(--icon-rule);
+}
+.icon--approval {
+    color: var(--icon-approval);
+}
+
+/* =====================================
+   MF接続ステータス
+   ===================================== */
+.kicho__mf-status {
+    background: var(--bg-tertiary, #f3f4f6);
+    border-radius: var(--border-radius, 0.375rem);
+    padding: var(--spacing-md, 1rem);
+    margin-bottom: var(--spacing-lg, 1.5rem);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.kicho__mf-status__indicator {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 0.5rem);
+    font-weight: var(--font-semibold, 600);
+    color: var(--kicho-success);
+}
+
+.kicho__mf-status__details {
+    font-size: var(--font-sm, 0.875rem);
+    color: var(--text-muted, #9ca3af);
+    text-align: right;
+}
+
+/* =====================================
+   AI学習ステータス
+   ===================================== */
+.kicho__ai-status {
+    background: var(--bg-tertiary, #f3f4f6);
+    border-radius: var(--border-radius, 0.375rem);
+    padding: var(--spacing-md, 1rem);
+    margin-bottom: var(--spacing-lg, 1.5rem);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.kicho__ai-status__stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-xs, 0.25rem);
+    font-size: var(--font-sm, 0.875rem);
+    color: var(--text-muted, #9ca3af);
+}
+
+.kicho__ai-status__stage i {
+    font-size: var(--font-xl, 1.25rem);
+    color: var(--border-color, #d1d5db);
+}
+
+.kicho__ai-status__stage--completed i {
+    color: var(--kicho-success);
+}
+
+/* =====================================
+   CSV・学習オプション
+   ===================================== */
+.kicho__csv-options,
+.kicho__learning-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md, 1rem);
+    margin: var(--spacing-md, 1rem) 0;
+}
+
+.kicho__csv-options .kicho__form-input,
+.kicho__learning-options .kicho__form-input {
+    min-width: 0;
+    width: 100%;
+    font-size: var(--font-sm, 0.875rem);
+}
+
+.kicho__button-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm, 0.5rem);
+}
+
+.kicho__button-group .kicho__btn--small {
+    margin-top: var(--spacing-sm, 0.5rem);
+}
+
+/* =====================================
+   統合AI学習セクション
+   ===================================== */
+.kicho__integrated-ai-learning {
+    margin: var(--spacing-xl, 2rem) 0;
+}
+
+.kicho__ai-learning__container {
+    background: linear-gradient(135deg, var(--kicho-primary), var(--kicho-secondary));
+    border: 1px solid var(--border-light, #e5e7eb);
+    border-radius: var(--border-radius, 0.375rem);
+    padding: var(--spacing-lg, 1.5rem);
+    box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+    color: var(--text-white, #ffffff);
+}
+
+.kicho__ai-learning__header {
+    text-align: center;
+    margin-bottom: var(--spacing-lg, 1.5rem);
+}
+
+.kicho__ai-learning__title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md, 1rem);
+    margin-bottom: var(--spacing-sm, 0.5rem);
+}
+
+.kicho__ai-learning__title i {
+    font-size: 2rem;
+    color: var(--icon-ai);
+}
+
+.kicho__ai-learning__title h3 {
+    font-size: var(--font-2xl, 1.5rem);
+    font-weight: var(--font-bold, 700);
+    margin: 0;
+    color: var(--text-white, #ffffff);
+}
+
+.kicho__ai-learning__description {
+    font-size: var(--font-base, 1rem);
+    opacity: 0.9;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+.kicho__ai-learning__settings {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius, 0.375rem);
+    padding: var(--spacing-lg, 1.5rem);
+    margin-bottom: var(--spacing-lg, 1.5rem);
+}
+
+.kicho__ai-learning__settings .kicho__form-label {
+    color: var(--text-white, #ffffff);
+    font-weight: var(--font-semibold, 600);
+}
+
+.kicho__ai-learning__settings .kicho__form-input {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: var(--text-primary, #111827);
+}
+
+.kicho__ai-learning__data-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md, 1rem);
+    margin-top: var(--spacing-lg, 1.5rem);
+}
+
+.kicho__data-summary__item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm, 0.5rem);
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: var(--border-radius, 0.375rem);
+}
+
+.kicho__data-summary__label {
+    font-size: var(--font-sm, 0.875rem);
+    opacity: 0.8;
+}
+
+.kicho__data-summary__value {
+    font-weight: var(--font-semibold, 600);
+    font-size: var(--font-base, 1rem);
+}
+
+.kicho__ai-learning__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md, 1rem);
+}
+
+.kicho__ai-learning__actions .kicho__btn {
+    padding: var(--spacing-md, 1rem) var(--spacing-lg, 1.5rem);
+    font-size: var(--font-lg, 1.125rem);
+    font-weight: var(--font-semibold, 600);
+}
+
+.kicho__ai-learning__actions .kicho__btn--success {
+    background: var(--icon-ai);
+    color: var(--text-white, #ffffff);
+    border: 2px solid var(--icon-ai);
+    animation: pulse-glow 2s infinite;
+}
+
+.kicho__ai-learning__actions .kicho__btn--success:hover {
+    background: #e55a2b;
+    border-color: #e55a2b;
+}
+
+/* =====================================
+   ルール保存・承認機能
+   ===================================== */
+.kicho__rule-save-section {
+    background: rgba(139, 92, 246, 0.1);
+    border: 2px solid var(--kicho-primary);
+    border-radius: var(--border-radius, 0.375rem);
+    padding: var(--spacing-lg, 1.5rem);
+    margin-top: var(--spacing-md, 1rem);
+}
+
+.kicho__rule-save__title {
+    font-size: var(--font-lg, 1.125rem);
+    font-weight: var(--font-semibold, 600);
+    color: var(--kicho-primary);
+    margin-bottom: var(--spacing-md, 1rem);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 0.5rem);
+}
+
+.kicho__rule-options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm, 0.5rem);
+    margin: var(--spacing-md, 1rem) 0;
+}
+
+.kicho__rule-options label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 0.5rem);
+    font-size: var(--font-sm, 0.875rem);
+    color: var(--text-primary, #111827);
+    cursor: pointer;
+}
+
+.kicho__approval-section {
+    background: rgba(16, 185, 129, 0.1);
+    border: 2px solid var(--kicho-success);
+    border-radius: var(--border-radius, 0.375rem);
+    padding: var(--spacing-lg, 1.5rem);
+    margin-top: var(--spacing-md, 1rem);
+}
+
+.kicho__approval__title {
+    font-size: var(--font-lg, 1.125rem);
+    font-weight: var(--font-semibold, 600);
+    color: var(--kicho-success);
+    margin-bottom: var(--spacing-md, 1rem);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 0.5rem);
+}
+
+.kicho__approval-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--spacing-md, 1rem);
+    margin-top: var(--spacing-md, 1rem);
+}
+
+.kicho__summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm, 0.5rem);
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: var(--border-radius, 0.375rem);
+}
+
+.kicho__summary-label {
+    font-size: var(--font-sm, 0.875rem);
+    color: var(--text-muted, #9ca3af);
+}
+
+.kicho__summary-value {
+    font-weight: var(--font-semibold, 600);
+    font-size: var(--font-base, 1rem);
+    color: var(--text-primary, #111827);
+}
+
+/* =====================================
+   保存済みルール・承認データ表示
+   ===================================== */
+.kicho__saved-rules-section {
+    background: rgba(124, 58, 237, 0.1);
+    border: 1px solid var(--icon-rule);
+    border-radius: var(--border-radius, 0.375rem);
+    padding: var(--spacing-lg, 1.5rem);
+    margin: var(--spacing-xl, 2rem) 0;
+}
+
+.kicho__saved-rules__title {
+    font-size: var(--font-xl, 1.25rem);
+    font-weight: var(--font-bold, 700);
+    color: var(--icon-rule);
+    margin-bottom: var(--spacing-md, 1rem);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 0.5rem);
+}
+
+.kicho__saved-rules__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md, 1rem);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.kicho__saved-rule-item {
+    background: var(--bg-primary, #ffffff);
+    border: 1px solid var(--border-light, #e5e7eb);
+    border-radius: var(--border-radius, 0.375rem);
+    padding: var(--spacing-md, 1rem);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.kicho__saved-rule__info {
+    flex: 1;
+}
+
+.kicho__saved-rule__name {
+    font-weight: var(--font-semibold, 600);
+    color: var(--text-primary, #111827);
+    margin-bottom: var(--spacing-xs, 0.25rem);
+}
+
+.kicho__saved-rule__details {
+    font-size: var(--font-sm, 0.875rem);
+    color: var(--text-secondary, #6b7280);
+}
+
+.kicho__saved-rule__actions {
+    display: flex;
+    gap: var(--spacing-sm, 0.5rem);
+}
+
+.kicho__approved-transactions-section {
+    background: rgba(5, 150, 105, 0.1);
+    border: 1px solid var(--icon-approval);
+    border-radius: var(--border-radius, 0.375rem);
+    padding: var(--spacing-lg, 1.5rem);
+    margin: var(--spacing-xl, 2rem) 0;
+}
+
+.kicho__approved-transactions__title {
+    font-size: var(--font-xl, 1.25rem);
+    font-weight: var(--font-bold, 700);
+    color: var(--icon-approval);
+    margin-bottom: var(--spacing-md, 1rem);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 0.5rem);
+}
+
+.kicho__approved-transactions__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md, 1rem);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.kicho__approved-transaction-item {
+    background: var(--bg-primary, #ffffff);
+    border: 1px solid var(--border-light, #e5e7eb);
+    border-radius: var(--border-radius, 0.375rem);
+    padding: var(--spacing-md, 1rem);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.kicho__approved-transaction__info {
+    flex: 1;
+}
+
+.kicho__approved-transaction__name {
+    font-weight: var(--font-semibold, 600);
+    color: var(--text-primary, #111827);
+    margin-bottom: var(--spacing-xs, 0.25rem);
+}
+
+.kicho__approved-transaction__details {
+    font-size: var(--font-sm, 0.875rem);
+    color: var(--text-secondary, #6b7280);
+}
+
+.kicho__approved-transaction__actions {
+    display: flex;
+    gap: var(--spacing-sm, 0.5rem);
+}
+
+/* =====================================
+   AI学習履歴システム
+   ===================================== */
+.kicho__learning-history {
+    background: var(--bg-primary, #ffffff);
+    border: 1px solid var(--border-light, #e5e7eb);
+    border-radius: var(--border-radius, 0.375rem);
+    padding: var(--spacing-lg, 1.5rem);
+}
+
+.kicho__learning-history h4 {
+    font-size: var(--font-lg, 1.125rem);
+    font-weight: var(--font-semibold, 600);
+    color: var(--text-primary, #111827);
+    margin-bottom: var(--spacing-md, 1rem);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 0.5rem);
+}
+
+.kicho__session-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm, 0.5rem);
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.kicho__session-item {
+    background: var(--bg-tertiary, #f3f4f6);
+    border: 1px solid var(--border-light, #e5e7eb);
+    border-radius: var(--border-radius, 0.375rem);
+    padding: var(--spacing-md, 1rem);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.kicho__session-datetime {
+    font-size: var(--font-sm, 0.875rem);
+    color: var(--text-primary, #111827);
+    font-weight: var(--font-medium, 500);
+}
+
+.kicho__session-status--success {
+    background: var(--kicho-success);
+    color: var(--text-white, #ffffff);
+    padding: var(--spacing-xs, 0.25rem) var(--spacing-sm, 0.5rem);
+    border-radius: var(--border-radius, 0.375rem);
+    font-size: var(--font-xs, 0.75rem);
+    font-weight: var(--font-medium, 500);
+}
+
+/* =====================================
+   アニメーション（SaaS企業レベル）
+   ===================================== */
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: 0 0 10px rgba(234, 88, 12, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(234, 88, 12, 0.6);
+    }
+}
+
+@keyframes fadeOut {
+    from { 
+        opacity: 1; 
+        transform: scale(1); 
+    }
+    to { 
+        opacity: 0; 
+        transform: scale(0.9); 
+    }
+}
+
+@keyframes slideInRight {
+    from { 
+        transform: translateX(100%); 
+        opacity: 0; 
+    }
+    to { 
+        transform: translateX(0); 
+        opacity: 1; 
+    }
+}
+
+@keyframes slideOutRight {
+    from { 
+        transform: translateX(0); 
+        opacity: 1; 
+    }
+    to { 
+        transform: translateX(100%); 
+        opacity: 0; 
+    }
+}
+
+/* =====================================
+   レスポンシブ対応（モバイルファースト）
+   ===================================== */
+@media (max-width: 1024px) {
+    .kicho__overview-section {
+        grid-template-columns: 1fr;
+    }
+    
+    .kicho__ai-learning__data-summary {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .kicho__container {
+        padding: var(--spacing-md, 1rem);
+    }
+
+    .kicho__header {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+        margin: calc(-1 * var(--spacing-md, 1rem)) calc(-1 * var(--spacing-md, 1rem))
+          var(--spacing-lg, 1.5rem);
+    }
+
+    .kicho__header-left,
+    .kicho__header-actions {
+        width: 100%;
+    }
+
+    .kicho__header-actions {
+        justify-content: center;
+    }
+
+    .dashboard__stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: var(--spacing-md, 1rem);
+    }
+
+    .kicho__section__header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .kicho__section__actions {
+        justify-content: center;
+    }
+
+    .kicho__mf-status {
+        flex-direction: column;
+        gap: var(--spacing-sm, 0.5rem);
+        text-align: center;
+    }
+
+    .kicho__mf-status__details {
+        text-align: center;
+    }
+
+    .kicho__ai-status {
+        flex-direction: column;
+        gap: var(--spacing-md, 1rem);
+    }
+
+    .kicho__csv-options,
+    .kicho__learning-options {
+        grid-template-columns: 1fr;
+    }
+
+    .kicho__ai-learning__title {
+        flex-direction: column;
+        gap: var(--spacing-sm, 0.5rem);
+    }
+
+    .kicho__ai-learning__title i {
+        font-size: 3rem;
+    }
+
+    .kicho__data-summary__item {
+        flex-direction: column;
+        text-align: center;
+        gap: var(--spacing-xs, 0.25rem);
+    }
+
+    .kicho__imported-data__header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--spacing-sm, 0.5rem);
+    }
+
+    .kicho__imported-data__summary {
+        justify-content: space-between;
+        text-align: center;
+    }
+
+    .kicho__imported-data__controls {
+        justify-content: center;
+    }
+
+    .kicho__approval-summary {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard__stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .kicho__btn {
+        font-size: var(--font-sm, 0.875rem);
+        padding: var(--spacing-md, 1rem);
+    }
+
+    .dashboard__stat-card__value {
+        font-size: 1.5rem;
+    }
+
+    .kicho__page-title {
+        font-size: var(--font-xl, 1.25rem);
+    }
+
+    .kicho__imported-data__summary {
+        flex-direction: column;
+        gap: var(--spacing-sm, 0.5rem);
+        text-align: center;
+    }
+
+    .kicho__ai-learning__data-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .kicho__data-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--spacing-sm, 0.5rem);
+    }
+
+    .kicho__data-title {
+        justify-content: center;
+        text-align: center;
+    }
+}
+
+/* =====================================
+   テーマ対応（ダークモード・NAGANO3連携）
+   ===================================== */
+[data-theme="dark"] .kicho__ai-learning__container {
+    background: linear-gradient(135deg, #6d28d9, #7e22ce);
+}
+
+[data-theme="dark"] .kicho__upload-area:hover {
+    background: rgba(139, 92, 246, 0.1);
+}
+
+[data-theme="dark"] .kicho__rule-save-section {
+    background: rgba(139, 92, 246, 0.2);
+}
+
+[data-theme="dark"] .kicho__approval-section {
+    background: rgba(16, 185, 129, 0.2);
+}
+
+[data-theme="dark"] .kicho__saved-rules-section {
+    background: rgba(124, 58, 237, 0.2);
+}
+
+[data-theme="dark"] .kicho__approved-transactions-section {
+    background: rgba(5, 150, 105, 0.2);
+}
+
+[data-theme="dark"] .kicho__ai-learning__settings {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .kicho__data-summary__item {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .kicho__summary-item {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* =====================================
+   🏁 KICHO CSS外部化完了マーカー
+   ===================================== */
+
+/**
+ * ✅ KICHO記帳ツール CSS外部化完了【v3.0統合版】
+ * 
+ * 🎯 実装完了項目:
+ * ✅ HTMLインライン<style>タグ完全除去対応
+ * ✅ NAGANO3 CSS変数100%活用
+ * ✅ BEM命名規則完全適用
+ * ✅ レスポンシブ対応（モバイルファースト）
+ * ✅ SaaS企業レベルUI/UX
+ * ✅ テーマ対応（ダークモード）
+ * ✅ アニメーション・トランジション
+ * ✅ 統一アイコンシステム
+ * ✅ 競合回避設計
+ * 
+ * 🚀 次のPhase進行可能
+ */

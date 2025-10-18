@@ -1,0 +1,385 @@
+// components/ebay-pricing/calculator-tab-complete.tsx
+'use client'
+
+import { Calculator, CheckCircle, XCircle, AlertTriangle, HelpCircle, TrendingUp, DollarSign, ArrowRight, Settings, Percent } from 'lucide-react'
+import { STORE_FEES } from '@/app/ebay-pricing/page'
+import { useState, useMemo, useEffect } from 'react'
+
+interface CalculatorTabProps {
+  formData: any
+  onInputChange: (field: string, value: any) => void
+  onCalculate: (adjustments?: {
+    targetProfitMargin: number
+    costAdjustmentPercent: number
+    shippingAdjustmentPercent: number
+    otherCostAdjustmentPercent: number
+    adjustedCostJPY: number
+  }) => void
+  resultDDP: any
+  resultDDU: any
+  hsCodes: any[]
+  countries: any[]
+  categoryFees: any[]
+}
+
+// 税率でグループ化
+const TAX_RATE_GROUPS = [
+  { rate: 0, label: '0% (無税)', color: 'text-green-600' },
+  { rate: 2.5, label: '2.5%', color: 'text-blue-600' },
+  { rate: 4.5, label: '4.5%', color: 'text-indigo-600' },
+  { rate: 5.3, label: '5.3%', color: 'text-purple-600' },
+  { rate: 6.5, label: '6.5%', color: 'text-pink-600' },
+  { rate: 10, label: '10%', color: 'text-orange-600' },
+  { rate: 15, label: '15%以上', color: 'text-red-600' },
+]
+
+export function CalculatorTabComplete({
+  formData,
+  onInputChange,
+  onCalculate,
+  resultDDP,
+  resultDDU,
+  hsCodes,
+  countries,
+  categoryFees,
+}: CalculatorTabProps) {
+  const [selectedTaxRate, setSelectedTaxRate] = useState<number | null>(null)
+  const [fvfRates, setFvfRates] = useState<number[]>([0.035, 0.0635, 0.1315, 0.1495, 0.15])
+
+  // 🆕 目標利益率・調整％
+  const [targetProfitMargin, setTargetProfitMargin] = useState<number>(15)
+  const [costAdjustmentPercent, setCostAdjustmentPercent] = useState<number>(0)
+  const [shippingAdjustmentPercent, setShippingAdjustmentPercent] = useState<number>(0)
+  const [otherCostAdjustmentPercent, setOtherCostAdjustmentPercent] = useState<number>(0)
+
+  // 🆕 詳細設定表示切り替え
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false)
+
+  // ✅ 配送ポリシー関連（完全版）
+  const [shippingPolicies, setShippingPolicies] = useState<any[]>([])
+  const [selectedPolicyId, setSelectedPolicyId] = useState<number | null>(null)
+  const [policyZoneRates, setPolicyZoneRates] = useState<any[]>([])
+  const [loadingPolicies, setLoadingPolicies] = useState(false)
+  const [autoSelectedPolicy, setAutoSelectedPolicy] = useState<any>(null)
+  const [policyDebugInfo, setPolicyDebugInfo] = useState<string>('')
+
+  // FVF率をAPIから取得
+  useEffect(() => {
+    fetch('/api/ebay/get-unique-fvf-rates')
+      .then(r => r.json())
+      .then(data => {
+        if (data.rates && data.rates.length > 0) {
+          setFvfRates(data.rates)
+        }
+      })
+      .catch(err => console.error('FVF率取得エラー:', err))
+  }, [])
+
+  // 🆕 配送ポリシー取得（初回のみ）
+  useEffect(() => {
+    setLoadingPolicies(true)
+    fetch('/api/ebay/get-shipping-policies')
+      .then(r => r.json())
+      .then(data => {
+        if (data.policies) {
+          setShippingPolicies(data.policies)
+        }
+      })
+      .catch(err => console.error('配送ポリシー取得エラー:', err))
+      .finally(() => setLoadingPolicies(false))
+  }, [])
+
+  // ✅ 新ロジック: 重量 + 商品価格で最適なポリシーを自動選択
+  useEffect(() => {
+    // 重量と原価が入力されている場合のみ実行
+    if (!formData.actualWeight || !formData.costJPY || !formData.exchangeRate) {
+      setPolicyDebugInfo('')
+      return
+    }
+
+    const weight = formData.actualWeight
+    // 仮の販売価格を計算（原価×1.5を想定）
+    const estimatedPriceUSD = (formData.costJPY / formData.exchangeRate) * 1.5
+
+    // APIで最適なポリシーを取得
+    fetch('/api/ebay/select-shipping-policy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        weight: weight,
+        itemPriceUSD: estimatedPriceUSD,
+        quantity: 1
+      })
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          // ポリシーを自動選択
+          setAutoSelectedPolicy(data.policy)
+          setSelectedPolicyId(data.policy.id)
+          
+          // 送料を自動設定
+          if (data.shipping?.usa?.total) {
+            onInputChange('shippingFeeUSD', data.shipping.usa.total)
+          }
+          if (data.shipping?.other?.total) {
+            onInputChange('otherShippingFeeUSD', data.shipping.other.total)
+          }
+
+          // デバッグ情報を表示
+          const debugMsg = `✅ ${data.policy.pricing_basis} ${data.policy.price_band || ''} | ${weight}kg | $${estimatedPriceUSD.toFixed(0)} | ${data.policy.name}`
+          setPolicyDebugInfo(debugMsg)
+          console.log('配送ポリシー自動選択:', data)
+        } else {
+          setPolicyDebugInfo(`❌ ポリシー選択失敗: ${data.error || 'Unknown error'}`)
+          console.error('ポリシー選択エラー:', data)
+        }
+      })
+      .catch(err => {
+        setPolicyDebugInfo(`❌ API エラー: ${err.message}`)
+        console.error('ポリシー選択APIエラー:', err)
+      })
+  }, [formData.actualWeight, formData.costJPY, formData.exchangeRate])
+
+  // 🆕 選択されたポリシーのZONE別送料を取得（手動選択時のみ）
+  useEffect(() => {
+    if (selectedPolicyId && !autoSelectedPolicy) {
+      fetch(`/api/ebay/get-policy-zone-rates?policyId=${selectedPolicyId}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.rates) {
+            setPolicyZoneRates(data.rates)
+          }
+        })
+        .catch(err => console.error('ZONE別送料取得エラー:', err))
+    }
+  }, [selectedPolicyId])
+
+  // 税率でフィルタリングされたHTSコード
+  const filteredHsCodes = useMemo(() => {
+    if (selectedTaxRate === null) return hsCodes
+    
+    if (selectedTaxRate === 15) {
+      return hsCodes.filter((hs: any) => (hs.base_duty || 0) >= 0.15)
+    }
+    
+    const tolerance = 0.001
+    return hsCodes.filter((hs: any) => 
+      Math.abs((hs.base_duty || 0) - selectedTaxRate / 100) < tolerance
+    )
+  }, [hsCodes, selectedTaxRate])
+
+  const selectedHsCode = hsCodes.find((hs: any) => hs.code === formData.hsCode)
+  const selectedStore = STORE_FEES[formData.storeType as keyof typeof STORE_FEES]
+  const selectedCountry = countries.find((c: any) => c.code === formData.originCountry)
+
+  const adjustedCostJPY = useMemo(() => {
+    const base = formData.costJPY
+    return base * (1 + costAdjustmentPercent / 100)
+  }, [formData.costJPY, costAdjustmentPercent])
+
+  const adjustedShippingUSD = useMemo(() => {
+    if (!selectedPolicyId || policyZoneRates.length === 0) {
+      return { usa: formData.shippingFeeUSD || 0, other: formData.otherShippingFeeUSD || 0 }
+    }
+    const usaRate = policyZoneRates.find((r: any) => r.zone_code === 'US')
+    const otherRate = policyZoneRates.find((r: any) => r.zone_type === 'OTHER' || r.zone_code === 'FA')
+    
+    const baseUsaShipping = usaRate ? (usaRate.first_item_shipping_usd || usaRate.display_shipping_usd) : formData.shippingFeeUSD || 0
+    const baseOtherShipping = otherRate ? (otherRate.first_item_shipping_usd || otherRate.display_shipping_usd) : formData.otherShippingFeeUSD || 0
+    
+    return {
+      usa: baseUsaShipping * (1 + shippingAdjustmentPercent / 100),
+      other: baseOtherShipping * (1 + shippingAdjustmentPercent / 100)
+    }
+  }, [selectedPolicyId, policyZoneRates, shippingAdjustmentPercent, formData.shippingFeeUSD, formData.otherShippingFeeUSD])
+
+  useEffect(() => {
+    if (adjustedShippingUSD.usa !== formData.shippingFeeUSD) {
+      onInputChange('shippingFeeUSD', adjustedShippingUSD.usa)
+    }
+    if (adjustedShippingUSD.other !== formData.otherShippingFeeUSD) {
+      onInputChange('otherShippingFeeUSD', adjustedShippingUSD.other)
+    }
+  }, [adjustedShippingUSD])
+
+  const calculateTaxRefund = (costJPY: number, estimatedRevenueUSD: number, exchangeRateValue: number) => {
+    const estimatedEbayFees = estimatedRevenueUSD * formData.fvfRate
+    const estimatedPayoneerFees = estimatedRevenueUSD * 0.02
+    const totalDeductibleExpensesJPY = costJPY + (estimatedEbayFees + estimatedPayoneerFees) * exchangeRateValue
+    return (totalDeductibleExpensesJPY * 10) / 110
+  }
+
+  const estimatedRevenueUSD = ((adjustedCostJPY / 150) * 1.5) || 100
+  const taxRefund = calculateTaxRefund(adjustedCostJPY, estimatedRevenueUSD, 150)
+
+  const getRecommendation = () => {
+    if (!resultDDP?.success || !resultDDU?.success) return null
+
+    const ddpProfit = resultDDP.profitJPY_NoRefund
+    const dduProfit = resultDDU.profitJPY_NoRefund
+    const profitDiff = ddpProfit - dduProfit
+    const profitDiffPercent = (profitDiff / Math.max(ddpProfit, dduProfit)) * 100
+
+    let recommendation = 'DDP'
+    let reason = ''
+    let confidence = 'high'
+
+    if (Math.abs(profitDiffPercent) > 10) {
+      recommendation = profitDiff > 0 ? 'DDP' : 'DDU'
+      reason = `利益差が大きい（${Math.abs(profitDiff).toFixed(0)}円、${Math.abs(profitDiffPercent).toFixed(1)}%）`
+      confidence = 'high'
+    }
+    else if (resultDDU.shipping > 30) {
+      recommendation = 'DDU'
+      reason = `送料が高額（$${resultDDU.shipping}）のためDDU着払いが自然`
+      confidence = 'medium'
+    }
+    else if (parseFloat(resultDDP.breakdown?.tariff || 0) > 20) {
+      recommendation = 'DDU'
+      reason = `関税が高額（$${resultDDP.breakdown?.tariff}）のため購入者負担が自然`
+      confidence = 'medium'
+    }
+    else if (resultDDP.profitMargin_NoRefund < 0.15) {
+      recommendation = 'DDP'
+      reason = '利益率が低いため関税込みで確実に利益確保'
+      confidence = 'medium'
+    }
+    else {
+      recommendation = 'DDP'
+      reason = '基本的にDDP（関税込み）が推奨、USA市場での標準'
+      confidence = 'low'
+    }
+
+    return {
+      recommendation,
+      reason,
+      confidence,
+      profitDiff,
+      profitDiffPercent,
+    }
+  }
+
+  const recommendation = getRecommendation()
+
+  return (
+    <div className="space-y-4">
+      {/* ヘッダー */}
+      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-4 rounded-lg shadow-lg">
+        <h2 className="text-2xl font-bold flex items-center gap-2">
+          <Calculator className="w-7 h-7" />
+          eBay DDP/DDU 価格計算エンジン（完全版）
+        </h2>
+        <p className="text-indigo-100 text-sm mt-1">
+          価格帯 + 重量 + 関税で最適なポリシーを自動選択 | DBから送料を取得
+        </p>
+      </div>
+
+      {/* 🆕 配送ポリシー自動選択表示 */}
+      {policyDebugInfo && (
+        <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
+          <h3 className="text-lg font-bold text-blue-800 mb-2">📦 自動選択された配送ポリシー</h3>
+          <div className="text-sm text-blue-900">{policyDebugInfo}</div>
+          {autoSelectedPolicy && (
+            <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+              <div className="bg-white p-2 rounded">
+                <div className="text-gray-600">方式</div>
+                <div className="font-bold">{autoSelectedPolicy.pricing_basis}</div>
+              </div>
+              {autoSelectedPolicy.price_band && (
+                <div className="bg-white p-2 rounded">
+                  <div className="text-gray-600">価格帯</div>
+                  <div className="font-bold">{autoSelectedPolicy.price_band}</div>
+                </div>
+              )}
+              {autoSelectedPolicy.weight_range && (
+                <div className="bg-white p-2 rounded">
+                  <div className="text-gray-600">重量</div>
+                  <div className="font-bold">{autoSelectedPolicy.weight_range}</div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 入力フォーム（簡略版で継続） */}
+      <div className="bg-white p-6 rounded-lg shadow-lg">
+        <h3 className="text-xl font-bold text-gray-800 mb-4">入力項目</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <InputField
+              label="仕入値（円）"
+              type="number"
+              value={formData.costJPY}
+              onChange={(e) => onInputChange('costJPY', parseFloat(e.target.value) || 0)}
+            />
+          </div>
+          <div>
+            <InputField
+              label="実重量(kg)"
+              type="number"
+              step="0.1"
+              value={formData.actualWeight}
+              onChange={(e) => onInputChange('actualWeight', parseFloat(e.target.value) || 0)}
+            />
+          </div>
+          <div>
+            <InputField
+              label="為替レート"
+              type="number"
+              value={formData.exchangeRate}
+              onChange={(e) => onInputChange('exchangeRate', parseFloat(e.target.value) || 150)}
+            />
+          </div>
+        </div>
+
+        <button
+          onClick={() => onCalculate({
+            targetProfitMargin,
+            costAdjustmentPercent,
+            shippingAdjustmentPercent,
+            otherCostAdjustmentPercent,
+            adjustedCostJPY
+          })}
+          className="w-full mt-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-bold hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg flex items-center justify-center gap-2"
+        >
+          <Calculator className="w-5 h-5" />
+          DDP & DDU 同時計算
+        </button>
+      </div>
+
+      {/* 計算結果 */}
+      {(resultDDP || resultDDU) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white p-4 rounded shadow">
+            <h3 className="font-bold text-indigo-800 mb-2">🇺🇸 DDP結果</h3>
+            {resultDDP?.success ? (
+              <div className="text-sm space-y-1">
+                <div>送料: ${resultDDP.shipping?.toFixed(2) || 'N/A'}</div>
+                <div>利益: ¥{Math.round(resultDDP.profitJPY_NoRefund || 0).toLocaleString()}</div>
+              </div>
+            ) : (
+              <div className="text-red-600">計算エラー</div>
+            )}
+          </div>
+          <div className="bg-white p-4 rounded shadow">
+            <h3 className="font-bold text-green-800 mb-2">🌍 DDU結果</h3>
+            {resultDDU?.success ? (
+              <div className="text-sm space-y-1">
+                <div>送料: ${resultDDU.shipping?.toFixed(2) || 'N/A'}</div>
+                <div>利益: ¥{Math.round(resultDDU.profitJPY_NoRefund || 0).toLocaleString()}</div>
+              </div>
+            ) : (
+              <div className="text-red-600">計算エラー</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+import { ResultCard, ScoreBar, InputField, SelectField, Tooltip, PriceRow, CostRow, ErrorResult } from './result-card-components'
+import { FinalPriceDisplay } from './final-price-display'

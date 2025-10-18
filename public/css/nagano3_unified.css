@@ -1,0 +1,598 @@
+/**
+ * NAGANO-3 v2.0 統一CSS - 完全統合版
+ * 
+ * 🎯 解決項目:
+ * ✅ 1. CSS重複ファイル統合（style.css, style_fixed.css, style-core.css統合）
+ * ✅ 2. サイドバートグル・メインコンテンツ連動修正
+ * ✅ 3. モーダルシステム統一（unified_modal_system.css + n3_modal_system.css統合）
+ * ✅ 4. 外枠余白の最適化（細く調整）
+ * ✅ 5. ピンクグラデーション完全除去
+ * ✅ 6. N3ルール準拠（@import分離・インラインCSS禁止）
+ * 
+ * 作成日: 2025年9月1日
+ */
+
+/* ===== N3準拠 外部CSS統合読み込み ===== */
+@import url('core/common.css');
+@import url('core/components.css');
+@import url('core/layout.css');
+@import url('core/utilities.css');
+@import url('core/themes-pure.css');
+@import url('templates/header.css');
+@import url('templates/footer.css');
+
+/* ===== CSS変数システム（完全統合版） ===== */
+:root {
+    /* カラーシステム */
+    --color-primary: #3b82f6;
+    --color-secondary: #64748b;
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-danger: #ef4444;
+    --color-info: #0ea5e9;
+    
+    /* 背景色 */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8fafc;
+    --bg-tertiary: #f1f5f9;
+    --bg-hover: #e2e8f0;
+    
+    /* テキスト色 */
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --text-white: #ffffff;
+    
+    /* ボーダー */
+    --border-color: #e2e8f0;
+    --border-light: #f1f5f9;
+    
+    /* スペーシング（外枠余白最適化） */
+    --space-xs: 0.25rem;    /* 4px */
+    --space-sm: 0.5rem;     /* 8px */
+    --space-md: 0.75rem;    /* 12px - 従来の1rem(16px)から細く調整 */
+    --space-lg: 1rem;       /* 16px - 従来の1.5rem(24px)から細く調整 */
+    --space-xl: 1.25rem;    /* 20px - 従来の2rem(32px)から細く調整 */
+    
+    /* コンテナー・外枠専用（幅最適化） */
+    --container-padding: var(--space-md);        /* 12px */
+    --container-margin: var(--space-lg);         /* 16px */
+    --card-padding: var(--space-md);             /* 12px */
+    --modal-padding: var(--space-lg);            /* 16px */
+    
+    /* 角丸 */
+    --radius-sm: 0.25rem;
+    --radius-md: 0.375rem;  /* 従来の0.5remから細く調整 */
+    --radius-lg: 0.5rem;    /* 従来の0.75remから細く調整 */
+    --radius-xl: 0.75rem;   /* 従来の1remから細く調整 */
+    
+    /* 影（軽量化） */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    
+    /* トランジション */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.25s ease;
+    
+    /* Z-index管理（サイドバー競合解決版・強制適用） */
+    --z-dropdown: 1000;
+    --z-modal-backdrop: 1040;
+    --z-modal: 1050;
+    --z-tooltip: 1070;
+    --z-sidebar: 2000;
+    --z-submenu: 99999 !important;
+    --z-sidebar-left-tab: 99998 !important;
+    
+    /* 🎯 サイドバー専用変数（完全修正版） */
+    --sidebar-width: 220px;
+    --sidebar-collapsed: 60px;
+    --sidebar-hidden: 0px;
+    --header-height: 80px;
+    --submenu-width: 280px;
+    
+    /* サイドバー連動コンテンツ幅制御 */
+    --content-width-expanded: calc(100vw - var(--sidebar-width));
+    --content-width-collapsed: calc(100vw - var(--sidebar-collapsed));
+    --content-width-hidden: 100vw;
+    --content-margin-expanded: var(--sidebar-width);
+    --content-margin-collapsed: var(--sidebar-collapsed);
+    --content-margin-hidden: 0px;
+}
+
+/* ===== 基本リセット（統合版） ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans JP", sans-serif;
+    line-height: 1.6;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    overflow-x: hidden;
+}
+
+/* ===== 🚨 ピンクグラデーション完全除去システム（統合版） ===== */
+/* 特定のピンクグラデーション色のみをブロック - 他の背景色は保持 */
+*[style*="fa7bc3"],
+*[style*="b978f1"], 
+*[style*="62b5f0"],
+*[style*="linear-gradient(90deg, #fa7bc3, #b978f1, #62b5f0)"],
+*[style*="rgba(250, 123, 195"],
+*[style*="rgba(185, 120, 241"],
+*[style*="rgba(98, 181, 240"] {
+    background-image: none !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: initial !important;
+    background-clip: initial !important;
+}
+
+/* タイトル・ヘッダー系の強制修正 */
+h1, h2, h3, h4, h5, h6,
+.modal-title, .n3-modal-title, .uipm-modal-title {
+    background: transparent !important;
+    background-image: none !important;
+    color: var(--text-primary) !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: initial !important;
+}
+
+/* ボタン系のピンクグラデーションのみ除去（背景色は保持） */
+button, .btn, input[type="button"], input[type="submit"], input[type="reset"] {
+    background-image: none !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: initial !important;
+}
+
+/* ===== レイアウトシステム（外枠余白最適化版） ===== */
+.layout {
+    display: flex;
+    min-height: 100vh;
+    width: 100vw;
+    overflow-x: hidden;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--container-padding);    /* 12px（従来の16pxから細く調整） */
+}
+
+.main-content {
+    flex: 1;
+    padding: var(--container-padding);      /* 12px（従来の24pxから半分に削減） */
+    margin-left: var(--content-margin-expanded);
+    width: var(--content-width-expanded);
+    max-width: var(--content-width-expanded);
+    transition: all var(--transition-normal);
+    overflow-x: hidden;
+    box-sizing: border-box;
+}
+
+/* ===== 🎯 サイドバー連動制御システム（完全修正版） ===== */
+
+/* 展開状態（デフォルト） */
+body:not(.sidebar-collapsed):not(.sidebar-hidden) .main-content {
+    margin-left: var(--content-margin-expanded) !important;
+    width: var(--content-width-expanded) !important;
+    max-width: var(--content-width-expanded) !important;
+}
+
+/* 折りたたみ状態 */
+body.sidebar-collapsed .main-content,
+.unified-sidebar--collapsed + .main-content {
+    margin-left: var(--content-margin-collapsed) !important;
+    width: var(--content-width-collapsed) !important;
+    max-width: var(--content-width-collapsed) !important;
+}
+
+/* 非表示状態 */
+body.sidebar-hidden .main-content,
+.unified-sidebar--hidden + .main-content {
+    margin-left: var(--content-margin-hidden) !important;
+    width: var(--content-width-hidden) !important;
+    max-width: var(--content-width-hidden) !important;
+}
+
+/* JavaScript連動クラス制御 */
+.js-sidebar-expanded .main-content {
+    margin-left: var(--content-margin-expanded) !important;
+    width: var(--content-width-expanded) !important;
+    max-width: var(--content-width-expanded) !important;
+}
+
+.js-sidebar-collapsed .main-content {
+    margin-left: var(--content-margin-collapsed) !important;
+    width: var(--content-width-collapsed) !important;
+    max-width: var(--content-width-collapsed) !important;
+}
+
+.js-sidebar-hidden .main-content {
+    margin-left: var(--content-margin-hidden) !important;
+    width: var(--content-width-hidden) !important;
+    max-width: var(--content-width-hidden) !important;
+}
+
+/* ===== 統一モーダルシステム（完全統合版） ===== */
+
+/* モーダル背景 */
+.modal, .n3-modal, .uipm-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: var(--z-modal-backdrop);
+    opacity: 0;
+    visibility: hidden;
+    transition: all var(--transition-normal);
+    backdrop-filter: blur(4px);
+    padding: var(--space-sm);
+}
+
+/* アクティブ状態 */
+.modal--active, .n3-modal--active, .uipm-modal--active,
+.modal.active, .n3-modal.active, .uipm-modal.active {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+/* モーダルコンテンツ */
+.modal-content, .n3-modal__container, .uipm-modal-content {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xl);
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow: hidden;
+    z-index: var(--z-modal);
+    transform: translateY(-20px) scale(0.95);
+    transition: all var(--transition-normal);
+}
+
+.modal--active .modal-content,
+.n3-modal--active .n3-modal__container,
+.uipm-modal--active .uipm-modal-content {
+    transform: translateY(0) scale(1);
+}
+
+/* サイズバリエーション */
+.modal--small .modal-content { max-width: 400px; }
+.modal--medium .modal-content { max-width: 600px; }
+.modal--large .modal-content { max-width: 800px; }
+.modal--fullscreen .modal-content { 
+    width: 95vw; 
+    height: 95vh; 
+    max-width: none; 
+    max-height: none; 
+}
+
+/* モーダルヘッダー（統一デザイン） */
+.modal-header, .n3-modal__header, .uipm-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--modal-padding);        /* 16px（従来の24pxから削減） */
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+.modal-title, .n3-modal__title, .uipm-modal-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+/* モーダル閉じるボタン */
+.modal-close, .n3-modal__close, .uipm-modal-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: var(--space-xs);
+    border-radius: var(--radius-md);
+    transition: var(--transition-fast);
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close:hover, .n3-modal__close:hover, .uipm-modal-close:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    transform: scale(1.1);
+}
+
+/* モーダルボディ */
+.modal-body, .n3-modal__body, .uipm-modal-body {
+    padding: var(--modal-padding);        /* 16px（従来の24pxから削減） */
+    max-height: 60vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) transparent;
+}
+
+.modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+/* モーダルフッター */
+.modal-footer, .n3-modal__footer, .uipm-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-sm);
+    padding: var(--modal-padding);        /* 16px（従来の24pxから削減） */
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+}
+
+/* ===== 統一ボタンシステム（サイズ最適化版） ===== */
+.btn, button, input[type="button"], input[type="submit"], input[type="reset"] {
+    /* 基本スタイル */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    
+    /* サイズ（最適化版） */
+    min-height: 36px;                    /* 従来の40pxから削減 */
+    padding: var(--space-sm) var(--space-md);  /* 8px 12px（従来の12px 24pxから削減） */
+    
+    /* タイポグラフィ */
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.2;
+    text-decoration: none;
+    white-space: nowrap;
+    
+    /* デザイン */
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    
+    /* インタラクション */
+    cursor: pointer;
+    transition: var(--transition-fast);
+    box-sizing: border-box;
+    
+    /* ピンクグラデーション完全禁止 */
+    background-image: none !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: initial !important;
+    
+    /* サイズ変化禁止 */
+    animation: none !important;
+    transform: none !important;
+}
+
+/* ボタンホバー */
+.btn:hover, button:hover {
+    background: var(--bg-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+/* ボタンバリエーション */
+.btn--primary, .btn-primary { background: var(--color-primary); color: var(--text-white); border-color: var(--color-primary); }
+.btn--secondary, .btn-secondary { background: transparent; color: var(--color-primary); border: 1px solid var(--color-primary); }
+.btn--success, .btn-success { background: var(--color-success); color: var(--text-white); border-color: var(--color-success); }
+.btn--warning, .btn-warning { background: var(--color-warning); color: var(--text-white); border-color: var(--color-warning); }
+.btn--danger, .btn-danger { background: var(--color-danger); color: var(--text-white); border-color: var(--color-danger); }
+.btn--info, .btn-info { background: var(--color-info); color: var(--text-white); border-color: var(--color-info); }
+
+/* ボタンサイズ */
+.btn--small, .btn-sm { min-height: 32px; padding: var(--space-xs) var(--space-sm); font-size: 0.8rem; }
+.btn--large, .btn-lg { min-height: 44px; padding: var(--space-md) var(--space-lg); font-size: 1rem; }
+
+/* ===== カードシステム（外枠余白最適化版） ===== */
+.card, .product-card, .inventory__card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition: var(--transition-fast);
+    padding: var(--card-padding);         /* 12px（従来の16pxから削減） */
+}
+
+.card:hover, .product-card:hover, .inventory__card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+    border-color: var(--color-primary);
+}
+
+/* カードヘッダー・コンテンツ */
+.card-header {
+    padding: var(--space-md);            /* 12px（従来の16pxから削減） */
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    margin: calc(-1 * var(--card-padding));
+    margin-bottom: var(--space-md);
+}
+
+.card-body {
+    padding: var(--card-padding);         /* 12px */
+}
+
+.card-footer {
+    padding: var(--space-md);            /* 12px */
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    margin: var(--space-md) calc(-1 * var(--card-padding)) calc(-1 * var(--card-padding));
+}
+
+/* ===== フォームシステム（余白最適化版） ===== */
+.form-group, .unified-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    margin-bottom: var(--space-md);       /* 12px（従来の16pxから削減） */
+}
+
+.form-label, .unified-form-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-xs);
+}
+
+.form-input, .form-select, .form-textarea, .unified-form-input {
+    padding: var(--space-sm);             /* 8px（従来の12pxから削減） */
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    transition: var(--transition-fast);
+    font-family: inherit;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus, .unified-form-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* ===== 画像アップロード統合システム ===== */
+.image-upload, .unified-image-upload {
+    position: relative;
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-tertiary);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    min-height: 120px;
+}
+
+.image-upload:hover, .unified-image-upload:hover {
+    border-color: var(--color-primary);
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.image-upload.drag-over, .unified-image-upload.drag-over {
+    border-color: var(--color-success);
+    background: rgba(16, 185, 129, 0.05);
+    transform: scale(1.02);
+}
+
+/* ===== レスポンシブデザイン（統合版） ===== */
+@media (max-width: 1024px) {
+    .main-content {
+        padding: var(--space-sm);         /* 8px（タブレットでさらに削減） */
+    }
+    
+    .cards-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: var(--space-sm);             /* 8px */
+        padding: var(--space-sm);         /* 8px */
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: var(--space-sm);          /* 8px */
+    }
+    
+    /* サイドバー自動折りたたみ */
+    body:not(.js-sidebar-expanded) .main-content {
+        margin-left: var(--content-margin-collapsed) !important;
+        width: var(--content-width-collapsed) !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        padding: var(--space-xs);         /* 4px（モバイルで最小限） */
+        margin-left: 0 !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+    }
+    
+    .container {
+        padding: 0 var(--space-sm);       /* 8px */
+    }
+    
+    .modal-content {
+        width: 100%;
+        max-width: 100vw;
+        max-height: 100vh;
+        border-radius: 0;
+        margin: 0;
+    }
+    
+    .modal-footer {
+        flex-direction: column;
+        gap: var(--space-xs);             /* 4px */
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ===== アニメーション制御（統合版） ===== */
+/* 必要最小限のアニメーションのみ許可 */
+*, *::before, *::after {
+    animation: none !important;
+    transform: none !important;
+    
+    /* 必要なトランジションのみ */
+    transition: background-color var(--transition-fast), 
+                color var(--transition-fast), 
+                border-color var(--transition-fast),
+                margin-left var(--transition-normal), 
+                width var(--transition-normal),
+                opacity var(--transition-fast),
+                box-shadow var(--transition-fast) !important;
+}
+
+/* モーダル開閉アニメーションのみ例外 */
+.modal, .n3-modal {
+    transition: opacity var(--transition-normal), visibility var(--transition-normal) !important;
+}
+
+.modal-content, .n3-modal__container {
+    transition: transform var(--transition-normal) !important;
+}
+
+/* ===== 統合完了マーク ===== */
+/* このコメントが存在する場合、統合CSS読み込み完了 */
+body::after {
+    content: "NAGANO-3 統一CSS v2.0 読み込み完了 - サイドバー修正・モーダル統合・余白最適化版";
+    position: fixed;
+    bottom: -100px;
+    left: -100px;
+    font-size: 1px;
+    opacity: 0;
+    pointer-events: none;
+}

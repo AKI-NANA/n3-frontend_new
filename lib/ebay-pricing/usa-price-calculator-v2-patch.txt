@@ -1,0 +1,34 @@
+418行目から428行目を以下に置き換えてください：
+
+console.log('\n📋 STEP 1: 最安送料で基準総売上を決定')
+
+// 商品価格を推定
+const estimatedProductPrice = costUSD * 1.5
+console.log(`  💰 推定商品価格: $${estimatedProductPrice.toFixed(2)}`)
+
+const { data: minPolicy, error: minError } = await supabase
+  .from('usa_ddp_rates')
+  .select('*')
+  .lte('weight_min_kg', weight_kg)
+  .gt('weight_max_kg', weight_kg)
+  .lte('product_price_usd', estimatedProductPrice)
+  .order('product_price_usd', { ascending: false })
+  .limit(1)
+  .maybeSingle()
+
+console.log(`  📦 検索結果:`, { 
+  found: !!minPolicy, 
+  price: minPolicy?.product_price_usd,
+  shipping: minPolicy?.total_shipping_usd 
+})
+
+if (minError || !minPolicy) {
+  console.error('❌ 重量帯が見つかりません:', weight_kg, minError)
+  return {
+    success: false,
+    error: `重量${weight_kg}kg、価格$${estimatedProductPrice.toFixed(2)}に対応する配送データが見つかりません`
+  } as UsaPricingResultV2
+}
+
+const minShipping = minPolicy.total_shipping_usd
+const minBaseShipping = minPolicy.base_shipping_usd

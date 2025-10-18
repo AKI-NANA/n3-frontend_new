@@ -1,0 +1,33 @@
+/* 
+ * NAGANO-3 v2.0 メインスタイル - 統一版
+ * 🎯 全重複CSS統合・サイドバー修正・モーダル統合・外枠余白最適化
+ * 
+ * 統合対象:
+ * ✅ style.css, style_fixed.css, style-core.css
+ * ✅ unified_modal_system.css, n3_modal_system.css
+ * ✅ tanaoroshi_n3_styles.css
+ * ✅ サイドバー連動幅制御システム
+ * ✅ サイドバー第二階層専用CSS
+ */
+
+/* ===== 統一CSSファイル読み込み ===== */
+@import url('nagano3_unified.css');
+@import url('sidebar-width-fix.css');
+@import url('sidebar-submenu.css');
+
+/* ===== N3ページ専用CSS読み込み（必要に応じて） ===== */
+@import url('pages/tanaoroshi_inline_complete.css');
+@import url('pages/tanaoroshi_inline_complete_data_sync_fixed.css');
+@import url('pages/tanaoroshi_inline_complete_fixed.css');
+@import url('modules/ebay_kanri_styles.css');
+
+/* ===== CSS統合完了確認マーク ===== */
+body::before {
+    content: "NAGANO-3 CSS統合完了 - サイドバー修正・モーダル統合・外枠最適化・第二階層専用CSS v2.0";
+    position: fixed;
+    bottom: -200px;
+    left: -200px;
+    font-size: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
