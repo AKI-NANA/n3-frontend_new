@@ -1,0 +1,27 @@
+# すべての環境変数ファイル
+.env*
+*.pem
+
+# 機密情報を含むファイル
+_archived/
+**/client_secret*.json
+
+# Scriptsディレクトリ（ローカルには残すが、Gitには含めない）
+scripts/
+
+*.backup*
+
+# Node
+node_modules/
+.next/
+out/
+.turbo/
+*.log
+.DS_Store
+
+# データ
+backend/data/*.csv
+*.zip
+
+# Git関連
+.git/
