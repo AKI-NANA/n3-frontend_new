@@ -25,3 +25,8 @@ backend/data/*.csv
 
 # Git関連
 .git/
+
+# Temporary fix scripts
+cleanup-*.sh
+fix-git-*.sh
+GIT_PUSH_*.md
