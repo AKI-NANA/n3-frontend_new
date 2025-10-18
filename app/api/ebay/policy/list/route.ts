@@ -1,11 +1,8 @@
-/**
- * eBay配送ポリシー一覧を取得するAPI
- */
 import { NextRequest, NextResponse } from 'next/server'
 
-const EBAY_CLIENT_ID = 'HIROAKIA-HIROAKIA-PRD-f7fae13b2-1afab1ce'
-const EBAY_CLIENT_SECRET = 'PRD-7fae13b2cf17-be72-4584-bdd6-4ea4'
-const EBAY_REFRESH_TOKEN_GREEN = 'v^1.1#i^1#f^0#p^3#I^3#r^1#t^Ul4xMF82OjkyQUYxOTlENTQ4NjQ4QkQyMEJBRUJFRjA0M0YwRDZFXzFfMSNFXjI2MA=='
+const EBAY_CLIENT_ID = process.env.EBAY_CLIENT_ID_GREEN || process.env.EBAY_CLIENT_ID || ''
+const EBAY_CLIENT_SECRET = process.env.EBAY_CLIENT_SECRET_GREEN || process.env.EBAY_CLIENT_SECRET || ''
+const EBAY_REFRESH_TOKEN_GREEN = process.env.EBAY_REFRESH_TOKEN_GREEN || ''
 
 async function getAccessToken() {
   try {
@@ -20,93 +17,45 @@ async function getAccessToken() {
       body: new URLSearchParams({
         grant_type: 'refresh_token',
         refresh_token: EBAY_REFRESH_TOKEN_GREEN,
-        scope: 'https://api.ebay.com/oauth/api_scope/sell.account'
+        scope: 'https://api.ebay.com/oauth/api_scope https://api.ebay.com/oauth/api_scope/sell.inventory'
       })
     })
+
+    if (!response.ok) {
+      throw new Error('Failed to get access token')
+    }
 
     const data = await response.json()
     return data.access_token
   } catch (error) {
-    console.error('❌ トークン取得エラー:', error)
+    console.error('Error getting access token:', error)
     throw error
   }
 }
 
 export async function GET(req: NextRequest) {
   try {
-    console.log('🔵 配送ポリシー一覧取得API呼び出し')
-    
     const accessToken = await getAccessToken()
-    
-    if (!accessToken) {
-      throw new Error('トークン取得失敗')
-    }
 
-    console.log('📋 eBayから配送ポリシー一覧を取得中...')
-    const response = await fetch(
-      'https://api.ebay.com/sell/account/v1/fulfillment_policy?marketplace_id=EBAY_US',
-      {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        }
+    const response = await fetch('https://api.ebay.com/sell/account/v1/fulfillment_policy', {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
       }
-    )
-
-    const data = await response.json()
+    })
 
     if (!response.ok) {
-      console.error('❌ eBay APIエラー:', data)
-      return NextResponse.json({ 
-        success: false,
-        error: data
-      }, { status: 500 })
+      throw new Error('Failed to fetch policies')
     }
 
-    console.log(`✅ ${data.fulfillmentPolicies?.length || 0}個のポリシーを取得`)
+    const data = await response.json()
+    return NextResponse.json(data)
 
-    // ポリシーを整形
-    const policies = (data.fulfillmentPolicies || []).map((policy: any) => {
-      // USA送料を抽出
-      const domesticService = policy.shippingOptions?.find((opt: any) => opt.optionType === 'DOMESTIC')
-      const usaShipping = domesticService?.shippingServices?.[0]?.shippingCost?.value || '0'
-
-      // Rate Tableを抽出
-      const intlService = policy.shippingOptions?.find((opt: any) => opt.optionType === 'INTERNATIONAL')
-      const rateTableId = intlService?.rateTableId || null
-
-      // 配送サービスコード
-      const domesticCode = domesticService?.shippingServices?.[0]?.shippingServiceCode || ''
-      const intlCode = intlService?.shippingServices?.[0]?.shippingServiceCode || ''
-
-      return {
-        policyId: policy.fulfillmentPolicyId,
-        name: policy.name,
-        description: policy.description,
-        usaShipping: parseFloat(usaShipping),
-        rateTableId: rateTableId,
-        domesticServiceCode: domesticCode,
-        intlServiceCode: intlCode,
-        handlingTime: policy.handlingTime?.value || 0,
-        excludedCount: policy.shipToLocations?.regionExcluded?.length || 0
-      }
-    })
-
-    // USA送料順にソート
-    policies.sort((a: any, b: any) => a.usaShipping - b.usaShipping)
-
-    return NextResponse.json({
-      success: true,
-      total: policies.length,
-      policies: policies
-    })
-
-  } catch (error: any) {
-    console.error('❌ エラー:', error)
-    
-    return NextResponse.json({ 
-      success: false,
-      error: error.message
-    }, { status: 500 })
+  } catch (error) {
+    console.error('Error:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch policies' },
+      { status: 500 }
+    )
   }
 }
