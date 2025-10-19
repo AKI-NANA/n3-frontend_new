@@ -1,0 +1,263 @@
+/* 📱 Components CSS - レスポンシブコンポーネント */
+
+/* ファイルアイテム */
+.file-item {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1rem;
+    background: white;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.file-item:hover {
+    border-color: #007bff;
+    box-shadow: 0 2px 8px rgba(0,123,255,0.1);
+    transform: translateY(-1px);
+}
+
+.file-item.selected {
+    border-color: #007bff;
+    background: #f8f9ff;
+}
+
+/* グリッドビュー */
+.file-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.file-item.grid-item {
+    text-align: center;
+    min-height: 150px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.file-icon-large {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+}
+
+.file-info {
+    width: 100%;
+}
+
+.file-name {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+    word-break: break-word;
+}
+
+.file-meta {
+    font-size: 0.875rem;
+    color: #666;
+}
+
+/* リストビュー */
+.file-item.list-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+}
+
+.file-icon {
+    font-size: 1.5rem;
+}
+
+/* ボタン */
+.btn-primary, .btn-secondary, .btn-action {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #545b62;
+}
+
+.btn-action {
+    background: transparent;
+    color: #666;
+    padding: 0.25rem 0.5rem;
+    font-size: 1rem;
+}
+
+.btn-action:hover {
+    background: #f8f9fa;
+    color: #007bff;
+}
+
+/* 空の状態 */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #666;
+}
+
+.empty-state h3 {
+    margin: 1rem 0 0.5rem 0;
+    color: #333;
+}
+
+/* ドロップゾーン */
+.drop-zone {
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.drop-zone.drag-over {
+    border-color: #007bff;
+    background: #f8f9ff;
+}
+
+.drop-zone-content {
+    pointer-events: none;
+}
+
+.drop-icon {
+    font-size: 3rem;
+    opacity: 0.6;
+    display: block;
+    margin-bottom: 1rem;
+}
+
+/* 進捗バー */
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: #007bff;
+    transition: width 0.3s ease;
+}
+
+/* 通知 */
+.notification {
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.notification.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.notification.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.notification.warning {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.notification.info {
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+/* ダークモード */
+[data-theme="dark"] {
+    background: #1a1a1a;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .file-item {
+    background: #2d2d2d;
+    border-color: #444;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .file-item:hover {
+    border-color: #007bff;
+    background: #333;
+}
+
+[data-theme="dark"] .btn-secondary {
+    background: #495057;
+}
+
+[data-theme="dark"] .drop-zone {
+    border-color: #444;
+    background: #2d2d2d;
+}
+
+/* レスポンシブ */
+@media (max-width: 768px) {
+    .file-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 0.5rem;
+        padding: 0.5rem;
+    }
+    
+    .file-item.list-item {
+        grid-template-columns: auto 1fr auto;
+        gap: 0.5rem;
+    }
+    
+    .file-actions {
+        display: flex;
+        gap: 0.25rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .file-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+    
+    .file-item.grid-item {
+        min-height: 120px;
+        padding: 0.5rem;
+    }
+    
+    .file-icon-large {
+        font-size: 2rem;
+    }
+    
+    .file-name {
+        font-size: 0.75rem;
+    }
+}

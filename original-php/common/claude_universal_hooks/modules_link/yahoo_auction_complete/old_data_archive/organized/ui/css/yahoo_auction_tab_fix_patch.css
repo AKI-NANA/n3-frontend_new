@@ -1,0 +1,145 @@
+/* ===================================================================
+   Yahoo Auction Tool - タブデザイン修正パッチ
+   タブボタンのデザインを元に戻す
+   =================================================================== */
+
+/* ===== タブボタンを元のデザインに戻す ===== */
+.tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem; /* アイコンとテキスト間隔を詰める */
+    padding: 0.5rem 0.75rem; /* 高さと横幅を詰める */
+    border: none;
+    background: #e5e7eb; /* より濃いグレー */
+    color: #6b7280; /* グレーテキスト */
+    font-size: 0.8rem; /* フォントサイズを少し縮小 */
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 0; /* 丸くしない */
+    border-bottom: 2px solid transparent; /* 下線を少し細く */
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    min-height: auto; /* 高さ制限を解除 */
+    position: relative;
+}
+
+.tab-btn:hover {
+    background: #d1d5db; /* より濃いグレーにホバー */
+    color: #374151; /* ダークグレーテキスト */
+    border-bottom-color: var(--color-primary, #3b82f6);
+}
+
+.tab-btn.active {
+    background: #9ca3af; /* アクティブ時はダークグレー */
+    color: #ffffff; /* 白文字 */
+    border-bottom-color: var(--color-primary, #3b82f6);
+    box-shadow: none; /* 影を削除 */
+    font-weight: 600;
+}
+
+.tab-btn i {
+    font-size: 0.85rem; /* アイコンサイズを少し縮小 */
+}
+
+/* ===== タブナビゲーション全体の調整 ===== */
+.tab-navigation {
+    display: flex;
+    background: #f3f4f6; /* グレー背景 */
+    border-bottom: 1px solid #d1d5db;
+    padding: 0 var(--space-md, 1rem); /* パディングを詰める */
+    overflow-x: auto;
+    flex-shrink: 0;
+    gap: 0; /* タブ間の隙間をなくす */
+}
+
+/* タブナビゲーションのスクロールバー調整 */
+.tab-navigation::-webkit-scrollbar {
+    height: 3px; /* スクロールバーを細く */
+}
+
+.tab-navigation::-webkit-scrollbar-track {
+    background: #f3f4f6;
+}
+
+.tab-navigation::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 2px;
+}
+
+.tab-navigation::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}
+
+/* ===== レスポンシブ対応（タブのみ） ===== */
+@media (max-width: 768px) {
+    .tab-btn {
+        padding: 0.4rem 0.6rem; /* モバイルでさらに縮小 */
+        font-size: 0.75rem;
+        gap: 0.3rem;
+    }
+    
+    .tab-btn i {
+        font-size: 0.8rem;
+    }
+    
+    .tab-navigation {
+        padding: 0 var(--space-sm, 0.75rem);
+    }
+}
+
+@media (max-width: 480px) {
+    .tab-btn {
+        padding: 0.35rem 0.5rem;
+        font-size: 0.7rem;
+        gap: 0.25rem;
+    }
+    
+    .tab-btn i {
+        font-size: 0.75rem;
+    }
+    
+    .tab-navigation {
+        padding: 0 var(--space-sm, 0.5rem);
+    }
+}
+
+/* ===== 他のボタンはそのまま小さく維持 ===== */
+/* .btnスタイルは変更しない - 他のボタンは小さいまま */
+
+/* ただし、タブ以外のボタンで問題があるものがあれば個別調整 */
+.section-header .btn {
+    /* データ編集タブのボタンサイズはそのまま維持 */
+}
+
+#editing .section-header .btn {
+    /* データ編集タブのボタンサイズはそのまま維持 */
+}
+
+/* ===== タブコンテンツエリアの調整 ===== */
+.tab-content {
+    background: var(--bg-secondary, #ffffff);
+    padding: var(--space-lg, 1.5rem);
+    border-radius: 0 0 var(--radius-xl, 0.75rem) var(--radius-xl, 0.75rem);
+    min-height: 500px;
+}
+
+/* アクティブタブの表示 */
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

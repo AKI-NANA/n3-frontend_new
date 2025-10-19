@@ -1,0 +1,300 @@
+{
+    "database_status": {
+        "total_tables": 43,
+        "shipping_tables_exist": true,
+        "extended_tables_exist": true,
+        "has_rate_data": true
+    },
+    "carriers": [
+        {
+            "carrier_id": 1,
+            "carrier_name": "Eloji (FedEx)",
+            "carrier_code": "ELOJI_FEDEX",
+            "is_active": true,
+            "priority_order": 1
+        },
+        {
+            "carrier_id": 2,
+            "carrier_name": "Orange Connex",
+            "carrier_code": "ORANGE_CONNEX",
+            "is_active": true,
+            "priority_order": 2
+        }
+    ],
+    "zones": [
+        {
+            "zone_id": 3,
+            "zone_name": "Asia Pacific",
+            "countries_json": "[\"AU\", \"NZ\", \"SG\", \"MY\", \"TH\", \"PH\", \"IN\", \"ID\"]",
+            "is_active": true
+        },
+        {
+            "zone_id": 4,
+            "zone_name": "East Asia",
+            "countries_json": "[\"KR\", \"TW\", \"HK\", \"CN\", \"JP\", \"MO\"]",
+            "is_active": true
+        },
+        {
+            "zone_id": 2,
+            "zone_name": "Europe",
+            "countries_json": "[\"GB\", \"DE\", \"FR\", \"IT\", \"ES\", \"NL\", \"BE\", \"AT\", \"CH\", \"SE\", \"NO\", \"DK\", \"FI\"]",
+            "is_active": true
+        },
+        {
+            "zone_id": 5,
+            "zone_name": "Latin America",
+            "countries_json": "[\"MX\", \"BR\", \"AR\", \"CL\", \"CO\", \"PE\", \"VE\"]",
+            "is_active": true
+        },
+        {
+            "zone_id": 6,
+            "zone_name": "Middle East\/Africa",
+            "countries_json": "[\"AE\", \"SA\", \"ZA\", \"EG\", \"IL\", \"JO\"]",
+            "is_active": true
+        },
+        {
+            "zone_id": 1,
+            "zone_name": "North America",
+            "countries_json": "[\"US\", \"CA\"]",
+            "is_active": true
+        }
+    ],
+    "rate_statistics": [
+        {
+            "carrier_name": "Eloji (FedEx)",
+            "policy_type": "economy",
+            "rate_count": 72,
+            "min_cost": "18.00",
+            "max_cost": "306.67",
+            "avg_cost": "86.4631944444444444"
+        },
+        {
+            "carrier_name": "Eloji (FedEx)",
+            "policy_type": "express",
+            "rate_count": 72,
+            "min_cost": "16.00",
+            "max_cost": "309.33",
+            "avg_cost": "87.3147222222222222"
+        }
+    ],
+    "api_endpoints": {
+        "base_url": "http:\/\/localhost:8080\/modules\/yahoo_auction_tool\/shipping_calculation\/",
+        "api_file": "shipping_management_api.php",
+        "actions": {
+            "carriers_by_group": "?action=carriers_by_group",
+            "calculate": "?action=calculate&weight=1.0&country=US",
+            "rates": "?action=rates",
+            "export_csv": "?action=export_csv&type=all",
+            "statistics": "?action=statistics"
+        }
+    },
+    "ui_requirements": {
+        "display_carriers_by_group": true,
+        "enable_region_restrictions": true,
+        "show_rate_calculator": true,
+        "csv_management": true,
+        "highlight_optimal_rates": true
+    },
+    "sample_rates": [
+        {
+            "carrier_name": "Eloji (FedEx)",
+            "policy_type": "economy",
+            "zone_name": "Asia Pacific",
+            "weight_min_kg": "0.000",
+            "weight_max_kg": "0.500",
+            "cost_usd": "38.67",
+            "delivery_days_min": 5,
+            "delivery_days_max": 10
+        },
+        {
+            "carrier_name": "Eloji (FedEx)",
+            "policy_type": "economy",
+            "zone_name": "Asia Pacific",
+            "weight_min_kg": "0.501",
+            "weight_max_kg": "1.000",
+            "cost_usd": "44.00",
+            "delivery_days_min": 5,
+            "delivery_days_max": 10
+        },
+        {
+            "carrier_name": "Eloji (FedEx)",
+            "policy_type": "economy",
+            "zone_name": "Asia Pacific",
+            "weight_min_kg": "1.001",
+            "weight_max_kg": "1.500",
+            "cost_usd": "51.33",
+            "delivery_days_min": 5,
+            "delivery_days_max": 10
+        },
+        {
+            "carrier_name": "Eloji (FedEx)",
+            "policy_type": "economy",
+            "zone_name": "Asia Pacific",
+            "weight_min_kg": "1.501",
+            "weight_max_kg": "2.000",
+            "cost_usd": "58.67",
+            "delivery_days_min": 5,
+            "delivery_days_max": 10
+        },
+        {
+            "carrier_name": "Eloji (FedEx)",
+            "policy_type": "economy",
+            "zone_name": "Asia Pacific",
+            "weight_min_kg": "2.001",
+            "weight_max_kg": "2.500",
+            "cost_usd": "66.67",
+            "delivery_days_min": 5,
+            "delivery_days_max": 10
+        },
+        {
+            "carrier_name": "Eloji (FedEx)",
+            "policy_type": "economy",
+            "zone_name": "Asia Pacific",
+            "weight_min_kg": "2.501",
+            "weight_max_kg": "3.000",
+            "cost_usd": "72.00",
+            "delivery_days_min": 5,
+            "delivery_days_max": 10
+        },
+        {
+            "carrier_name": "Eloji (FedEx)",
+            "policy_type": "economy",
+            "zone_name": "Asia Pacific",
+            "weight_min_kg": "3.001",
+            "weight_max_kg": "4.000",
+            "cost_usd": "84.67",
+            "delivery_days_min": 5,
+            "delivery_days_max": 10
+        },
+        {
+            "carrier_name": "Eloji (FedEx)",
+            "policy_type": "economy",
+            "zone_name": "Asia Pacific",
+            "weight_min_kg": "4.001",
+            "weight_max_kg": "5.000",
+            "cost_usd": "101.33",
+            "delivery_days_min": 5,
+            "delivery_days_max": 10
+        },
+        {
+            "carrier_name": "Eloji (FedEx)",
+            "policy_type": "economy",
+            "zone_name": "Asia Pacific",
+            "weight_min_kg": "5.001",
+            "weight_max_kg": "7.500",
+            "cost_usd": "135.33",
+            "delivery_days_min": 5,
+            "delivery_days_max": 10
+        },
+        {
+            "carrier_name": "Eloji (FedEx)",
+            "policy_type": "economy",
+            "zone_name": "Asia Pacific",
+            "weight_min_kg": "7.501",
+            "weight_max_kg": "10.000",
+            "cost_usd": "160.00",
+            "delivery_days_min": 5,
+            "delivery_days_max": 10
+        },
+        {
+            "carrier_name": "Eloji (FedEx)",
+            "policy_type": "economy",
+            "zone_name": "Asia Pacific",
+            "weight_min_kg": "10.001",
+            "weight_max_kg": "15.000",
+            "cost_usd": "236.67",
+            "delivery_days_min": 5,
+            "delivery_days_max": 10
+        },
+        {
+            "carrier_name": "Eloji (FedEx)",
+            "policy_type": "economy",
+            "zone_name": "Asia Pacific",
+            "weight_min_kg": "15.001",
+            "weight_max_kg": "20.000",
+            "cost_usd": "276.00",
+            "delivery_days_min": 5,
+            "delivery_days_max": 10
+        },
+        {
+            "carrier_name": "Eloji (FedEx)",
+            "policy_type": "economy",
+            "zone_name": "East Asia",
+            "weight_min_kg": "0.000",
+            "weight_max_kg": "0.500",
+            "cost_usd": "18.00",
+            "delivery_days_min": 5,
+            "delivery_days_max": 10
+        },
+        {
+            "carrier_name": "Eloji (FedEx)",
+            "policy_type": "economy",
+            "zone_name": "East Asia",
+            "weight_min_kg": "0.501",
+            "weight_max_kg": "1.000",
+            "cost_usd": "23.33",
+            "delivery_days_min": 5,
+            "delivery_days_max": 10
+        },
+        {
+            "carrier_name": "Eloji (FedEx)",
+            "policy_type": "economy",
+            "zone_name": "East Asia",
+            "weight_min_kg": "1.001",
+            "weight_max_kg": "1.500",
+            "cost_usd": "26.00",
+            "delivery_days_min": 5,
+            "delivery_days_max": 10
+        },
+        {
+            "carrier_name": "Eloji (FedEx)",
+            "policy_type": "economy",
+            "zone_name": "East Asia",
+            "weight_min_kg": "1.501",
+            "weight_max_kg": "2.000",
+            "cost_usd": "29.33",
+            "delivery_days_min": 5,
+            "delivery_days_max": 10
+        },
+        {
+            "carrier_name": "Eloji (FedEx)",
+            "policy_type": "economy",
+            "zone_name": "East Asia",
+            "weight_min_kg": "2.001",
+            "weight_max_kg": "2.500",
+            "cost_usd": "32.00",
+            "delivery_days_min": 5,
+            "delivery_days_max": 10
+        },
+        {
+            "carrier_name": "Eloji (FedEx)",
+            "policy_type": "economy",
+            "zone_name": "East Asia",
+            "weight_min_kg": "2.501",
+            "weight_max_kg": "3.000",
+            "cost_usd": "35.33",
+            "delivery_days_min": 5,
+            "delivery_days_max": 10
+        },
+        {
+            "carrier_name": "Eloji (FedEx)",
+            "policy_type": "economy",
+            "zone_name": "East Asia",
+            "weight_min_kg": "3.001",
+            "weight_max_kg": "4.000",
+            "cost_usd": "40.00",
+            "delivery_days_min": 5,
+            "delivery_days_max": 10
+        },
+        {
+            "carrier_name": "Eloji (FedEx)",
+            "policy_type": "economy",
+            "zone_name": "East Asia",
+            "weight_min_kg": "4.001",
+            "weight_max_kg": "5.000",
+            "cost_usd": "46.00",
+            "delivery_days_min": 5,
+            "delivery_days_max": 10
+        }
+    ]
+}

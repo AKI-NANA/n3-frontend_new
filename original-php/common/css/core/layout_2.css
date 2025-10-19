@@ -1,0 +1,324 @@
+/* ===== 🔧 サイドバー連動完全幅制御システム（NAGANO-3修正版） ===== */
+/* 📁 common/css/core/layout.css - 完全修正版 */
+
+/* ===== CSS変数システム（統一・強化版） ===== */
+:root {
+    /* ベース寸法 */
+    --header-height: 80px;
+    --sidebar-width: 220px;
+    --sidebar-collapsed: 60px;
+    --footer-height: 60px;
+    
+    /* 🎯 動的幅制御変数（重要：JavaScript連動） */
+    --content-margin-left: var(--sidebar-width);
+    --content-width: calc(100vw - var(--sidebar-width));
+    --content-max-width: calc(100vw - var(--sidebar-width));
+    
+    /* パディング・間隔 */
+    --content-padding: 1.5rem;
+    --transition-speed: 0.3s;
+    --transition-easing: cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Z-Index階層 */
+    --z-base: 1;
+    --z-sidebar: 2000;
+    --z-header: 3000;
+}
+
+/* ===== JavaScript制御用CSS変数更新（重要） ===== */
+
+/* サイドバー展開状態 */
+body:not(.sidebar-collapsed):not(.sidebar-hidden) {
+    --content-margin-left: var(--sidebar-width);
+    --content-width: calc(100vw - var(--sidebar-width));
+    --content-max-width: calc(100vw - var(--sidebar-width));
+}
+
+/* サイドバー折りたたみ状態 */
+body.sidebar-collapsed {
+    --content-margin-left: var(--sidebar-collapsed);
+    --content-width: calc(100vw - var(--sidebar-collapsed));
+    --content-max-width: calc(100vw - var(--sidebar-collapsed));
+}
+
+/* サイドバー完全非表示状態 */
+body.sidebar-hidden {
+    --content-margin-left: 0px;
+    --content-width: 100vw;
+    --content-max-width: 100vw;
+}
+
+/* ===== ベースリセット ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    overflow-x: hidden;
+    font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg-primary, #ffffff);
+}
+
+/* ===== ヘッダーレイアウト ===== */
+.header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--header-height);
+    z-index: var(--z-header);
+    background: var(--bg-secondary, #f8f9fa);
+    border-bottom: 1px solid var(--border-color, #dee2e6);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* ===== サイドバーレイアウト（統一） ===== */
+.sidebar,
+.unified-sidebar {
+    position: fixed;
+    top: var(--header-height);
+    left: 0;
+    width: var(--sidebar-width);
+    height: calc(100vh - var(--header-height));
+    z-index: var(--z-sidebar);
+    background: var(--bg-secondary, #2c3e50);
+    border-right: 1px solid var(--border-color, #dee2e6);
+    transition: all var(--transition-speed) var(--transition-easing);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* サイドバー状態制御 */
+.sidebar--collapsed,
+.unified-sidebar--collapsed {
+    width: var(--sidebar-collapsed);
+}
+
+.sidebar--hidden,
+.unified-sidebar--hidden {
+    left: calc(var(--sidebar-width) * -1);
+    width: 0;
+}
+
+/* ===== メインコンテンツ制御（完全修正版） ===== */
+.main-content,
+main.main-content,
+#mainContent {
+    /* 🎯 位置・幅制御（最重要） */
+    margin-left: var(--content-margin-left) !important;
+    width: var(--content-width) !important;
+    max-width: var(--content-max-width) !important;
+    min-width: 0 !important; /* 縮小可能 */
+    
+    /* レイアウト制御 */
+    margin-top: var(--header-height);
+    padding: var(--content-padding);
+    background: var(--bg-primary, #ffffff);
+    min-height: calc(100vh - var(--header-height));
+    
+    /* アニメーション */
+    transition: all var(--transition-speed) var(--transition-easing);
+    
+    /* フロー制御 */
+    overflow-x: hidden;
+    position: relative;
+    z-index: var(--z-base);
+    box-sizing: border-box;
+    
+    /* フレックス制御（重要） */
+    flex: 1;
+    display: block;
+}
+
+/* ===== 内側コンテンツ制御（二重マージン防止） ===== */
+.content,
+.page-content,
+.content-wrapper,
+.page-wrapper {
+    margin: 0 !important;
+    padding: 0;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    background: transparent;
+}
+
+/* ===== フッター調整 ===== */
+footer,
+.footer {
+    margin-left: var(--content-margin-left);
+    transition: margin-left var(--transition-speed) var(--transition-easing);
+}
+
+/* ===== JavaScript用追加クラス（幅制御強化） ===== */
+.js-sidebar-expanded .main-content {
+    --content-margin-left: var(--sidebar-width);
+    --content-width: calc(100vw - var(--sidebar-width));
+    --content-max-width: calc(100vw - var(--sidebar-width));
+}
+
+.js-sidebar-collapsed .main-content {
+    --content-margin-left: var(--sidebar-collapsed);
+    --content-width: calc(100vw - var(--sidebar-collapsed));
+    --content-max-width: calc(100vw - var(--sidebar-collapsed));
+}
+
+.js-sidebar-hidden .main-content {
+    --content-margin-left: 0px;
+    --content-width: 100vw;
+    --content-max-width: 100vw;
+}
+
+/* ===== レスポンシブ対応（強化版） ===== */
+
+/* タブレット（768px-1023px）：折りたたみ */
+@media (min-width: 768px) and (max-width: 1023px) {
+    body:not(.sidebar-hidden) {
+        --content-margin-left: var(--sidebar-collapsed);
+        --content-width: calc(100vw - var(--sidebar-collapsed));
+        --content-max-width: calc(100vw - var(--sidebar-collapsed));
+    }
+    
+    .sidebar,
+    .unified-sidebar {
+        width: var(--sidebar-collapsed);
+    }
+    
+    :root {
+        --content-padding: 1rem;
+    }
+}
+
+/* モバイル（767px以下）：完全非表示 */
+@media (max-width: 767px) {
+    body,
+    body.sidebar-collapsed,
+    body.sidebar-hidden {
+        --content-margin-left: 0px;
+        --content-width: 100vw;
+        --content-max-width: 100vw;
+    }
+    
+    :root {
+        --content-padding: 1rem;
+    }
+    
+    .main-content,
+    main.main-content,
+    #mainContent {
+        margin-left: 0 !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        padding: 1rem;
+    }
+    
+    .sidebar,
+    .unified-sidebar {
+        transform: translateX(-100%);
+        width: var(--sidebar-width);
+    }
+    
+    .sidebar--mobile-open,
+    .unified-sidebar--mobile-open {
+        transform: translateX(0);
+    }
+    
+    footer,
+    .footer {
+        margin-left: 0;
+    }
+}
+
+/* モバイル小（479px以下） */
+@media (max-width: 479px) {
+    :root {
+        --content-padding: 0.75rem;
+    }
+    
+    .main-content,
+    main.main-content,
+    #mainContent {
+        padding: 0.75rem;
+    }
+}
+
+/* ===== グリッドシステム（レスポンシブ対応） ===== */
+.grid {
+    display: grid;
+    gap: var(--space-md, 1rem);
+}
+
+.grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+@media (max-width: 768px) {
+    .grid-cols-2,
+    .grid-cols-3,
+    .grid-cols-4 {
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+}
+
+/* ===== フレックスシステム ===== */
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+
+/* ===== アニメーション最適化 ===== */
+@media (prefers-reduced-motion: reduce) {
+    .main-content,
+    .sidebar,
+    .unified-sidebar,
+    footer {
+        transition: none;
+    }
+}
+
+/* ===== 印刷対応 ===== */
+@media print {
+    .main-content,
+    main.main-content,
+    #mainContent {
+        margin-left: 0 !important;
+        margin-top: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0;
+    }
+    
+    .sidebar,
+    .unified-sidebar,
+    .header,
+    .footer {
+        display: none !important;
+    }
+}
+
+/* ===== デバッグ用クラス（開発時のみ） ===== */
+.debug-width {
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-family: monospace;
+    font-size: 12px;
+    z-index: 4000;
+    pointer-events: none;
+}
+
+.debug-layout {
+    outline: 2px solid #ff0000 !important;
+    background: rgba(255, 0, 0, 0.1) !important;
+}

@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopee出品管理システム</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+        .header {
+            background: linear-gradient(135deg, #ee4d2d, #ff6600);
+            color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        
+        .tab-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .tab-nav {
+            display: flex;
+            background: #f1f5f9;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 1rem 2rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .tab-btn.active {
+            background: white;
+            color: #ee4d2d;
+            border-bottom: 2px solid #ee4d2d;
+        }
+        .tab-btn:hover:not(.active) {
+            background: #e2e8f0;
+        }
+        
+        .tab-content { display: none; padding: 2rem; }
+        .tab-content.active { display: block; }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .form-group {
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+        }
+        .form-input, .form-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #ee4d2d;
+        }
+        
+        .country-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .country-card {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 2px solid #e2e8f0;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .country-card:hover {
+            border-color: #ee4d2d;
+            transform: translateY(-2px);
+        }
+        .country-card.selected {
+            border-color: #ee4d2d;
+            background: #fef2f2;
+        }
+        .country-flag { font-size: 2rem; margin-bottom: 0.5rem; }
+        
+        .csv-upload-area {
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            background: #f9fafb;
+            transition: all 0.3s;
+        }
+        .csv-upload-area:hover {
+            border-color: #ee4d2d;
+            background: #fef2f2;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 2rem;
+            background: #ee4d2d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background: #6b7280;
+        }
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+        
+        .data-preview {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            overflow-x: auto;
+        }
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .preview-table th, .preview-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .preview-table th {
+            background: #f1f5f9;
+            font-weight: 600;
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-uploading { background: #dbeafe; color: #1e40af; }
+        .status-completed { background: #d1fae5; color: #065f46; }
+        .status-error { background: #fee2e2; color: #dc2626; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛒 Shopee出品管理システム</h1>
+            <p>eBay連携・7カ国対応・一括管理</p>
+        </div>
+
+        <div class="tab-container">
+            <div class="tab-nav">
+                <button class="tab-btn active" onclick="switchTab('single-listing')">
+                    <i class="fas fa-plus"></i> 単一出品
+                </button>
+                <button class="tab-btn" onclick="switchTab('csv-upload')">
+                    <i class="fas fa-upload"></i> CSV一括出品
+                </button>
+                <button class="tab-btn" onclick="switchTab('inventory-update')">
+                    <i class="fas fa-box"></i> 在庫更新
+                </button>
+                <button class="tab-btn" onclick="switchTab('ebay-import')">
+                    <i class="fas fa-exchange-alt"></i> eBay連携
+                </button>
+            </div>
+
+            <!-- 単一出品タブ -->
+            <div id="single-listing" class="tab-content active">
+                <h2>新規商品出品</h2>
+                
+                <div class="form-group">
+                    <label class="form-label">出品対象国（複数選択可）</label>
+                    <div class="country-selector">
+                        <div class="country-card" onclick="toggleCountry('SG')">
+                            <div class="country-flag">🇸🇬</div>
+                            <div>Singapore</div>
+                        </div>
+                        <div class="country-card" onclick="toggleCountry('MY')">
+                            <div class="country-flag">🇲🇾</div>
+                            <div>Malaysia</div>
+                        </div>
+                        <div class="country-card" onclick="toggleCountry('TH')">
+                            <div class="country-flag">🇹🇭</div>
+                            <div>Thailand</div>
+                        </div>
+                        <div class="country-card" onclick="toggleCountry('PH')">
+                            <div class="country-flag">🇵🇭</div>
+                            <div>Philippines</div>
+                        </div>
+                        <div class="country-card" onclick="toggleCountry('ID')">
+                            <div class="country-flag">🇮🇩</div>
+                            <div>Indonesia</div>
+                        </div>
+                        <div class="country-card" onclick="toggleCountry('VN')">
+                            <div class="country-flag">🇻🇳</div>
+                            <div>Vietnam</div>
+                        </div>
+                        <div class="country-card" onclick="toggleCountry('TW')">
+                            <div class="country-flag">🇹🇼</div>
+                            <div>Taiwan</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">商品名（英語）*</label>
+                        <input type="text" class="form-input" id="product-name-en" 
+                               placeholder="Product Name in English" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">商品名（日本語）</label>
+                        <input type="text" class="form-input" id="product-name-ja" 
+                               placeholder="日本語商品名（説明用）">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">SKU *</label>
+                        <input type="text" class="form-input" id="sku" 
+                               placeholder="SKU-001" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">カテゴリID *</label>
+                        <select class="form-select" id="category-id" required>
+                            <option value="">カテゴリを選択</option>
+                            <option value="100001">Electronics</option>
+                            <option value="100002">Fashion</option>
+                            <option value="100003">Home & Living</option>
+                            <option value="100004">Health & Beauty</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">価格（各国通貨自動変換）*</label>
+                        <input type="number" class="form-input" id="price" 
+                               placeholder="1000" step="0.01" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">在庫数 *</label>
+                        <input type="number" class="form-input" id="stock" 
+                               placeholder="100" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">重量（g）</label>
+                        <input type="number" class="form-input" id="weight" 
+                               placeholder="500">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">ブランド</label>
+                        <input type="text" class="form-input" id="brand" 
+                               placeholder="Brand Name">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">商品説明</label>
+                    <textarea class="form-input" id="description" rows="6" 
+                              placeholder="商品の詳細説明を入力してください"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">商品画像URL（最大9枚）</label>
+                    <div id="image-inputs">
+                        <input type="url" class="form-input" placeholder="https://example.com/image1.jpg" style="margin-bottom: 0.5rem;">
+                        <input type="url" class="form-input" placeholder="https://example.com/image2.jpg" style="margin-bottom: 0.5rem;">
+                        <input type="url" class="form-input" placeholder="https://example.com/image3.jpg" style="margin-bottom: 0.5rem;">
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="addImageInput()">
+                        <i class="fas fa-plus"></i> 画像追加
+                    </button>
+                </div>
+                
+                <div style="text-align: center; margin-top: 2rem;">
+                    <button class="btn" onclick="submitSingleListing()">
+                        <i class="fas fa-rocket"></i> 選択国に一括出品
+                    </button>
+                    <button class="btn btn-secondary" onclick="previewListing()">
+                        <i class="fas fa-eye"></i> プレビュー
+                    </button>
+                </div>
+            </div>
+
+            <!-- CSV一括出品タブ -->
+            <div id="csv-upload" class="tab-content">
+                <h2>CSV一括出品</h2>
+                
+                <div class="csv-upload-area" onclick="document.getElementById('csv-file').click()">
+                    <i class="fas fa-cloud-upload" style="font-size: 3rem; color: #9ca3af; margin-bottom: 1rem;"></i>
+                    <h3>CSVファイルをここにドラッグ＆ドロップ</h3>
+                    <p>または、クリックしてファイルを選択</p>
+                    <input type="file" id="csv-file" accept=".csv" style="display: none;" onchange="handleCSVUpload(this)">
+                </div>
+                
+                <div style="margin: 2rem 0; text-align: center;">
+                    <button class="btn btn-secondary" onclick="downloadCSVTemplate()">
+                        <i class="fas fa-download"></i> CSVテンプレートダウンロード
+                    </button>
+                </div>
+                
+                <div id="csv-preview" class="data-preview" style="display: none;">
+                    <h3 style="padding: 1rem;">データプレビュー</h3>
+                    <table class="preview-table">
+                        <thead id="csv-header"></thead>
+                        <tbody id="csv-body"></tbody>
+                    </table>
+                    
+                    <div style="padding: 1rem; text-align: center;">
+                        <button class="btn" onclick="processCSVUpload()">
+                            <i class="fas fa-upload"></i> 一括出品実行
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 在庫更新タブ -->
+            <div id="inventory-update" class="tab-content">
+                <h2>在庫数量一括更新</h2>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">更新対象国</label>
+                        <select class="form-select" id="update-country">
+                            <option value="">全ての国</option>
+                            <option value="SG">🇸🇬 Singapore</option>
+                            <option value="MY">🇲🇾 Malaysia</option>
+                            <option value="TH">🇹🇭 Thailand</option>
+                            <option value="PH">🇵🇭 Philippines</option>
+                            <option value="ID">🇮🇩 Indonesia</option>
+                            <option value="VN">🇻🇳 Vietnam</option>
+                            <option value="TW">🇹🇼 Taiwan</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">更新方法</label>
+                        <select class="form-select" id="update-method">
+                            <option value="csv">CSV一括更新</option>
+                            <option value="individual">個別更新</option>
+                            <option value="bulk">一律数量設定</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="csv-upload-area" onclick="document.getElementById('inventory-csv').click()">
+                    <i class="fas fa-box" style="font-size: 3rem; color: #9ca3af; margin-bottom: 1rem;"></i>
+                    <h3>在庫更新CSVをアップロード</h3>
+                    <p>SKU,在庫数の形式で更新</p>
+                    <input type="file" id="inventory-csv" accept=".csv" style="display: none;" onchange="handleInventoryCSV(this)">
+                </div>
+                
+                <div style="margin-top: 2rem;">
+                    <button class="btn" onclick="executeInventoryUpdate()">
+                        <i class="fas fa-sync"></i> 在庫更新実行
+                    </button>
+                </div>
+            </div>
+
+            <!-- eBay連携タブ -->
+            <div id="ebay-import" class="tab-content">
+                <h2>eBayデータ連携</h2>
+                
+                <div class="form-group">
+                    <label class="form-label">連携方法を選択</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <button class="btn" onclick="importFromEbayDB()" style="width: 100%; justify-content: center;">
+                                <i class="fas fa-database"></i> 既存eBayDBから連携
+                            </button>
+                            <p style="margin-top: 0.5rem; font-size: 0.875rem; color: #6b7280;">
+                                既に登録されているeBay商品をShopee用に変換
+                            </p>
+                        </div>
+                        
+                        <div class="form-group">
+                            <button class="btn btn-secondary" onclick="syncEbayPrices()" style="width: 100%; justify-content: center;">
+                                <i class="fas fa-sync-alt"></i> eBay価格同期
+                            </button>
+                            <p style="margin-top: 0.5rem; font-size: 0.875rem; color: #6b7280;">
+                                eBayの価格変更をShopeeに反映
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="ebay-products-list" class="data-preview">
+                    <h3 style="padding: 1rem;">eBay商品一覧</h3>
+                    <table class="preview-table">
+                        <thead>
+                            <tr>
+                                <th>選択</th>
+                                <th>SKU</th>
+                                <th>商品名</th>
+                                <th>価格</th>
+                                <th>在庫</th>
+                                <th>ステータス</th>
+                                <th>Shopee対応</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><input type="checkbox"></td>
+                                <td>EBAY-001</td>
+                                <td>Sample Product 1</td>
+                                <td>$29.99</td>
+                                <td>50</td>
+                                <td><span class="status-badge status-completed">Active</span></td>
+                                <td><span class="status-badge status-pending">未連携</span></td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox"></td>
+                                <td>EBAY-002</td>
+                                <td>Sample Product 2</td>
+                                <td>$19.99</td>
+                                <td>100</td>
+                                <td><span class="status-badge status-completed">Active</span></td>
+                                <td><span class="status-badge status-uploading">連携中</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div style="padding: 1rem; text-align: center;">
+                        <button class="btn" onclick="convertSelectedToShopee()">
+                            <i class="fas fa-exchange-alt"></i> 選択商品をShopeeに連携
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedCountries = [];
+        
+        function switchTab(tabId) {
+            // タブボタンの状態更新
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // タブコンテンツの表示切替
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+        }
+        
+        function toggleCountry(countryCode) {
+            const card = event.target.closest('.country-card');
+            const index = selectedCountries.indexOf(countryCode);
+            
+            if (index === -1) {
+                selectedCountries.push(countryCode);
+                card.classList.add('selected');
+            } else {
+                selectedCountries.splice(index, 1);
+                card.classList.remove('selected');
+            }
+            
+            console.log('Selected countries:', selectedCountries);
+        }
+        
+        function addImageInput() {
+            const container = document.getElementById('image-inputs');
+            const currentInputs = container.querySelectorAll('input').length;
+            
+            if (currentInputs < 9) {
+                const input = document.createElement('input');
+                input.type = 'url';
+                input.className = 'form-input';
+                input.placeholder = `https://example.com/image${currentInputs + 1}.jpg`;
+                input.style.marginBottom = '0.5rem';
+                container.appendChild(input);
+            } else {
+                alert('最大9枚まで画像を追加できます');
+            }
+        }
+        
+        function submitSingleListing() {
+            if (selectedCountries.length === 0) {
+                alert('出品対象国を選択してください');
+                return;
+            }
+            
+            const productData = {
+                countries: selectedCountries,
+                item_name: document.getElementById('product-name-en').value,
+                item_name_ja: document.getElementById('product-name-ja').value,
+                sku: document.getElementById('sku').value,
+                category_id: document.getElementById('category-id').value,
+                price: parseFloat(document.getElementById('price').value),
+                stock: parseInt(document.getElementById('stock').value),
+                weight: parseInt(document.getElementById('weight').value),
+                brand: document.getElementById('brand').value,
+                description: document.getElementById('description').value,
+                images: Array.from(document.querySelectorAll('#image-inputs input'))
+                    .map(input => input.value)
+                    .filter(url => url.trim() !== '')
+            };
+            
+            console.log('Submitting product:', productData);
+            
+            // API呼び出し実装
+            fetch('/api/shopee/single-listing', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(productData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`${selectedCountries.length}カ国への出品が開始されました！`);
+                    // フォームリセット
+                    document.querySelector('form').reset();
+                    selectedCountries = [];
+                    document.querySelectorAll('.country-card').forEach(card => card.classList.remove('selected'));
+                } else {
+                    alert('出品に失敗しました: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('出品処理でエラーが発生しました');
+            });
+        }
+        
+        function handleCSVUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const csv = e.target.result;
+                parseAndPreviewCSV(csv);
+            };
+            reader.readAsText(file);
+        }
+        
+        function parseAndPreviewCSV(csvData) {
+            const lines = csvData.split('\n').filter(line => line.trim());
+            if (lines.length < 2) {
+                alert('CSVファイルが正しい形式ではありません');
+                return;
+            }
+            
+            const headers = lines[0].split(',').map(h => h.trim());
+            const rows = lines.slice(1, 6).map(line => line.split(',').map(cell => cell.trim()));
+            
+            // プレビュー表示
+            const headerHtml = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+            const bodyHtml = rows.map(row => 
+                '<tr>' + row.map(cell => `<td>${cell}</td>`).join('') + '</tr>'
+            ).join('');
+            
+            document.getElementById('csv-header').innerHTML = headerHtml;
+            document.getElementById('csv-body').innerHTML = bodyHtml;
+            document.getElementById('csv-preview').style.display = 'block';
+        }
+        
+        function downloadCSVTemplate() {
+            const template = `sku,country,item_name_en,item_name_ja,price,stock,category_id,weight,brand,description,image_url1,image_url2,image_url3
+SAMPLE-001,SG,Sample Product,サンプル商品,29.99,100,100001,500,SampleBrand,This is a sample product,https://example.com/img1.jpg,https://example.com/img2.jpg,
+SAMPLE-002,MY,Another Product,別の商品,19.99,50,100002,300,AnotherBrand,Another sample product,https://example.com/img3.jpg,,`;
+            
+            const blob = new Blob([template], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'shopee_template.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+        
+        function processCSVUpload() {
+            alert('CSV一括出品を開始します...');
+            // CSV処理のAPI呼び出し実装
+        }
+        
+        function handleInventoryCSV(input) {
+            // 在庫更新CSV処理
+            console.log('Inventory CSV uploaded');
+        }
+        
+        function executeInventoryUpdate() {
+            alert('在庫更新を実行します...');
+        }
+        
+        function importFromEbayDB() {
+            alert('eBayデータベースからの連携を開始します...');
+        }
+        
+        function syncEbayPrices() {
+            alert('eBay価格同期を実行します...');
+        }
+        
+        function convertSelectedToShopee() {
+            const selected = document.querySelectorAll('#ebay-products-list input[type="checkbox"]:checked');
+            alert(`${selected.length}個の商品をShopeeに連携します`);
+        }
+        
+        function previewListing() {
+            alert('商品プレビュー機能は開発中です');
+        }
+    </script>
+</body>
+</html>

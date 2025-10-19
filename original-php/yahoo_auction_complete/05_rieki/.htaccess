@@ -1,0 +1,16 @@
+# Apache設定用 .htaccess
+RewriteEngine On
+
+# PHP処理有効化
+AddType application/x-httpd-php .php
+
+# デフォルトページ設定
+DirectoryIndex index.html index.php
+
+# エラーページ設定
+ErrorDocument 404 /server_help.html
+
+# PHP設定
+php_value upload_max_filesize 10M
+php_value post_max_size 10M
+php_value max_execution_time 300

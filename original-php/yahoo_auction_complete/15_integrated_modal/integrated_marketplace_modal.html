@@ -1,0 +1,2408 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>07_editing 完全統合出品システム</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --success: #28a745;
+            --warning: #ffc107;
+            --error: #dc3545;
+            --info: #17a2b8;
+            --background: #f8f9fa;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text-primary: #2c3e50;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+            --border-radius: 12px;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            
+            /* マーケットプレイス色 */
+            --ebay-color: #0064d2;
+            --shopee-color: #ee4d2d;
+            --amazon-color: #ff9900;
+            --mercari-color: #ff6600;
+            
+            /* データ状態色 */
+            --data-complete: #28a745;
+            --data-partial: #ffc107;
+            --data-missing: #dc3545;
+            --data-processing: #17a2b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+            color: white;
+        }
+
+        .demo-button {
+            background: white;
+            color: var(--primary);
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            margin: 0.5rem;
+        }
+
+        .demo-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        /* モーダルスタイル */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(5px);
+            z-index: 10000;
+        }
+
+        .modal-content {
+            position: relative;
+            width: 98%;
+            height: 98%;
+            max-width: 1900px;
+            margin: 1% auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-height: 70px;
+            flex-shrink: 0;
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .product-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .product-thumbnail {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.8rem;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .modal-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* マーケットプレイス選択 */
+        .marketplace-selector {
+            background: #f8f9fa;
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-shrink: 0;
+            overflow-x: auto;
+        }
+
+        .marketplace-btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid transparent;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .marketplace-btn.ebay { border-color: var(--ebay-color); color: var(--ebay-color); }
+        .marketplace-btn.shopee { border-color: var(--shopee-color); color: var(--shopee-color); }
+        .marketplace-btn.amazon { border-color: var(--amazon-color); color: var(--amazon-color); }
+        .marketplace-btn.mercari { border-color: var(--mercari-color); color: var(--mercari-color); }
+
+        .marketplace-btn.active.ebay { background: var(--ebay-color); color: white; }
+        .marketplace-btn.active.shopee { background: var(--shopee-color); color: white; }
+        .marketplace-btn.active.amazon { background: var(--amazon-color); color: white; }
+        .marketplace-btn.active.mercari { background: var(--mercari-color); color: white; }
+
+        .marketplace-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        /* タブナビゲーション */
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid var(--border-color);
+            overflow-x: auto;
+            flex-shrink: 0;
+        }
+
+        .tab-link {
+            padding: 0.75rem 1rem;
+            text-decoration: none;
+            color: var(--text-secondary);
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            white-space: nowrap;
+            cursor: pointer;
+            font-size: 0.85rem;
+            min-width: 110px;
+            text-align: center;
+        }
+
+        .tab-link:hover {
+            color: var(--primary);
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .tab-link.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            background: white;
+        }
+
+        .tab-content-container {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .tab-pane {
+            display: none;
+            height: 100%;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        /* ステータスカードシステム */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .status-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid var(--primary);
+            transition: transform 0.3s ease;
+        }
+
+        .status-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .status-card.complete { border-left-color: var(--data-complete); }
+        .status-card.partial { border-left-color: var(--data-partial); }
+        .status-card.missing { border-left-color: var(--data-missing); }
+        .status-card.processing { border-left-color: var(--data-processing); }
+
+        .status-card h4 {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .status-indicator {
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .indicator-complete { background: #d4edda; color: #155724; }
+        .indicator-partial { background: #fff3cd; color: #856404; }
+        .indicator-missing { background: #f8d7da; color: #721c24; }
+        .indicator-processing { background: #d1ecf1; color: #0c5460; }
+
+        /* データ表示システム */
+        .data-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .section-header {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.4rem 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .data-row:last-child {
+            border-bottom: none;
+        }
+
+        .data-label {
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .data-value {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+        }
+
+        .editable-value {
+            background: white;
+            border: 1px solid var(--border-color);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            min-width: 100px;
+            cursor: text;
+        }
+
+        .editable-value:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+        }
+
+        /* フォーム要素 */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-row {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.4rem;
+            font-size: 0.85rem;
+        }
+
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .char-counter {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-align: right;
+            margin-top: 0.25rem;
+        }
+
+        .required-field {
+            border-left: 3px solid var(--error);
+        }
+
+        .field-description {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        /* 画像管理 */
+        .images-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 1rem;
+        }
+
+        .image-item {
+            position: relative;
+            background: white;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .image-item:hover {
+            transform: scale(1.05);
+        }
+
+        .image-item.selected {
+            border-color: var(--success);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+
+        .image-item img {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+        }
+
+        .image-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+            color: white;
+            padding: 0.25rem;
+            font-size: 0.7rem;
+            text-align: center;
+        }
+
+        .image-slot {
+            border: 2px dashed var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 80px;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .image-slot:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* HTMLエディター */
+        .html-editor {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            height: 400px;
+        }
+
+        .editor-pane {
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .editor-header {
+            background: #f8f9fa;
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .editor-content {
+            height: calc(100% - 40px);
+        }
+
+        .code-editor {
+            width: 100%;
+            height: 100%;
+            font-family: monospace;
+            font-size: 0.8rem;
+            padding: 1rem;
+            border: none;
+            resize: none;
+            background: #f8f9fa;
+        }
+
+        .preview-pane {
+            padding: 1rem;
+            background: white;
+            overflow-y: auto;
+            height: 100%;
+        }
+
+        /* マーケットプレイス固有フィールド */
+        .marketplace-fields {
+            display: none;
+        }
+
+        .marketplace-fields.active {
+            display: block;
+        }
+
+        /* フィルター結果表示 */
+        .filter-results {
+            margin: 1rem 0;
+        }
+
+        .filter-item {
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .filter-pass {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid var(--success);
+        }
+
+        .filter-warning {
+            background: #fff3cd;
+            color: #856404;
+            border-left: 4px solid var(--warning);
+        }
+
+        .filter-error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid var(--error);
+        }
+
+        /* 利益計算表示 */
+        .profit-breakdown {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .profit-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.4rem 0;
+            font-size: 0.85rem;
+        }
+
+        .profit-row.total {
+            font-weight: 600;
+            border-top: 2px solid var(--border-color);
+            margin-top: 0.5rem;
+            padding-top: 0.75rem;
+        }
+
+        /* フッター */
+        .modal-footer {
+            background: #f8f9fa;
+            padding: 1rem 2rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.85rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary {
+            background: var(--text-secondary);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* ローディング表示 */
+        .loading {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* レスポンシブ対応 */
+        @media (max-width: 1400px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .status-grid {
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            }
+            
+            .html-editor {
+                grid-template-columns: 1fr;
+                height: 600px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .modal-content {
+                width: 99%;
+                height: 99%;
+                margin: 0.5% auto;
+            }
+            
+            .marketplace-selector {
+                padding: 0.5rem;
+            }
+            
+            .marketplace-btn {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.75rem;
+            }
+            
+            .tabs {
+                font-size: 0.75rem;
+            }
+            
+            .tab-link {
+                min-width: 80px;
+                padding: 0.5rem;
+            }
+            
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1><i class="fas fa-cogs"></i> 07_editing 完全統合出品システム</h1>
+        <p style="margin: 1rem 0;">データベース連携・ツール統合・モール別対応</p>
+        <button class="demo-button" onclick="openIntegratedModal()">
+            <i class="fas fa-rocket"></i> 統合モーダルを開く
+        </button>
+        <button class="demo-button" onclick="loadSampleProduct()">
+            <i class="fas fa-database"></i> サンプルデータ読み込み
+        </button>
+    </div>
+
+    <!-- 完全統合出品モーダル -->
+    <div id="integrated-modal" class="modal-overlay">
+        <div class="modal-content">
+            <header class="modal-header">
+                <div class="product-info">
+                    <img src="https://placehold.co/50x50/667eea/ffffff?text=商品" alt="商品" class="product-thumbnail" id="product-thumbnail">
+                    <div>
+                        <h2 class="modal-title" id="product-title">
+                            <i class="fas fa-edit"></i> <span id="title-text">商品データ読み込み中...</span>
+                        </h2>
+                        <small id="product-meta">データベースから商品情報を取得中...</small>
+                    </div>
+                </div>
+                <button class="modal-close" onclick="closeIntegratedModal()">&times;</button>
+            </header>
+
+            <div class="modal-body">
+                <!-- マーケットプレイス選択ヘッダー -->
+                <div class="marketplace-selector">
+                    <label style="font-weight: 600; color: var(--text-primary);">対象マーケットプレイス:</label>
+                    <div class="marketplace-btn ebay active" onclick="switchMarketplace('ebay')">
+                        <i class="fab fa-ebay"></i> eBay
+                    </div>
+                    <div class="marketplace-btn shopee" onclick="switchMarketplace('shopee')">
+                        <i class="fas fa-shopping-bag"></i> Shopee
+                    </div>
+                    <div class="marketplace-btn amazon" onclick="switchMarketplace('amazon')">
+                        <i class="fab fa-amazon"></i> Amazon
+                    </div>
+                    <div class="marketplace-btn mercari" onclick="switchMarketplace('mercari')">
+                        <i class="fas fa-store"></i> メルカリ
+                    </div>
+                </div>
+
+                <!-- タブナビゲーション -->
+                <nav class="tabs">
+                    <div class="tab-link active" onclick="switchTab(event, 'tab-overview')">
+                        <i class="fas fa-chart-pie"></i><br>統合概要
+                    </div>
+                    <div class="tab-link" onclick="switchTab(event, 'tab-data')">
+                        <i class="fas fa-database"></i><br>データ確認
+                    </div>
+                    <div class="tab-link" onclick="switchTab(event, 'tab-images')">
+                        <i class="fas fa-images"></i><br>画像選択
+                    </div>
+                    <div class="tab-link" onclick="switchTab(event, 'tab-tools')">
+                        <i class="fas fa-tools"></i><br>ツール連携
+                    </div>
+                    <div class="tab-link" onclick="switchTab(event, 'tab-listing')">
+                        <i class="fas fa-edit"></i><br>出品情報
+                    </div>
+                    <div class="tab-link" onclick="switchTab(event, 'tab-html')">
+                        <i class="fas fa-code"></i><br>HTML編集
+                    </div>
+                    <div class="tab-link" onclick="switchTab(event, 'tab-final')">
+                        <i class="fas fa-check-circle"></i><br>最終確認
+                    </div>
+                </nav>
+
+                <div class="tab-content-container">
+                    <!-- 統合概要タブ -->
+                    <section id="tab-overview" class="tab-pane active">
+                        <h3 style="margin-bottom: 1rem; color: var(--text-primary);">
+                            <i class="fas fa-dashboard"></i> 全ツール統合状況
+                        </h3>
+                        
+                        <div class="status-grid" id="tool-status-grid">
+                            <!-- 動的に生成される -->
+                        </div>
+
+                        <div class="data-section">
+                            <div class="section-header">
+                                <i class="fas fa-info-circle"></i> 処理フロー
+                            </div>
+                            <div id="process-flow">
+                                <div class="data-row">
+                                    <span class="data-label">1. データ取得</span>
+                                    <span class="data-value" id="step1-status">待機中</span>
+                                </div>
+                                <div class="data-row">
+                                    <span class="data-label">2. ツール実行</span>
+                                    <span class="data-value" id="step2-status">待機中</span>
+                                </div>
+                                <div class="data-row">
+                                    <span class="data-label">3. データ統合</span>
+                                    <span class="data-value" id="step3-status">待機中</span>
+                                </div>
+                                <div class="data-row">
+                                    <span class="data-label">4. 出品準備</span>
+                                    <span class="data-value" id="step4-status">待機中</span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- データ確認タブ -->
+                    <section id="tab-data" class="tab-pane">
+                        <h3 style="margin-bottom: 1rem; color: var(--text-primary);">
+                            <i class="fas fa-database"></i> データベースデータ確認・編集
+                        </h3>
+                        
+                        <div class="data-section">
+                            <div class="section-header">
+                                <i class="fas fa-table"></i> スクレイピング取得データ
+                            </div>
+                            <div id="scraped-data">
+                                <div class="data-row">
+                                    <span class="data-label">商品ID</span>
+                                    <span class="data-value editable-value" contenteditable="true" data-field="product_id" id="data-product-id">読み込み中...</span>
+                                </div>
+                                <div class="data-row">
+                                    <span class="data-label">元タイトル</span>
+                                    <span class="data-value editable-value" contenteditable="true" data-field="original_title" id="data-original-title">読み込み中...</span>
+                                </div>
+                                <div class="data-row">
+                                    <span class="data-label">落札価格</span>
+                                    <span class="data-value editable-value" contenteditable="true" data-field="price_jpy" id="data-price-jpy">読み込み中...</span>
+                                </div>
+                                <div class="data-row">
+                                    <span class="data-label">商品状態</span>
+                                    <span class="data-value editable-value" contenteditable="true" data-field="condition" id="data-condition">読み込み中...</span>
+                                </div>
+                                <div class="data-row">
+                                    <span class="data-label">カテゴリ</span>
+                                    <span class="data-value editable-value" contenteditable="true" data-field="category" id="data-category">読み込み中...</span>
+                                </div>
+                                <div class="data-row">
+                                    <span class="data-label">画像URL数</span>
+                                    <span class="data-value" id="data-image-count">読み込み中...</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="data-section">
+                            <div class="section-header">
+                                <i class="fas fa-edit"></i> 手動入力・修正項目
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-row">
+                                    <label class="form-label">SKU</label>
+                                    <input type="text" class="form-input" id="manual-sku" placeholder="自動生成またはカスタム入力">
+                                </div>
+                                <div class="form-row">
+                                    <label class="form-label">重量 (g)</label>
+                                    <input type="number" class="form-input" id="manual-weight" placeholder="送料計算用">
+                                </div>
+                                <div class="form-row">
+                                    <label class="form-label">サイズ (長×幅×高 cm)</label>
+                                    <input type="text" class="form-input" id="manual-dimensions" placeholder="例: 10x7x0.5">
+                                </div>
+                                <div class="form-row">
+                                    <label class="form-label">仕入れコスト</label>
+                                    <input type="number" class="form-input" id="manual-cost" placeholder="利益計算用">
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 画像選択タブ -->
+                    <section id="tab-images" class="tab-pane">
+                        <h3 style="margin-bottom: 1rem; color: var(--text-primary);">
+                            <i class="fas fa-images"></i> 画像管理・順序設定
+                        </h3>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                            <div>
+                                <h4 style="margin-bottom: 0.5rem;">取得済み画像 (<span id="available-image-count">0</span>枚)</h4>
+                                <div class="images-grid" id="available-images">
+                                    <!-- 動的に生成される -->
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h4 style="margin-bottom: 0.5rem;">出品用画像順序 (<span id="selected-image-count">0</span>/<span id="max-images">12</span>枚)</h4>
+                                <div class="images-grid" id="selected-images">
+                                    <!-- 動的に生成される -->
+                                </div>
+                                
+                                <div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 6px;">
+                                    <h5 style="margin-bottom: 0.5rem;">画像処理設定</h5>
+                                    <label style="display: block; margin-bottom: 0.5rem;">
+                                        <input type="checkbox" id="resize-images" checked> 推奨サイズにリサイズ
+                                    </label>
+                                    <label style="display: block; margin-bottom: 0.5rem;">
+                                        <input type="checkbox" id="optimize-quality" checked> 品質最適化
+                                    </label>
+                                    <label style="display: block;">
+                                        <input type="checkbox" id="add-watermark"> ウォーターマーク追加
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- ツール連携タブ -->
+                    <section id="tab-tools" class="tab-pane">
+                        <h3 style="margin-bottom: 1rem; color: var(--text-primary);">
+                            <i class="fas fa-tools"></i> 統合ツール実行
+                        </h3>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <!-- カテゴリ判定ツール -->
+                            <div class="data-section">
+                                <div class="section-header">
+                                    <i class="fas fa-tags"></i> カテゴリ判定 (11_category)
+                                    <button class="btn btn-primary" onclick="runCategoryTool()" id="category-btn">
+                                        <i class="fas fa-play"></i> 実行
+                                    </button>
+                                </div>
+                                <div id="category-results">
+                                    <p style="color: var(--text-secondary);">カテゴリ判定を実行してください</p>
+                                </div>
+                            </div>
+
+                            <!-- フィルターツール -->
+                            <div class="data-section">
+                                <div class="section-header">
+                                    <i class="fas fa-filter"></i> フィルターチェック (06_filters)
+                                    <button class="btn btn-warning" onclick="runFilterTool()" id="filter-btn">
+                                        <i class="fas fa-play"></i> 実行
+                                    </button>
+                                </div>
+                                <div id="filter-results">
+                                    <p style="color: var(--text-secondary);">フィルターチェックを実行してください</p>
+                                </div>
+                            </div>
+
+                            <!-- 利益計算ツール -->
+                            <div class="data-section">
+                                <div class="section-header">
+                                    <i class="fas fa-yen-sign"></i> 利益計算 (05_rieki)
+                                    <button class="btn btn-success" onclick="runProfitTool()" id="profit-btn">
+                                        <i class="fas fa-play"></i> 実行
+                                    </button>
+                                </div>
+                                <div id="profit-results">
+                                    <p style="color: var(--text-secondary);">利益計算を実行してください</p>
+                                </div>
+                            </div>
+
+                            <!-- その他ツール -->
+                            <div class="data-section">
+                                <div class="section-header">
+                                    <i class="fas fa-search"></i> SellerMirror連携
+                                    <button class="btn btn-info" onclick="runSellerMirror()" id="sellermirror-btn">
+                                        <i class="fas fa-play"></i> 実行
+                                    </button>
+                                </div>
+                                <div id="sellermirror-results">
+                                    <p style="color: var(--text-secondary);">競合調査を実行してください</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 1.5rem; text-align: center;">
+                            <button class="btn btn-primary" onclick="runAllTools()" id="run-all-btn">
+                                <i class="fas fa-rocket"></i> 全ツール一括実行
+                            </button>
+                        </div>
+                    </section>
+
+                    <!-- 出品情報編集タブ -->
+                    <section id="tab-listing" class="tab-pane">
+                        <h3 style="margin-bottom: 1rem; color: var(--text-primary);">
+                            <i class="fas fa-edit"></i> <span id="current-marketplace-name">eBay</span> 出品情報編集
+                        </h3>
+
+                        <!-- マーケットプレイス固有フィールド -->
+                        <div class="marketplace-fields ebay active">
+                            <div class="form-grid">
+                                <div class="form-row">
+                                    <label class="form-label">タイトル <span style="color: var(--error);">*</span> (80文字以内)</label>
+                                    <textarea class="form-textarea required-field" maxlength="80" id="ebay-title" oninput="updateCharCounter(this, 'ebay-title-counter')"></textarea>
+                                    <div class="char-counter" id="ebay-title-counter">0/80</div>
+                                    <div class="field-description">eBayの検索結果で表示されるタイトルです</div>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <label class="form-label">販売価格 (USD) <span style="color: var(--error);">*</span></label>
+                                    <input type="number" class="form-input required-field" id="ebay-price" step="0.01" min="0.01">
+                                    <div class="field-description">Buy It Nowの価格設定</div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-grid">
+                                <div class="form-row">
+                                    <label class="form-label">eBayカテゴリー <span style="color: var(--error);">*</span></label>
+                                    <select class="form-select required-field" id="ebay-category">
+                                        <option value="">カテゴリを選択...</option>
+                                        <option value="11116">Toys & Hobbies > Games > Trading Card Games</option>
+                                        <option value="183454">Toys & Hobbies > Games > Trading Card Games > Pokémon</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <label class="form-label">商品状態 <span style="color: var(--error);">*</span></label>
+                                    <select class="form-select required-field" id="ebay-condition">
+                                        <option value="1000">New</option>
+                                        <option value="2500">Like New</option>
+                                        <option value="3000">Very Good</option>
+                                        <option value="4000">Good</option>
+                                        <option value="5000">Acceptable</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Shopee固有フィールド -->
+                        <div class="marketplace-fields shopee">
+                            <div class="form-grid">
+                                <div class="form-row">
+                                    <label class="form-label">Shopee商品名 <span style="color: var(--error);">*</span> (120文字以内)</label>
+                                    <textarea class="form-textarea required-field" maxlength="120" id="shopee-title"></textarea>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <label class="form-label">販売価格 <span style="color: var(--error);">*</span></label>
+                                    <input type="number" class="form-input required-field" id="shopee-price" min="1">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Amazon固有フィールド -->
+                        <div class="marketplace-fields amazon">
+                            <div class="form-grid">
+                                <div class="form-row">
+                                    <label class="form-label">Amazon商品名 <span style="color: var(--error);">*</span> (200文字以内)</label>
+                                    <textarea class="form-textarea required-field" maxlength="200" id="amazon-title"></textarea>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <label class="form-label">ASIN/JAN <span style="color: var(--error);">*</span></label>
+                                    <input type="text" class="form-input required-field" id="amazon-asin" placeholder="既存商品のASINまたはJANコード">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- メルカリ固有フィールド -->
+                        <div class="marketplace-fields mercari">
+                            <div class="form-grid">
+                                <div class="form-row">
+                                    <label class="form-label">メルカリ商品名 <span style="color: var(--error);">*</span> (40文字以内)</label>
+                                    <input type="text" class="form-input required-field" maxlength="40" id="mercari-title">
+                                </div>
+                                
+                                <div class="form-row">
+                                    <label class="form-label">販売価格 <span style="color: var(--error);">*</span></label>
+                                    <input type="number" class="form-input required-field" id="mercari-price" min="300">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="data-section">
+                            <div class="section-header">
+                                <i class="fas fa-exclamation-triangle"></i> 必須項目チェック
+                            </div>
+                            <div id="required-fields-status">
+                                <p style="color: var(--text-secondary);">必須項目を入力してください</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- HTML編集タブ */
+                    <section id="tab-html" class="tab-pane">
+                        <h3 style="margin-bottom: 1rem; color: var(--text-primary);">
+                            <i class="fas fa-code"></i> <span id="html-marketplace-name">eBay</span> 商品説明HTML編集
+                        </h3>
+
+                        <div style="margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center;">
+                            <button class="btn btn-secondary" onclick="generateHtmlTemplate()">
+                                <i class="fas fa-magic"></i> テンプレート生成
+                            </button>
+                            <button class="btn btn-info" onclick="insertCommonElements()">
+                                <i class="fas fa-plus"></i> 共通要素挿入
+                            </button>
+                            <button class="btn btn-warning" onclick="validateHtml()">
+                                <i class="fas fa-check"></i> HTMLバリデート
+                            </button>
+                        </div>
+
+                        <div class="html-editor">
+                            <div class="editor-pane">
+                                <div class="editor-header">HTMLエディター</div>
+                                <div class="editor-content">
+                                    <textarea class="code-editor" id="html-editor" placeholder="HTMLコードをここに入力..."></textarea>
+                                </div>
+                            </div>
+                            
+                            <div class="editor-pane">
+                                <div class="editor-header">プレビュー</div>
+                                <div class="editor-content">
+                                    <div class="preview-pane" id="html-preview">
+                                        <p style="color: var(--text-secondary); text-align: center;">HTMLを入力するとプレビューが表示されます</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 最終確認タブ -->
+                    <section id="tab-final" class="tab-pane">
+                        <h3 style="margin-bottom: 1rem; color: var(--text-primary);">
+                            <i class="fas fa-check-circle"></i> 最終確認・出品実行
+                        </h3>
+                        
+                        <div class="data-section">
+                            <div class="section-header">
+                                <i class="fas fa-clipboard-check"></i> 出品データ検証結果
+                            </div>
+                            <div id="validation-results">
+                                <!-- 動的に生成される -->
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                            <div class="data-section">
+                                <div class="section-header">
+                                    <i class="fas fa-list"></i> 出品データサマリー
+                                </div>
+                                <div id="listing-summary">
+                                    <!-- 動的に生成される -->
+                                </div>
+                            </div>
+                            
+                            <div class="data-section">
+                                <div class="section-header">
+                                    <i class="fas fa-calculator"></i> 最終利益計算
+                                </div>
+                                <div id="final-profit-calculation">
+                                    <!-- 動的に生成される -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="text-align: center; padding: 2rem; background: #f8f9fa; border-radius: 8px; margin-top: 1.5rem;">
+                            <h4 style="margin-bottom: 1rem;">出品準備完了</h4>
+                            <p style="margin-bottom: 1.5rem; color: var(--text-secondary);" id="listing-ready-message">
+                                すべての項目が設定されています。出品ボタンを押すと実際に出品処理が実行されます。
+                            </p>
+                            
+                            <div style="display: flex; justify-content: center; gap: 1rem;">
+                                <button class="btn btn-secondary" onclick="saveAsDraft()">
+                                    <i class="fas fa-save"></i> 下書き保存
+                                </button>
+                                <button class="btn btn-warning" onclick="previewListing()">
+                                    <i class="fas fa-eye"></i> 出品プレビュー
+                                </button>
+                                <button class="btn btn-success" onclick="submitListing()" id="submit-btn" disabled>
+                                    <i class="fas fa-rocket"></i> <span id="current-marketplace-submit">eBay</span>に出品する
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <footer class="modal-footer">
+                <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                    <i class="fas fa-clock"></i> 処理時間: <span id="processing-time">0.00</span>秒 | 
+                    <i class="fas fa-database"></i> データ完全性: <span id="data-integrity">0</span>% | 
+                    <i class="fas fa-shield-alt"></i> バリデーション: <span id="validation-status">待機中</span>
+                </div>
+                
+                <div style="display: flex; gap: 0.75rem;">
+                    <button class="btn btn-secondary" onclick="resetForm()">
+                        <i class="fas fa-undo"></i> リセット
+                    </button>
+                    <button class="btn btn-primary" onclick="goToNextTab()">
+                        <i class="fas fa-arrow-right"></i> 次へ進む
+                    </button>
+                    <button class="btn btn-success" onclick="quickSubmit()">
+                        <i class="fas fa-bolt"></i> 高速出品
+                    </button>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        // グローバル変数
+        let currentMarketplace = 'ebay';
+        let productData = {};
+        let selectedImages = [];
+        let toolResults = {
+            category: null,
+            filter: null,
+            profit: null,
+            sellermirror: null
+        };
+        let processingStartTime = Date.now();
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('統合出品システム初期化開始');
+            initializeSystem();
+        });
+
+        function initializeSystem() {
+            updateProcessingTime();
+            setInterval(updateProcessingTime, 1000);
+        }
+
+        // メインモーダル制御
+        function openIntegratedModal() {
+            document.getElementById('integrated-modal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            processingStartTime = Date.now();
+        }
+
+        function closeIntegratedModal() {
+            document.getElementById('integrated-modal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        // サンプルデータ読み込み
+        function loadSampleProduct() {
+            console.log('サンプルデータ読み込み開始');
+            
+            // サンプル商品データ
+            productData = {
+                id: 'yahoo_123456',
+                original_title: 'ポケモンカード ピカチュウ プロモ 限定版 美品',
+                price_jpy: 3500,
+                condition: 'Very Good',
+                category: 'Trading Cards',
+                images: [
+                    'https://placehold.co/400x300/4CAF50/ffffff?text=Main',
+                    'https://placehold.co/400x300/2196F3/ffffff?text=Back',
+                    'https://placehold.co/400x300/FF9800/ffffff?text=Side',
+                    'https://placehold.co/400x300/9C27B0/ffffff?text=Detail',
+                    'https://placehold.co/400x300/F44336/ffffff?text=Corner',
+                    'https://placehold.co/400x300/607D8B/ffffff?text=Cert',
+                    'https://placehold.co/400x300/795548/ffffff?text=Pack',
+                    'https://placehold.co/400x300/009688/ffffff?text=Size'
+                ],
+                weight: 15,
+                dimensions: '10x7x0.5',
+                acquired_date: '2025-01-15',
+                platform: 'Yahoo Auction'
+            };
+
+            openIntegratedModal();
+            setTimeout(() => {
+                loadProductData();
+                updateStepStatus('step1-status', '完了', 'success');
+            }, 500);
+        }
+
+        function loadProductData() {
+            // ヘッダー情報更新
+            document.getElementById('title-text').textContent = productData.original_title;
+            document.getElementById('product-meta').textContent = 
+                `ID: ${productData.id} | 取得日: ${productData.acquired_date} | プラットフォーム: ${productData.platform}`;
+
+            // データタブの情報更新
+            document.getElementById('data-product-id').textContent = productData.id;
+            document.getElementById('data-original-title').textContent = productData.original_title;
+            document.getElementById('data-price-jpy').textContent = `¥${productData.price_jpy.toLocaleString()}`;
+            document.getElementById('data-condition').textContent = productData.condition;
+            document.getElementById('data-category').textContent = productData.category;
+            document.getElementById('data-image-count').textContent = `${productData.images.length}枚`;
+
+            // 手動入力フィールド
+            document.getElementById('manual-weight').value = productData.weight;
+            document.getElementById('manual-dimensions').value = productData.dimensions;
+            document.getElementById('manual-sku').value = generateSKU();
+
+            // 画像データ読み込み
+            loadImages();
+            
+            // ツールステータス更新
+            updateToolStatusGrid();
+
+            console.log('商品データ読み込み完了:', productData);
+        }
+
+        function generateSKU() {
+            const prefix = currentMarketplace.toUpperCase();
+            const timestamp = Date.now().toString().slice(-6);
+            return `${prefix}-${productData.id.replace('yahoo_', '')}-${timestamp}`;
+        }
+
+        function loadImages() {
+            const availableContainer = document.getElementById('available-images');
+            const selectedContainer = document.getElementById('selected-images');
+
+            // 利用可能画像表示
+            availableContainer.innerHTML = '';
+            productData.images.forEach((url, index) => {
+                const imageDiv = document.createElement('div');
+                imageDiv.className = 'image-item';
+                imageDiv.onclick = () => selectImage(index);
+                imageDiv.innerHTML = `
+                    <img src="${url}" alt="画像${index + 1}">
+                    <div class="image-overlay">${index + 1}番目<br>クリックで選択</div>
+                `;
+                availableContainer.appendChild(imageDiv);
+            });
+
+            // 選択画像エリア初期化
+            updateSelectedImages();
+            
+            document.getElementById('available-image-count').textContent = productData.images.length;
+            document.getElementById('max-images').textContent = getMaxImagesForMarketplace(currentMarketplace);
+        }
+
+        function selectImage(imageIndex) {
+            if (selectedImages.includes(imageIndex)) {
+                selectedImages = selectedImages.filter(i => i !== imageIndex);
+            } else {
+                const maxImages = getMaxImagesForMarketplace(currentMarketplace);
+                if (selectedImages.length < maxImages) {
+                    selectedImages.push(imageIndex);
+                } else {
+                    alert(`${currentMarketplace}では最大${maxImages}枚まで画像をアップロードできます。`);
+                    return;
+                }
+            }
+            updateSelectedImages();
+            updateImageSelection();
+        }
+
+        function updateSelectedImages() {
+            const container = document.getElementById('selected-images');
+            const maxImages = getMaxImagesForMarketplace(currentMarketplace);
+            
+            container.innerHTML = '';
+            
+            // 選択済み画像表示
+            selectedImages.forEach((imageIndex, position) => {
+                const imageDiv = document.createElement('div');
+                imageDiv.className = 'image-item selected';
+                imageDiv.onclick = () => removeSelectedImage(position);
+                imageDiv.innerHTML = `
+                    <img src="${productData.images[imageIndex]}" alt="選択画像${position + 1}">
+                    <div class="image-overlay">${position + 1}番目<br><i class="fas fa-times"></i></div>
+                `;
+                container.appendChild(imageDiv);
+            });
+
+            // 空きスロット表示
+            for (let i = selectedImages.length; i < maxImages; i++) {
+                const slotDiv = document.createElement('div');
+                slotDiv.className = 'image-slot';
+                slotDiv.innerHTML = `<i class="fas fa-plus"></i><br>${i + 1}番目`;
+                container.appendChild(slotDiv);
+            }
+
+            document.getElementById('selected-image-count').textContent = selectedImages.length;
+        }
+
+        function updateImageSelection() {
+            const availableImages = document.querySelectorAll('#available-images .image-item');
+            availableImages.forEach((img, index) => {
+                if (selectedImages.includes(index)) {
+                    img.classList.add('selected');
+                    img.querySelector('.image-overlay').innerHTML = `${index + 1}番目<br>✓ 選択済み`;
+                } else {
+                    img.classList.remove('selected');
+                    img.querySelector('.image-overlay').innerHTML = `${index + 1}番目<br>クリックで選択`;
+                }
+            });
+        }
+
+        function removeSelectedImage(position) {
+            selectedImages.splice(position, 1);
+            updateSelectedImages();
+            updateImageSelection();
+        }
+
+        function getMaxImagesForMarketplace(marketplace) {
+            const limits = {
+                'ebay': 12,
+                'shopee': 10,
+                'amazon': 9,
+                'mercari': 20
+            };
+            return limits[marketplace] || 12;
+        }
+
+        // マーケットプレイス切り替え
+        function switchMarketplace(marketplace) {
+            console.log('マーケットプレイス切り替え:', marketplace);
+            currentMarketplace = marketplace;
+
+            // ボタンの状態更新
+            document.querySelectorAll('.marketplace-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`.marketplace-btn.${marketplace}`).classList.add('active');
+
+            // フィールド表示切り替え
+            document.querySelectorAll('.marketplace-fields').forEach(field => {
+                field.classList.remove('active');
+            });
+            const targetField = document.querySelector(`.marketplace-fields.${marketplace}`);
+            if (targetField) {
+                targetField.classList.add('active');
+            }
+
+            // 表示名更新
+            const marketplaceNames = {
+                'ebay': 'eBay',
+                'shopee': 'Shopee',
+                'amazon': 'Amazon',
+                'mercari': 'メルカリ'
+            };
+            document.getElementById('current-marketplace-name').textContent = marketplaceNames[marketplace];
+            document.getElementById('html-marketplace-name').textContent = marketplaceNames[marketplace];
+            document.getElementById('current-marketplace-submit').textContent = marketplaceNames[marketplace];
+
+            // 画像制限更新
+            document.getElementById('max-images').textContent = getMaxImagesForMarketplace(marketplace);
+            updateSelectedImages();
+        }
+
+        // タブ切り替え
+        function switchTab(event, tabId) {
+            document.querySelectorAll('.tab-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.remove('active');
+            });
+
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // ツール実行関数群
+        function runCategoryTool() {
+            const btn = document.getElementById('category-btn');
+            btn.innerHTML = '<div class="loading"><div class="spinner"></div> 実行中...</div>';
+            btn.disabled = true;
+
+            // カテゴリ判定ツール呼び出しシミュレーション
+            setTimeout(() => {
+                toolResults.category = {
+                    category_id: '183454',
+                    category_name: 'Trading Card Games > Pokémon > Individual Cards',
+                    confidence: 0.92,
+                    recommendations: ['Pokémon', 'Promo', 'Japanese']
+                };
+
+                document.getElementById('category-results').innerHTML = `
+                    <div class="data-row">
+                        <span class="data-label">推奨カテゴリー</span>
+                        <span class="data-value">${toolResults.category.category_name}</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">信頼度</span>
+                        <span class="data-value">${(toolResults.category.confidence * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">キーワード</span>
+                        <span class="data-value">${toolResults.category.recommendations.join(', ')}</span>
+                    </div>
+                `;
+
+                btn.innerHTML = '<i class="fas fa-check"></i> 完了';
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-success');
+                
+                updateStepStatus('step2-status', '進行中', 'processing');
+                updateToolStatusGrid();
+                console.log('カテゴリ判定完了:', toolResults.category);
+            }, 2000);
+        }
+
+        function runFilterTool() {
+            const btn = document.getElementById('filter-btn');
+            btn.innerHTML = '<div class="loading"><div class="spinner"></div> 実行中...</div>';
+            btn.disabled = true;
+
+            // フィルターチェックツール呼び出しシミュレーション
+            setTimeout(() => {
+                toolResults.filter = {
+                    status: 'warning',
+                    passed: 7,
+                    warnings: 2,
+                    errors: 0,
+                    details: [
+                        { type: 'pass', message: 'タイトル長さチェック: OK' },
+                        { type: 'pass', message: '禁止キーワードチェック: OK' },
+                        { type: 'warning', message: 'カテゴリー一致度: 85% (90%推奨)' },
+                        { type: 'warning', message: '画像品質: 一部低解像度' },
+                        { type: 'pass', message: 'ポリシー準拠: OK' }
+                    ]
+                };
+
+                const resultsHtml = toolResults.filter.details.map(item => {
+                    const className = item.type === 'pass' ? 'filter-pass' : 
+                                     item.type === 'warning' ? 'filter-warning' : 'filter-error';
+                    return `<div class="filter-item ${className}">${item.message}</div>`;
+                }).join('');
+
+                document.getElementById('filter-results').innerHTML = `
+                    <div style="margin-bottom: 1rem;">
+                        <div class="data-row">
+                            <span class="data-label">判定結果</span>
+                            <span class="data-value">${toolResults.filter.status === 'pass' ? '✓ 通過' : '⚠ 要注意'}</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">チェック項目</span>
+                            <span class="data-value">通過: ${toolResults.filter.passed}, 警告: ${toolResults.filter.warnings}, エラー: ${toolResults.filter.errors}</span>
+                        </div>
+                    </div>
+                    ${resultsHtml}
+                `;
+
+                btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> 完了';
+                btn.classList.remove('btn-warning');
+                btn.classList.add('btn-success');
+                
+                updateToolStatusGrid();
+                console.log('フィルターチェック完了:', toolResults.filter);
+            }, 1500);
+        }
+
+        function runProfitTool() {
+            const btn = document.getElementById('profit-btn');
+            btn.innerHTML = '<div class="loading"><div class="spinner"></div> 実行中...</div>';
+            btn.disabled = true;
+
+            // 利益計算ツール呼び出しシミュレーション
+            setTimeout(() => {
+                const costData = {
+                    purchase_price: productData.price_jpy,
+                    domestic_shipping: 500,
+                    handling_fee: 200,
+                    total_cost: productData.price_jpy + 500 + 200
+                };
+
+                const revenueData = {
+                    selling_price_usd: 32.99,
+                    selling_price_jpy: Math.round(32.99 * 150),
+                    ebay_fee: Math.round(32.99 * 0.1325 * 150),
+                    paypal_fee: Math.round(32.99 * 0.0349 * 150),
+                    international_shipping: Math.round(12.99 * 150)
+                };
+
+                const profit = revenueData.selling_price_jpy - costData.total_cost - revenueData.ebay_fee - revenueData.paypal_fee - revenueData.international_shipping;
+                const profitMargin = (profit / costData.total_cost * 100).toFixed(1);
+
+                toolResults.profit = {
+                    cost: costData,
+                    revenue: revenueData,
+                    net_profit: profit,
+                    profit_margin: parseFloat(profitMargin),
+                    recommended_price: 34.99,
+                    exchange_rate: 150.05
+                };
+
+                document.getElementById('profit-results').innerHTML = `
+                    <div class="profit-breakdown">
+                        <div class="profit-row">
+                            <span>購入価格</span>
+                            <span>¥${costData.purchase_price.toLocaleString()}</span>
+                        </div>
+                        <div class="profit-row">
+                            <span>諸費用</span>
+                            <span>¥${(costData.domestic_shipping + costData.handling_fee).toLocaleString()}</span>
+                        </div>
+                        <div class="profit-row">
+                            <span>販売価格</span>
+                            <span>${revenueData.selling_price_usd} (¥${revenueData.selling_price_jpy.toLocaleString()})</span>
+                        </div>
+                        <div class="profit-row">
+                            <span>手数料・送料</span>
+                            <span>-¥${(revenueData.ebay_fee + revenueData.paypal_fee + revenueData.international_shipping).toLocaleString()}</span>
+                        </div>
+                        <div class="profit-row total" style="color: ${profit > 0 ? 'var(--success)' : 'var(--error)'};">
+                            <span><strong>純利益</strong></span>
+                            <span><strong>¥${profit.toLocaleString()} (${profitMargin}%)</strong></span>
+                        </div>
+                    </div>
+                `;
+
+                btn.innerHTML = '<i class="fas fa-check"></i> 完了';
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-success');
+                
+                updateToolStatusGrid();
+                console.log('利益計算完了:', toolResults.profit);
+            }, 2500);
+        }
+
+        function runSellerMirror() {
+            const btn = document.getElementById('sellermirror-btn');
+            btn.innerHTML = '<div class="loading"><div class="spinner"></div> 実行中...</div>';
+            btn.disabled = true;
+
+            // SellerMirror競合調査シミュレーション
+            setTimeout(() => {
+                toolResults.sellermirror = {
+                    competitors_found: 12,
+                    price_range: { min: 28.99, max: 39.99, avg: 33.45 },
+                    top_competitors: [
+                        { seller: 'pokemon_cards_jp', price: 32.99, feedback: 99.2, sales: 156 },
+                        { seller: 'trading_world', price: 34.50, feedback: 98.8, sales: 89 },
+                        { seller: 'card_collector_pro', price: 29.99, feedback: 99.5, sales: 203 }
+                    ],
+                    recommended_price: 32.99,
+                    market_demand: 'high'
+                };
+
+                document.getElementById('sellermirror-results').innerHTML = `
+                    <div class="data-row">
+                        <span class="data-label">競合出品者</span>
+                        <span class="data-value">${toolResults.sellermirror.competitors_found}件</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">価格帯</span>
+                        <span class="data-value">${toolResults.sellermirror.price_range.min} - ${toolResults.sellermirror.price_range.max}</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">平均価格</span>
+                        <span class="data-value">${toolResults.sellermirror.price_range.avg}</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">推奨価格</span>
+                        <span class="data-value">${toolResults.sellermirror.recommended_price}</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">市場需要</span>
+                        <span class="data-value">${toolResults.sellermirror.market_demand === 'high' ? '高需要' : '標準'}</span>
+                    </div>
+                `;
+
+                btn.innerHTML = '<i class="fas fa-check"></i> 完了';
+                btn.classList.remove('btn-info');
+                btn.classList.add('btn-success');
+                
+                updateToolStatusGrid();
+                console.log('SellerMirror調査完了:', toolResults.sellermirror);
+            }, 3000);
+        }
+
+        function runAllTools() {
+            console.log('全ツール一括実行開始');
+            const btn = document.getElementById('run-all-btn');
+            btn.innerHTML = '<div class="loading"><div class="spinner"></div> 全ツール実行中...</div>';
+            btn.disabled = true;
+
+            updateStepStatus('step2-status', '実行中', 'processing');
+
+            // 順次実行
+            runCategoryTool();
+            setTimeout(() => runFilterTool(), 500);
+            setTimeout(() => runProfitTool(), 1000);
+            setTimeout(() => runSellerMirror(), 1500);
+
+            setTimeout(() => {
+                btn.innerHTML = '<i class="fas fa-check-double"></i> 全ツール完了';
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-success');
+                
+                updateStepStatus('step2-status', '完了', 'success');
+                updateStepStatus('step3-status', '完了', 'success');
+                
+                // 出品情報を自動入力
+                populateListingFields();
+                
+                console.log('全ツール実行完了');
+            }, 4000);
+        }
+
+        function populateListingFields() {
+            // eBayフィールド自動入力
+            if (toolResults.category) {
+                document.getElementById('ebay-category').value = toolResults.category.category_id;
+            }
+            
+            if (toolResults.profit) {
+                document.getElementById('ebay-price').value = toolResults.profit.recommended_price || toolResults.sellermirror?.recommended_price || 32.99;
+            }
+
+            // タイトル生成
+            if (productData.original_title) {
+                const englishTitle = translateToEnglish(productData.original_title);
+                document.getElementById('ebay-title').value = englishTitle;
+                updateCharCounter(document.getElementById('ebay-title'), 'ebay-title-counter');
+            }
+
+            // 商品状態設定
+            document.getElementById('ebay-condition').value = '3000'; // Very Good
+
+            updateStepStatus('step4-status', '準備完了', 'success');
+            checkRequiredFields();
+        }
+
+        function translateToEnglish(japaneseTitle) {
+            // 簡易翻訳シミュレーション（実際は翻訳APIを使用）
+            const translations = {
+                'ポケモンカード': 'Pokemon Card',
+                'ピカチュウ': 'Pikachu',
+                'プロモ': 'Promo',
+                '限定版': 'Limited Edition',
+                '美品': 'Near Mint',
+                'カード': 'Card'
+            };
+
+            let translated = japaneseTitle;
+            Object.entries(translations).forEach(([jp, en]) => {
+                translated = translated.replace(new RegExp(jp, 'g'), en);
+            });
+
+            return translated.substring(0, 80);
+        }
+
+        // ツールステータスグリッド更新
+        function updateToolStatusGrid() {
+            const statusGrid = document.getElementById('tool-status-grid');
+            
+            const tools = [
+                {
+                    name: 'スクレイピング',
+                    icon: 'fas fa-database',
+                    status: productData.id ? 'complete' : 'missing',
+                    value: productData.id ? '完了' : '未実行',
+                    indicator: productData.id ? '取得済み' : '要実行'
+                },
+                {
+                    name: '画像取得',
+                    icon: 'fas fa-images',
+                    status: productData.images?.length > 0 ? 'complete' : 'missing',
+                    value: productData.images?.length || 0,
+                    indicator: selectedImages.length > 0 ? '選択済み' : '未選択'
+                },
+                {
+                    name: 'カテゴリ判定',
+                    icon: 'fas fa-tags',
+                    status: toolResults.category ? 'complete' : 'missing',
+                    value: toolResults.category ? `${(toolResults.category.confidence * 100).toFixed(0)}%` : '未実行',
+                    indicator: toolResults.category ? '判定完了' : '要実行'
+                },
+                {
+                    name: 'フィルターチェック',
+                    icon: 'fas fa-filter',
+                    status: toolResults.filter ? (toolResults.filter.errors > 0 ? 'missing' : toolResults.filter.warnings > 0 ? 'partial' : 'complete') : 'missing',
+                    value: toolResults.filter ? (toolResults.filter.errors > 0 ? 'エラー' : toolResults.filter.warnings > 0 ? '警告' : '通過') : '未実行',
+                    indicator: toolResults.filter ? '検査済み' : '要実行'
+                },
+                {
+                    name: '利益計算',
+                    icon: 'fas fa-yen-sign',
+                    status: toolResults.profit ? 'complete' : 'missing',
+                    value: toolResults.profit ? `¥${toolResults.profit.net_profit.toLocaleString()}` : '未実行',
+                    indicator: toolResults.profit ? `${toolResults.profit.profit_margin}%` : '要計算'
+                },
+                {
+                    name: 'SellerMirror',
+                    icon: 'fas fa-search',
+                    status: toolResults.sellermirror ? 'complete' : 'missing',
+                    value: toolResults.sellermirror ? `${toolResults.sellermirror.competitors_found}件` : '未実行',
+                    indicator: toolResults.sellermirror ? '調査完了' : '要調査'
+                }
+            ];
+
+            statusGrid.innerHTML = tools.map(tool => `
+                <div class="status-card ${tool.status}">
+                    <h4><i class="${tool.icon}"></i> ${tool.name}</h4>
+                    <div class="status-value" style="color: var(--data-${tool.status});">${tool.value}</div>
+                    <div class="status-indicator indicator-${tool.status}">${tool.indicator}</div>
+                </div>
+            `).join('');
+        }
+
+        // ステップ状態更新
+        function updateStepStatus(stepId, status, type) {
+            const element = document.getElementById(stepId);
+            if (element) {
+                element.textContent = status;
+                element.style.color = `var(--data-${type})`;
+            }
+        }
+
+        // 文字カウンター
+        function updateCharCounter(textarea, counterId) {
+            const counter = document.getElementById(counterId);
+            if (!counter) return;
+
+            const current = textarea.value.length;
+            const max = textarea.maxLength;
+            counter.textContent = `${current}/${max}`;
+
+            if (current > max * 0.9) {
+                counter.style.color = 'var(--error)';
+            } else if (current > max * 0.8) {
+                counter.style.color = 'var(--warning)';
+            } else {
+                counter.style.color = 'var(--text-secondary)';
+            }
+        }
+
+        // 必須項目チェック
+        function checkRequiredFields() {
+            const marketplace = currentMarketplace;
+            const requiredFields = getRequiredFieldsForMarketplace(marketplace);
+            let completedFields = 0;
+
+            const statusHtml = requiredFields.map(field => {
+                const element = document.getElementById(field.id);
+                const isCompleted = element && element.value && element.value.trim() !== '';
+                if (isCompleted) completedFields++;
+
+                return `
+                    <div class="data-row">
+                        <span class="data-label">${field.label}</span>
+                        <span class="data-value" style="color: ${isCompleted ? 'var(--success)' : 'var(--error)'};">
+                            ${isCompleted ? '✓ 入力済み' : '× 未入力'}
+                        </span>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('required-fields-status').innerHTML = `
+                <div class="data-row" style="font-weight: 600; margin-bottom: 1rem;">
+                    <span class="data-label">完了率</span>
+                    <span class="data-value">${completedFields}/${requiredFields.length} (${Math.round(completedFields/requiredFields.length*100)}%)</span>
+                </div>
+                ${statusHtml}
+            `;
+
+            // 出品ボタンの状態更新
+            const isReady = completedFields === requiredFields.length && selectedImages.length > 0;
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = !isReady;
+            
+            if (isReady) {
+                submitBtn.classList.remove('btn-secondary');
+                submitBtn.classList.add('btn-success');
+                document.getElementById('listing-ready-message').textContent = 
+                    'すべての必須項目が完了しています。出品ボタンを押すと実際に出品処理が実行されます。';
+            } else {
+                submitBtn.classList.add('btn-secondary');
+                submitBtn.classList.remove('btn-success');
+                document.getElementById('listing-ready-message').textContent = 
+                    `必須項目 ${requiredFields.length - completedFields} 項目と画像選択を完了してください。`;
+            }
+
+            updateDataIntegrity();
+        }
+
+        function getRequiredFieldsForMarketplace(marketplace) {
+            const fields = {
+                'ebay': [
+                    { id: 'ebay-title', label: 'タイトル' },
+                    { id: 'ebay-price', label: '販売価格' },
+                    { id: 'ebay-category', label: 'カテゴリー' },
+                    { id: 'ebay-condition', label: '商品状態' }
+                ],
+                'shopee': [
+                    { id: 'shopee-title', label: 'タイトル' },
+                    { id: 'shopee-price', label: '販売価格' }
+                ],
+                'amazon': [
+                    { id: 'amazon-title', label: 'タイトル' },
+                    { id: 'amazon-asin', label: 'ASIN/JAN' }
+                ],
+                'mercari': [
+                    { id: 'mercari-title', label: 'タイトル' },
+                    { id: 'mercari-price', label: '販売価格' }
+                ]
+            };
+            return fields[marketplace] || [];
+        }
+
+        // HTMLエディター関連
+        function generateHtmlTemplate() {
+            const marketplace = currentMarketplace;
+            const templates = {
+                'ebay': generateEbayHtmlTemplate(),
+                'shopee': generateShopeeHtmlTemplate(),
+                'amazon': generateAmazonHtmlTemplate(),
+                'mercari': generateMercariHtmlTemplate()
+            };
+
+            const template = templates[marketplace] || templates['ebay'];
+            document.getElementById('html-editor').value = template;
+            updateHtmlPreview();
+        }
+
+        function generateEbayHtmlTemplate() {
+            return `<div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
+    <h2 style="color: #0064d2; border-bottom: 3px solid #0064d2; padding-bottom: 10px;">
+        ${productData.original_title || 'Product Title'}
+    </h2>
+    
+    <div style="background: #f8f9fa; padding: 20px; margin: 15px 0; border-left: 5px solid #0064d2;">
+        <h3 style="margin-top: 0;">Product Details</h3>
+        <ul style="margin: 0;">
+            <li><strong>Condition:</strong> ${productData.condition || 'Very Good'}</li>
+            <li><strong>Category:</strong> ${productData.category || 'Trading Cards'}</li>
+            <li><strong>Origin:</strong> Japan</li>
+            <li><strong>Language:</strong> Japanese</li>
+        </ul>
+    </div>
+
+    <div style="background: #e3f2fd; padding: 20px; margin: 15px 0; border-radius: 8px;">
+        <h3 style="margin-top: 0;">Shipping Information</h3>
+        <p>Items are carefully protected with sleeves and top loaders, shipped with tracking.</p>
+        <p>Standard delivery: 7-14 business days</p>
+    </div>
+
+    <div style="text-align: center; margin: 30px 0; padding: 20px; background: #f0f0f0; border-radius: 8px;">
+        <p style="margin: 0; color: #666; font-size: 16px;">
+            <strong>Questions? Feel free to contact us!</strong>
+        </p>
+    </div>
+</div>`;
+        }
+
+        function generateShopeeHtmlTemplate() {
+            return `<div style="font-family: 'Segoe UI', sans-serif;">
+    <h2 style="color: #ee4d2d;">🔥 ${productData.original_title || 'Hot Deal!'} 🔥</h2>
+    
+    <div style="background: linear-gradient(135deg, #ff6b6b, #ee4d2d); color: white; padding: 15px; border-radius: 10px; margin: 10px 0;">
+        <h3>⭐ Product Highlights ⭐</h3>
+        <p>✅ Authentic Japanese Product</p>
+        <p>✅ Carefully Packaged</p>
+        <p>✅ Fast Shipping</p>
+    </div>
+    
+    <p style="font-size: 18px; color: #ee4d2d; font-weight: bold;">
+        💰 Special Price: Only Today! 💰
+    </p>
+</div>`;
+        }
+
+        function generateAmazonHtmlTemplate() {
+            return `<div style="font-family: Arial, sans-serif; line-height: 1.6;">
+    <h3>${productData.original_title || 'Product Name'}</h3>
+    
+    <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0;">
+        <h4>Product Features:</h4>
+        <ul>
+            <li>High quality ${productData.category || 'trading card'}</li>
+            <li>Condition: ${productData.condition || 'Very Good'}</li>
+            <li>Authentic Japanese product</li>
+            <li>Perfect for collectors</li>
+        </ul>
+    </div>
+    
+    <p><strong>Shipping:</strong> Fast and secure packaging with tracking.</p>
+</div>`;
+        }
+
+        function generateMercariHtmlTemplate() {
+            return `★ ${productData.original_title || '商品名'} ★
+
+【商品詳細】
+・状態: ${productData.condition || '美品'}
+・カテゴリ: ${productData.category || 'トレーディングカード'}
+・原産地: 日本
+
+【発送について】
+・匿名配送
+・24時間以内発送
+・丁寧梱包
+
+【その他】
+・ペット、喫煙環境なし
+・即購入歓迎
+・値下げ交渉不可
+
+#ポケモン #カード #コレクション`;
+        }
+
+        function insertCommonElements() {
+            const editor = document.getElementById('html-editor');
+            const commonElements = `
+<div style="background: #fffbf0; border: 1px solid #ffd700; padding: 15px; margin: 10px 0; border-radius: 5px;">
+    <h4 style="color: #ff8c00; margin-top: 0;">🎯 Why Choose Us?</h4>
+    <ul style="margin: 0;">
+        <li>📦 Professional packaging</li>
+        <li>🚚 Fast worldwide shipping</li>
+        <li>⭐ 100% authentic products</li>
+        <li>💬 Excellent customer service</li>
+    </ul>
+</div>`;
+            
+            editor.value += commonElements;
+            updateHtmlPreview();
+        }
+
+        function updateHtmlPreview() {
+            const htmlContent = document.getElementById('html-editor').value;
+            const preview = document.getElementById('html-preview');
+            preview.innerHTML = htmlContent || '<p style="color: var(--text-secondary); text-align: center;">HTMLを入力するとプレビューが表示されます</p>';
+        }
+
+        function validateHtml() {
+            const htmlContent = document.getElementById('html-editor').value;
+            // 簡易HTMLバリデーション
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlContent, 'text/html');
+            const errors = doc.querySelectorAll('parsererror');
+            
+            if (errors.length === 0) {
+                alert('✓ HTMLは正常です');
+            } else {
+                alert('⚠ HTML構文エラーが検出されました。修正してください。');
+            }
+        }
+
+        // リアルタイムHTMLプレビュー
+        document.addEventListener('input', function(e) {
+            if (e.target.id === 'html-editor') {
+                updateHtmlPreview();
+            }
+            
+            if (e.target.classList.contains('required-field')) {
+                setTimeout(checkRequiredFields, 100);
+            }
+        });
+
+        // 最終確認関連
+        function updateValidationResults() {
+            const results = [];
+            
+            // 基本データ検証
+            if (productData.id) results.push({ status: 'pass', message: '✓ 商品データ: 正常' });
+            else results.push({ status: 'error', message: '✗ 商品データ: 未取得' });
+            
+            // 画像検証
+            if (selectedImages.length > 0) results.push({ status: 'pass', message: `✓ 画像: ${selectedImages.length}枚選択済み` });
+            else results.push({ status: 'error', message: '✗ 画像: 未選択' });
+            
+            // ツール実行結果検証
+            if (toolResults.category) results.push({ status: 'pass', message: '✓ カテゴリ判定: 完了' });
+            else results.push({ status: 'warning', message: '⚠ カテゴリ判定: 未実行' });
+            
+            if (toolResults.profit) results.push({ status: 'pass', message: '✓ 利益計算: 完了' });
+            else results.push({ status: 'warning', message: '⚠ 利益計算: 未実行' });
+            
+            // 必須フィールド検証
+            const requiredFields = getRequiredFieldsForMarketplace(currentMarketplace);
+            const completedFields = requiredFields.filter(field => {
+                const element = document.getElementById(field.id);
+                return element && element.value && element.value.trim() !== '';
+            });
+            
+            if (completedFields.length === requiredFields.length) {
+                results.push({ status: 'pass', message: '✓ 必須項目: すべて入力済み' });
+            } else {
+                results.push({ status: 'error', message: `✗ 必須項目: ${requiredFields.length - completedFields.length}項目未入力` });
+            }
+
+            const resultsHtml = results.map(result => {
+                const className = result.status === 'pass' ? 'filter-pass' : 
+                                 result.status === 'warning' ? 'filter-warning' : 'filter-error';
+                return `<div class="filter-item ${className}">${result.message}</div>`;
+            }).join('');
+
+            document.getElementById('validation-results').innerHTML = resultsHtml;
+
+            // サマリー情報更新
+            updateListingSummary();
+            updateFinalProfitCalculation();
+        }
+
+        function updateListingSummary() {
+            const titleField = document.getElementById(`${currentMarketplace}-title`);
+            const priceField = document.getElementById(`${currentMarketplace}-price`);
+            
+            const summary = [
+                ['マーケットプレイス', currentMarketplace.toUpperCase()],
+                ['商品タイトル', titleField?.value || '未設定'],
+                ['販売価格', priceField ? `${priceField.value} ${currentMarketplace === 'ebay' ? 'USD' : currentMarketplace === 'mercari' ? '円' : ''}` : '未設定'],
+                ['選択画像数', `${selectedImages.length}枚`],
+                ['商品状態', productData.condition || '未設定'],
+                ['SKU', document.getElementById('manual-sku')?.value || '自動生成']
+            ];
+
+            const summaryHtml = summary.map(([label, value]) => `
+                <div class="data-row">
+                    <span class="data-label">${label}</span>
+                    <span class="data-value">${value}</span>
+                </div>
+            `).join('');
+
+            document.getElementById('listing-summary').innerHTML = summaryHtml;
+        }
+
+        function updateFinalProfitCalculation() {
+            if (toolResults.profit) {
+                const profit = toolResults.profit;
+                const profitHtml = `
+                    <div class="profit-row">
+                        <span>購入コスト</span>
+                        <span>¥${profit.cost.total_cost.toLocaleString()}</span>
+                    </div>
+                    <div class="profit-row">
+                        <span>予想売上</span>
+                        <span>¥${profit.revenue.selling_price_jpy.toLocaleString()}</span>
+                    </div>
+                    <div class="profit-row">
+                        <span>各種手数料</span>
+                        <span>-¥${(profit.revenue.ebay_fee + profit.revenue.paypal_fee + profit.revenue.international_shipping).toLocaleString()}</span>
+                    </div>
+                    <div class="profit-row total" style="color: ${profit.net_profit > 0 ? 'var(--success)' : 'var(--error)'};">
+                        <span><strong>最終利益</strong></span>
+                        <span><strong>¥${profit.net_profit.toLocaleString()} (${profit.profit_margin}%)</strong></span>
+                    </div>
+                `;
+                document.getElementById('final-profit-calculation').innerHTML = profitHtml;
+            } else {
+                document.getElementById('final-profit-calculation').innerHTML = '<p style="color: var(--text-secondary);">利益計算を実行してください</p>';
+            }
+        }
+
+        // 出品実行関連
+        function submitListing() {
+            if (confirm(`${currentMarketplace.toUpperCase()}に商品を出品しますか？\n\n出品後は各プラットフォームでの編集が必要になります。`)) {
+                executeListingSubmission();
+            }
+        }
+
+        function executeListingSubmission() {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 20000; display: flex; align-items: center; justify-content: center; color: white;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                        <h3>${currentMarketplace.toUpperCase()}に出品中...</h3>
+                        <p id="submission-step">データを準備中...</p>
+                        <div style="width: 300px; height: 20px; background: #333; border-radius: 10px; margin: 20px auto; overflow: hidden;">
+                            <div id="submission-progress" style="width: 0%; height: 100%; background: var(--success); border-radius: 10px; transition: width 0.5s ease;"></div>
+                        </div>
+                        <div id="submission-percent">0%</div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(loadingDiv);
+
+            // 出品進行シミュレーション
+            const steps = [
+                { step: 'データを準備中...', progress: 10 },
+                { step: '画像をアップロード中...', progress: 30 },
+                { step: 'カテゴリを設定中...', progress: 50 },
+                { step: '価格・送料を設定中...', progress: 70 },
+                { step: 'HTML説明文を設定中...', progress: 85 },
+                { step: '最終チェック中...', progress: 95 },
+                { step: '出品完了！', progress: 100 }
+            ];
+
+            let currentStep = 0;
+            const stepInterval = setInterval(() => {
+                if (currentStep < steps.length) {
+                    document.getElementById('submission-step').textContent = steps[currentStep].step;
+                    document.getElementById('submission-progress').style.width = steps[currentStep].progress + '%';
+                    document.getElementById('submission-percent').textContent = steps[currentStep].progress + '%';
+                    currentStep++;
+                } else {
+                    clearInterval(stepInterval);
+                    setTimeout(() => {
+                        document.body.removeChild(loadingDiv);
+                        showSuccessMessage();
+                    }, 1000);
+                }
+            }, 800);
+        }
+
+        function showSuccessMessage() {
+            const listingId = generateListingId();
+            const listingUrl = generateListingUrl(listingId);
+            
+            alert(`🎉 ${currentMarketplace.toUpperCase()}への出品が完了しました！\n\n` +
+                  `出品ID: ${listingId}\n` +
+                  `URL: ${listingUrl}\n\n` +
+                  `データベースが更新され、出品状況が記録されました。`);
+            
+            closeIntegratedModal();
+            
+            // データベース更新をシミュレート
+            updateDatabaseRecord(listingId, listingUrl);
+        }
+
+        function generateListingId() {
+            const prefixes = {
+                'ebay': '123456789',
+                'shopee': 'SP123456',
+                'amazon': 'B0123456',
+                'mercari': 'M123456789'
+            };
+            return prefixes[currentMarketplace] + Math.floor(Math.random() * 1000);
+        }
+
+        function generateListingUrl(listingId) {
+            const urlTemplates = {
+                'ebay': `https://ebay.com/itm/${listingId}`,
+                'shopee': `https://shopee.com/product/${listingId}`,
+                'amazon': `https://amazon.com/dp/${listingId}`,
+                'mercari': `https://mercari.com/jp/items/${listingId}`
+            };
+            return urlTemplates[currentMarketplace];
+        }
+
+        function updateDatabaseRecord(listingId, listingUrl) {
+            // データベース更新のシミュレーション
+            console.log('データベース更新:', {
+                product_id: productData.id,
+                marketplace: currentMarketplace,
+                listing_id: listingId,
+                listing_url: listingUrl,
+                status: 'listed',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        // ユーティリティ関数群
+        function updateProcessingTime() {
+            const elapsed = (Date.now() - processingStartTime) / 1000;
+            document.getElementById('processing-time').textContent = elapsed.toFixed(2);
+        }
+
+        function updateDataIntegrity() {
+            let totalChecks = 10;
+            let passedChecks = 0;
+
+            if (productData.id) passedChecks++;
+            if (productData.images && productData.images.length > 0) passedChecks++;
+            if (selectedImages.length > 0) passedChecks++;
+            if (toolResults.category) passedChecks++;
+            if (toolResults.profit) passedChecks++;
+            
+            const requiredFields = getRequiredFieldsForMarketplace(currentMarketplace);
+            const completedRequiredFields = requiredFields.filter(field => {
+                const element = document.getElementById(field.id);
+                return element && element.value && element.value.trim() !== '';
+            });
+            
+            passedChecks += Math.floor(completedRequiredFields.length / requiredFields.length * 5);
+
+            const integrity = Math.round((passedChecks / totalChecks) * 100);
+            document.getElementById('data-integrity').textContent = integrity;
+            
+            const status = integrity >= 90 ? '準備完了' : integrity >= 70 ? '要確認' : integrity >= 50 ? '不完全' : '要処理';
+            document.getElementById('validation-status').textContent = status;
+        }
+
+        function goToNextTab() {
+            const currentTab = document.querySelector('.tab-link.active');
+            const nextTab = currentTab.nextElementSibling;
+            
+            if (nextTab && nextTab.classList.contains('tab-link')) {
+                nextTab.click();
+            } else {
+                alert('最後のタブです');
+            }
+        }
+
+        function quickSubmit() {
+            // 全ツール実行→必須項目チェック→出品
+            if (!toolResults.category || !toolResults.profit || !toolResults.filter) {
+                if (confirm('一部ツールが未実行です。先に全ツールを実行しますか？')) {
+                    runAllTools();
+                    setTimeout(() => {
+                        checkRequiredFields();
+                        if (!document.getElementById('submit-btn').disabled) {
+                            submitListing();
+                        }
+                    }, 5000);
+                }
+            } else {
+                checkRequiredFields();
+                if (!document.getElementById('submit-btn').disabled) {
+                    submitListing();
+                } else {
+                    alert('必須項目を完了してから出品してください。');
+                }
+            }
+        }
+
+        function saveAsDraft() {
+            const draftData = {
+                product_id: productData.id,
+                marketplace: currentMarketplace,
+                selected_images: selectedImages,
+                tool_results: toolResults,
+                form_data: getFormData(),
+                timestamp: new Date().toISOString()
+            };
+            
+            console.log('下書き保存:', draftData);
+            alert('下書きを保存しました。後で編集を再開できます。');
+        }
+
+        function previewListing() {
+            // 出品プレビューを別ウィンドウで表示
+            const previewData = {
+                title: document.getElementById(`${currentMarketplace}-title`)?.value || '未設定',
+                price: document.getElementById(`${currentMarketplace}-price`)?.value || '0',
+                images: selectedImages.map(index => productData.images[index]),
+                html: document.getElementById('html-editor').value
+            };
+            
+            const previewWindow = window.open('', 'preview', 'width=800,height=600');
+            previewWindow.document.write(generatePreviewHtml(previewData));
+        }
+
+        function generatePreviewHtml(data) {
+            return `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>出品プレビュー - ${currentMarketplace.toUpperCase()}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .preview-header { background: #f0f0f0; padding: 15px; margin-bottom: 20px; }
+        .preview-images { display: flex; gap: 10px; margin: 20px 0; }
+        .preview-images img { width: 100px; height: 100px; object-fit: cover; border: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+    <div class="preview-header">
+        <h2>${data.title}</h2>
+        <p><strong>価格:</strong> ${data.price} ${currentMarketplace === 'ebay' ? 'USD' : currentMarketplace === 'mercari' ? '円' : ''}</p>
+        <p><strong>プラットフォーム:</strong> ${currentMarketplace.toUpperCase()}</p>
+    </div>
+    
+    <div class="preview-images">
+        ${data.images.map(url => `<img src="${url}" alt="商品画像">`).join('')}
+    </div>
+    
+    <div class="preview-description">
+        <h3>商品説明</h3>
+        ${data.html || '<p>商品説明未設定</p>'}
+    </div>
+</body>
+</html>`;
+        }
+
+        function getFormData() {
+            const formData = {};
+            const inputs = document.querySelectorAll('.form-input, .form-textarea, .form-select');
+            inputs.forEach(input => {
+                if (input.id) {
+                    formData[input.id] = input.value;
+                }
+            });
+            return formData;
+        }
+
+        function resetForm() {
+            if (confirm('すべての入力内容をリセットしますか？この操作は取り消せません。')) {
+                location.reload();
+            }
+        }
+
+        // キーボードショートカット
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeIntegratedModal();
+            }
+            
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                saveAsDraft();
+            }
+            
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                goToNextTab();
+            }
+        });
+
+        // モーダル外クリックで閉じる
+        document.getElementById('integrated-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeIntegratedModal();
+            }
+        });
+
+        // 最終確認タブがアクティブになった時の処理
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.tab-link') && e.target.closest('.tab-link').onclick.toString().includes('tab-final')) {
+                setTimeout(updateValidationResults, 100);
+            }
+        });
+
+        console.log('統合出品システム初期化完了');
+    </script>
+</body>
+</html>

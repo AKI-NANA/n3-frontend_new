@@ -1,0 +1,228 @@
+{
+  "global_settings": {
+    "enable_animations": true,
+    "reduce_motion_respect": true,
+    "duration_scale": 1.0,
+    "easing_default": "ease-out"
+  },
+  "animation_types": {
+    "delete": {
+      "keyframes": {
+        "0%": {
+          "transform": "scale(1)",
+          "opacity": "1"
+        },
+        "50%": {
+          "transform": "scale(0.8)",
+          "opacity": "0.5"
+        },
+        "100%": {
+          "transform": "scale(0)",
+          "opacity": "0"
+        }
+      },
+      "duration": "300ms",
+      "easing": "ease-out",
+      "fill_mode": "forwards"
+    },
+    "add": {
+      "keyframes": {
+        "0%": {
+          "transform": "scale(0) translateY(-20px)",
+          "opacity": "0"
+        },
+        "50%": {
+          "transform": "scale(1.1) translateY(-10px)",
+          "opacity": "0.8"
+        },
+        "100%": {
+          "transform": "scale(1) translateY(0)",
+          "opacity": "1"
+        }
+      },
+      "duration": "400ms",
+      "easing": "ease-in"
+    },
+    "loading": {
+      "keyframes": {
+        "0%": {
+          "transform": "rotate(0deg)"
+        },
+        "100%": {
+          "transform": "rotate(360deg)"
+        }
+      },
+      "duration": "1s",
+      "iteration_count": "infinite",
+      "easing": "linear"
+    },
+    "ai_learning": {
+      "keyframes": {
+        "0%": {
+          "background": "linear-gradient(45deg, #f0f0f0, #e0e0e0)",
+          "transform": "scale(1)"
+        },
+        "50%": {
+          "background": "linear-gradient(45deg, #4CAF50, #66BB6A)",
+          "transform": "scale(1.02)"
+        },
+        "100%": {
+          "background": "linear-gradient(45deg, #4CAF50, #81C784)",
+          "transform": "scale(1)"
+        }
+      },
+      "duration": "500ms",
+      "easing": "ease-out"
+    },
+    "mf_sync": {
+      "keyframes": {
+        "0%": {
+          "background": "linear-gradient(45deg, #f0f0f0, #e0e0e0)",
+          "box-shadow": "0 2px 4px rgba(0,0,0,0.1)"
+        },
+        "25%": {
+          "background": "linear-gradient(45deg, #2196F3, #42A5F5)",
+          "box-shadow": "0 4px 8px rgba(33,150,243,0.3)"
+        },
+        "50%": {
+          "background": "linear-gradient(45deg, #1976D2, #1E88E5)",
+          "box-shadow": "0 6px 12px rgba(33,150,243,0.4)"
+        },
+        "75%": {
+          "background": "linear-gradient(45deg, #2196F3, #42A5F5)",
+          "box-shadow": "0 4px 8px rgba(33,150,243,0.3)"
+        },
+        "100%": {
+          "background": "linear-gradient(45deg, #2196F3, #64B5F6)",
+          "box-shadow": "0 2px 4px rgba(0,0,0,0.1)"
+        }
+      },
+      "duration": "800ms",
+      "easing": "ease-in-out"
+    },
+    "toast_slide_in": {
+      "keyframes": {
+        "0%": {
+          "transform": "translateX(100%)",
+          "opacity": "0"
+        },
+        "100%": {
+          "transform": "translateX(0)",
+          "opacity": "1"
+        }
+      },
+      "duration": "300ms",
+      "easing": "ease-out"
+    },
+    "toast_slide_out": {
+      "keyframes": {
+        "0%": {
+          "transform": "translateX(0)",
+          "opacity": "1"
+        },
+        "100%": {
+          "transform": "translateX(100%)",
+          "opacity": "0"
+        }
+      },
+      "duration": "300ms",
+      "easing": "ease-in"
+    },
+    "modal_fade_in": {
+      "keyframes": {
+        "0%": {
+          "opacity": "0",
+          "transform": "scale(0.9)"
+        },
+        "100%": {
+          "opacity": "1",
+          "transform": "scale(1)"
+        }
+      },
+      "duration": "200ms",
+      "easing": "ease-out"
+    },
+    "progress_bar": {
+      "keyframes": {
+        "0%": {
+          "width": "0%"
+        },
+        "100%": {
+          "width": "100%"
+        }
+      },
+      "duration": "variable",
+      "easing": "ease-out"
+    },
+    "pulse": {
+      "keyframes": {
+        "0%": {
+          "transform": "scale(1)",
+          "opacity": "1"
+        },
+        "50%": {
+          "transform": "scale(1.05)",
+          "opacity": "0.8"
+        },
+        "100%": {
+          "transform": "scale(1)",
+          "opacity": "1"
+        }
+      },
+      "duration": "600ms",
+      "iteration_count": "2",
+      "easing": "ease-in-out"
+    }
+  },
+  "css_classes": {
+    ".kicho__delete-animation": {
+      "animation": "delete 300ms ease-out forwards"
+    },
+    ".kicho__add-animation": {
+      "animation": "add 400ms ease-in"
+    },
+    ".kicho__loading-spinner": {
+      "animation": "loading 1s linear infinite"
+    },
+    ".kicho__ai-complete-animation": {
+      "animation": "ai_learning 500ms ease-out"
+    },
+    ".kicho__mf-sync-animation": {
+      "animation": "mf_sync 800ms ease-in-out"
+    },
+    ".kicho__toast-enter": {
+      "animation": "toast_slide_in 300ms ease-out"
+    },
+    ".kicho__toast-exit": {
+      "animation": "toast_slide_out 300ms ease-in"
+    },
+    ".kicho__modal-enter": {
+      "animation": "modal_fade_in 200ms ease-out"
+    },
+    ".kicho__pulse": {
+      "animation": "pulse 600ms ease-in-out 2"
+    }
+  },
+  "responsive_settings": {
+    "mobile": {
+      "duration_scale": 0.8,
+      "reduce_animations": true
+    },
+    "tablet": {
+      "duration_scale": 0.9,
+      "reduce_animations": false
+    },
+    "desktop": {
+      "duration_scale": 1.0,
+      "reduce_animations": false
+    }
+  },
+  "accessibility": {
+    "respect_prefers_reduced_motion": true,
+    "fallback_animations": {
+      "delete": "opacity transition",
+      "add": "opacity transition",
+      "loading": "opacity pulse"
+    }
+  }
+}

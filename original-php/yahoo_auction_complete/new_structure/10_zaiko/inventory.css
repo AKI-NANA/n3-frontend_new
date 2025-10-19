@@ -1,0 +1,444 @@
+/**
+ * 在庫管理タブ専用CSS
+ * modules/yahoo_auction_complete/new_structure/09_inventory/inventory.css
+ * 
+ * 🎯 機能: 在庫分析・価格監視・アラート・ダッシュボード
+ * ⚠️ 重要: loadInventoryData()等の既存JavaScript関数との互換性維持
+ * 📅 作成日: 2025年9月15日
+ */
+
+/* ===== 在庫管理コンテナ（既存ID保持） ===== */
+.inventory-container, #inventory-mgmt {
+    padding: var(--space-lg);
+    background: var(--bg-primary);
+    min-height: 100vh;
+}
+
+/* ===== 分析カードグリッド（既存クラス維持） ===== */
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+}
+
+.analytics-card {
+    background: var(--bg-secondary);
+    padding: var(--space-xl);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.analytics-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.analytics-card:hover::before {
+    left: 100%;
+}
+
+.analytics-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+    border-color: var(--primary-color);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-lg);
+}
+
+.card-header i {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+}
+
+.card-header h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.card-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--space-sm);
+    line-height: 1;
+}
+
+.card-change {
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.card-change.positive {
+    color: var(--success-color);
+}
+
+.card-change.positive::before {
+    content: '↗';
+    font-size: 1rem;
+}
+
+.card-change.negative {
+    color: var(--danger-color);
+}
+
+.card-change.negative::before {
+    content: '↘';
+    font-size: 1rem;
+}
+
+/* ===== 価格監視セクション（既存クラス維持） ===== */
+.price-monitoring {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    padding: var(--space-xl);
+    margin-bottom: var(--space-xl);
+}
+
+.price-monitoring h4 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--space-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.monitoring-table {
+    overflow-x: auto;
+}
+
+.monitoring-table .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.monitoring-table .data-table th {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-weight: 600;
+    padding: var(--space-md);
+    text-align: left;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.monitoring-table .data-table td {
+    padding: var(--space-md);
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+
+.monitoring-table .data-table tr:hover {
+    background: var(--bg-hover);
+}
+
+/* ===== 価格変動インジケーター ===== */
+.price-change-indicator {
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.price-change-up {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-color);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.price-change-down {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger-color);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.price-change-stable {
+    background: rgba(107, 114, 128, 0.1);
+    color: var(--text-muted);
+    border: 1px solid rgba(107, 114, 128, 0.3);
+}
+
+/* ===== 推奨アクションボタン ===== */
+.action-recommendation {
+    padding: 6px 12px;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.action-increase {
+    background: var(--success-color);
+    color: white;
+}
+
+.action-decrease {
+    background: var(--warning-color);
+    color: white;
+}
+
+.action-monitor {
+    background: var(--info-color);
+    color: white;
+}
+
+.action-recommendation:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* ===== 在庫アラートセクション（既存クラス維持） ===== */
+.inventory-alerts {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    padding: var(--space-xl);
+    margin-bottom: var(--space-xl);
+}
+
+.inventory-alerts h4 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--space-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.alert-list, #inventoryAlerts {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.inventory-alert-item {
+    background: var(--bg-tertiary);
+    padding: var(--space-lg);
+    border-radius: var(--radius-lg);
+    border-left: 4px solid;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+}
+
+.inventory-alert-item:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.alert-critical {
+    border-left-color: var(--danger-color);
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.alert-warning {
+    border-left-color: var(--warning-color);
+    background: rgba(245, 158, 11, 0.05);
+}
+
+.alert-info {
+    border-left-color: var(--info-color);
+    background: rgba(6, 182, 212, 0.05);
+}
+
+.alert-content {
+    flex: 1;
+}
+
+.alert-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--space-xs);
+}
+
+.alert-description {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.alert-actions {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.alert-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.alert-btn-primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.alert-btn-secondary {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.alert-btn:hover {
+    transform: translateY(-1px);
+}
+
+/* ===== 在庫レベルインジケーター ===== */
+.stock-level-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.stock-high {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-color);
+}
+
+.stock-medium {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning-color);
+}
+
+.stock-low {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger-color);
+}
+
+.stock-out {
+    background: rgba(0, 0, 0, 0.1);
+    color: var(--text-muted);
+}
+
+/* ===== ローディング・空状態 ===== */
+.inventory-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--bg-tertiary);
+    border-top: 4px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: var(--space-lg);
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ===== レスポンシブ対応（機能維持） ===== */
+@media (max-width: 1024px) {
+    .analytics-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .monitoring-table .data-table {
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .inventory-container, #inventory-mgmt {
+        padding: var(--space-md);
+    }
+    
+    .analytics-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .analytics-card {
+        padding: var(--space-lg);
+    }
+    
+    .card-value {
+        font-size: 2rem;
+    }
+    
+    .inventory-alert-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-md);
+    }
+    
+    .alert-actions {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .monitoring-table {
+        overflow-x: auto;
+    }
+    
+    .monitoring-table .data-table {
+        min-width: 600px;
+    }
+}
+
+@media (max-width: 480px) {
+    .price-monitoring,
+    .inventory-alerts {
+        padding: var(--space-lg);
+    }
+    
+    .monitoring-table .data-table th,
+    .monitoring-table .data-table td {
+        padding: var(--space-sm);
+        font-size: 0.75rem;
+    }
+    
+    .card-header h4 {
+        font-size: 0.875rem;
+    }
+    
+    .card-value {
+        font-size: 1.75rem;
+    }
+}

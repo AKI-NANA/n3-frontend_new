@@ -1,0 +1,1540 @@
+/**
+ * 記帳自動化ツール専用CSS（分離版）
+ * common/css/pages/kicho.css
+ * 
+ * ✅ kicho_NEW.html からのCSS完全分離
+ * ✅ 一貫したDOM構造維持
+ * ✅ デザイン・レイアウト保持
+ */
+
+/* =====================================
+   🎯 NAGANO-3 共通CSS完全インライン実装
+   共通CSS（style.css, common.css, layout.css, themes-pure.css）を統合
+   ===================================== */
+
+/* === CSS Reset & Base === */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* =====================================
+   🔧 重要：基本文字色・背景色の強制指定
+   ===================================== */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+    "Oxygen", "Ubuntu", "Cantarell", sans-serif;
+  /* 🔧 基本色を強制指定 */
+  color: #111827 !important; /* 濃い黒文字 */
+  background-color: #ffffff !important; /* 白背景 */
+  transition: color 0.3s ease, background-color 0.3s ease;
+  line-height: 1.6;
+}
+
+/* 🔧 統計カード（強制色指定） */
+.dashboard__stat-card {
+  /* 🔧 統計カード背景 */
+  background-color: #f9fafb !important; /* 薄グレー背景 */
+  border: 1px solid #e5e7eb; /* グレーボーダー */
+  border-radius: var(--border-radius);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-fast);
+}
+
+.dashboard__stat-card__title {
+  font-size: var(--font-sm);
+  font-weight: var(--font-semibold);
+  /* 🔧 統計タイトル色 */
+  color: #6b7280 !important; /* グレー文字 */
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dashboard__stat-card__value {
+  font-size: 1.75rem;
+  font-weight: var(--font-bold);
+  /* 🔧 統計値色 */
+  color: #111827 !important; /* 濃い黒 */
+  margin-bottom: var(--spacing-sm);
+}
+
+.dashboard__stat-card__trend {
+  font-size: var(--font-sm);
+  /* 🔧 トレンド色 */
+  color: #6b7280 !important; /* グレー文字 */
+}
+
+.dashboard__stat-card__icon {
+  width: 32px;
+  height: 32px;
+  /* 🔧 アイコン背景 */
+  background-color: #f3f4f6 !important; /* 薄グレー2 */
+  border-radius: var(--border-radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 🔧 アイコン色 */
+  color: #8b5cf6 !important; /* 紫色 */
+}
+
+/* === NAGANO-3 共通CSS変数（推測実装） === */
+:root {
+  /* 📁 Base Colors */
+  --primary-color: #3b82f6;
+  --secondary-color: #6b7280;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --error-color: #ef4444;
+  --info-color: #0ea5e9;
+
+  /* 📁 Accent Colors */
+  --accent-blue: #8b5cf6;
+  --accent-purple: #a855f7;
+  --accent-green: #10b981;
+  --accent-yellow: #f59e0b;
+  --accent-red: #ef4444;
+
+  /* 📁 Background Colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-tertiary: #f3f4f6;
+  --bg-quaternary: #e5e7eb;
+
+  /* 📁 Text Colors */
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+  --text-light: #d1d5db;
+  --text-white: #ffffff;
+
+  /* 📁 Border & Shadow */
+  --border-color: #d1d5db;
+  --border-light: #e5e7eb;
+  --border-dark: #9ca3af;
+  --border-radius: 0.375rem;
+  --border-radius-sm: 0.25rem;
+  --border-radius-lg: 0.5rem;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+  /* 📁 Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+
+  /* 📁 Font Sizes */
+  --font-xs: 0.75rem;
+  --font-sm: 0.875rem;
+  --font-base: 1rem;
+  --font-lg: 1.125rem;
+  --font-xl: 1.25rem;
+  --font-2xl: 1.5rem;
+  --font-3xl: 1.875rem;
+
+  /* 📁 Font Weights */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* 📁 Transitions */
+  --transition-fast: all 0.15s ease;
+  --transition-normal: all 0.3s ease;
+  --transition-slow: all 0.5s ease;
+
+  /* 📁 Z-index */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-modal: 1050;
+  --z-tooltip: 1070;
+}
+
+/* === Dark Theme Support === */
+[data-theme="dark"] {
+  --bg-primary: #1f2937;
+  --bg-secondary: #374151;
+  --bg-tertiary: #4b5563;
+  --bg-quaternary: #6b7280;
+
+  --text-primary: #f9fafb;
+  --text-secondary: #d1d5db;
+  --text-muted: #9ca3af;
+  --text-light: #6b7280;
+
+  --border-color: #4b5563;
+  --border-light: #6b7280;
+  --border-dark: #374151;
+}
+
+/* === Basic Layout Components === */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-md);
+}
+
+.grid {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.gap-sm {
+  gap: var(--spacing-sm);
+}
+
+.gap-md {
+  gap: var(--spacing-md);
+}
+
+.gap-lg {
+  gap: var(--spacing-lg);
+}
+
+/* === Button System === */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-sm);
+  font-weight: var(--font-medium);
+  border: 1px solid transparent;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  text-decoration: none;
+  white-space: nowrap;
+  line-height: 1.5;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn--primary {
+  background: var(--primary-color);
+  color: var(--text-white);
+  border-color: var(--primary-color);
+}
+
+.btn--primary:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.btn--secondary {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.btn--secondary:hover {
+  background: var(--bg-secondary);
+}
+
+.btn--success {
+  background: var(--success-color);
+  color: var(--text-white);
+  border-color: var(--success-color);
+}
+
+.btn--success:hover {
+  background: #059669;
+  border-color: #059669;
+}
+
+.btn--info {
+  background: var(--info-color);
+  color: var(--text-white);
+  border-color: var(--info-color);
+}
+
+.btn--info:hover {
+  background: #0284c7;
+  border-color: #0284c7;
+}
+
+.btn--warning {
+  background: var(--warning-color);
+  color: var(--text-white);
+  border-color: var(--warning-color);
+}
+
+.btn--warning:hover {
+  background: #d97706;
+  border-color: #d97706;
+}
+
+.btn--danger {
+  background: var(--error-color);
+  color: var(--text-white);
+  border-color: var(--error-color);
+}
+
+.btn--danger:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+}
+
+.btn--small {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-xs);
+}
+
+.btn--large {
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-size: var(--font-lg);
+}
+
+.btn--full {
+  width: 100%;
+  justify-content: center;
+}
+
+/* === Form System === */
+.form-group {
+  margin-bottom: var(--spacing-md);
+}
+
+.form-label {
+  display: block;
+  margin-bottom: var(--spacing-sm);
+  font-size: var(--font-sm);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: var(--font-base);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: var(--transition-fast);
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* === Card System === */
+.card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: var(--transition-fast);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.card-header {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.card-body {
+  padding: var(--spacing-lg);
+}
+
+.card-title {
+  font-size: var(--font-lg);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.card-subtitle {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  margin-top: var(--spacing-xs);
+}
+
+/* === Table System === */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-primary);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.table th {
+  background: var(--bg-secondary);
+  padding: var(--spacing-md);
+  text-align: left;
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border-color);
+}
+
+.table td {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-primary);
+}
+
+.table tr:hover {
+  background: var(--bg-tertiary);
+}
+
+/* =====================================
+   🎯 記帳ツール専用CSS
+   ===================================== */
+
+/* =====================================
+   🔧 記帳ツール専用変数（直接色指定で確実に表示）
+   ===================================== */
+:root {
+  /* 記帳ツール専用色（直接指定で確実表示） */
+  --kicho-primary: #8b5cf6; /* 紫色 - メインカラー */
+  --kicho-secondary: #a855f7; /* 薄紫色 - サブカラー */
+  --kicho-danger: #ef4444; /* 赤色 - エラー・削除 */
+  --kicho-success: #10b981; /* 緑色 - 成功・承認 */
+  --kicho-warning: #f59e0b; /* 黄色 - 警告・待機 */
+  --kicho-info: #3b82f6; /* 青色 - 情報・MF */
+
+  /* 統一アイコンカラー（直接指定） */
+  --icon-mf: #1e40af; /* MFクラウド - 濃青 */
+  --icon-csv: #059669; /* CSV - 濃緑 */
+  --icon-ai: #ea580c; /* AI - オレンジ */
+  --icon-system: #4b5563; /* システム - グレー */
+  --icon-rule: #7c3aed; /* ルール管理 - 濃紫 */
+  --icon-approval: #10b981; /* 承認 - 緑 */
+}
+
+/* 統一アイコンシステム */
+.icon--mf {
+  color: var(--icon-mf);
+}
+.icon--csv {
+  color: var(--icon-csv);
+}
+.icon--ai {
+  color: var(--icon-ai);
+}
+.icon--system {
+  color: var(--icon-system);
+}
+.icon--rule {
+  color: var(--icon-rule);
+}
+.icon--approval {
+  color: var(--icon-approval);
+}
+
+/* =====================================
+   記帳ツール基本レイアウト
+   ===================================== */
+.kicho__container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-lg);
+}
+
+.kicho__header {
+  background: var(--bg-secondary);
+  border-bottom: 2px solid var(--border-light);
+  padding: var(--spacing-lg);
+  margin: calc(-1 * var(--spacing-lg)) calc(-1 * var(--spacing-lg))
+    var(--spacing-xl);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.kicho__header-left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.kicho__page-title {
+  font-size: var(--font-2xl);
+  font-weight: var(--font-bold);
+  color: var(--kicho-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin: 0;
+}
+
+.kicho__page-icon {
+  color: var(--icon-mf);
+}
+
+.kicho__system-status {
+  display: flex;
+  gap: var(--spacing-lg);
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+.kicho__status-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.kicho__status-item--active i {
+  color: var(--kicho-success);
+}
+
+.kicho__header-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+/* =====================================
+   統計ダッシュボード
+   ===================================== */
+.dashboard__stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+.dashboard__stat-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-fast);
+}
+
+.dashboard__stat-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.dashboard__stat-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.dashboard__stat-card__title {
+  font-size: var(--font-sm);
+  font-weight: var(--font-semibold);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dashboard__stat-card__icon {
+  width: 32px;
+  height: 32px;
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--kicho-primary);
+}
+
+.dashboard__stat-card__value {
+  font-size: 1.75rem;
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.dashboard__stat-card__trend {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+/* =====================================
+   セクション
+   ===================================== */
+.kicho__section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius);
+  margin-bottom: var(--spacing-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.kicho__section__header {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.kicho__section__title {
+  font-size: var(--font-xl);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin: 0;
+}
+
+.kicho__section__subtitle {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  margin-top: var(--spacing-xs);
+}
+
+.kicho__section__actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+/* =====================================
+   カード
+   ===================================== */
+.kicho__overview-section {
+  padding: var(--spacing-lg);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.kicho__card {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-lg);
+}
+
+.kicho__card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+}
+
+.kicho__card__header h3 {
+  font-size: var(--font-lg);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* =====================================
+   フォーム
+   ===================================== */
+.kicho__form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.kicho__form-label {
+  font-size: var(--font-sm);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+}
+
+.kicho__form-input {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: var(--font-base);
+  transition: var(--transition-fast);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.kicho__form-input:focus {
+  outline: none;
+  border-color: var(--kicho-primary);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+/* =====================================
+   🔧 記帳ツール専用ボタン（色を強制指定）
+   ===================================== */
+.kicho__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-sm);
+  font-weight: var(--font-medium);
+  border: 1px solid transparent;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  text-decoration: none;
+  white-space: nowrap;
+  /* 🔧 強制色指定でボタンを確実に表示 */
+  background-color: #6b7280 !important; /* デフォルトグレー */
+  color: #ffffff !important; /* 白文字 */
+  border-color: #6b7280 !important; /* グレーボーダー */
+}
+
+.kicho__btn--primary {
+  /* 🔧 プライマリボタン - 確実に表示 */
+  background-color: #8b5cf6 !important; /* 紫色 */
+  color: #ffffff !important; /* 白文字 */
+  border-color: #8b5cf6 !important; /* 紫ボーダー */
+}
+
+.kicho__btn--primary:hover {
+  background-color: #7c3aed !important; /* 濃紫 */
+  border-color: #7c3aed !important;
+}
+
+.kicho__btn--secondary {
+  /* 🔧 セカンダリボタン - 確実に表示 */
+  background-color: #ffffff !important; /* 白背景 */
+  color: #111827 !important; /* 黒文字 */
+  border-color: #d1d5db !important; /* グレーボーダー */
+}
+
+.kicho__btn--secondary:hover {
+  background-color: #f3f4f6 !important; /* 薄グレー */
+}
+
+.kicho__btn--success {
+  /* 🔧 成功ボタン - 確実に表示 */
+  background-color: #10b981 !important; /* 緑色 */
+  color: #ffffff !important; /* 白文字 */
+  border-color: #10b981 !important; /* 緑ボーダー */
+}
+
+.kicho__btn--info {
+  /* 🔧 インフォボタン - 確実に表示 */
+  background-color: #3b82f6 !important; /* 青色 */
+  color: #ffffff !important; /* 白文字 */
+  border-color: #3b82f6 !important; /* 青ボーダー */
+}
+
+.kicho__btn--warning {
+  /* 🔧 警告ボタン - 確実に表示 */
+  background-color: #f59e0b !important; /* 黄色 */
+  color: #ffffff !important; /* 白文字 */
+  border-color: #f59e0b !important; /* 黄ボーダー */
+}
+
+.kicho__btn--danger {
+  /* 🔧 危険ボタン - 確実に表示 */
+  background-color: #ef4444 !important; /* 赤色 */
+  color: #ffffff !important; /* 白文字 */
+  border-color: #ef4444 !important; /* 赤ボーダー */
+}
+
+.kicho__btn--full {
+  width: 100%;
+  justify-content: center;
+}
+
+.kicho__btn--small {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-xs);
+}
+
+/* =====================================
+   アップロードエリア
+   ===================================== */
+.kicho__upload-area {
+  border: 2px dashed var(--border-color);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-xl);
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  background: var(--bg-primary);
+}
+
+.kicho__upload-area:hover {
+  border-color: var(--kicho-primary);
+  background: rgba(139, 92, 246, 0.05);
+}
+
+.kicho__upload-area__icon {
+  font-size: 2rem;
+  color: var(--text-muted);
+  margin-bottom: var(--spacing-sm);
+}
+
+.kicho__upload-area__text {
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.kicho__upload-area__subtext {
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+}
+
+/* =====================================
+   取り込み済みデータ一覧
+   ===================================== */
+.kicho__imported-data-section {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius);
+  margin: var(--spacing-xl) 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.kicho__imported-data__header {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.kicho__imported-data__header h3 {
+  font-size: var(--font-xl);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin: 0;
+}
+
+.kicho__imported-data__summary {
+  display: flex;
+  gap: var(--spacing-lg);
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+}
+
+.kicho__imported-data__summary span {
+  white-space: nowrap;
+}
+
+.kicho__imported-data__controls {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.kicho__imported-data__list {
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.kicho__data-item {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  transition: var(--transition-fast);
+}
+
+.kicho__data-item:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+.kicho__data-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.kicho__data-info {
+  flex: 1;
+}
+
+.kicho__data-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-xs);
+}
+
+.kicho__data-name {
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+}
+
+.kicho__data-count {
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius);
+}
+
+.kicho__data-details {
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+}
+
+/* =====================================
+   MF接続ステータス
+   ===================================== */
+.kicho__mf-status {
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.kicho__mf-status__indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-weight: var(--font-semibold);
+  color: var(--kicho-success);
+}
+
+.kicho__mf-status__details {
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+  text-align: right;
+}
+
+/* =====================================
+   AI学習ステータス
+   ===================================== */
+.kicho__ai-status {
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.kicho__ai-status__stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+}
+
+.kicho__ai-status__stage i {
+  font-size: var(--font-xl);
+  color: var(--border-color);
+}
+
+.kicho__ai-status__stage--completed i {
+  color: var(--kicho-success);
+}
+
+/* =====================================
+   CSV・学習オプション
+   ===================================== */
+.kicho__csv-options,
+.kicho__learning-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+  margin: var(--spacing-md) 0;
+}
+
+.kicho__csv-options .kicho__form-input,
+.kicho__learning-options .kicho__form-input {
+  min-width: 0;
+  width: 100%;
+  font-size: var(--font-sm);
+}
+
+.kicho__button-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.kicho__button-group .kicho__btn--small {
+  margin-top: var(--spacing-sm);
+}
+
+/* =====================================
+   統合AI学習セクション
+   ===================================== */
+.kicho__integrated-ai-learning {
+  margin: var(--spacing-xl) 0;
+}
+
+.kicho__ai-learning__container {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.kicho__ai-learning__header {
+  text-align: center;
+  margin-bottom: var(--spacing-lg);
+}
+
+.kicho__ai-learning__title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+}
+
+.kicho__ai-learning__title i {
+  font-size: 2rem;
+  color: var(--icon-ai);
+}
+
+.kicho__ai-learning__title h3 {
+  font-size: var(--font-2xl);
+  font-weight: var(--font-bold);
+  margin: 0;
+}
+
+.kicho__ai-learning__description {
+  font-size: var(--font-base);
+  opacity: 0.9;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.kicho__ai-learning__settings {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+}
+.kicho__ai-learning__settings .kicho__form-label {
+  color: var(--text-primary);
+  font-weight: var(--font-semibold);
+}
+
+.kicho__ai-learning__settings .kicho__form-input {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.kicho__ai-learning__data-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-lg);
+}
+
+.kicho__data-summary__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm);
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: var(--border-radius);
+}
+
+.kicho__data-summary__label {
+  font-size: var(--font-sm);
+  opacity: 0.8;
+}
+
+.kicho__data-summary__value {
+  font-weight: var(--font-semibold);
+  font-size: var(--font-base);
+}
+
+.kicho__ai-learning__actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-md);
+}
+
+.kicho__ai-learning__actions .kicho__btn {
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-size: var(--font-lg);
+  font-weight: var(--font-semibold);
+}
+
+.kicho__ai-learning__actions .kicho__btn--success {
+  background: var(--icon-ai);
+  color: var(--text-white);
+  border: 2px solid var(--icon-ai);
+  animation: pulse-glow 2s infinite;
+}
+
+.kicho__ai-learning__actions .kicho__btn--success:hover {
+  background: #e55a2b;
+  border-color: #e55a2b;
+}
+
+/* =====================================
+   ルール保存・承認機能
+   ===================================== */
+.kicho__rule-save-section {
+  background: rgba(139, 92, 246, 0.1);
+  border: 2px solid var(--kicho-primary);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-lg);
+  margin-top: var(--spacing-md);
+}
+
+.kicho__rule-save__title {
+  font-size: var(--font-lg);
+  font-weight: var(--font-semibold);
+  color: var(--kicho-primary);
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.kicho__rule-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin: var(--spacing-md) 0;
+}
+
+.kicho__rule-options label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.kicho__approval-section {
+  background: rgba(16, 185, 129, 0.1);
+  border: 2px solid var(--kicho-success);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-lg);
+  margin-top: var(--spacing-md);
+}
+
+.kicho__approval__title {
+  font-size: var(--font-lg);
+  font-weight: var(--font-semibold);
+  color: var(--kicho-success);
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.kicho__approval-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.kicho__summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm);
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: var(--border-radius);
+}
+
+.kicho__summary-label {
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+}
+
+.kicho__summary-value {
+  font-weight: var(--font-semibold);
+  font-size: var(--font-base);
+  color: var(--text-primary);
+}
+
+/* =====================================
+   保存済みルール・承認データ表示
+   ===================================== */
+.kicho__saved-rules-section {
+  background: rgba(124, 58, 237, 0.1);
+  border: 1px solid var(--icon-rule);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-lg);
+  margin: var(--spacing-xl) 0;
+}
+
+.kicho__saved-rules__title {
+  font-size: var(--font-xl);
+  font-weight: var(--font-bold);
+  color: var(--icon-rule);
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.kicho__saved-rules__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.kicho__saved-rule-item {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.kicho__saved-rule__info {
+  flex: 1;
+}
+
+.kicho__saved-rule__name {
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.kicho__saved-rule__details {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+.kicho__saved-rule__actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.kicho__approved-transactions-section {
+  background: rgba(5, 150, 105, 0.1);
+  border: 1px solid var(--icon-approval);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-lg);
+  margin: var(--spacing-xl) 0;
+}
+
+.kicho__approved-transactions__title {
+  font-size: var(--font-xl);
+  font-weight: var(--font-bold);
+  color: var(--icon-approval);
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.kicho__approved-transactions__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.kicho__approved-transaction-item {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.kicho__approved-transaction__info {
+  flex: 1;
+}
+
+.kicho__approved-transaction__name {
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.kicho__approved-transaction__details {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+.kicho__approved-transaction__actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+/* =====================================
+   AI学習履歴システム
+   ===================================== */
+.kicho__learning-history {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-lg);
+}
+
+.kicho__learning-history h4 {
+  font-size: var(--font-lg);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.kicho__session-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.kicho__session-item {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.kicho__session-datetime {
+  font-size: var(--font-sm);
+  color: var(--text-primary);
+  font-weight: var(--font-medium);
+}
+
+.kicho__session-status--success {
+  background: var(--kicho-success);
+  color: var(--text-white);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius);
+  font-size: var(--font-xs);
+  font-weight: var(--font-medium);
+}
+
+/* アニメーション */
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 10px rgba(234, 88, 12, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(234, 88, 12, 0.6);
+  }
+}
+
+/* =====================================
+   レスポンシブ対応
+   ===================================== */
+@media (max-width: 1024px) {
+  .kicho__overview-section {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .kicho__container {
+    padding: var(--spacing-md);
+  }
+
+  .kicho__header {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+    margin: calc(-1 * var(--spacing-md)) calc(-1 * var(--spacing-md))
+      var(--spacing-lg);
+  }
+
+  .kicho__header-left,
+  .kicho__header-actions {
+    width: 100%;
+  }
+
+  .kicho__header-actions {
+    justify-content: center;
+  }
+
+  .dashboard__stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--spacing-md);
+  }
+
+  .kicho__section__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .kicho__section__actions {
+    justify-content: center;
+  }
+
+  .kicho__mf-status {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    text-align: center;
+  }
+
+  .kicho__mf-status__details {
+    text-align: center;
+  }
+
+  .kicho__ai-status {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .kicho__csv-options,
+  .kicho__learning-options {
+    grid-template-columns: 1fr;
+  }
+
+  .kicho__ai-learning__title {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+
+  .kicho__ai-learning__title i {
+    font-size: 3rem;
+  }
+
+  .kicho__data-summary__item {
+    flex-direction: column;
+    text-align: center;
+    gap: var(--spacing-xs);
+  }
+
+  .kicho__imported-data__header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-sm);
+  }
+
+  .kicho__imported-data__summary {
+    justify-content: space-between;
+    text-align: center;
+  }
+
+  .kicho__imported-data__controls {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard__stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .kicho__btn {
+    font-size: var(--font-sm);
+    padding: var(--spacing-md);
+  }
+
+  .dashboard__stat-card__value {
+    font-size: 1.5rem;
+  }
+
+  .kicho__page-title {
+    font-size: var(--font-xl);
+  }
+
+  .kicho__imported-data__summary {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    text-align: center;
+  }
+
+  .kicho__ai-learning__data-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =====================================
+   テーマ対応（ダークモード）
+   ===================================== */
+[data-theme="dark"] .kicho__ai-learning__container {
+  background: linear-gradient(135deg, #6d28d9, #7e22ce);
+}
+
+[data-theme="dark"] .kicho__upload-area:hover {
+  background: rgba(139, 92, 246, 0.1);
+}
+
+[data-theme="dark"] .kicho__rule-save-section {
+  background: rgba(139, 92, 246, 0.2);
+}
+
+[data-theme="dark"] .kicho__approval-section {
+  background: rgba(16, 185, 129, 0.2);
+}
+
+[data-theme="dark"] .kicho__saved-rules-section {
+  background: rgba(124, 58, 237, 0.2);
+}
+
+[data-theme="dark"] .kicho__approved-transactions-section {
+  background: rgba(5, 150, 105, 0.2);
+}

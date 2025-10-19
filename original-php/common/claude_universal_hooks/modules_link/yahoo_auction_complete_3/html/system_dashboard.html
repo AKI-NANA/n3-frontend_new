@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yahoo→eBay統合システム - 動作確認</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f7fa;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 30px;
+        }
+        .status-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+        .status-card.success {
+            border-color: #10b981;
+            background: #ecfdf5;
+        }
+        .status-card.warning {
+            border-color: #f59e0b;
+            background: #fffbeb;
+        }
+        .status-card.error {
+            border-color: #ef4444;
+            background: #fef2f2;
+        }
+        .status-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .test-section {
+            padding: 30px;
+            border-top: 1px solid #e2e8f0;
+        }
+        .test-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .test-button:hover {
+            background: #2563eb;
+        }
+        .test-result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .test-result.success {
+            background: #ecfdf5;
+            border: 1px solid #10b981;
+        }
+        .test-result.error {
+            background: #fef2f2;
+            border: 1px solid #ef4444;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Yahoo→eBay統合システム</h1>
+            <p>完全稼働確認ダッシュボード</p>
+            <p>APIサーバー: <span id="apiUrl">http://localhost:5002</span></p>
+        </div>
+
+        <div class="status-grid" id="statusGrid">
+            <div class="status-card">
+                <h3>📡 APIサーバー</h3>
+                <div class="status-number" id="apiStatus">確認中...</div>
+                <p>接続状態</p>
+            </div>
+            <div class="status-card">
+                <h3>💾 データベース</h3>
+                <div class="status-number" id="dbStatus">確認中...</div>
+                <p>接続状態</p>
+            </div>
+            <div class="status-card">
+                <h3>📊 総データ数</h3>
+                <div class="status-number" id="totalData">-</div>
+                <p>登録済み商品</p>
+            </div>
+            <div class="status-card">
+                <h3>🔄 処理済み</h3>
+                <div class="status-number" id="processedData">-</div>
+                <p>スクレイピング完了</p>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🧪 機能テスト</h2>
+            <button class="test-button" onclick="testHealthCheck()">ヘルスチェック</button>
+            <button class="test-button" onclick="testSystemStatus()">システム状態</button>
+            <button class="test-button" onclick="testDataRetrieval()">データ取得</button>
+            <button class="test-button" onclick="testShippingCalculation()">送料計算</button>
+            <button class="test-button" onclick="testScraping()">スクレイピング</button>
+            <button class="test-button" onclick="testEbayListing()">eBay出品</button>
+            <button class="test-button" onclick="runAllTests()">全テスト実行</button>
+            
+            <div id="testResults"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5002';
+        let testResults = [];
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('apiUrl').textContent = API_URL;
+            checkSystemStatus();
+        });
+
+        // システム状態確認
+        async function checkSystemStatus() {
+            try {
+                // ヘルスチェック
+                const healthResponse = await fetch(`${API_URL}/health`);
+                const healthData = await healthResponse.json();
+                
+                document.getElementById('apiStatus').textContent = healthData.status === 'healthy' ? '✅ 正常' : '❌ 異常';
+                document.getElementById('dbStatus').textContent = healthData.database === 'connected' ? '✅ 接続中' : '❌ 未接続';
+                
+                // システム状態
+                const statusResponse = await fetch(`${API_URL}/api/system_status`);
+                const statusData = await statusResponse.json();
+                
+                if (statusData.success) {
+                    document.getElementById('totalData').textContent = statusData.stats.total;
+                    document.getElementById('processedData').textContent = statusData.stats.scraped;
+                    
+                    // カードの色を更新
+                    updateStatusCards(healthData, statusData);
+                }
+            } catch (error) {
+                document.getElementById('apiStatus').textContent = '❌ 接続エラー';
+                document.getElementById('dbStatus').textContent = '❌ 不明';
+                console.error('システム状態確認エラー:', error);
+            }
+        }
+
+        // ステータスカードの色更新
+        function updateStatusCards(healthData, statusData) {
+            const cards = document.querySelectorAll('.status-card');
+            
+            // APIサーバーカード
+            cards[0].className = `status-card ${healthData.status === 'healthy' ? 'success' : 'error'}`;
+            
+            // データベースカード
+            cards[1].className = `status-card ${healthData.database === 'connected' ? 'success' : 'error'}`;
+            
+            // データ数カード
+            cards[2].className = `status-card ${statusData.stats.total > 0 ? 'success' : 'warning'}`;
+            
+            // 処理済みカード
+            cards[3].className = `status-card ${statusData.stats.scraped > 0 ? 'success' : 'warning'}`;
+        }
+
+        // テスト結果表示
+        function displayTestResult(testName, result, isSuccess) {
+            const resultsDiv = document.getElementById('testResults');
+            const resultClass = isSuccess ? 'success' : 'error';
+            const icon = isSuccess ? '✅' : '❌';
+            
+            resultsDiv.innerHTML += `
+                <div class="test-result ${resultClass}">
+                    <strong>${icon} ${testName}</strong>
+                    ${JSON.stringify(result, null, 2)}
+                </div>
+            `;
+            
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        // 個別テスト関数
+        async function testHealthCheck() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                displayTestResult('ヘルスチェック', data, response.ok);
+            } catch (error) {
+                displayTestResult('ヘルスチェック', {error: error.message}, false);
+            }
+        }
+
+        async function testSystemStatus() {
+            try {
+                const response = await fetch(`${API_URL}/api/system_status`);
+                const data = await response.json();
+                displayTestResult('システム状態', data, data.success);
+            } catch (error) {
+                displayTestResult('システム状態', {error: error.message}, false);
+            }
+        }
+
+        async function testDataRetrieval() {
+            try {
+                const response = await fetch(`${API_URL}/api/get_all_data`);
+                const data = await response.json();
+                
+                // データを最初の3件だけに制限して表示
+                if (data.success && data.data) {
+                    const limitedData = {
+                        success: data.success,
+                        total_count: data.data.length,
+                        sample_data: data.data.slice(0, 3)
+                    };
+                    displayTestResult('データ取得', limitedData, true);
+                } else {
+                    displayTestResult('データ取得', data, false);
+                }
+            } catch (error) {
+                displayTestResult('データ取得', {error: error.message}, false);
+            }
+        }
+
+        async function testShippingCalculation() {
+            try {
+                const response = await fetch(`${API_URL}/api/calculate_shipping`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({weight: 1.0, country: 'US'})
+                });
+                const data = await response.json();
+                displayTestResult('送料計算', data, data.success);
+            } catch (error) {
+                displayTestResult('送料計算', {error: error.message}, false);
+            }
+        }
+
+        async function testScraping() {
+            try {
+                const response = await fetch(`${API_URL}/api/scrape_yahoo`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({urls: ['https://auctions.yahoo.co.jp/test']})
+                });
+                const data = await response.json();
+                displayTestResult('Yahooスクレイピング', data, data.success);
+            } catch (error) {
+                displayTestResult('Yahooスクレイピング', {error: error.message}, false);
+            }
+        }
+
+        async function testEbayListing() {
+            try {
+                const response = await fetch(`${API_URL}/api/list_on_ebay`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({sku: 'TEST-SKU-001'})
+                });
+                const data = await response.json();
+                displayTestResult('eBay出品', data, data.success);
+            } catch (error) {
+                displayTestResult('eBay出品', {error: error.message}, false);
+            }
+        }
+
+        // 全テスト実行
+        async function runAllTests() {
+            const resultsDiv = document.getElementById('testResults');
+            resultsDiv.innerHTML = '<div class="test-result"><strong>🔄 全テスト実行中...</strong></div>';
+            
+            await testHealthCheck();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testSystemStatus();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testDataRetrieval();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testShippingCalculation();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testScraping();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testEbayListing();
+            
+            displayTestResult('全テスト完了', {message: '全ての機能テストが完了しました'}, true);
+            
+            // システム状態を再確認
+            checkSystemStatus();
+        }
+
+        // 自動更新（30秒間隔）
+        setInterval(checkSystemStatus, 30000);
+    </script>
+</body>
+</html>

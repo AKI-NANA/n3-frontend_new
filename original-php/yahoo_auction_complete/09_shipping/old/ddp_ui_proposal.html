@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DDP対応配送料金計算システム - 主要国選択式UI</title>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #06b6d4;
+            --usa: #1e40af;
+            --europe: #7c3aed;
+            --asia: #059669;
+            --oceania: #dc2626;
+        }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+            margin: 0; padding: 20px; background: #f8fafc; 
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        
+        .header { 
+            background: linear-gradient(135deg, var(--primary), #1e40af); 
+            color: white; padding: 25px; border-radius: 12px; margin-bottom: 25px; 
+        }
+        
+        .controls { 
+            background: white; padding: 25px; border-radius: 12px; 
+            margin-bottom: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+        }
+        
+        .control-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+            gap: 20px; 
+        }
+        
+        .control-group { 
+            display: flex; flex-direction: column; 
+        }
+        
+        .control-label { 
+            font-weight: 600; margin-bottom: 8px; color: #374151; 
+            display: flex; align-items: center; gap: 8px;
+        }
+        
+        .control-select { 
+            padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; 
+            font-size: 14px; transition: border-color 0.2s;
+        }
+        
+        .control-select:focus { 
+            outline: none; border-color: var(--primary); 
+        }
+        
+        .country-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .country-card {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        
+        .country-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .country-card.selected {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+        
+        .country-flag {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .country-name {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 4px;
+        }
+        
+        .country-region {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+        
+        .country-volume {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .volume-high { background: #dcfce7; color: #166534; }
+        .volume-medium { background: #fef3c7; color: #92400e; }
+        .volume-low { background: #fee2e2; color: #991b1b; }
+        
+        .zone-info {
+            background: #f3f4f6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            font-size: 13px;
+        }
+        
+        .zone-badges {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        
+        .zone-badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .ems-zone { background: #059669; }
+        .speedpak-zone { background: #3b82f6; }
+        .elogi-zone { background: #7c3aed; }
+        .unavailable { background: #9ca3af; }
+        
+        .ddp-calculator {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .ddp-input-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .ddp-results {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 20px;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .ddp-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .ddp-row:last-child {
+            border-bottom: none;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .shipping-matrix {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .matrix-header {
+            background: #f9fafb;
+            padding: 20px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .matrix-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .matrix-table th {
+            background: #f9fafb;
+            padding: 15px 10px;
+            text-align: center;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .matrix-table td {
+            padding: 15px 10px;
+            text-align: center;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        
+        .weight-cell {
+            background: #f9fafb;
+            font-weight: 600;
+            border-right: 2px solid #e5e7eb;
+        }
+        
+        .price-cell {
+            position: relative;
+            transition: background-color 0.2s;
+        }
+        
+        .price-cell:hover {
+            background: #f0f9ff;
+        }
+        
+        .price-amount {
+            font-size: 16px;
+            font-weight: 600;
+            color: #111827;
+        }
+        
+        .price-details {
+            font-size: 11px;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+        
+        .ddp-adjustment {
+            font-size: 10px;
+            color: var(--danger);
+            margin-top: 1px;
+        }
+        
+        .best-option {
+            background: #d1fae5 !important;
+            border: 2px solid var(--success);
+        }
+        
+        .fastest-option {
+            background: #fef3c7 !important;
+            border: 2px solid var(--warning);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ヘッダー -->
+        <div class="header">
+            <h1>🌍 DDP対応配送料金計算システム</h1>
+            <p>主要国選択式 - 関税込み価格で最適な配送方法を比較できます</p>
+            <p><strong>特徴:</strong> 原産国別関税率対応 | 送料への関税吸収 | 国別最適化</p>
+        </div>
+        
+        <!-- 配送先選択 -->
+        <div class="controls">
+            <div class="control-group">
+                <label class="control-label">
+                    🎯 配送先選択（主要国）
+                </label>
+                <div class="country-grid">
+                    <!-- 北米 -->
+                    <div class="country-card" data-country="US" data-region="america">
+                        <div class="country-flag">🇺🇸</div>
+                        <div class="country-name">アメリカ</div>
+                        <div class="country-region">北米</div>
+                        <div class="country-volume volume-high">取引量：高</div>
+                    </div>
+                    
+                    <!-- ヨーロッパ主要国 -->
+                    <div class="country-card" data-country="GB" data-region="europe">
+                        <div class="country-flag">🇬🇧</div>
+                        <div class="country-name">イギリス</div>
+                        <div class="country-region">ヨーロッパ</div>
+                        <div class="country-volume volume-high">取引量：高</div>
+                    </div>
+                    
+                    <div class="country-card" data-country="DE" data-region="europe">
+                        <div class="country-flag">🇩🇪</div>
+                        <div class="country-name">ドイツ</div>
+                        <div class="country-region">ヨーロッパ</div>
+                        <div class="country-volume volume-high">取引量：高</div>
+                    </div>
+                    
+                    <div class="country-card" data-country="FR" data-region="europe">
+                        <div class="country-flag">🇫🇷</div>
+                        <div class="country-name">フランス</div>
+                        <div class="country-region">ヨーロッパ</div>
+                        <div class="country-volume volume-medium">取引量：中</div>
+                    </div>
+                    
+                    <!-- アジア -->
+                    <div class="country-card" data-country="SG" data-region="asia">
+                        <div class="country-flag">🇸🇬</div>
+                        <div class="country-name">シンガポール</div>
+                        <div class="country-region">アジア</div>
+                        <div class="country-volume volume-medium">取引量：中</div>
+                    </div>
+                    
+                    <div class="country-card" data-country="HK" data-region="asia">
+                        <div class="country-flag">🇭🇰</div>
+                        <div class="country-name">香港</div>
+                        <div class="country-region">アジア</div>
+                        <div class="country-volume volume-medium">取引量：中</div>
+                    </div>
+                    
+                    <!-- オセアニア -->
+                    <div class="country-card" data-country="AU" data-region="oceania">
+                        <div class="country-flag">🇦🇺</div>
+                        <div class="country-name">オーストラリア</div>
+                        <div class="country-region">オセアニア</div>
+                        <div class="country-volume volume-medium">取引量：中</div>
+                    </div>
+                    
+                    <!-- その他北米 -->
+                    <div class="country-card" data-country="CA" data-region="america">
+                        <div class="country-flag">🇨🇦</div>
+                        <div class="country-name">カナダ</div>
+                        <div class="country-region">北米</div>
+                        <div class="country-volume volume-medium">取引量：中</div>
+                    </div>
+                    
+                    <div class="country-card" data-country="MX" data-region="america">
+                        <div class="country-flag">🇲🇽</div>
+                        <div class="country-name">メキシコ</div>
+                        <div class="country-region">北米</div>
+                        <div class="country-volume volume-low">取引量：低</div>
+                    </div>
+                </div>
+                
+                <div class="zone-info" id="zoneInfo">
+                    <strong>配送先を選択してください</strong><br>
+                    各配送サービスのゾーン対応状況と関税率が表示されます
+                </div>
+            </div>
+        </div>
+        
+        <!-- DDP計算機 -->
+        <div class="ddp-calculator">
+            <h3>💰 DDP計算機（関税込み価格）</h3>
+            <div class="ddp-input-grid">
+                <div class="control-group">
+                    <label class="control-label">商品価格（USD）</label>
+                    <input type="number" class="control-select" id="itemPrice" value="100" min="1">
+                </div>
+                <div class="control-group">
+                    <label class="control-label">原産国</label>
+                    <select class="control-select" id="originCountry">
+                        <option value="US">🇺🇸 Made in USA</option>
+                        <option value="CN">🇨🇳 Made in China</option>
+                        <option value="JP">🇯🇵 Made in Japan</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">重量（kg）</label>
+                    <input type="number" class="control-select" id="weight" value="1.0" min="0.1" step="0.1">
+                </div>
+            </div>
+            
+            <div class="ddp-results" id="ddpResults">
+                <div class="ddp-row">
+                    <span>商品価格:</span>
+                    <span id="displayItemPrice">$100.00</span>
+                </div>
+                <div class="ddp-row">
+                    <span>送料（基本）:</span>
+                    <span id="displayShipping">計算中...</span>
+                </div>
+                <div class="ddp-row">
+                    <span>関税率:</span>
+                    <span id="displayTariffRate">選択してください</span>
+                </div>
+                <div class="ddp-row">
+                    <span>関税額:</span>
+                    <span id="displayTariff">$0.00</span>
+                </div>
+                <div class="ddp-row">
+                    <span><strong>DDP総額（関税込み）:</strong></span>
+                    <span id="displayTotal"><strong>$100.00</strong></span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 配送料金マトリックス -->
+        <div class="shipping-matrix">
+            <div class="matrix-header">
+                <h3>📦 配送料金比較（DDP対応）</h3>
+                <p>選択された国への配送料金を関税込みで比較できます</p>
+            </div>
+            
+            <table class="matrix-table">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">重量</th>
+                        <th style="width: 180px;">📮 EMS<br><small>日本郵便</small></th>
+                        <th style="width: 180px;">📦 SpeedPAK<br><small>CPass</small></th>
+                        <th style="width: 180px;">🚛 eLogi<br><small>クーリエ統合</small></th>
+                        <th style="width: 120px;">💡 推奨</th>
+                    </tr>
+                </thead>
+                <tbody id="matrixBody">
+                    <tr>
+                        <td class="weight-cell">0.5kg</td>
+                        <td class="price-cell">
+                            <div class="price-amount">国を選択</div>
+                            <div class="price-details">してください</div>
+                        </td>
+                        <td class="price-cell">
+                            <div class="price-amount">-</div>
+                        </td>
+                        <td class="price-cell">
+                            <div class="price-amount">-</div>
+                        </td>
+                        <td class="price-cell">
+                            <div class="price-amount">-</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="weight-cell">1.0kg</td>
+                        <td class="price-cell">
+                            <div class="price-amount">-</div>
+                        </td>
+                        <td class="price-cell">
+                            <div class="price-amount">-</div>
+                        </td>
+                        <td class="price-cell">
+                            <div class="price-amount">-</div>
+                        </td>
+                        <td class="price-cell">
+                            <div class="price-amount">-</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="weight-cell">2.0kg</td>
+                        <td class="price-cell">
+                            <div class="price-amount">-</div>
+                        </td>
+                        <td class="price-cell">
+                            <div class="price-amount">-</div>
+                        </td>
+                        <td class="price-cell">
+                            <div class="price-amount">-</div>
+                        </td>
+                        <td class="price-cell">
+                            <div class="price-amount">-</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        // データ定義
+        const tariffRates = {
+            "US": { "US": 0, "GB": 5, "DE": 8, "FR": 7, "AU": 10, "SG": 0, "HK": 0, "CA": 6, "MX": 0 },
+            "CN": { "US": 25, "GB": 12, "DE": 15, "FR": 13, "AU": 15, "SG": 0, "HK": 0, "CA": 18, "MX": 10 },
+            "JP": { "US": 2, "GB": 3, "DE": 4, "FR": 3, "AU": 5, "SG": 0, "HK": 0, "CA": 3, "MX": 0 }
+        };
+        
+        const zoneMapping = {
+            "US": { ems: "第4地帯", speedpak: "USA対応", elogi: "Zone1" },
+            "GB": { ems: "第3地帯", speedpak: "UK対応", elogi: "Zone2" },
+            "DE": { ems: "第3地帯", speedpak: "DE対応", elogi: "Zone2" },
+            "FR": { ems: "第3地帯", speedpak: "対応外", elogi: "Zone2" },
+            "AU": { ems: "第3地帯", speedpak: "AU対応", elogi: "Zone3" },
+            "SG": { ems: "第2地帯", speedpak: "対応外", elogi: "Zone1" },
+            "HK": { ems: "第2地帯", speedpak: "対応外", elogi: "Zone1" },
+            "CA": { ems: "第3地帯", speedpak: "対応外", elogi: "Zone2" },
+            "MX": { ems: "第3地帯", speedpak: "対応外", elogi: "Zone2" }
+        };
+        
+        let selectedCountry = null;
+        
+        // 国選択イベント
+        document.querySelectorAll('.country-card').forEach(card => {
+            card.addEventListener('click', function() {
+                // 選択状態更新
+                document.querySelectorAll('.country-card').forEach(c => c.classList.remove('selected'));
+                this.classList.add('selected');
+                
+                selectedCountry = this.dataset.country;
+                updateZoneInfo(selectedCountry);
+                updateDDPCalculation();
+                updateShippingMatrix();
+            });
+        });
+        
+        // ゾーン情報更新
+        function updateZoneInfo(country) {
+            const info = document.getElementById('zoneInfo');
+            const zones = zoneMapping[country];
+            
+            if (zones) {
+                info.innerHTML = `
+                    <strong>配送対応状況:</strong><br>
+                    <div class="zone-badges">
+                        <span class="zone-badge ems-zone">EMS: ${zones.ems}</span>
+                        <span class="zone-badge ${zones.speedpak === '対応外' ? 'unavailable' : 'speedpak-zone'}">${zones.speedpak}</span>
+                        <span class="zone-badge elogi-zone">eLogi: ${zones.elogi}</span>
+                    </div>
+                `;
+            }
+        }
+        
+        // DDP計算更新
+        function updateDDPCalculation() {
+            const itemPrice = parseFloat(document.getElementById('itemPrice').value) || 100;
+            const origin = document.getElementById('originCountry').value;
+            
+            if (selectedCountry && tariffRates[origin] && tariffRates[origin][selectedCountry] !== undefined) {
+                const tariffRate = tariffRates[origin][selectedCountry];
+                const tariff = itemPrice * (tariffRate / 100);
+                const baseShipping = 20; // 仮の送料
+                const total = itemPrice + baseShipping + tariff;
+                
+                document.getElementById('displayItemPrice').textContent = `$${itemPrice.toFixed(2)}`;
+                document.getElementById('displayShipping').textContent = `$${baseShipping.toFixed(2)}`;
+                document.getElementById('displayTariffRate').textContent = `${tariffRate}%`;
+                document.getElementById('displayTariff').textContent = `$${tariff.toFixed(2)}`;
+                document.getElementById('displayTotal').innerHTML = `<strong>$${total.toFixed(2)}</strong>`;
+            }
+        }
+        
+        // 配送マトリックス更新
+        function updateShippingMatrix() {
+            if (!selectedCountry) return;
+            
+            const matrixBody = document.getElementById('matrixBody');
+            const zones = zoneMapping[selectedCountry];
+            
+            // サンプルデータで更新
+            const sampleData = {
+                "0.5kg": { ems: 3900, speedpak: 2060, elogi: 4200 },
+                "1.0kg": { ems: 5300, speedpak: 3020, elogi: 6100 },
+                "2.0kg": { ems: 7900, speedpak: 5245, elogi: 8900 }
+            };
+            
+            matrixBody.innerHTML = '';
+            
+            Object.entries(sampleData).forEach(([weight, prices]) => {
+                const row = document.createElement('tr');
+                
+                // 最安値判定
+                const availablePrices = [];
+                if (zones.ems !== '対応外') availablePrices.push({ service: 'ems', price: prices.ems });
+                if (zones.speedpak !== '対応外') availablePrices.push({ service: 'speedpak', price: prices.speedpak });
+                if (zones.elogi !== '対応外') availablePrices.push({ service: 'elogi', price: prices.elogi });
+                
+                const cheapest = availablePrices.sort((a, b) => a.price - b.price)[0];
+                
+                row.innerHTML = `
+                    <td class="weight-cell">${weight}</td>
+                    <td class="price-cell ${cheapest?.service === 'ems' ? 'best-option' : ''}">
+                        ${zones.ems !== '対応外' ? `
+                            <div class="price-amount">¥${prices.ems.toLocaleString()}</div>
+                            <div class="price-details">${zones.ems} | 3-6日</div>
+                            <div class="ddp-adjustment">+関税調整</div>
+                        ` : `
+                            <div class="price-amount">対応外</div>
+                        `}
+                    </td>
+                    <td class="price-cell ${cheapest?.service === 'speedpak' ? 'best-option' : ''}">
+                        ${zones.speedpak !== '対応外' ? `
+                            <div class="price-amount">¥${prices.speedpak.toLocaleString()}</div>
+                            <div class="price-details">${zones.speedpak} | 8-12日</div>
+                            <div class="ddp-adjustment">+関税調整</div>
+                        ` : `
+                            <div class="price-amount">対応外</div>
+                        `}
+                    </td>
+                    <td class="price-cell ${cheapest?.service === 'elogi' ? 'best-option' : ''} fastest-option">
+                        ${zones.elogi !== '対応外' ? `
+                            <div class="price-amount">¥${prices.elogi.toLocaleString()}</div>
+                            <div class="price-details">${zones.elogi} | 1-3日</div>
+                            <div class="ddp-adjustment">+関税調整</div>
+                        ` : `
+                            <div class="price-amount">対応外</div>
+                        `}
+                    </td>
+                    <td class="price-cell">
+                        ${cheapest ? `
+                            <div style="font-size: 12px; font-weight: 600; color: var(--success);">💰 最安</div>
+                            <div style="font-size: 11px; color: #6b7280;">${cheapest.service === 'ems' ? 'EMS' : cheapest.service === 'speedpak' ? 'SpeedPAK' : 'eLogi'}</div>
+                        ` : `
+                            <div class="price-amount">対応外</div>
+                        `}
+                    </td>
+                `;
+                
+                matrixBody.appendChild(row);
+            });
+        }
+        
+        // 入力値変更時のイベント
+        ['itemPrice', 'originCountry', 'weight'].forEach(id => {
+            document.getElementById(id).addEventListener('change', updateDDPCalculation);
+        });
+    </script>
+</body>
+</html>

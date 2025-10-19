@@ -1,0 +1,133 @@
+<!-- eBay HTML編集タブ - 完全版 -->
+<div style="margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+    <button class="ilm-btn" style="background: #667eea; color: white;" onclick="IntegratedListingModal.generateHtmlTemplate()">
+        <i class="fas fa-magic"></i> テンプレート生成
+    </button>
+    <button class="ilm-btn" style="background: #17a2b8; color: white;" onclick="IntegratedListingModal.insertCommonElements()">
+        <i class="fas fa-plus"></i> 共通要素挿入
+    </button>
+    <button class="ilm-btn" style="background: #ffc107; color: #000;" onclick="IntegratedListingModal.validateHtml()">
+        <i class="fas fa-check"></i> HTMLバリデート
+    </button>
+    <button class="ilm-btn" style="background: #28a745; color: white;" onclick="IntegratedListingModal.copyHtmlToClipboard()">
+        <i class="fas fa-copy"></i> コピー
+    </button>
+</div>
+
+<div class="html-editor-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; height: 500px;">
+    <!-- HTMLエディタペイン -->
+    <div class="editor-pane" style="border: 1px solid var(--ilm-border-color); border-radius: 6px; overflow: hidden; background: white; display: flex; flex-direction: column;">
+        <div class="editor-header" style="background: #f8f9fa; padding: 0.5rem 1rem; border-bottom: 1px solid var(--ilm-border-color); display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-weight: 600; font-size: 0.9rem;">
+                <i class="fas fa-code"></i> HTMLエディタ
+            </span>
+            <div style="display: flex; gap: 0.5rem;">
+                <button class="editor-btn" onclick="IntegratedListingModal.formatHtml()" title="HTMLフォーマット" 
+                        style="padding: 0.25rem 0.5rem; border: 1px solid #ddd; background: white; border-radius: 3px; cursor: pointer; font-size: 0.75rem;">
+                    <i class="fas fa-align-left"></i>
+                </button>
+                <button class="editor-btn" onclick="IntegratedListingModal.insertTable()" title="テーブル挿入"
+                        style="padding: 0.25rem 0.5rem; border: 1px solid #ddd; background: white; border-radius: 3px; cursor: pointer; font-size: 0.75rem;">
+                    <i class="fas fa-table"></i>
+                </button>
+                <button class="editor-btn" onclick="IntegratedListingModal.insertImage()" title="画像タグ挿入"
+                        style="padding: 0.25rem 0.5rem; border: 1px solid #ddd; background: white; border-radius: 3px; cursor: pointer; font-size: 0.75rem;">
+                    <i class="fas fa-image"></i>
+                </button>
+            </div>
+        </div>
+        <div style="flex: 1; overflow: hidden;">
+            <textarea class="code-editor" id="html-editor" 
+                      placeholder="HTMLコードをここに入力..." 
+                      oninput="IntegratedListingModal.updateHtmlPreview()"
+                      style="width: 100%; height: 100%; font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-size: 0.8rem; padding: 1rem; border: none; resize: none; background: #f8f9fa; line-height: 1.4;"></textarea>
+        </div>
+    </div>
+    
+    <!-- プレビューペイン -->
+    <div class="preview-pane-container" style="border: 1px solid var(--ilm-border-color); border-radius: 6px; overflow: hidden; background: white; display: flex; flex-direction: column;">
+        <div class="preview-header" style="background: #f8f9fa; padding: 0.5rem 1rem; border-bottom: 1px solid var(--ilm-border-color); display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-weight: 600; font-size: 0.9rem;">
+                <i class="fas fa-eye"></i> プレビュー
+            </span>
+            <div style="display: flex; gap: 0.5rem;">
+                <button class="editor-btn" onclick="IntegratedListingModal.togglePreviewMode()" title="プレビューモード切替"
+                        style="padding: 0.25rem 0.5rem; border: 1px solid #ddd; background: white; border-radius: 3px; cursor: pointer; font-size: 0.75rem;">
+                    <i class="fas fa-desktop"></i>
+                </button>
+            </div>
+        </div>
+        <div class="preview-content" id="html-preview" 
+             style="flex: 1; padding: 1rem; background: white; overflow-y: auto; border: 1px solid #eee;">
+            <p style="color: #6c757d; text-align: center;">HTMLを入力するとプレビューが表示されます</p>
+        </div>
+    </div>
+</div>
+
+<!-- HTML編集ヒント -->
+<div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 6px;">
+    <h5 style="margin: 0 0 0.5rem 0; font-size: 0.95rem;">
+        <i class="fas fa-lightbulb"></i> HTML編集ヒント
+    </h5>
+    <ul style="font-size: 0.85rem; color: #6c757d; margin: 0; padding-left: 1.5rem; line-height: 1.6;">
+        <li>テーブルを使用して商品詳細を整理すると見やすくなります</li>
+        <li>画像の最大幅は800pxに設定してください（レスポンシブ対応）</li>
+        <li>eBayでは一部のJavaScriptやCSSが制限されています</li>
+        <li>リアルタイムプレビューで確認しながら編集できます</li>
+        <li>テンプレート生成ボタンで基本構造を自動生成できます</li>
+    </ul>
+</div>
+
+<!-- eBay禁止タグ警告 -->
+<div style="margin-top: 1rem; padding: 1rem; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px;">
+    <h5 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; color: #856404;">
+        <i class="fas fa-exclamation-triangle"></i> eBay禁止タグ・属性
+    </h5>
+    <div style="font-size: 0.8rem; color: #856404; line-height: 1.6;">
+        使用不可: <code>&lt;script&gt;</code>, <code>&lt;iframe&gt;</code>, <code>&lt;form&gt;</code>, <code>&lt;object&gt;</code>, <code>&lt;embed&gt;</code>, 
+        <code>onclick</code>, <code>onload</code>などのイベントハンドラ
+    </div>
+</div>
+
+<!-- 💾 保存ボタン -->
+<div style="margin-top: 1.5rem; padding: 1.5rem; background: white; border: 1px solid #dee2e6; border-radius: 8px;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="font-size: 0.9rem; color: #6c757d;">
+            <i class="fas fa-info-circle"></i> HTML説明文を保存すると、出品時に使用されます
+        </div>
+        <button class="ilm-btn ilm-btn-success" onclick="IntegratedListingModal.saveHtmlTab()" style="display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fas fa-save"></i> HTML説明文を保存
+        </button>
+    </div>
+</div>
+
+<!-- デフォルトテンプレート例 -->
+<template id="ebay-html-template">
+<div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
+    <h2 style="color: #0064d2; border-bottom: 3px solid #0064d2; padding-bottom: 10px;">
+        {{PRODUCT_TITLE}}
+    </h2>
+    
+    <div style="background: #f8f9fa; padding: 20px; margin: 15px 0; border-left: 5px solid #0064d2;">
+        <h3 style="margin-top: 0;">Product Details</h3>
+        <ul style="margin: 0;">
+            <li><strong>Condition:</strong> {{CONDITION}}</li>
+            <li><strong>Category:</strong> {{CATEGORY}}</li>
+            <li><strong>Origin:</strong> Japan</li>
+            <li><strong>Language:</strong> Japanese</li>
+        </ul>
+    </div>
+
+    <div style="background: #e3f2fd; padding: 20px; margin: 15px 0; border-radius: 8px;">
+        <h3 style="margin-top: 0;">Shipping Information</h3>
+        <p>Items are carefully protected with sleeves and top loaders, shipped with tracking.</p>
+        <p>Standard delivery: 7-14 business days</p>
+    </div>
+
+    <div style="text-align: center; margin: 30px 0; padding: 20px; background: #f0f0f0; border-radius: 8px;">
+        <p style="margin: 0; color: #666; font-size: 16px;">
+            <strong>Questions? Feel free to contact us!</strong>
+        </p>
+    </div>
+</div>
+</template>

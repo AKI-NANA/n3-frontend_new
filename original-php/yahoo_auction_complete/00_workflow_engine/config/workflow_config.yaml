@@ -1,0 +1,683 @@
+# NAGANO-3 設定駆動型ワークフロー設定
+# Week 3 完全統合システム設定ファイル
+
+# ====================
+# ワークフロー定義
+# ====================
+workflows:
+  
+  # ====================================
+  # メインワークフロー: 完全Yahoo→eBay自動化
+  # ====================================
+  complete_yahoo_to_ebay:
+    name: "Yahoo→eBay完全自動化フロー"
+    description: "Yahoo Auctionデータを9ステップで完全自動処理してeBayに出品"
+    version: "3.0"
+    
+    # 実行トリガー設定
+    triggers:
+      - type: "manual"
+        description: "手動実行"
+      - type: "scheduled" 
+        cron: "0 */6 * * *"  # 6時間ごと自動実行
+        description: "定期自動実行"
+      - type: "webhook"
+        url: "/api/trigger/yahoo_to_ebay"
+        secret: "nagano3_webhook_secret"
+    
+    # 実行前条件チェック
+    preconditions:
+      - type: "data_availability"
+        description: "Yahoo商品データの存在確認"
+        required_tables: ["yahoo_scraped_products"]
+        min_records: 1
+      - type: "system_health"
+        description: "システム健全性確認"
+        min_success_rate: 75
+        max_queue_size: 5000
+        redis_available: true
+      - type: "api_availability"
+        description: "外部API利用可能性確認"
+        required_apis: ["ebay_trading_api"]
+    
+    # ====================================
+    # 9ステップ定義
+    # ====================================
+    steps:
+      
+      # ステップ1: データスクレイピング
+      1:
+        name: "data_scraping"
+        display_name: "Yahooデータ取得"
+        description: "Yahoo Auctionから商品データを取得・前処理"
+        service: "02_scraping"
+        endpoint: "/02_scraping/api/scrape_workflow.php"
+        method: "POST"
+        timeout: 120
+        retry_count: 3
+        auto_proceed: true
+        
+        # 入力データ変換
+        input_transform:
+          yahoo_auction_urls: "${input.urls}"
+          batch_size: 100
+          include_images: true
+          include_seller_info: true
+          data_quality_check: true
+        
+        # 並列処理設定
+        parallel_config:
+          enabled: true
+          batch_size: 20
+          max_concurrent: 3
+        
+        # 出力データ検証
+        output_validation:
+          - type: "required_fields"
+            fields: ["item_id", "title", "price_jpy", "images"]
+          - type: "data_count"
+            min_records: 1
+            max_records: 10000
+          - type: "data_quality"
+            min_title_length: 10
+            max_price_jpy: 5000000
+        
+        # 成功条件
+        success_conditions:
+          - "response.success == true"
+          - "response.data.scraped_count > 0"
+          - "response.data.error_rate < 0.1"
+      
+      # ステップ2: コンテンツフィルタリング  
+      2:
+        name: "content_filtering"
+        display_name: "禁止商品フィルタ"
+        description: "5段階フィルターによる禁止商品・低品質商品の除外"
+        service: "06_filters"
+        endpoint: "/06_filters/api/filter_workflow.php"
+        depends_on: ["data_scraping"]
+        timeout: 60
+        auto_proceed: true
+        
+        # フィルター設定
+        filter_config:
+          enable_prohibited_words: true
+          enable_category_filter: true
+          enable_price_filter: true
+          enable_seller_filter: true
+          enable_image_filter: true
+          
+          # フィルター閾値
+          min_price_jpy: 500
+          max_price_jpy: 2000000
+          min_image_count: 1
+          prohibited_sellers: ["spam_seller1", "low_quality_seller"]
+          
+          # AI品質判定
+          ai_quality_check: true
+          min_quality_score: 0.7
+        
+        # 並列処理
+        parallel_config:
+          enabled: true
+          batch_size: 50
+          max_concurrent: 5
+        
+        success_conditions:
+          - "response.success == true"
+          - "response.filtered_count >= 1"
+          - "response.filter_pass_rate > 0.3"
+      
+      # ステップ3: 送料計算・価格調整
+      3:
+        name: "shipping_calculation" 
+        display_name: "送料・価格計算"
+        description: "国際送料計算・為替変換・利益マージン設定"
+        service: "09_shipping"
+        endpoint: "/09_shipping/api/calculate_workflow.php"
+        depends_on: ["content_filtering"]
+        timeout: 90
+        auto_proceed: true
+        
+        # 送料計算設定
+        shipping_config:
+          default_weight_grams: 500
+          size_estimation: true
+          international_shipping: true
+          shipping_methods: ["Standard", "Expedited", "Express"]
+          
+          # 地域別送料設定
+          regional_shipping:
+            north_america: 15.00
+            europe: 18.00
+            asia_pacific: 12.00
+            others: 20.00
+        
+        # 価格調整設定
+        price_adjustment:
+          base_markup_percentage: 25
+          min_profit_usd: 15
+          max_profit_percentage: 200
+          exchange_rate_source: "live_api"
+          exchange_rate_buffer: 0.03  # 3%のバッファ
+          
+          # 価格帯別マージン調整
+          price_tier_adjustments:
+            - range: [0, 50]
+              markup: 35
+            - range: [50, 200] 
+              markup: 25
+            - range: [200, 1000]
+              markup: 20
+            - range: [1000, 999999]
+              markup: 15
+        
+        success_conditions:
+          - "response.success == true"
+          - "response.calculated_count > 0"
+          - "response.average_margin > 0.15"
+      
+      # ステップ4: カテゴリー自動選択
+      4:
+        name: "category_selection"
+        display_name: "eBayカテゴリー選択" 
+        description: "AI分析による最適eBayカテゴリーの自動選択"
+        service: "11_category"
+        endpoint: "/11_category/api/categorize_workflow.php"
+        depends_on: ["shipping_calculation"]
+        timeout: 60
+        auto_proceed: true
+        
+        # AI分析設定
+        ai_config:
+          use_title_analysis: true
+          use_description_analysis: true
+          use_image_analysis: true
+          use_price_analysis: true
+          
+          # 機械学習モデル設定
+          ml_model: "category_classifier_v2"
+          confidence_threshold: 0.8
+          fallback_category: 99  # Other
+          
+          # カテゴリーマッピング強化
+          custom_mappings:
+            "ポケモンカード": 2536
+            "遊戯王": 31395
+            "ワンピース": 260000
+            "ドラゴンボール": 260000
+        
+        # 同一商品検索
+        duplicate_check:
+          enabled: true
+          similarity_threshold: 0.85
+          check_title: true
+          check_images: true
+          action_on_duplicate: "skip"  # skip, merge, force_list
+        
+        success_conditions:
+          - "response.success == true"
+          - "response.categorized_count > 0"
+          - "response.average_confidence > 0.7"
+      
+      # ステップ5: HTML生成・SEO最適化
+      5:
+        name: "html_generation"
+        display_name: "商品ページ生成"
+        description: "SEO最適化されたeBay商品ページHTML生成"
+        service: "12_html_editor"
+        endpoint: "/12_html_editor/api/generate_workflow.php"
+        depends_on: ["category_selection"]  
+        timeout: 45
+        auto_proceed: true
+        
+        # HTML生成設定
+        html_config:
+          template: "professional_v3"
+          include_images: true
+          max_images: 12
+          include_shipping_info: true
+          include_return_policy: true
+          
+          # SEO最適化
+          seo_optimization:
+            enabled: true
+            keyword_density_target: 0.02
+            meta_description: true
+            structured_data: true
+            
+          # 多言語対応
+          localization:
+            primary_language: "en_US" 
+            include_japanese_details: true
+            auto_translate_key_terms: true
+        
+        # コンテンツ品質管理
+        content_quality:
+          min_description_length: 200
+          max_description_length: 5000
+          include_specifications: true
+          include_authenticity_guarantee: true
+          
+        success_conditions:
+          - "response.success == true"
+          - "response.generated_count > 0"
+          - "response.average_seo_score > 0.8"
+      
+      # ステップ6: コンテンツ編集・確認
+      6:
+        name: "content_editing"
+        display_name: "最終編集・確認"
+        description: "人的確認・最終調整（必要に応じて）"
+        service: "07_editing"
+        endpoint: "/07_editing/api/edit_workflow.php"
+        depends_on: ["html_generation"]
+        timeout: 300  # 5分タイムアウト
+        auto_proceed: false  # 手動確認
+        
+        # 編集設定
+        editing_config:
+          enable_auto_corrections: true
+          spell_check: true
+          grammar_check: true
+          format_standardization: true
+          
+          # 自動修正ルール
+          auto_corrections:
+            - type: "title_case"
+              apply_to: "title"
+            - type: "remove_excessive_punctuation"
+              apply_to: "description"
+            - type: "standardize_measurements"
+              apply_to: "all"
+        
+        # 手動レビュー設定
+        manual_review:
+          required: true
+          timeout_minutes: 30
+          reviewers: ["editor1", "editor2"]
+          
+          # エスカレーション設定
+          escalation_rules:
+            - condition: "timeout"
+              action: "auto_approve"
+              threshold: "high_quality_items"
+            - condition: "high_value_item"  
+              action: "require_manager_approval"
+              price_threshold_usd: 1000
+        
+        # 品質チェック
+        quality_assurance:
+          automated_checks: true
+          manual_spot_checks: 0.1  # 10%を手動確認
+          
+        success_conditions:
+          - "response.success == true"
+          - "response.edited_count > 0"
+      
+      # ステップ7: 最終承認プロセス
+      7:
+        name: "approval_process"
+        display_name: "最終承認"
+        description: "出品前の最終承認・法的確認"
+        service: "03_approval"
+        endpoint: "/03_approval/api/workflow_integration.php"
+        depends_on: ["content_editing"]
+        timeout: 600  # 10分タイムアウト
+        auto_proceed: false  # 手動承認必須
+        
+        # 承認設定
+        approval_config:
+          require_manual_approval: true
+          
+          # 自動承認条件（例外的）
+          auto_approve_conditions:
+            - condition: "AND"
+              rules:
+                - "price_usd < 100"
+                - "ai_confidence > 0.95"
+                - "category_confidence > 0.9"
+                - "no_restricted_keywords"
+          
+          # バッチ承認
+          batch_approval:
+            enabled: true
+            max_batch_size: 50
+            similar_items_grouping: true
+          
+          # 承認レベル設定
+          approval_levels:
+            - level: 1
+              name: "一般承認"
+              price_limit_usd: 500
+              approvers: ["approver1", "approver2"]
+            - level: 2  
+              name: "高額商品承認"
+              price_limit_usd: 2000
+              approvers: ["manager1", "manager2"]
+            - level: 3
+              name: "特別承認"
+              price_limit_usd: 999999
+              approvers: ["director"]
+        
+        # 法的・規制確認
+        compliance_check:
+          intellectual_property_check: true
+          export_restriction_check: true
+          marketplace_policy_check: true
+          
+        success_conditions:
+          - "response.success == true"
+          - "response.approved_count > 0"
+      
+      # ステップ8: マーケットプレース出品
+      8:
+        name: "marketplace_listing"
+        display_name: "eBay出品実行"
+        description: "eBay Trading APIを使用した自動出品処理"
+        service: "08_listing"
+        endpoint: "/08_listing/api/workflow_integration.php" 
+        depends_on: ["approval_process"]
+        timeout: 300  # 5分タイムアウト
+        auto_proceed: true
+        
+        # 出品設定
+        listing_config:
+          marketplace: "ebay"
+          test_mode: false
+          listing_format: "FixedPriceItem"
+          listing_duration: 7  # 7日間
+          auto_relist: true
+          
+          # 出品戦略
+          pricing_strategy: "competitive"
+          start_immediately: true
+          featured_listing: false  # 有料オプション
+          
+          # 配送設定
+          shipping_options:
+            - service: "Standard International"
+              cost_usd: 15.00
+              handling_days: 2
+            - service: "Expedited International"
+              cost_usd: 25.00
+              handling_days: 1
+        
+        # バッチ処理設定
+        batch_config:
+          batch_size: 10  # API制限考慮
+          delay_between_items: 45  # 秒
+          delay_between_batches: 120  # 秒
+          api_rate_limiting: true
+          
+        # エラーハンドリング
+        error_handling:
+          retry_on_rate_limit: true
+          retry_on_temporary_error: true
+          max_retry_count: 5
+          
+        success_conditions:
+          - "response.success == true"
+          - "response.listed_count > 0"
+          - "response.success_rate > 0.8"
+      
+      # ステップ9: 在庫・販売管理
+      9:
+        name: "inventory_management"
+        display_name: "在庫管理更新"
+        description: "出品完了後の在庫管理・販売状況追跡開始"
+        service: "10_zaiko"
+        endpoint: "/10_zaiko/api/workflow_integration.php"
+        depends_on: ["marketplace_listing"]
+        timeout: 60
+        auto_proceed: true
+        
+        # 在庫管理設定
+        inventory_config:
+          track_listing_status: true
+          sync_with_marketplace: true
+          update_frequency: "hourly"
+          
+          # 在庫レベル管理
+          stock_management:
+            track_quantities: true
+            low_stock_threshold: 5
+            auto_reorder: false
+            
+          # 販売データ追跡
+          sales_tracking:
+            track_views: true
+            track_watchers: true  
+            track_questions: true
+            performance_analytics: true
+        
+        # 通知設定
+        notifications:
+          sold_item_alert: true
+          question_received_alert: true
+          low_performance_alert: true
+          
+        success_conditions:
+          - "response.success == true"
+          - "response.updated_inventory_count > 0"
+    
+    # ====================================
+    # グローバル設定
+    # ====================================
+    
+    # エラーハンドリング設定
+    error_handling:
+      global_retry_count: 3
+      retry_delay_base: 60  # 秒
+      retry_delay_multiplier: 2  # 指数バックオフ
+      
+      failure_notification:
+        enabled: true
+        channels: ["email", "slack", "webhook"]
+        severity_threshold: "warning"
+      
+      rollback_strategy:
+        enable_rollback: true
+        rollback_on_critical_failure: true
+        rollback_steps: [7, 8]  # 承認・出品は巻き戻し対象
+        
+      # ステップ別エラー処理
+      step_specific_handling:
+        data_scraping:
+          on_failure: "retry_with_delay"
+          max_retries: 5
+        marketplace_listing:
+          on_failure: "rollback_to_approval"
+          max_retries: 3
+    
+    # 成功後処理
+    post_processing:
+      - type: "notification"
+        channels: ["email", "dashboard"]
+        template: "workflow_success_summary"
+        include_metrics: true
+        
+      - type: "analytics_update"
+        update_performance_metrics: true
+        calculate_roi: true
+        update_success_rates: true
+        
+      - type: "cleanup"
+        remove_temp_files: true
+        cleanup_failed_uploads: true
+        archive_logs: true
+        retention_days: 30
+    
+    # パフォーマンス監視・SLA
+    performance_monitoring:
+      sla_targets:
+        total_duration_minutes: 120  # 2時間以内完了目標
+        step_failure_rate: 0.05      # 5%未満のステップ失敗率
+        overall_success_rate: 0.90   # 90%以上の全体成功率
+        throughput_items_per_hour: 500  # 時間あたり処理件数
+      
+      # アラート設定
+      alerts:
+        - condition: "total_duration > 180"  # 3時間超過
+          severity: "critical"
+          action: ["escalate", "auto_investigate"]
+          
+        - condition: "step_failure_rate > 0.15"  # 15%超過
+          severity: "warning"
+          action: ["notify", "increase_monitoring"]
+          
+        - condition: "throughput < 200"  # 時間200件未満
+          severity: "warning"
+          action: ["performance_analysis", "scaling_recommendation"]
+      
+      # メトリクス収集
+      metrics_collection:
+        collect_execution_times: true
+        collect_resource_usage: true
+        collect_api_response_times: true
+        collect_error_patterns: true
+        
+    # A/Bテスト設定
+    ab_testing:
+      enabled: true
+      traffic_split:
+        variant_a: 70  # 既存フロー
+        variant_b: 30  # 実験フロー
+      
+      success_metrics:
+        - "overall_success_rate"  
+        - "total_execution_time"
+        - "cost_per_item"
+        - "quality_score"
+  
+  # ====================================
+  # 緊急出品フロー（簡略版）
+  # ====================================
+  emergency_listing:
+    name: "緊急出品フロー"
+    description: "承認プロセスを簡略化した高速出品フロー"
+    
+    steps:
+      1:
+        name: "quick_filtering"
+        service: "06_filters"
+        auto_proceed: true
+        filter_config:
+          quick_mode: true
+          basic_checks_only: true
+      2: 
+        name: "express_pricing"
+        service: "09_shipping"
+        auto_proceed: true
+        pricing_strategy: "standard_markup"
+      3:
+        name: "auto_categorize"
+        service: "11_category" 
+        auto_proceed: true
+        ai_config:
+          confidence_threshold: 0.6  # 低めに設定
+      4:
+        name: "quick_html"
+        service: "12_html_editor"
+        auto_proceed: true
+        html_config:
+          template: "simple"
+      5:
+        name: "auto_approve"
+        service: "03_approval"
+        auto_proceed: true
+        approval_config:
+          auto_approve_all: true  # 緊急時は自動承認
+      6:
+        name: "immediate_listing"
+        service: "08_listing"
+        auto_proceed: true
+        listing_config:
+          priority_listing: true
+    
+    # 緊急フロー用の短縮SLA
+    performance_monitoring:
+      sla_targets:
+        total_duration_minutes: 30
+        success_rate: 0.85
+
+  # ====================================  
+  # 大量処理フロー（バッチ最適化版）
+  # ====================================
+  bulk_processing:
+    name: "大量処理フロー"
+    description: "1000件以上の商品を効率的に処理する最適化フロー"
+    
+    # 大量処理専用設定
+    batch_optimization:
+      mega_batch_size: 500
+      parallel_workers: 10
+      memory_optimization: true
+      database_bulk_operations: true
+      
+    steps:
+      # 各ステップは基本フローと同じだが、バッチサイズを大幅に拡大
+      1:
+        name: "bulk_scraping"
+        service: "02_scraping"
+        parallel_config:
+          batch_size: 100
+          max_concurrent: 10
+      # ... 他のステップも大量処理最適化
+
+# ====================================
+# グローバル設定
+# ====================================
+global_settings:
+  
+  # システム設定
+  system:
+    timezone: "Asia/Tokyo"
+    default_language: "ja_JP"
+    log_level: "INFO"
+    
+  # データベース設定
+  database:
+    connection_pool_size: 20
+    query_timeout: 30
+    batch_size: 1000
+    
+  # Redis設定  
+  redis:
+    connection_timeout: 5
+    retry_attempts: 3
+    key_prefix: "nagano3:"
+    
+  # API設定
+  external_apis:
+    ebay_trading_api:
+      endpoint: "https://api.ebay.com/ws/api.dll"
+      rate_limit_per_hour: 5000
+      timeout_seconds: 30
+      
+    exchange_rate_api:
+      endpoint: "https://api.exchangerate-api.com/v4/latest/JPY"
+      cache_duration_minutes: 60
+      
+  # 通知設定
+  notifications:
+    email:
+      smtp_server: "smtp.gmail.com"
+      port: 587
+      from_address: "nagano3-system@example.com"
+      
+    slack:
+      webhook_url: "https://hooks.slack.com/services/..."
+      channel: "#nagano3-alerts"
+      
+  # セキュリティ設定
+  security:
+    api_key_rotation_days: 30
+    webhook_signature_verification: true
+    rate_limiting: true
+    
+  # パフォーマンス設定
+  performance:
+    max_concurrent_workflows: 50
+    memory_limit_mb: 2048
+    execution_timeout_minutes: 240

@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マーケットプレース選択 - NAGANO-3</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f6fa;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 24px;
+            text-align: center;
+        }
+        
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            padding: 24px;
+            background: #f8f9fa;
+        }
+        
+        .summary-card {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .summary-card h3 {
+            margin: 0 0 8px 0;
+            font-size: 24px;
+            color: #2c3e50;
+        }
+        
+        .summary-card p {
+            margin: 0;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        .quick-actions {
+            padding: 24px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .quick-actions h2 {
+            margin: 0 0 16px 0;
+            color: #2c3e50;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-success {
+            background: #2ecc71;
+            color: white;
+        }
+        
+        .btn-warning {
+            background: #f39c12;
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .items-grid {
+            padding: 24px;
+        }
+        
+        .item-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            overflow: hidden;
+            background: white;
+        }
+        
+        .item-header {
+            padding: 16px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .item-image {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 6px;
+        }
+        
+        .item-info h3 {
+            margin: 0 0 4px 0;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+        
+        .item-info p {
+            margin: 0;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        .marketplace-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            padding: 16px;
+        }
+        
+        .marketplace-option {
+            border: 2px solid #eee;
+            border-radius: 8px;
+            padding: 16px;
+            transition: all 0.2s;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .marketplace-option:hover {
+            border-color: #3498db;
+            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
+        }
+        
+        .marketplace-option.recommended {
+            border-color: #2ecc71;
+            background: #f8fff9;
+        }
+        
+        .marketplace-option.recommended::before {
+            content: "推奨";
+            position: absolute;
+            top: -8px;
+            right: 12px;
+            background: #2ecc71;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .marketplace-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .marketplace-logo {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+        }
+        
+        .profit-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .profit-metric {
+            text-align: center;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        
+        .profit-value {
+            font-weight: bold;
+            font-size: 16px;
+            color: #2c3e50;
+        }
+        
+        .profit-label {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
+        .shipping-methods {
+            margin-bottom: 12px;
+        }
+        
+        .shipping-method {
+            display: inline-block;
+            background: #ecf0f1;
+            color: #2c3e50;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-right: 6px;
+            margin-bottom: 4px;
+        }
+        
+        .concerns {
+            font-size: 13px;
+            color: #e74c3c;
+        }
+        
+        .opportunities {
+            font-size: 13px;
+            color: #27ae60;
+        }
+        
+        .selection-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+        }
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .proceed-section {
+            padding: 24px;
+            background: #f8f9fa;
+            text-align: center;
+            border-top: 1px solid #eee;
+        }
+        
+        .selected-summary {
+            margin-bottom: 16px;
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        
+        .profitability-excellent { color: #27ae60; }
+        .profitability-very-good { color: #2ecc71; }
+        .profitability-good { color: #f39c12; }
+        .profitability-marginal { color: #e67e22; }
+        .profitability-poor { color: #e74c3c; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌐 マーケットプレース選択</h1>
+            <p>全4マーケットプレースの送料・利益計算が完了しました</p>
+            <small>ワークフローID: multi_20240925_143022_a1b2c3</small>
+        </div>
+        
+        <div class="summary-cards">
+            <div class="summary-card">
+                <h3>12</h3>
+                <p>処理済みアイテム</p>
+            </div>
+            <div class="summary-card">
+                <h3>4</h3>
+                <p>対象マーケット</p>
+            </div>
+            <div class="summary-card">
+                <h3>8</h3>
+                <p>推奨出品数</p>
+            </div>
+            <div class="summary-card">
+                <h3>¥125,600</h3>
+                <p>予想総利益</p>
+            </div>
+        </div>
+        
+        <div class="quick-actions">
+            <h2>🚀 クイックアクション</h2>
+            <div class="action-buttons">
+                <button class="btn btn-success" onclick="selectAllRecommended()">
+                    ✅ 全推奨マーケットに出品
+                </button>
+                <button class="btn btn-primary" onclick="selectHighestProfit()">
+                    💰 最高利益マーケットのみ
+                </button>
+                <button class="btn btn-warning" onclick="manualSelection()">
+                    🔧 個別選択モード
+                </button>
+            </div>
+        </div>
+        
+        <div class="items-grid">
+            <h2>📦 商品別マーケット分析</h2>
+            
+            <!-- サンプル商品1 -->
+            <div class="item-card">
+                <div class="item-header">
+                    <img src="data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='60' height='60' fill='%23e0e0e0'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='12' fill='%23666'%3EImage%3C/text%3E%3C/svg%3E" alt="商品画像" class="item-image">
+                    <div class="item-info">
+                        <h3>Nintendo Switch ゲーム カービィディスカバリー</h3>
+                        <p>取得価格: ¥4,800 | 推定価格: $45-65</p>
+                    </div>
+                </div>
+                
+                <div class="marketplace-options">
+                    <!-- eBay -->
+                    <div class="marketplace-option recommended">
+                        <div class="marketplace-name">
+                            <div class="marketplace-logo" style="background: #e53238;"></div>
+                            <strong>eBay</strong>
+                        </div>
+                        <div class="profit-info">
+                            <div class="profit-metric">
+                                <div class="profit-value profitability-excellent">$28.50</div>
+                                <div class="profit-label">予想利益</div>
+                            </div>
+                            <div class="profit-metric">
+                                <div class="profit-value profitability-excellent">52%</div>
+                                <div class="profit-label">利益率</div>
+                            </div>
+                        </div>
+                        <div class="shipping-methods">
+                            <span class="shipping-method">DDP $12.50</span>
+                            <span class="shipping-method">DDU $8.20</span>
+                        </div>
+                        <div class="opportunities">
+                            ✓ 高需要カテゴリー ✓ 競合価格が高い
+                        </div>
+                        <div class="selection-controls">
+                            <div class="checkbox-container">
+                                <input type="checkbox" id="ebay-item1" checked>
+                                <label for="ebay-item1">このマーケットに出品</label>
+                            </div>
+                            <small>推奨価格: $55</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Amazon -->
+                    <div class="marketplace-option">
+                        <div class="marketplace-name">
+                            <div class="marketplace-logo" style="background: #ff9900;"></div>
+                            <strong>Amazon</strong>
+                        </div>
+                        <div class="profit-info">
+                            <div class="profit-metric">
+                                <div class="profit-value profitability-good">$18.30</div>
+                                <div class="profit-label">予想利益</div>
+                            </div>
+                            <div class="profit-metric">
+                                <div class="profit-value profitability-good">33%</div>
+                                <div class="profit-label">利益率</div>
+                            </div>
+                        </div>
+                        <div class="shipping-methods">
+                            <span class="shipping-method">FBA $15.20</span>
+                            <span class="shipping-method">FBM-DDP $11.80</span>
+                        </div>
+                        <div class="concerns">
+                            ⚠ ブランドゲート要確認 ⚠ 高いFBA手数料
+                        </div>
+                        <div class="selection-controls">
+                            <div class="checkbox-container">
+                                <input type="checkbox" id="amazon-item1">
+                                <label for="amazon-item1">このマーケットに出品</label>
+                            </div>
+                            <small>推奨価格: $55</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Shopee -->
+                    <div class="marketplace-option recommended">
+                        <div class="marketplace-name">
+                            <div class="marketplace-logo" style="background: #ee4d2d;"></div>
+                            <strong>Shopee (SG)</strong>
+                        </div>
+                        <div class="profit-info">
+                            <div class="profit-metric">
+                                <div class="profit-value profitability-very-good">$24.80</div>
+                                <div class="profit-label">予想利益</div>
+                            </div>
+                            <div class="profit-metric">
+                                <div class="profit-value profitability-very-good">45%</div>
+                                <div class="profit-label">利益率</div>
+                            </div>
+                        </div>
+                        <div class="shipping-methods">
+                            <span class="shipping-method">DDP $10.50</span>
+                            <span class="shipping-method">DDU $7.20</span>
+                        </div>
+                        <div class="opportunities">
+                            ✓ 低い手数料 ✓ Nintendo人気高い
+                        </div>
+                        <div class="selection-controls">
+                            <div class="checkbox-container">
+                                <input type="checkbox" id="shopee-item1" checked>
+                                <label for="shopee-item1">このマーケットに出品</label>
+                            </div>
+                            <small>推奨価格: S$75</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Mercari -->
+                    <div class="marketplace-option">
+                        <div class="marketplace-name">
+                            <div class="marketplace-logo" style="background: #dc143c;"></div>
+                            <strong>Mercari JP</strong>
+                        </div>
+                        <div class="profit-info">
+                            <div class="profit-metric">
+                                <div class="profit-value profitability-marginal">¥1,200</div>
+                                <div class="profit-label">予想利益</div>
+                            </div>
+                            <div class="profit-metric">
+                                <div class="profit-value profitability-marginal">12%</div>
+                                <div class="profit-label">利益率</div>
+                            </div>
+                        </div>
+                        <div class="shipping-methods">
+                            <span class="shipping-method">DDP ¥800</span>
+                        </div>
+                        <div class="concerns">
+                            ⚠ 低利益率 ⚠ 国内競合多数
+                        </div>
+                        <div class="selection-controls">
+                            <div class="checkbox-container">
+                                <input type="checkbox" id="mercari-item1">
+                                <label for="mercari-item1">このマーケットに出品</label>
+                            </div>
+                            <small>推奨価格: ¥8,500</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- サンプル商品2 -->
+            <div class="item-card">
+                <div class="item-header">
+                    <img src="data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='60' height='60' fill='%23e0e0e0'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='12' fill='%23666'%3EImage%3C/text%3E%3C/svg%3E" alt="商品画像" class="item-image">
+                    <div class="item-info">
+                        <h3>ポケモンカード 未開封BOX</h3>
+                        <p>取得価格: ¥12,000 | 推定価格: $120-180</p>
+                    </div>
+                </div>
+                
+                <div class="marketplace-options">
+                    <!-- 類似の構造で他のマーケットプレース表示 -->
+                    <div class="marketplace-option recommended">
+                        <div class="marketplace-name">
+                            <div class="marketplace-logo" style="background: #e53238;"></div>
+                            <strong>eBay</strong>
+                        </div>
+                        <div class="profit-info">
+                            <div class="profit-metric">
+                                <div class="profit-value profitability-excellent">$68.20</div>
+                                <div class="profit-label">予想利益</div>
+                            </div>
+                            <div class="profit-metric">
+                                <div class="profit-value profitability-excellent">45%</div>
+                                <div class="profit-label">利益率</div>
+                            </div>
+                        </div>
+                        <div class="shipping-methods">
+                            <span class="shipping-method">DDP $18.50</span>
+                            <span class="shipping-method">DDU $12.80</span>
+                        </div>
+                        <div class="opportunities">
+                            ✓ 海外コレクター需要 ✓ 高額取引実績
+                        </div>
+                        <div class="selection-controls">
+                            <div class="checkbox-container">
+                                <input type="checkbox" id="ebay-item2" checked>
+                                <label for="ebay-item2">このマーケットに出品</label>
+                            </div>
+                            <small>推奨価格: $150</small>
+                        </div>
+                    </div>
+                    
+                    <!-- 他のマーケットプレースも同様に表示 -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="proceed-section">
+            <div class="selected-summary">
+                <strong>選択状況:</strong> eBay 2件, Shopee 1件 | 予想総利益: ¥18,500
+            </div>
+            <button class="btn btn-success" style="font-size: 16px; padding: 16px 32px;" onclick="proceedToListing()">
+                🚀 選択したマーケットに出品開始
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        function selectAllRecommended() {
+            document.querySelectorAll('.marketplace-option.recommended input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = true;
+            });
+            updateSelection();
+        }
+        
+        function selectHighestProfit() {
+            // 各商品の最高利益マーケットのみ選択
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            // 最高利益のものを選択（実装簡略化）
+            document.querySelectorAll('#ebay-item1, #ebay-item2').forEach(checkbox => {
+                checkbox.checked = true;
+            });
+            updateSelection();
+        }
+        
+        function manualSelection() {
+            alert('個別選択モードです。各マーケットプレースのチェックボックスで選択してください。');
+        }
+        
+        function updateSelection() {
+            // 選択状況の更新（実装簡略化）
+            const checkedCount = document.querySelectorAll('input[type="checkbox"]:checked').length;
+            document.querySelector('.selected-summary').innerHTML = 
+                `<strong>選択状況:</strong> ${checkedCount}件選択 | 予想総利益を計算中...`;
+        }
+        
+        function proceedToListing() {
+            const selected = [];
+            document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+                selected.push({
+                    marketplace: checkbox.id.split('-')[0],
+                    item: checkbox.id.split('-')[1]
+                });
+            });
+            
+            if (selected.length === 0) {
+                alert('出品するマーケットプレースを選択してください。');
+                return;
+            }
+            
+            // 実際の実装では、選択データをサーバーに送信
+            console.log('選択されたマーケットプレース:', selected);
+            alert(`${selected.length}件の出品を開始します。\n\n出品処理は自動で実行され、進捗はダッシュボードで確認できます。`);
+            
+            // 出品処理画面に遷移
+            // window.location.href = '/00_workflow_engine/listing_progress.php?selections=' + JSON.stringify(selected);
+        }
+        
+        // チェックボックス変更時の処理
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', updateSelection);
+        });
+    </script>
+</body>
+</html>

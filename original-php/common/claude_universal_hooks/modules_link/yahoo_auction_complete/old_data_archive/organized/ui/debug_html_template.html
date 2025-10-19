@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>HTMLテンプレート API デバッグ</title>
+</head>
+<body>
+    <h1>🔧 HTMLテンプレート API デバッグツール</h1>
+    
+    <div>
+        <h3>Step 1: データベース接続テスト</h3>
+        <button onclick="testDatabaseConnection()">📊 データベース接続確認</button>
+        <div id="dbResult"></div>
+    </div>
+    
+    <div style="margin-top: 2rem;">
+        <h3>Step 2: HTMLテンプレート保存テスト</h3>
+        <button onclick="testHTMLTemplateSave()">💾 テンプレート保存テスト</button>
+        <div id="saveResult"></div>
+    </div>
+    
+    <div style="margin-top: 2rem;">
+        <h3>Step 3: レスポンス詳細表示</h3>
+        <pre id="detailedResponse" style="background: #f5f5f5; padding: 1rem; border-radius: 4px;"></pre>
+    </div>
+
+    <script>
+        async function testDatabaseConnection() {
+            const resultDiv = document.getElementById('dbResult');
+            resultDiv.innerHTML = '⏳ データベース接続テスト中...';
+            
+            try {
+                const response = await fetch('yahoo_auction_content.php?action=get_dashboard_stats');
+                const result = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div style="padding: 1rem; border: 1px solid #ccc; border-radius: 4px; margin-top: 0.5rem;">
+                        <strong>データベース接続:</strong> ${result.success ? '✅ 成功' : '❌ 失敗'}<br>
+                        <strong>メッセージ:</strong> ${result.message || 'なし'}<br>
+                        <strong>データ:</strong> ${JSON.stringify(result.data || {}, null, 2)}
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div style="color: red;">❌ エラー: ${error.message}</div>`;
+            }
+        }
+        
+        async function testHTMLTemplateSave() {
+            const resultDiv = document.getElementById('saveResult');
+            const detailedDiv = document.getElementById('detailedResponse');
+            
+            resultDiv.innerHTML = '⏳ HTMLテンプレート保存テスト中...';
+            
+            const testData = {
+                action: 'save_html_template',
+                template_data: {
+                    name: 'debug_test_template_' + Date.now(),
+                    category: 'general',
+                    description: 'デバッグ用テストテンプレート',
+                    html_content: '<h1>{{TITLE}}</h1><p>価格: ${{PRICE}}</p>',
+                    created_by: 'debug_test'
+                }
+            };
+            
+            try {
+                console.log('🚀 送信データ:', testData);
+                
+                const response = await fetch('yahoo_auction_content.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                console.log('📡 レスポンス状態:', response.status, response.statusText);
+                
+                // レスポンスをテキストとして取得してログ出力
+                const responseText = await response.text();
+                console.log('📄 生レスポンス:', responseText);
+                
+                detailedDiv.textContent = `レスポンステキスト:\n${responseText}`;
+                
+                // JSONパース試行
+                try {
+                    const result = JSON.parse(responseText);
+                    console.log('✅ JSONパース成功:', result);
+                    
+                    resultDiv.innerHTML = `
+                        <div style="padding: 1rem; border: 1px solid #ccc; border-radius: 4px; margin-top: 0.5rem;">
+                            <strong>保存結果:</strong> ${result.success ? '✅ 成功' : '❌ 失敗'}<br>
+                            <strong>メッセージ:</strong> ${result.message || 'メッセージなし'}<br>
+                            <strong>データ:</strong> ${JSON.stringify(result.data || {}, null, 2)}
+                        </div>
+                    `;
+                } catch (jsonError) {
+                    console.error('❌ JSONパースエラー:', jsonError);
+                    resultDiv.innerHTML = `<div style="color: red;">❌ JSONパースエラー: ${jsonError.message}</div>`;
+                }
+                
+            } catch (error) {
+                console.error('❌ リクエストエラー:', error);
+                resultDiv.innerHTML = `<div style="color: red;">❌ リクエストエラー: ${error.message}</div>`;
+            }
+        }
+        
+        console.log('🔧 HTMLテンプレート デバッグツール準備完了');
+    </script>
+</body>
+</html>

@@ -1,0 +1,142 @@
+{
+  "success": true,
+  "total_items": 17,
+  "products": [
+    {
+      "asin": "B001F0DNL",
+      "title": "Millennium Princess Barbie (AA/Black)",
+      "category": "Figure",
+      "status": "active",
+      "stock": 10,
+      "price": 25.50
+    },
+    {
+      "asin": "B001HA5L8S",
+      "title": "Batman The Brave and The Bold Batman vs Alien Fiures",
+      "category": "Figure",
+      "status": "active",
+      "stock": 5,
+      "price": 18.99
+    },
+    {
+      "asin": "B001L6EYS",
+      "title": "Batman Brave and Bold Caped Crusader Kit",
+      "category": "Model Kit",
+      "status": "inactive",
+      "stock": 0,
+      "price": 30.00
+    },
+    {
+      "asin": "B001M1J3I",
+      "title": "Barbie Society Style Collection Emerald Enchantment",
+      "category": "Barbie",
+      "status": "active",
+      "stock": 3,
+      "price": 45.00
+    },
+    {
+      "asin": "B001M6RVUI",
+      "title": "MATTEL DL 1/43 Ferrari FXX (Red) Elite Finished duct",
+      "category": "Model Car",
+      "status": "active",
+      "stock": 7,
+      "price": 60.00
+    },
+    {
+      "asin": "B001MHJIC",
+      "title": "Masters of the Universe Mini-Fiures Mekaneck Action Fiure by Mattel",
+      "category": "Figure",
+      "status": "active",
+      "stock": 2,
+      "price": 15.00
+    },
+    {
+      "asin": "B001OD1H2C",
+      "title": "MATTEL DL 1/43 Ferrari FXX (Turquoise/Blue Stripes) Elite Finished duct",
+      "category": "Model Car",
+      "status": "inactive",
+      "stock": 0,
+      "price": 60.00
+    },
+    {
+      "asin": "B001OD8I2O",
+      "title": "MATTEL DL 1/43 Ferrari FXX (Yellow/White Stripes) Elite Finished duct",
+      "category": "Model Car",
+      "status": "active",
+      "stock": 4,
+      "price": 60.00
+    },
+    {
+      "asin": "B001OW74QK",
+      "title": "Kyoto Tool (KTC) Nes 6.3mm (1/4 inch) Extension Bar NBE2-150",
+      "category": "Tool",
+      "status": "active",
+      "stock": 12,
+      "price": 8.00
+    },
+    {
+      "asin": "B001OW7C8K",
+      "title": "Kyoto Tool (KTC) Nes 6.3mm (1/4 inch) Socket (Hex) NB2-08",
+      "category": "Tool",
+      "status": "active",
+      "stock": 20,
+      "price": 5.50
+    },
+    {
+      "asin": "B001OYEH4",
+      "title": "Kyoto Tool (KTC) Nes 9.5mm (3/8 inch) Spark Plu Wrench NB3-14SP",
+      "category": "Tool",
+      "status": "active",
+      "stock": 8,
+      "price": 11.20
+    },
+    {
+      "asin": "B001R2K90I",
+      "title": "Ibanez PF Series PF15ECE Dreadnouht Cutaway Acoustic-Electric uitar, loss Bla",
+      "category": "Guitar",
+      "status": "active",
+      "stock": 1,
+      "price": 199.99
+    },
+    {
+      "asin": "B001W0YT5E",
+      "title": "MATTEL 1/12 66 Batcycle (TV Series Version) Completed",
+      "category": "Motorcycle",
+      "status": "active",
+      "stock": 6,
+      "price": 35.00
+    },
+    {
+      "asin": "B001W0YTYU",
+      "title": "[MATTEL] 1/43 Ferrari 412T2 J. Alesi Elite",
+      "category": "Model Car",
+      "status": "active",
+      "stock": 1,
+      "price": 55.00
+    },
+    {
+      "asin": "B001W0YUAI",
+      "title": "[MATTEL] 1/43 Ferrari 330 P4 Red Elite",
+      "category": "Model Car",
+      "status": "active",
+      "stock": 1,
+      "price": 55.00
+    },
+    {
+      "asin": "B001X5HC",
+      "title": "Disney Cars Diecast Model Car/Barney Stormin' [WORLD OF CARS]",
+      "category": "Model Car",
+      "status": "active",
+      "stock": 9,
+      "price": 10.99
+    },
+    {
+      "asin": "B002605II",
+      "title": "Kyoto Tool (KTC) Hexaonal Socket, B2-12-S, 6.3mm x 20.5mm Overall Lenth x 6.3m",
+      "category": "Tool",
+      "status": "active",
+      "stock": 15,
+      "price": 7.50
+    }
+  ]
+}

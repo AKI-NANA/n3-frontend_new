@@ -1,0 +1,892 @@
+<!-- eBayカテゴリー自動判定タブ（統合版） -->
+<div id="ebay-category" class="tab-content fade-in">
+    <div class="section">
+        <!-- システム統計ダッシュボード -->
+        <div class="ebay-stats-dashboard">
+            <div class="section-header">
+                <i class="fas fa-chart-line"></i>
+                <h3 class="section-title">eBayカテゴリー自動判定システム</h3>
+                <div style="margin-left: auto;">
+                    <button class="btn btn-info" onclick="refreshEbayCategoryStats()">
+                        <i class="fas fa-sync"></i> 統計更新
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 統計カードグリッド -->
+            <div class="stats-grid">
+                <div class="stat-card stat-primary">
+                    <div class="stat-icon">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="totalCategoriesCount">50,000</div>
+                        <div class="stat-label">対応カテゴリー</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card stat-success">
+                    <div class="stat-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="supportedCategoriesCount">150</div>
+                        <div class="stat-label">学習済みカテゴリー</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card stat-info">
+                    <div class="stat-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="avgConfidence">87.5%</div>
+                        <div class="stat-label">平均判定精度</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card stat-warning">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="todayDetections">0</div>
+                        <div class="stat-label">今日の判定回数</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card stat-danger">
+                    <div class="stat-icon">
+                        <i class="fas fa-cloud"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="apiUsageToday">0/4,500</div>
+                        <div class="stat-label">API使用量</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card stat-secondary">
+                    <div class="stat-icon">
+                        <i class="fas fa-tachometer-alt"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="avgResponseTime">0.12秒</div>
+                        <div class="stat-label">平均応答時間</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 単一商品テストツール -->
+    <div class="section">
+        <div class="section-header">
+            <i class="fas fa-search"></i>
+            <h3 class="section-title">単一商品カテゴリー判定テスト</h3>
+            <div style="margin-left: auto;">
+                <button class="btn btn-secondary" onclick="clearSingleTest()">
+                    <i class="fas fa-eraser"></i> クリア
+                </button>
+            </div>
+        </div>
+        
+        <div class="single-test-container">
+            <div class="test-input-section">
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-tag"></i>
+                        商品タイトル <span class="required-mark">*</span>
+                    </label>
+                    <input type="text" 
+                           class="form-input" 
+                           id="singleTestTitle" 
+                           placeholder="例: iPhone 14 Pro 128GB 新品未使用"
+                           maxlength="200">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-align-left"></i>
+                        商品説明（オプション）
+                    </label>
+                    <textarea class="form-input" 
+                              id="singleTestDescription" 
+                              placeholder="商品の詳細説明..."
+                              rows="3"
+                              maxlength="500"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-yen-sign"></i>
+                        価格（オプション）
+                    </label>
+                    <input type="number" 
+                           class="form-input" 
+                           id="singleTestPrice" 
+                           placeholder="例: 120000"
+                           min="0" 
+                           step="1">
+                </div>
+                
+                <div class="test-actions">
+                    <button class="btn btn-primary" onclick="executeSingleTest()">
+                        <i class="fas fa-magic"></i> カテゴリー判定実行
+                    </button>
+                    <button class="btn btn-success" onclick="executeSingleTestWithAPI()">
+                        <i class="fas fa-cloud"></i> API強制使用判定
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 判定結果表示 -->
+            <div class="test-result-section" id="singleTestResult" style="display: none;">
+                <h4 class="result-title">
+                    <i class="fas fa-bullseye"></i>
+                    判定結果
+                </h4>
+                
+                <div class="result-content">
+                    <div class="result-main">
+                        <div class="result-category">
+                            <div class="category-id" id="resultCategoryId">9355</div>
+                            <div class="category-name" id="resultCategoryName">Cell Phones & Smartphones</div>
+                        </div>
+                        
+                        <div class="result-metrics">
+                            <div class="metric">
+                                <span class="metric-label">信頼度:</span>
+                                <span class="metric-value confidence" id="resultConfidence">95%</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">処理時間:</span>
+                                <span class="metric-value" id="resultProcessingTime">0.12秒</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">判定方法:</span>
+                                <span class="metric-value" id="resultSource">ローカルDB</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="result-specifics">
+                        <h5>必須項目（Item Specifics）</h5>
+                        <div class="specifics-list" id="resultItemSpecifics">
+                            <span class="specific-item">Brand=Apple</span>
+                            <span class="specific-item">Model=iPhone</span>
+                            <span class="specific-item">Storage=128GB</span>
+                            <span class="specific-item">Condition=New</span>
+                        </div>
+                    </div>
+                    
+                    <div class="result-actions">
+                        <button class="btn btn-info" onclick="copyResultToClipboard()">
+                            <i class="fas fa-copy"></i> 結果をコピー
+                        </button>
+                        <button class="btn btn-warning" onclick="saveTestResult()">
+                            <i class="fas fa-save"></i> テスト結果保存
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CSVバッチ処理セクション -->
+    <div class="section">
+        <div class="section-header">
+            <i class="fas fa-file-csv"></i>
+            <h3 class="section-title">CSVバッチ処理</h3>
+            <div style="margin-left: auto;">
+                <button class="btn btn-secondary" onclick="downloadSampleCSV()">
+                    <i class="fas fa-download"></i> サンプルCSV
+                </button>
+            </div>
+        </div>
+        
+        <div class="csv-batch-container">
+            <!-- CSV アップロード -->
+            <div class="csv-upload-section">
+                <div class="drag-drop-area" 
+                     id="csvDropArea"
+                     ondrop="handleCSVDrop(event)" 
+                     ondragover="handleDragOver(event)" 
+                     ondragleave="handleDragLeave(event)"
+                     onclick="document.getElementById('csvFileInput').click()">
+                    
+                    <input type="file" 
+                           id="csvFileInput" 
+                           accept=".csv" 
+                           style="display: none;" 
+                           onchange="handleCSVUpload(event)">
+                    
+                    <div class="drop-content">
+                        <i class="fas fa-cloud-upload-alt drop-icon"></i>
+                        <div class="drop-text">
+                            <strong>CSVファイルをドラッグ&ドロップ</strong><br>
+                            またはクリックしてファイル選択
+                        </div>
+                        <div class="drop-requirements">
+                            対応形式: CSV | 最大サイズ: 10MB | 最大行数: 10,000行
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- アップロード設定 -->
+                <div class="upload-options">
+                    <div class="option-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="enableAPIFallback" checked>
+                            <span class="checkmark"></span>
+                            API補完を有効化（ローカルで判定できない場合）
+                        </label>
+                    </div>
+                    <div class="option-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="saveLearningData" checked>
+                            <span class="checkmark"></span>
+                            学習データとして保存
+                        </label>
+                    </div>
+                    <div class="option-group">
+                        <label for="batchDelay">処理間隔（ミリ秒）:</label>
+                        <input type="number" id="batchDelay" value="100" min="0" max="5000" step="50">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 処理進捗表示 -->
+            <div class="batch-progress-section" id="batchProgressSection" style="display: none;">
+                <div class="progress-header">
+                    <h4>
+                        <i class="fas fa-cog fa-spin"></i>
+                        バッチ処理中...
+                    </h4>
+                    <button class="btn btn-danger btn-sm" onclick="cancelBatchProcess()">
+                        <i class="fas fa-stop"></i> 中止
+                    </button>
+                </div>
+                
+                <div class="progress-bar-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="batchProgress" style="width: 0%"></div>
+                    </div>
+                    <div class="progress-text" id="batchProgressText">0 / 0 件処理中</div>
+                </div>
+                
+                <div class="progress-stats">
+                    <div class="progress-stat">
+                        <span class="stat-label">成功:</span>
+                        <span class="stat-value success" id="batchSuccessCount">0</span>
+                    </div>
+                    <div class="progress-stat">
+                        <span class="stat-label">失敗:</span>
+                        <span class="stat-value danger" id="batchErrorCount">0</span>
+                    </div>
+                    <div class="progress-stat">
+                        <span class="stat-label">平均時間:</span>
+                        <span class="stat-value" id="batchAvgTime">0ms</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- バッチ処理結果 -->
+            <div class="batch-results-section" id="batchResultsSection" style="display: none;">
+                <div class="results-header">
+                    <h4>
+                        <i class="fas fa-check-circle"></i>
+                        バッチ処理完了
+                    </h4>
+                    <div class="results-actions">
+                        <button class="btn btn-success" onclick="downloadBatchResults()">
+                            <i class="fas fa-download"></i> 結果をダウンロード
+                        </button>
+                        <button class="btn btn-info" onclick="viewBatchSummary()">
+                            <i class="fas fa-chart-pie"></i> サマリー表示
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="results-summary" id="batchSummary">
+                    <!-- JavaScript で動的生成 -->
+                </div>
+                
+                <div class="results-table-container">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>行</th>
+                                <th>元タイトル</th>
+                                <th>判定カテゴリー</th>
+                                <th>信頼度</th>
+                                <th>処理時間</th>
+                                <th>ステータス</th>
+                            </tr>
+                        </thead>
+                        <tbody id="batchResultsTable">
+                            <!-- JavaScript で動的生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 手動カテゴリー検索システム -->
+    <div class="section">
+        <div class="section-header">
+            <i class="fas fa-search"></i>
+            <h3 class="section-title">手動カテゴリー検索</h3>
+            <div style="margin-left: auto;">
+                <button class="btn btn-secondary" onclick="clearCategorySearch()">
+                    <i class="fas fa-eraser"></i> クリア
+                </button>
+            </div>
+        </div>
+        
+        <div class="manual-search-container">
+            <div class="search-input-section">
+                <div class="search-input-group">
+                    <input type="text" 
+                           class="form-input" 
+                           id="categorySearchQuery" 
+                           placeholder="カテゴリー名またはIDで検索..."
+                           onkeypress="if(event.key==='Enter') searchCategories()">
+                    <button class="btn btn-primary" onclick="searchCategories()">
+                        <i class="fas fa-search"></i> 検索
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 検索結果表示 -->
+            <div class="search-results-section" id="categorySearchResults" style="display: none;">
+                <div class="results-header">
+                    <h4>検索結果</h4>
+                    <div class="results-count" id="categoryResultsCount">0 件見つかりました</div>
+                </div>
+                
+                <div class="category-list" id="categorySearchList">
+                    <!-- JavaScript で動的生成 -->
+                </div>
+            </div>
+            
+            <!-- 人気カテゴリー表示 -->
+            <div class="popular-categories-section">
+                <h4>
+                    <i class="fas fa-fire"></i>
+                    人気カテゴリー（判定回数順）
+                </h4>
+                
+                <div class="popular-categories-grid" id="popularCategoriesGrid">
+                    <!-- JavaScript で動的生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 学習データ管理システム -->
+    <div class="section">
+        <div class="section-header">
+            <i class="fas fa-brain"></i>
+            <h3 class="section-title">学習データ管理</h3>
+            <div style="margin-left: auto;">
+                <button class="btn btn-success" onclick="addNewKeywordMapping()">
+                    <i class="fas fa-plus"></i> キーワード追加
+                </button>
+                <button class="btn btn-info" onclick="exportLearningData()">
+                    <i class="fas fa-download"></i> データ出力
+                </button>
+            </div>
+        </div>
+        
+        <div class="learning-data-container">
+            <!-- フィルター -->
+            <div class="learning-filters">
+                <div class="filter-group">
+                    <label>データソース:</label>
+                    <select id="learningSourceFilter" onchange="filterLearningData()">
+                        <option value="">すべて</option>
+                        <option value="manual">手動登録</option>
+                        <option value="api">API学習</option>
+                        <option value="learning">自動学習</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>最低信頼度:</label>
+                    <input type="range" 
+                           id="confidenceFilter" 
+                           min="0" 
+                           max="100" 
+                           value="70"
+                           onchange="filterLearningData()">
+                    <span id="confidenceValue">70%</span>
+                </div>
+            </div>
+            
+            <!-- 学習データテーブル -->
+            <div class="learning-data-table-container">
+                <table class="learning-data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">
+                                <input type="checkbox" id="selectAllLearningData" onchange="toggleAllLearningData()">
+                            </th>
+                            <th>日本語キーワード</th>
+                            <th>英語キーワード</th>
+                            <th>判定カテゴリー</th>
+                            <th>信頼度</th>
+                            <th>使用回数</th>
+                            <th>成功率</th>
+                            <th>データソース</th>
+                            <th>ステータス</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="learningDataTable">
+                        <!-- JavaScript で動的生成 -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- テーブルフッター -->
+            <div class="table-footer">
+                <div class="bulk-actions" id="learningDataBulkActions" style="display: none;">
+                    <span id="selectedLearningCount">0件選択中</span>
+                    <button class="btn btn-warning" onclick="bulkEditLearningData()">
+                        <i class="fas fa-edit"></i> 一括編集
+                    </button>
+                    <button class="btn btn-danger" onclick="bulkDeleteLearningData()">
+                        <i class="fas fa-trash"></i> 一括削除
+                    </button>
+                </div>
+                
+                <div class="pagination-info">
+                    表示中: <span id="learningDataCount">0</span> 件
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- スタイル（既存CSSに統合される） -->
+<style>
+/* eBayカテゴリータブ専用スタイル */
+.ebay-stats-dashboard {
+    margin-bottom: 2rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.stat-card {
+    background: var(--bg-secondary, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-lg, 0.5rem);
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.stat-card.stat-primary .stat-icon { background: var(--color-primary, #3b82f6); }
+.stat-card.stat-success .stat-icon { background: var(--color-success, #10b981); }
+.stat-card.stat-info .stat-icon { background: var(--color-info, #06b6d4); }
+.stat-card.stat-warning .stat-icon { background: var(--color-warning, #f59e0b); }
+.stat-card.stat-danger .stat-icon { background: var(--color-danger, #ef4444); }
+.stat-card.stat-secondary .stat-icon { background: var(--color-secondary, #6b7280); }
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary, #1e293b);
+    margin-bottom: 0.25rem;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary, #64748b);
+    font-weight: 500;
+}
+
+/* 単一テスト用スタイル */
+.single-test-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.test-input-section {
+    background: var(--bg-tertiary, #f8fafc);
+    padding: 1.5rem;
+    border-radius: var(--radius-lg, 0.5rem);
+}
+
+.test-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.test-result-section {
+    background: var(--bg-secondary, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-lg, 0.5rem);
+    padding: 1.5rem;
+}
+
+.result-title {
+    color: var(--color-success, #10b981);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.result-category {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.category-id {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-primary, #3b82f6);
+}
+
+.category-name {
+    font-size: 1rem;
+    color: var(--text-secondary, #64748b);
+    margin-top: 0.25rem;
+}
+
+.result-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.metric {
+    text-align: center;
+    padding: 0.5rem;
+    background: var(--bg-tertiary, #f8fafc);
+    border-radius: var(--radius-md, 0.375rem);
+}
+
+.metric-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-secondary, #64748b);
+}
+
+.metric-value {
+    display: block;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary, #1e293b);
+}
+
+.metric-value.confidence {
+    color: var(--color-success, #10b981);
+}
+
+.specifics-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.specific-item {
+    background: var(--color-primary, #3b82f6);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.result-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+/* CSV処理用スタイル */
+.csv-batch-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.drag-drop-area {
+    border: 2px dashed var(--border-color, #cbd5e1);
+    border-radius: var(--radius-lg, 0.5rem);
+    padding: 3rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: var(--bg-tertiary, #f8fafc);
+}
+
+.drag-drop-area:hover,
+.drag-drop-area.drag-over {
+    border-color: var(--color-primary, #3b82f6);
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.drop-icon {
+    font-size: 3rem;
+    color: var(--color-primary, #3b82f6);
+    margin-bottom: 1rem;
+}
+
+.drop-text {
+    font-size: 1.125rem;
+    color: var(--text-primary, #1e293b);
+    margin-bottom: 0.5rem;
+}
+
+.drop-requirements {
+    font-size: 0.875rem;
+    color: var(--text-secondary, #64748b);
+}
+
+.upload-options {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    margin-top: 1rem;
+}
+
+.option-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+
+/* 進捗表示 */
+.progress-bar-container {
+    margin-bottom: 1rem;
+}
+
+.progress-bar {
+    height: 8px;
+    background: var(--bg-tertiary, #f1f5f9);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-primary, #3b82f6), var(--color-success, #10b981));
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    text-align: center;
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary, #64748b);
+}
+
+.progress-stats {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
+.progress-stat {
+    text-align: center;
+}
+
+.progress-stat .stat-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-secondary, #64748b);
+}
+
+.progress-stat .stat-value {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-top: 0.25rem;
+}
+
+.progress-stat .stat-value.success { color: var(--color-success, #10b981); }
+.progress-stat .stat-value.danger { color: var(--color-danger, #ef4444); }
+
+/* 手動検索用スタイル */
+.search-input-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.search-input-group .form-input {
+    flex: 1;
+}
+
+.category-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.category-item {
+    background: var(--bg-secondary, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-md, 0.375rem);
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.category-item:hover {
+    border-color: var(--color-primary, #3b82f6);
+    transform: translateY(-2px);
+}
+
+.popular-categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+/* 学習データ管理 */
+.learning-filters {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: var(--bg-tertiary, #f8fafc);
+    border-radius: var(--radius-md, 0.375rem);
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-group label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary, #64748b);
+}
+
+.learning-data-table-container {
+    background: var(--bg-secondary, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-lg, 0.5rem);
+    overflow: hidden;
+}
+
+.learning-data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.learning-data-table th,
+.learning-data-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+    font-size: 0.875rem;
+}
+
+.learning-data-table th {
+    background: var(--bg-tertiary, #f8fafc);
+    font-weight: 600;
+    color: var(--text-primary, #1e293b);
+}
+
+.table-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: var(--bg-tertiary, #f8fafc);
+    border-top: 1px solid var(--border-color, #e2e8f0);
+}
+
+.bulk-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.pagination-info {
+    font-size: 0.875rem;
+    color: var(--text-secondary, #64748b);
+}
+
+/* レスポンシブ */
+@media (max-width: 768px) {
+    .single-test-container {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .upload-options {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .learning-filters {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<!-- JavaScript機能（yahoo_auction_tool_content.js に統合される） -->
+<script>
+// eBayカテゴリー機能（既存JavaScriptに統合される）
+console.log('✅ eBayカテゴリータブHTML読み込み完了');
+</script>

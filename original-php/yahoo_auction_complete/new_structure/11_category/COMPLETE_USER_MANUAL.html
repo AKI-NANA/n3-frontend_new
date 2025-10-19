@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eBayカテゴリー自動判定システム - 完全使い方ガイド</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .header {
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            color: #2d3748;
+            margin-bottom: 1rem;
+            font-size: 2.5rem;
+        }
+        
+        .header p {
+            color: #718096;
+            font-size: 1.2rem;
+        }
+        
+        .section {
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        
+        .section-title {
+            color: #2d3748;
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+        
+        .icon-error { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .icon-system { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .icon-test { background: linear-gradient(135deg, #10b981, #059669); }
+        .icon-guide { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        
+        .step-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .step-card {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .step-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+        
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+        
+        .step-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #2d3748;
+        }
+        
+        .step-description {
+            color: #4a5568;
+            margin-bottom: 1rem;
+        }
+        
+        .code-block {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 1rem 0;
+            overflow-x: auto;
+            border-left: 4px solid #667eea;
+        }
+        
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .alert-error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+        
+        .alert-warning {
+            background: #fffbeb;
+            border: 1px solid #fed7aa;
+            color: #92400e;
+        }
+        
+        .alert-success {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+        
+        .alert-info {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1e40af;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin: 0.25rem;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .url-box {
+            background: #f0f9ff;
+            border: 2px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: monospace;
+            word-break: break-all;
+            margin: 0.5rem 0;
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        
+        .comparison-table th,
+        .comparison-table td {
+            padding: 1rem;
+            text-align: left;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .comparison-table th {
+            background: #f8fafc;
+            font-weight: bold;
+            color: #2d3748;
+        }
+        
+        .comparison-table tr:nth-child(even) {
+            background: #f9fafb;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .feature-list li {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0;
+        }
+        
+        .feature-list .check {
+            color: #10b981;
+            font-weight: bold;
+        }
+        
+        .feature-list .cross {
+            color: #ef4444;
+            font-weight: bold;
+        }
+        
+        .feature-list .warning {
+            color: #f59e0b;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .toc h3 {
+            margin-bottom: 1rem;
+            color: #2d3748;
+        }
+        
+        .toc ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .toc li {
+            padding: 0.5rem 0;
+        }
+        
+        .toc a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .toc a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 eBayカテゴリー自動判定システム</h1>
+            <p>完全使い方ガイド - 高校生でもわかる詳細マニュアル</p>
+        </div>
+
+        <!-- 目次 -->
+        <div class="toc">
+            <h3>📋 目次</h3>
+            <ul>
+                <li><a href="#emergency-fix">🚨 1. 緊急エラー修正方法</a></li>
+                <li><a href="#system-overview">🎯 2. システム概要・関係性</a></li>
+                <li><a href="#setup-guide">⚡ 3. セットアップガイド</a></li>
+                <li><a href="#usage-guide">📖 4. 使い方ガイド</a></li>
+                <li><a href="#testing-guide">🧪 5. 動作テスト方法</a></li>
+                <li><a href="#troubleshooting">🔧 6. トラブルシューティング</a></li>
+            </ul>
+        </div>
+
+        <!-- 1. 緊急エラー修正 -->
+        <div class="section" id="emergency-fix">
+            <h2 class="section-title">
+                <div class="icon icon-error">🚨</div>
+                1. 緊急エラー修正方法
+            </h2>
+
+            <div class="alert alert-error">
+                <strong>⚠️ エラー内容</strong><br>
+                「sell_mirror_analysis テーブルが存在しない」というエラーが発生しています。
+                これはデータベースに必要なテーブルが作成されていないためです。
+            </div>
+
+            <h3>✅ 修正手順（5分で完了）</h3>
+
+            <div class="step-grid">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <div class="step-title">ターミナルを開く</div>
+                    <div class="step-description">Macの「アプリケーション > ユーティリティ > ターミナル」を開きます</div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <div class="step-title">以下のコマンドを実行</div>
+                    <div class="step-description">コピー＆ペーストで実行してください</div>
+                    <div class="code-block">psql -h localhost -U aritahiroaki -d nagano3_db -f /Users/aritahiroaki/NAGANO-3/N3-Development/modules/yahoo_auction_complete/new_structure/11_category/database/complete_system_enhancement.sql</div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <div class="step-title">成功メッセージ確認</div>
+                    <div class="step-description">「システム稼働準備完了！」と表示されればOK</div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-number">4</div>
+                    <div class="step-title">ページをリロード</div>
+                    <div class="step-description">ブラウザでF5キーを押してページを更新</div>
+                </div>
+            </div>
+
+            <div class="alert alert-success">
+                <strong>✅ 修正完了後</strong><br>
+                エラーが消えて、システムが正常に動作します！
+            </div>
+        </div>
+
+        <!-- 2. システム概要 -->
+        <div class="section" id="system-overview">
+            <h2 class="section-title">
+                <div class="icon icon-system">🎯</div>
+                2. システム概要・関係性
+            </h2>
+
+            <h3>🔗 2つのシステムの関係性</h3>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>項目</th>
+                        <th>既存版 (category_massive_viewer.php)</th>
+                        <th>最適化版 (category_massive_viewer_optimized.php)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>対象ユーザー</strong></td>
+                        <td>上級者・開発者向け</td>
+                        <td>初心者・一般ユーザー向け</td>
+                    </tr>
+                    <tr>
+                        <td><strong>機能の豊富さ</strong></td>
+                        <td>全機能（30以上）</td>
+                        <td>厳選機能（10個程度）</td>
+                    </tr>
+                    <tr>
+                        <td><strong>画面の複雑さ</strong></td>
+                        <td>複雑（多機能）</td>
+                        <td>シンプル（使いやすい）</td>
+                    </tr>
+                    <tr>
+                        <td><strong>処理速度</strong></td>
+                        <td>やや重い</td>
+                        <td>軽快</td>
+                    </tr>
+                    <tr>
+                        <td><strong>推奨度</strong></td>
+                        <td>⭐⭐⭐</td>
+                        <td>⭐⭐⭐⭐⭐</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="alert alert-info">
+                <strong>💡 どちらを使えばいい？</strong><br>
+                <strong>初めて使う方 → 最適化版を推奨</strong><br>
+                慣れてきて細かい設定をしたい方 → 既存版も併用
+            </div>
+
+            <h3>🌐 アクセスURL</h3>
+
+            <div class="step-grid">
+                <div class="step-card">
+                    <div class="step-title">🚀 最適化版（推奨）</div>
+                    <div class="url-box">
+                        http://localhost:8080/modules/yahoo_auction_complete/new_structure/11_category/frontend/category_massive_viewer_optimized.php
+                    </div>
+                    <a href="http://localhost:8080/modules/yahoo_auction_complete/new_structure/11_category/frontend/category_massive_viewer_optimized.php" target="_blank" class="btn btn-primary">📱 最適化版を開く</a>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-title">⚙️ 既存版（上級者向け）</div>
+                    <div class="url-box">
+                        http://localhost:8080/modules/yahoo_auction_complete/new_structure/11_category/frontend/category_massive_viewer.php
+                    </div>
+                    <a href="http://localhost:8080/modules/yahoo_auction_complete/new_structure/11_category/frontend/category_massive_viewer.php" target="_blank" class="btn btn-warning">🔧 既存版を開く</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. セットアップガイド -->
+        <div class="section" id="setup-guide">
+            <h2 class="section-title">
+                <div class="icon icon-guide">⚡</div>
+                3. セットアップガイド
+            </h2>
+
+            <h3>📋 事前準備チェックリスト</h3>
+
+            <ul class="feature-list">
+                <li><span class="check">✅</span> PostgreSQLが起動している</li>
+                <li><span class="check">✅</span> PHPサーバーが起動している（localhost:8080）</li>
+                <li><span class="check">✅</span> データベース（nagano3_db）にアクセスできる</li>
+                <li><span class="warning">⚠️</span> データベーススキーマが構築されている（上記修正手順実行済み）</li>
+            </ul>
+
+            <h3>🔧 セットアップ手順</h3>
+
+            <div class="step-grid">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <div class="step-title">サーバー起動確認</div>
+                    <div class="step-description">
+                        以下のURLにアクセスして、サーバーが起動しているか確認
+                    </div>
+                    <div class="url-box">http://localhost:8080</div>
+                    <div class="alert alert-warning">
+                        エラーが出る場合は、以下を実行：<br>
+                        <code>cd /Users/aritahiroaki/NAGANO-3/N3-Development/modules/yahoo_auction_complete</code><br>
+                        <code>php -S localhost:8080</code>
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <div class="step-title">データベース構築</div>
+                    <div class="step-description">
+                        上記「緊急エラー修正」の手順を実行
+                    </div>
+                    <a href="#emergency-fix" class="btn btn-warning">🚨 修正手順を見る</a>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <div class="step-title">動作確認</div>
+                    <div class="step-description">
+                        最適化版にアクセスして正常に表示されるか確認
+                    </div>
+                    <a href="http://localhost:8080/modules/yahoo_auction_complete/new_structure/11_category/frontend/category_massive_viewer_optimized.php" target="_blank" class="btn btn-success">🚀 動作確認</a>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-number">4</div>
+                    <div class="step-title">完了！</div>
+                    <div class="step-description">
+                        エラーなく表示されれば、セットアップ完了です
+                    </div>
+                    <div class="alert alert-success">
+                        🎉 お疲れさまでした！
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. 使い方ガイド -->
+        <div class="section" id="usage-guide">
+            <h2 class="section-title">
+                <div class="icon icon-guide">📖</div>
+                4. 使い方ガイド
+            </h2>
+
+            <h3>🎯 基本的な使い方</h3>
+
+            <div class="step-grid">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <div class="step-title">システムにアクセス</div>
+                    <div class="step-description">
+                        最適化版のURLをブラウザで開く
+                    </div>
+                    <a href="http://localhost:8080/modules/yahoo_auction_complete/new_structure/11_category/frontend/category_massive_viewer_optimized.php" target="_blank" class="btn btn-primary">🚀 アクセス</a>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <div class="step-title">商品データ確認</div>
+                    <div class="step-description">
+                        Yahoo商品データが表示されることを確認<br>
+                        （データがない場合は、スクレイピングシステムで取得）
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <div class="step-title">カテゴリー判定実行</div>
+                    <div class="step-description">
+                        「未処理データ処理」ボタンをクリック<br>
+                        AIが自動でeBayカテゴリーを判定
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-number">4</div>
+                    <div class="step-title">結果確認</div>
+                    <div class="step-description">
+                        ・カテゴリー名<br>
+                        ・信頼度スコア<br>
+                        ・Item Specifics<br>
+                        が自動で生成される
+                    </div>
+                </div>
+            </div>
+
+            <h3>⚙️ 主な機能説明</h3>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>機能名</th>
+                        <th>説明</th>
+                        <th>使用場面</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>カテゴリー自動判定</strong></td>
+                        <td>商品タイトルから最適なeBayカテゴリーを自動選択</td>
+                        <td>毎回の出品作業</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Item Specifics生成</strong></td>
+                        <td>eBay出品に必要な必須項目を自動生成</td>
+                        <td>出品情報の入力省略</td>
+                    </tr>
+                    <tr>
+                        <td><strong>セルミラー分析</strong></td>
+                        <td>同じ商品のeBay売上実績を分析</td>
+                        <td>売上予測・価格設定</td>
+                    </tr>
+                    <tr>
+                        <td><strong>スコアリング</strong></td>
+                        <td>S/A/B/C の4段階で商品品質を評価</td>
+                        <td>出品優先度の判断</td>
+                    </tr>
+                    <tr>
+                        <td><strong>バッチ処理</strong></td>
+                        <td>大量の商品を一括で自動処理</td>
+                        <td>効率的な大量処理</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 5. テストガイド -->
+        <div class="section" id="testing-guide">
+            <h2 class="section-title">
+                <div class="icon icon-test">🧪</div>
+                5. 動作テスト方法
+            </h2>
+
+            <h3>✅ 動作テスト手順</h3>
+
+            <div class="step-grid">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <div class="step-title">基本接続テスト</div>
+                    <div class="step-description">
+                        両方のURLにアクセスしてエラーが出ないか確認
+                    </div>
+                    <a href="http://localhost:8080/modules/yahoo_auction_complete/new_structure/11_category/frontend/category_massive_viewer_optimized.php" target="_blank" class="btn btn-success">最適化版テスト</a>
+                    <a href="http://localhost:8080/modules/yahoo_auction_complete/new_structure/11_category/frontend/category_massive_viewer.php" target="_blank" class="btn btn-warning">既存版テスト</a>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <div class="step-title">データ表示テスト</div>
+                    <div class="step-description">
+                        Yahoo商品データが正常に表示されるか確認<br>
+                        （テーブルにデータが表示される）
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <div class="step-title">カテゴリー判定テスト</div>
+                    <div class="step-description">
+                        単一商品でカテゴリー判定が実行できるか確認<br>
+                        「商品を選択 → 判定実行」
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-number">4</div>
+                    <div class="step-title">結果確認テスト</div>
+                    <div class="step-description">
+                        ・カテゴリー名が表示される<br>
+                        ・信頼度が0-100%で表示される<br>
+                        ・Item Specificsが生成される
+                    </div>
+                </div>
+            </div>
+
+            <h3>🎯 期待される結果</h3>
+
+            <div class="alert alert-success">
+                <strong>✅ 正常動作の場合</strong><br>
+                • エラーメッセージが表示されない<br>
+                • 商品データがテーブルに表示される<br>
+                • カテゴリー判定が1-3秒で完了する<br>
+                • 信頼度スコアが50%以上<br>
+                • Item Specificsが「Brand=Apple■Color=Black」形式で生成される
+            </div>
+
+            <h3>🔧 自動テストスクリプト実行</h3>
+
+            <div class="code-block">
+# 自動テストスクリプト実行
+cd /Users/aritahiroaki/NAGANO-3/N3-Development/modules/yahoo_auction_complete/new_structure/11_category
+./complete_system_setup.sh --complete-test
+            </div>
+
+            <div class="alert alert-info">
+                <strong>💡 自動テストの内容</strong><br>
+                • データベース接続確認<br>
+                • PHPクラス動作確認<br>
+                • API接続確認<br>
+                • フロントエンド表示確認<br>
+                • パフォーマンステスト
+            </div>
+        </div>
+
+        <!-- 6. トラブルシューティング -->
+        <div class="section" id="troubleshooting">
+            <h2 class="section-title">
+                <div class="icon icon-error">🔧</div>
+                6. トラブルシューティング
+            </h2>
+
+            <h3>⚠️ よくある問題と解決方法</h3>
+
+            <div class="step-grid">
+                <div class="step-card">
+                    <div class="step-title">🚨 「sell_mirror_analysis」エラー</div>
+                    <div class="step-description">
+                        <strong>原因:</strong> データベーステーブル未作成<br>
+                        <strong>解決:</strong> 上記「緊急エラー修正」を実行
+                    </div>
+                    <a href="#emergency-fix" class="btn btn-warning">修正手順</a>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-title">🌐 「接続できません」エラー</div>
+                    <div class="step-description">
+                        <strong>原因:</strong> PHPサーバー未起動<br>
+                        <strong>解決:</strong> サーバー起動コマンド実行
+                    </div>
+                    <div class="code-block">cd /Users/aritahiroaki/NAGANO-3/N3-Development/modules/yahoo_auction_complete
+php -S localhost:8080</div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-title">📊 「データが表示されない」</div>
+                    <div class="step-description">
+                        <strong>原因:</strong> Yahoo商品データ未取得<br>
+                        <strong>解決:</strong> スクレイピングシステムでデータ取得
+                    </div>
+                    <a href="http://localhost:8080/modules/yahoo_auction_complete/new_structure/02_scraping/" target="_blank" class="btn btn-primary">データ取得</a>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-title">⚡ 「処理が重い・遅い」</div>
+                    <div class="step-description">
+                        <strong>原因:</strong> 大量データまたはメモリ不足<br>
+                        <strong>解決:</strong> 最適化版を使用、バッチサイズ削減
+                    </div>
+                </div>
+            </div>
+
+            <h3>🔍 ログ確認方法</h3>
+
+            <div class="code-block">
+# エラーログ確認
+tail -f /Users/aritahiroaki/NAGANO-3/N3-Development/modules/yahoo_auction_complete/new_structure/11_category/logs/*.log
+
+# PHPエラーログ確認  
+tail -f /var/log/apache2/error.log
+            </div>
+
+            <h3>📞 サポート情報</h3>
+
+            <div class="alert alert-info">
+                <strong>🆘 困った時は</strong><br>
+                1. まず「緊急エラー修正」を実行<br>
+                2. サーバー再起動を試す<br>
+                3. ログファイルでエラー詳細を確認<br>
+                4. 自動テストスクリプトを実行
+            </div>
+
+            <h3>🎉 動作確認完了の目安</h3>
+
+            <ul class="feature-list">
+                <li><span class="check">✅</span> エラーメッセージが表示されない</li>
+                <li><span class="check">✅</span> 両方のURL（最適化版・既存版）が開ける</li>
+                <li><span class="check">✅</span> 商品データがテーブル表示される</li>
+                <li><span class="check">✅</span> カテゴリー判定が3秒以内に完了する</li>
+                <li><span class="check">✅</span> Item Specificsが自動生成される</li>
+                <li><span class="check">✅</span> スコアが表示される（S/A/B/Cランク）</li>
+            </ul>
+
+            <div class="alert alert-success">
+                <strong>🎊 完成！</strong><br>
+                上記すべてにチェックが付けば、システムは完全に動作しています！<br>
+                Yahoo Auctionからの商品データを自動でeBay最適化する強力なツールが使えるようになりました。
+            </div>
+        </div>
+
+        <!-- フッター -->
+        <div class="section">
+            <div style="text-align: center; padding: 2rem;">
+                <h3>🚀 システム稼働開始！</h3>
+                <p>このマニュアル通りに進めれば、高校生でも簡単にシステムを使えるはずです。</p>
+                <div style="margin-top: 2rem;">
+                    <a href="http://localhost:8080/modules/yahoo_auction_complete/new_structure/11_category/frontend/category_massive_viewer_optimized.php" target="_blank" class="btn btn-primary" style="font-size: 1.2rem; padding: 1rem 2rem;">
+                        🎯 今すぐシステムを使ってみる
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ページ内リンクのスムーススクロール
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // ボタンクリック時の視覚フィードバック
+        document.querySelectorAll('.btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 100);
+            });
+        });
+    </script>
+</body>
+</html>

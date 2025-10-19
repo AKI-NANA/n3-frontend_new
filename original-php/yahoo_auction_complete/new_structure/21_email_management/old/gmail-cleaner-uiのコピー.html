@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gmail Cleaner - EC事業向けメール管理ツール 🧹</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #5D688A;
+            --secondary-color: #F7A5A5;
+            --accent-color: #FFDBB6;
+            --bg-color: #FFF2EF;
+            --white: #ffffff;
+            --text-dark: #333333;
+            --text-light: #666666;
+            --border-color: #e0e0e0;
+            --success-color: #4CAF50;
+            --warning-color: #FF9800;
+            --danger-color: #f44336;
+            --info-color: #2196F3;
+            --shadow: 0 2px 10px rgba(93, 104, 138, 0.1);
+            --radius: 8px;
+            --transition: all 0.3s ease;
+            
+            /* Category Colors */
+            --important-color: #e53e3e;
+            --unclassified-color: #5D688A;
+            --ignore-color: #718096;
+            --delete-candidate-color: #f44336;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-color) 0%, var(--white) 100%);
+            color: var(--text-dark);
+            line-height: 1.6;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Main Layout */
+        .app-container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            grid-template-rows: auto 1fr;
+            height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, var(--primary-color), #4a5568);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow);
+        }
+
+        .header-left h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .header-left p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--success-color);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--white);
+            border-right: 1px solid var(--border-color);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .search-section {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .search-container {
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 40px 12px 15px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius);
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(93, 104, 138, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+            cursor: pointer;
+        }
+
+        /* Category Navigation */
+        .category-nav {
+            flex: 1;
+            padding: 20px 0;
+        }
+
+        .category-title {
+            padding: 0 20px 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .category-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: var(--transition);
+            border-left: 3px solid transparent;
+        }
+
+        .category-item:hover {
+            background: rgba(93, 104, 138, 0.05);
+        }
+
+        .category-item.active {
+            background: rgba(93, 104, 138, 0.1);
+            border-left-color: var(--primary-color);
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .category-item.important.active {
+            border-left-color: var(--important-color);
+            color: var(--important-color);
+        }
+
+        .category-item.ignore.active {
+            border-left-color: var(--ignore-color);
+            color: var(--ignore-color);
+        }
+
+        .category-item.delete-candidate.active {
+            border-left-color: var(--delete-candidate-color);
+            color: var(--delete-candidate-color);
+        }
+
+        .category-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .category-icon {
+            width: 20px;
+            text-align: center;
+        }
+
+        .category-badge {
+            background: var(--accent-color);
+            color: var(--text-dark);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .category-item.active .category-badge {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .category-item.important .category-badge {
+            background: var(--important-color);
+            color: white;
+        }
+
+        .category-item.ignore .category-badge {
+            background: var(--ignore-color);
+            color: white;
+        }
+
+        .category-item.delete-candidate .category-badge {
+            background: var(--delete-candidate-color);
+            color: white;
+        }
+
+        /* Action Section */
+        .action-section {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .btn-sync {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-sync:hover {
+            background: #4a5568;
+            transform: translateY(-1px);
+        }
+
+        .btn-move-delete {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        .btn-move-delete:hover {
+            background: #f57c00;
+        }
+
+        .btn-delete-all {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-delete-all:hover {
+            background: #d32f2f;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Mall Filters */
+        .mall-filters {
+            padding: 20px;
+        }
+
+        .mall-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 15px;
+        }
+
+        .mall-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .mall-item:hover {
+            color: var(--primary-color);
+        }
+
+        .mall-checkbox {
+            margin-right: 10px;
+        }
+
+        .mall-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .mall-amazon { background: #ff9900; }
+        .mall-rakuten { background: #bf0000; }
+        .mall-yahoo { background: #ff0033; }
+        .mall-mercari { background: #ff0080; }
+        .mall-ebay { background: #0064d2; }
+
+        /* Main Content */
+        .main-content {
+            background: var(--bg-color);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Content Header */
+        .content-header {
+            background: var(--white);
+            padding: 20px 30px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .content-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .content-stats {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-light);
+        }
+
+        /* Email Grid */
+        .email-grid {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 30px;
+        }
+
+        .email-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+            gap: 15px;
+        }
+
+        .email-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: var(--transition);
+            border-left: 4px solid var(--border-color);
+        }
+
+        .email-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(93, 104, 138, 0.15);
+        }
+
+        .email-card.selected {
+            border-left-color: var(--primary-color);
+            background: rgba(93, 104, 138, 0.05);
+        }
+
+        .email-card.important {
+            border-left-color: var(--important-color);
+        }
+
+        .email-card.ignore {
+            border-left-color: var(--ignore-color);
+        }
+
+        .email-card.delete-candidate {
+            border-left-color: var(--delete-candidate-color);
+        }
+
+        .email-header {
+            padding: 15px 20px;
+            background: var(--bg-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .email-sender-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .email-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .sender-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .sender-name {
+            font-weight: 600;
+            color: var(--text-dark);
+            font-size: 0.9rem;
+            margin-bottom: 2px;
+        }
+
+        .sender-email {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .email-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .email-date {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            white-space: nowrap;
+        }
+
+        .email-checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .email-body {
+            padding: 20px;
+        }
+
+        .email-subject {
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--text-dark);
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .email-snippet {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 15px;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .email-tags {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .tag-mall {
+            background: var(--info-color);
+            color: white;
+        }
+
+        .tag-category {
+            background: var(--accent-color);
+            color: var(--text-dark);
+        }
+
+        .tag-urgent {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .tag-customer {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .email-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-reply {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-reply:hover {
+            background: #4a5568;
+        }
+
+        .btn-mall {
+            background: var(--accent-color);
+            color: var(--text-dark);
+        }
+
+        .btn-mall:hover {
+            background: #ffd89e;
+        }
+
+        .btn-ignore {
+            background: var(--ignore-color);
+            color: white;
+        }
+
+        .btn-ignore:hover {
+            background: #4a5568;
+        }
+
+        .btn-important {
+            background: var(--important-color);
+            color: white;
+        }
+
+        .btn-important:hover {
+            background: #c53030;
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 400px;
+            color: var(--text-light);
+            text-align: center;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            color: var(--accent-color);
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: var(--text-dark);
+        }
+
+        /* Loading State */
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 400px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--bg-color);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .email-list {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto 1fr;
+            }
+
+            .sidebar {
+                order: 2;
+                border-right: none;
+                border-top: 1px solid var(--border-color);
+                max-height: 200px;
+            }
+
+            .main-content {
+                order: 3;
+            }
+
+            .header {
+                order: 1;
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .header-actions {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .content-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+
+            .content-stats {
+                width: 100%;
+                justify-content: space-around;
+            }
+
+            .email-grid {
+                padding: 15px;
+            }
+        }
+
+        /* Custom Scrollbar */
+        .sidebar::-webkit-scrollbar,
+        .email-grid::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar::-webkit-scrollbar-track,
+        .email-grid::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+
+        .sidebar::-webkit-scrollbar-thumb,
+        .email-grid::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 3px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb:hover,
+        .email-grid::-webkit-scrollbar-thumb:hover {
+            background: #4a5568;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <h1><i class="fas fa-broom"></i> Gmail Cleaner - EC事業版</h1>
+                <p>全モール対応 メール一元管理システム</p>
+            </div>
+            <div class="header-actions">
+                <div class="sync-status">
+                    <div class="status-indicator"></div>
+                    <span>同期中</span>
+                </div>
+                <button class="btn btn-sync" onclick="syncAllEmails()">
+                    <i class="fas fa-sync-alt"></i> 全同期
+                </button>
+            </div>
+        </header>
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <!-- Search Section -->
+            <div class="search-section">
+                <div class="search-container">
+                    <input type="text" class="search-input" id="search-input" placeholder="メールを検索..." onkeyup="handleSearch(event)">
+                    <i class="fas fa-search search-icon" onclick="searchEmails()"></i>
+                </div>
+            </div>
+
+            <!-- Category Navigation -->
+            <nav class="category-nav">
+                <div class="category-title">メール分類</div>
+                
+                <div class="category-item active important" data-category="important" onclick="switchCategory('important')">
+                    <div class="category-left">
+                        <i class="fas fa-exclamation-triangle category-icon"></i>
+                        <span>重要</span>
+                    </div>
+                    <span class="category-badge" id="important-count">0</span>
+                </div>
+
+                <div class="category-item" data-category="unclassified" onclick="switchCategory('unclassified')">
+                    <div class="category-left">
+                        <i class="fas fa-inbox category-icon"></i>
+                        <span>未分類</span>
+                    </div>
+                    <span class="category-badge" id="unclassified-count">0</span>
+                </div>
+
+                <div class="category-item ignore" data-category="ignore" onclick="switchCategory('ignore')">
+                    <div class="category-left">
+                        <i class="fas fa-eye-slash category-icon"></i>
+                        <span>無視する</span>
+                    </div>
+                    <span class="category-badge" id="ignore-count">0</span>
+                </div>
+
+                <div class="category-item delete-candidate" data-category="delete-candidate" onclick="switchCategory('delete-candidate')">
+                    <div class="category-left">
+                        <i class="fas fa-trash-alt category-icon"></i>
+                        <span>削除候補</span>
+                    </div>
+                    <span class="category-badge" id="delete-candidate-count">0</span>
+                </div>
+            </nav>
+
+            <!-- Action Section -->
+            <div class="action-section">
+                <button class="btn btn-move-delete" onclick="moveToDeleteCandidate()" id="move-delete-btn" disabled>
+                    <i class="fas fa-arrow-right"></i> 削除候補へ移動
+                </button>
+                <button class="btn btn-delete-all" onclick="deleteAllCandidates()" id="delete-all-btn" disabled>
+                    <i class="fas fa-trash"></i> すべて削除
+                </button>
+            </div>
+
+            <!-- Mall Filters -->
+            <div class="mall-filters">
+                <div class="mall-title">モール別フィルター</div>
+                
+                <label class="mall-item">
+                    <input type="checkbox" class="mall-checkbox" value="amazon" onchange="filterByMall()" checked>
+                    <div class="mall-icon mall-amazon">A</div>
+                    <span>Amazon</span>
+                </label>
+
+                <label class="mall-item">
+                    <input type="checkbox" class="mall-checkbox" value="rakuten" onchange="filterByMall()" checked>
+                    <div class="mall-icon mall-rakuten">楽</div>
+                    <span>楽天市場</span>
+                </label>
+
+                <label class="mall-item">
+                    <input type="checkbox" class="mall-checkbox" value="yahoo" onchange="filterByMall()" checked>
+                    <div class="mall-icon mall-yahoo">Y</div>
+                    <span>Yahoo!ショッピング</span>
+                </label>
+
+                <label class="mall-item">
+                    <input type="checkbox" class="mall-checkbox" value="mercari" onchange="filterByMall()" checked>
+                    <div class="mall-icon mall-mercari">メ</div>
+                    <span>メルカリ</span>
+                </label>
+
+                <label class="mall-item">
+                    <input type="checkbox" class="mall-checkbox" value="ebay" onchange="filterByMall()" checked>
+                    <div class="mall-icon mall-ebay">E</div>
+                    <span>eBay</span>
+                </label>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Content Header -->
+            <div class="content-header">
+                <h2 class="content-title" id="content-title">重要なメール</h2>
+                <div class="content-stats">
+                    <div class="stat-item">
+                        <div class="stat-number" id="total-emails">0</div>
+                        <div class="stat-label">総件数</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="selected-emails">0</div>
+                        <div class="stat-label">選択中</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="filtered-emails">0</div>
+                        <div class="stat-label">表示中</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Email Grid -->
+            <div class="email-grid" id="email-grid">
+                <div class="loading-state" id="loading-state">
+                    <div class="spinner"></div>
+                    <p>メールを読み込み中...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Global variables
+        let currentCategory = 'important';
+        let allEmails = {
+            important: [],
+            unclassified: [],
+            ignore: [],
+            'delete-candidate': []
+        };
+        let selectedEmails = new Set();
+        let filteredMalls = new Set(['amazon', 'rakuten', 'yahoo', 'mercari', 'ebay']);
+        let searchQuery = '';
+
+        // Mall configurations
+        const mallConfigs = {
+            amazon: {
+                name: 'Amazon',
+                domains: ['amazon.com', 'amazon.co.jp'],
+                messageUrlPattern: 'https://sellercentral.amazon.co.jp/messaging/inbox',
+                keywords: ['注文', 'order', 'shipped', '発送']
+            },
+            rakuten: {
+                name: '楽天市場',
+                domains: ['rakuten.co.jp'],
+                messageUrlPattern: 'https://www.rakuten.co.jp/my/inquiry',
+                keywords: ['楽天', 'rakuten', '注文']
+            },
+            yahoo: {
+                name: 'Yahoo!ショッピング',
+                domains: ['yahoo.co.jp'],
+                messageUrlPattern: 'https://store.shopping.yahoo.co.jp/message',
+                keywords: ['yahoo', 'ヤフー', '注文']
+            },
+            mercari: {
+                name: 'メルカリ',
+                domains: ['mercari.com'],
+                messageUrlPattern: 'https://www.mercari.com/jp/mypage/listings/',
+                keywords: ['mercari', 'メルカリ', '購入']
+            },
+            ebay: {
+                name: 'eBay',
+                domains: ['ebay.com'],
+                messageUrlPattern: 'https://www.ebay.com/myb/Summary',
+                keywords: ['ebay', 'sold', 'buyer']
+            }
+        };
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+
+        function initializeApp() {
+            console.log('Gmail Cleaner EC Version initialized');
+            loadSampleData();
+            updateAllStats();
+            renderEmails();
+        }
+
+        // Category switching
+        function switchCategory(category) {
+            // Update UI
+            document.querySelectorAll('.category-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`[data-category="${category}"]`).classList.add('active');
+
+            currentCategory = category;
+            clearSelection();
+            updateCategoryTitle(category);
+            renderEmails();
+            updateActionButtons();
+        }
+
+        function updateCategoryTitle(category) {
+            const titles = {
+                'important': '重要なメール',
+                'unclassified': '未分類のメール',
+                'ignore': '無視するメール',
+                'delete-candidate': '削除候補のメール'
+            };
+            document.getElementById('content-title').textContent = titles[category];
+        }
+
+        // Load sample data for EC business
+        function loadSampleData() {
+            const sampleEmails = [
+                {
+                    id: '1',
+                    sender: 'Amazon Seller Central',
+                    email: 'seller-performance@amazon.co.jp',
+                    subject: '【重要】お客様からの問い合わせ - 注文番号: 123-456789',
+                    snippet: 'お客様より商品に関するお問い合わせが届いております。48時間以内にご対応をお願いいたします。',
+                    date: '2024-01-15T14:30:00',
+                    category: 'important',
+                    mall: 'amazon',
+                    avatar: 'A',
+                    tags: ['amazon', 'customer', 'urgent'],
+                    mallUrl: 'https://sellercentral.amazon.co.jp/messaging/inbox/case/123456789',
+                    gmailUrl: 'https://mail.google.com/mail/u/0/#inbox/thread_1'
+                },
+                {
+                    id: '2',
+                    sender: '楽天市場 店舗運営チーム',
+                    email: 'shop-support@rakuten.co.jp',
+                    subject: 'お客様からのご質問 - 商品ID: ABC123',
+                    snippet: 'ご注文いただいた商品について、お客様からサイズに関するご質問をいただいております。',
+                    date: '2024-01-15T13:15:00',
+                    category: 'important',
+                    mall: 'rakuten',
+                    avatar: '楽',
+                    tags: ['rakuten', 'customer'],
+                    mallUrl: 'https://www.rakuten.co.jp/my/inquiry/detail/789',
+                    gmailUrl: 'https://mail.google.com/mail/u/0/#inbox/thread_2'
+                },
+                {
+                    id: '3',
+                    sender: 'Yahoo!ショッピング',
+                    email: 'store-info@yahoo.co.jp',
+                    subject: '【お知らせ】新機能のご案内',
+                    snippet: 'ストア様向けの新しい分析機能をリリースいたしました。売上向上にお役立てください。',
+                    date: '2024-01-14T16:45:00',
+                    category: 'unclassified',
+                    mall: 'yahoo',
+                    avatar: 'Y',
+                    tags: ['yahoo', 'notification'],
+                    mallUrl: 'https://store.shopping.yahoo.co.jp/news',
+                    gmailUrl: 'https://mail.google.com/mail/u/0/#inbox/thread_3'
+                },
+                {
+                    id: '4',
+                    sender: 'Amazon広告',
+                    email: 'advertising-noreply@amazon.co.jp',
+                    subject: 'スポンサープロダクト広告の効果レポート',
+                    snippet: '先週の広告パフォーマンスをお知らせします。クリック率が20%向上しました。',
+                    date: '2024-01-14T10:20:00',
+                    category: 'ignore',
+                    mall: 'amazon',
+                    avatar: 'A',
+                    tags: ['amazon', 'advertisement'],
+                    mallUrl: 'https://advertising.amazon.co.jp/reports',
+                    gmailUrl: 'https://mail.google.com/mail/u/0/#inbox/thread_4'
+                },
+                {
+                    id: '5',
+                    sender: 'メルカリ',
+                    email: 'no-reply@mercari.com',
+                    subject: '商品が売れました！',
+                    snippet: 'iPhone 12 Pro が売れました。速やかに発送手続きを行ってください。',
+                    date: '2024-01-13T18:30:00',
+                    category: 'important',
+                    mall: 'mercari',
+                    avatar: 'メ',
+                    tags: ['mercari', 'sold', 'urgent'],
+                    mallUrl: 'https://www.mercari.com/jp/transaction/m12345678',
+                    gmailUrl: 'https://mail.google.com/mail/u/0/#inbox/thread_5'
+                },
+                {
+                    id: '6',
+                    sender: 'eBay',
+                    email: 'ebay@ebay.com',
+                    subject: 'Buyer message about your item',
+                    snippet: 'A buyer has sent you a message about your listing "Vintage Camera Lens". Please respond within 24 hours.',
+                    date: '2024-01-13T09:15:00',
+                    category: 'important',
+                    mall: 'ebay',
+                    avatar: 'E',
+                    tags: ['ebay', 'customer', 'urgent'],
+                    mallUrl: 'https://www.ebay.com/myb/Summary',
+                    gmailUrl: 'https://mail.google.com/mail/u/0/#inbox/thread_6'
+                },
+                {
+                    id: '7',
+                    sender: '楽天ペイ',
+                    email: 'info@rakuten-pay.jp',
+                    subject: '売上金の振込完了のお知らせ',
+                    snippet: '2024年1月第2週分の売上金 ¥125,000 を指定口座に振り込みいたしました。',
+                    date: '2024-01-12T14:00:00',
+                    category: 'ignore',
+                    mall: 'rakuten',
+                    avatar: '楽',
+                    tags: ['rakuten', 'payment'],
+                    mallUrl: 'https://rakuten-pay.jp/merchant/payment-history',
+                    gmailUrl: 'https://mail.google.com/mail/u/0/#inbox/thread_7'
+                },
+                {
+                    id: '8',
+                    sender: 'Amazon配送センター',
+                    email: 'fulfillment@amazon.co.jp',
+                    subject: '【要対応】在庫不足のお知らせ',
+                    snippet: '人気商品「ワイヤレスイヤホン XYZ」の在庫が残り2個となっております。補充をご検討ください。',
+                    date: '2024-01-12T11:30:00',
+                    category: 'unclassified',
+                    mall: 'amazon',
+                    avatar: 'A',
+                    tags: ['amazon', 'inventory'],
+                    mallUrl: 'https://sellercentral.amazon.co.jp/inventory',
+                    gmailUrl: 'https://mail.google.com/mail/u/0/#inbox/thread_8'
+                }
+            ];
+
+            // Categorize emails
+            allEmails.important = sampleEmails.filter(email => email.category === 'important');
+            allEmails.unclassified = sampleEmails.filter(email => email.category === 'unclassified');
+            allEmails.ignore = sampleEmails.filter(email => email.category === 'ignore');
+            allEmails['delete-candidate'] = [];
+
+            hideLoading();
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-state').style.display = 'none';
+        }
+
+        // Render emails in grid layout
+        function renderEmails() {
+            const emails = getFilteredEmails();
+            const gridElement = document.getElementById('email-grid');
+            
+            if (emails.length === 0) {
+                gridElement.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <h3>メールがありません</h3>
+                        <p>このカテゴリには表示するメールがありません</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const emailListHTML = emails.map(email => createEmailCard(email)).join('');
+            gridElement.innerHTML = `<div class="email-list">${emailListHTML}</div>`;
+            
+            updateFilteredCount(emails.length);
+        }
+
+        function createEmailCard(email) {
+            const isSelected = selectedEmails.has(email.id);
+            const tags = email.tags.map(tag => {
+                const tagClass = getTagClass(tag);
+                return `<span class="tag ${tagClass}">${getTagLabel(tag)}</span>`;
+            }).join('');
+
+            return `
+                <div class="email-card ${email.category} ${isSelected ? 'selected' : ''}" data-email-id="${email.id}">
+                    <div class="email-header">
+                        <div class="email-sender-info">
+                            <div class="email-avatar">${email.avatar}</div>
+                            <div class="sender-details">
+                                <div class="sender-name">${email.sender}</div>
+                                <div class="sender-email">${email.email}</div>
+                            </div>
+                        </div>
+                        <div class="email-meta">
+                            <div class="email-date">${formatDate(email.date)}</div>
+                            <input type="checkbox" class="email-checkbox" ${isSelected ? 'checked' : ''} 
+                                   onchange="toggleEmailSelection('${email.id}')" onclick="event.stopPropagation()">
+                        </div>
+                    </div>
+                    <div class="email-body">
+                        <div class="email-subject">${email.subject}</div>
+                        <div class="email-snippet">${email.snippet}</div>
+                        <div class="email-tags">${tags}</div>
+                        <div class="email-actions">
+                            <button class="action-btn btn-reply" onclick="replyToEmail('${email.id}')">
+                                <i class="fas fa-reply"></i> Gmail返信
+                            </button>
+                            <button class="action-btn btn-mall" onclick="openMallMessage('${email.id}')">
+                                <i class="fas fa-external-link-alt"></i> モール確認
+                            </button>
+                            ${currentCategory !== 'important' ? `
+                                <button class="action-btn btn-important" onclick="moveToImportant('${email.id}')">
+                                    <i class="fas fa-exclamation-triangle"></i> 重要
+                                </button>
+                            ` : ''}
+                            ${currentCategory !== 'ignore' ? `
+                                <button class="action-btn btn-ignore" onclick="moveToIgnore('${email.id}')">
+                                    <i class="fas fa-eye-slash"></i> 無視
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getTagClass(tag) {
+            const tagClasses = {
+                'amazon': 'tag-mall',
+                'rakuten': 'tag-mall',
+                'yahoo': 'tag-mall',
+                'mercari': 'tag-mall',
+                'ebay': 'tag-mall',
+                'customer': 'tag-customer',
+                'urgent': 'tag-urgent',
+                'sold': 'tag-category',
+                'payment': 'tag-category',
+                'inventory': 'tag-category',
+                'advertisement': 'tag-category',
+                'notification': 'tag-category'
+            };
+            return tagClasses[tag] || 'tag-category';
+        }
+
+        function getTagLabel(tag) {
+            const tagLabels = {
+                'amazon': 'Amazon',
+                'rakuten': '楽天',
+                'yahoo': 'Yahoo!',
+                'mercari': 'メルカリ',
+                'ebay': 'eBay',
+                'customer': '顧客対応',
+                'urgent': '緊急',
+                'sold': '売上',
+                'payment': '入金',
+                'inventory': '在庫',
+                'advertisement': '広告',
+                'notification': '通知'
+            };
+            return tagLabels[tag] || tag;
+        }
+
+        function getFilteredEmails() {
+            let emails = allEmails[currentCategory] || [];
+            
+            // Mall filter
+            emails = emails.filter(email => filteredMalls.has(email.mall));
+            
+            // Search filter
+            if (searchQuery) {
+                emails = emails.filter(email =>
+                    email.sender.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    email.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    email.snippet.toLowerCase().includes(searchQuery.toLowerCase())
+                );
+            }
+            
+            return emails;
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffTime = Math.abs(now - date);
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 0) return '今日';
+            if (diffDays === 1) return '昨日';
+            if (diffDays <= 7) return `${diffDays}日前`;
+            
+            return date.toLocaleDateString('ja-JP', { 
+                month: 'short', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Email selection
+        function toggleEmailSelection(emailId) {
+            if (selectedEmails.has(emailId)) {
+                selectedEmails.delete(emailId);
+            } else {
+                selectedEmails.add(emailId);
+            }
+            
+            updateSelectedVisuals();
+            updateSelectedCount();
+            updateActionButtons();
+        }
+
+        function updateSelectedVisuals() {
+            document.querySelectorAll('.email-card').forEach(card => {
+                const emailId = card.dataset.emailId;
+                const checkbox = card.querySelector('.email-checkbox');
+                
+                if (selectedEmails.has(emailId)) {
+                    card.classList.add('selected');
+                    checkbox.checked = true;
+                } else {
+                    card.classList.remove('selected');
+                    checkbox.checked = false;
+                }
+            });
+        }
+
+        function clearSelection() {
+            selectedEmails.clear();
+            updateSelectedVisuals();
+            updateSelectedCount();
+            updateActionButtons();
+        }
+
+        // Email actions
+        function replyToEmail(emailId) {
+            const email = findEmailById(emailId);
+            if (email && email.gmailUrl) {
+                window.open(email.gmailUrl, '_blank');
+            } else {
+                alert('Gmail URLが見つかりません。');
+            }
+        }
+
+        function openMallMessage(emailId) {
+            const email = findEmailById(emailId);
+            if (email && email.mallUrl) {
+                window.open(email.mallUrl, '_blank');
+            } else {
+                const mallConfig = mallConfigs[email.mall];
+                if (mallConfig) {
+                    window.open(mallConfig.messageUrlPattern, '_blank');
+                } else {
+                    alert('モールのメッセージURLが見つかりません。');
+                }
+            }
+        }
+
+        function moveToImportant(emailId) {
+            moveEmailToCategory(emailId, 'important');
+            // Gmail API call would go here to add label
+            console.log(`Moving email ${emailId} to important category and adding Gmail label 'ツール/重要'`);
+        }
+
+        function moveToIgnore(emailId) {
+            moveEmailToCategory(emailId, 'ignore');
+            // Gmail API call would go here to add label
+            console.log(`Moving email ${emailId} to ignore category and adding Gmail label 'ツール/無視する'`);
+        }
+
+        function moveToDeleteCandidate() {
+            if (selectedEmails.size === 0) {
+                alert('移動するメールを選択してください。');
+                return;
+            }
+
+            if (confirm(`選択した${selectedEmails.size}件のメールを削除候補に移動しますか？`)) {
+                selectedEmails.forEach(emailId => {
+                    moveEmailToCategory(emailId, 'delete-candidate');
+                    console.log(`Moving email ${emailId} to delete-candidate category and adding Gmail label 'ツール/削除候補'`);
+                });
+                
+                clearSelection();
+                renderEmails();
+                updateAllStats();
+                alert(`${selectedEmails.size}件のメールを削除候補に移動しました。`);
+            }
+        }
+
+        function deleteAllCandidates() {
+            const deleteEmails = allEmails['delete-candidate'];
+            if (deleteEmails.length === 0) {
+                alert('削除するメールがありません。');
+                return;
+            }
+
+            if (confirm(`削除候補の${deleteEmails.length}件のメールをすべて削除しますか？この操作は取り消せません。`)) {
+                // Gmail API call would go here to move emails to trash
+                deleteEmails.forEach(email => {
+                    console.log(`Deleting email ${email.id} via Gmail API`);
+                });
+                
+                allEmails['delete-candidate'] = [];
+                renderEmails();
+                updateAllStats();
+                alert(`${deleteEmails.length}件のメールを削除しました。`);
+            }
+        }
+
+        function moveEmailToCategory(emailId, targetCategory) {
+            const email = findEmailById(emailId);
+            if (!email) return;
+
+            // Remove from current category
+            Object.keys(allEmails).forEach(category => {
+                allEmails[category] = allEmails[category].filter(e => e.id !== emailId);
+            });
+
+            // Add to target category
+            email.category = targetCategory;
+            allEmails[targetCategory].push(email);
+            
+            // Remove from selection
+            selectedEmails.delete(emailId);
+        }
+
+        function findEmailById(emailId) {
+            for (let category of Object.values(allEmails)) {
+                const email = category.find(email => email.id === emailId);
+                if (email) return email;
+            }
+            return null;
+        }
+
+        // Mall filtering
+        function filterByMall() {
+            filteredMalls.clear();
+            document.querySelectorAll('.mall-checkbox:checked').forEach(checkbox => {
+                filteredMalls.add(checkbox.value);
+            });
+            renderEmails();
+        }
+
+        // Search functionality
+        function handleSearch(event) {
+            if (event.key === 'Enter') {
+                searchEmails();
+            }
+        }
+
+        function searchEmails() {
+            searchQuery = document.getElementById('search-input').value;
+            renderEmails();
+        }
+
+        // Statistics updates
+        function updateAllStats() {
+            updateCategoryCounts();
+            updateSelectedCount();
+            updateTotalCount();
+        }
+
+        function updateCategoryCounts() {
+            document.getElementById('important-count').textContent = allEmails.important.length;
+            document.getElementById('unclassified-count').textContent = allEmails.unclassified.length;
+            document.getElementById('ignore-count').textContent = allEmails.ignore.length;
+            document.getElementById('delete-candidate-count').textContent = allEmails['delete-candidate'].length;
+        }
+
+        function updateSelectedCount() {
+            document.getElementById('selected-emails').textContent = selectedEmails.size;
+        }
+
+        function updateTotalCount() {
+            const total = Object.values(allEmails).reduce((sum, emails) => sum + emails.length, 0);
+            document.getElementById('total-emails').textContent = total;
+        }
+
+        function updateFilteredCount(count) {
+            document.getElementById('filtered-emails').textContent = count;
+        }
+
+        function updateActionButtons() {
+            const hasSelection = selectedEmails.size > 0;
+            const isDeleteCandidateCategory = currentCategory === 'delete-candidate';
+            const hasDeleteCandidates = allEmails['delete-candidate'].length > 0;
+            
+            document.getElementById('move-delete-btn').disabled = !hasSelection || isDeleteCandidateCategory;
+            document.getElementById('delete-all-btn').disabled = !hasDeleteCandidates || !isDeleteCandidateCategory;
+        }
+
+        // Sync functionality
+        function syncAllEmails() {
+            const syncStatus = document.querySelector('.sync-status span');
+            const originalText = syncStatus.textContent;
+            
+            syncStatus.textContent = '同期中...';
+            
+            // Simulate API call
+            setTimeout(() => {
+                syncStatus.textContent = '同期完了';
+                setTimeout(() => {
+                    syncStatus.textContent = originalText;
+                }, 2000);
+                
+                // In real implementation, this would fetch new emails from Gmail API
+                alert('Gmail同期が完了しました。');
+            }, 3000);
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'a':
+                        e.preventDefault();
+                        selectAllVisibleEmails();
+                        break;
+                    case 'd':
+                        e.preventDefault();
+                        if (currentCategory === 'delete-candidate') {
+                            deleteAllCandidates();
+                        } else {
+                            moveToDeleteCandidate();
+                        }
+                        break;
+                    case 'f':
+                        e.preventDefault();
+                        document.getElementById('search-input').focus();
+                        break;
+                }
+            }
+            
+            if (e.key === 'Escape') {
+                clearSelection();
+            }
+        });
+
+        function selectAllVisibleEmails() {
+            const visibleEmails = getFilteredEmails();
+            visibleEmails.forEach(email => selectedEmails.add(email.id));
+            updateSelectedVisuals();
+            updateSelectedCount();
+            updateActionButtons();
+        }
+
+        // Initialize on page load
+        console.log('Gmail Cleaner EC Version UI initialized successfully');
+    </script>
+</body>
+</html>

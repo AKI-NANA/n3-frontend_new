@@ -1,0 +1,153 @@
+/**
+ * 出品管理タブ専用CSS
+ * modules/yahoo_auction_complete/new_structure/08_listing/listing.css
+ * 
+ * 🎯 機能: eBay出品・エラーハンドリング・成功分離・進行状況表示・CSVアップロード
+ * ⚠️ 重要: executeAdvancedListing()等の既存JavaScript関数との互換性維持
+ * 📅 作成日: 2025年9月15日
+ */
+
+/* ===== 出品管理コンテナ（既存ID保持） ===== */
+.listing-container, #listing {
+    padding: var(--space-lg);
+    background: var(--bg-primary);
+    min-height: 100vh;
+}
+
+/* ===== CSVアップロードセクション（既存関数対応） ===== */
+.listing-upload-section {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border-color);
+    padding: var(--space-xl);
+    margin-bottom: var(--space-xl);
+}
+
+.drag-drop-area {
+    border: 3px dashed var(--border-color);
+    border-radius: var(--radius-xl);
+    background: var(--bg-tertiary);
+    padding: var(--space-xl);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.drag-drop-area:hover {
+    border-color: var(--primary-color);
+    background: rgba(37, 99, 235, 0.05);
+}
+
+.drag-drop-area.drag-over {
+    border-color: var(--success-color);
+    background: rgba(16, 185, 129, 0.05);
+    transform: scale(1.02);
+}
+
+/* ===== 進行状況モーダル（既存ID維持） ===== */
+.modal, #advancedListingModal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-xl);
+    width: 90%;
+    max-width: 900px;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+}
+
+/* ===== 進行状況バー（既存ID: #overallProgress維持） ===== */
+.progress-bar-container {
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    height: 20px;
+    margin: var(--space-md) 0;
+}
+
+.progress-bar, #overallProgress {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+    width: 0%;
+    transition: width 0.5s ease;
+}
+
+/* ===== 状態統計（既存ID維持） ===== */
+.status-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--space-md);
+    margin-bottom: var(--space-xl);
+}
+
+.stat-card {
+    background: var(--bg-tertiary);
+    padding: var(--space-lg);
+    border-radius: var(--radius-lg);
+    text-align: center;
+}
+
+.stat-value, #successCount, #errorCount, #validationCount, #processingCount {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-top: var(--space-xs);
+}
+
+.stat-success .stat-value { color: var(--success-color); }
+.stat-error .stat-value { color: var(--danger-color); }
+.stat-warning .stat-value { color: var(--warning-color); }
+.stat-info .stat-value { color: var(--info-color); }
+
+/* ===== 結果リスト（既存ID維持） ===== */
+.result-list, #successList, #failedList, #validationList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.result-item {
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    border-left: 4px solid;
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.result-success { border-left-color: var(--success-color); }
+.result-error { border-left-color: var(--danger-color); }
+.result-warning { border-left-color: var(--warning-color); }
+
+/* ===== レスポンシブ対応 ===== */
+@media (max-width: 768px) {
+    .listing-container, #listing {
+        padding: var(--space-md);
+    }
+    
+    .status-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .modal-content {
+        width: 95%;
+        max-height: 95vh;
+    }
+}

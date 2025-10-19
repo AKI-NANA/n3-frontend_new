@@ -1,0 +1,25 @@
+/**
+ * 🎯 N3新カードシステム統合ファイル
+ * ファイル: common/css/n3-card-system.css
+ * 作成日: 2025年8月25日
+ * 目的: 全CSS統合・読み込み順序管理
+ */
+
+/* === CSS統合読み込み（読み込み順序重要） === */
+
+/* 1. 変数定義（最優先） */
+@import url('shared/variables.css');
+
+/* 2. ユーティリティクラス */
+@import url('shared/utilities.css');
+
+/* 3. コンポーネントCSS（最後に読み込み、最高優先度確保） */
+@import url('components/n3-product-cards.css');
+
+/* === 既存システムとの分離保証 === */
+/* 
+このファイルは既存のCSSファイルと完全に分離されています。
+- inventory__* クラスとは一切重複しません
+- !important は使用していません
+- 読み込み順序で優先度を確保しています
+*/

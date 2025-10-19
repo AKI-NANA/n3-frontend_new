@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yahoo Auction データベース確認ツール</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+        
+        .content {
+            padding: 2rem;
+        }
+        
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #007bff;
+        }
+        
+        .success { border-left-color: #28a745; background: #d4edda; }
+        .error { border-left-color: #dc3545; background: #f8d7da; }
+        .warning { border-left-color: #ffc107; background: #fff3cd; }
+        .info { border-left-color: #17a2b8; background: #d1ecf1; }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+        }
+        
+        .btn-success { background: #28a745; }
+        .btn-warning { background: #ffc107; color: #212529; }
+        .btn-danger { background: #dc3545; }
+        .btn-info { background: #17a2b8; }
+        
+        .query-result {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+        
+        .query-header {
+            background: #e9ecef;
+            padding: 1rem;
+            font-weight: 600;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .query-content {
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        
+        .data-table th {
+            background: #e9ecef;
+            padding: 8px 12px;
+            border: 1px solid #dee2e6;
+            font-weight: 600;
+            text-align: left;
+        }
+        
+        .data-table td {
+            padding: 8px 12px;
+            border: 1px solid #dee2e6;
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .loading i {
+            font-size: 2rem;
+            color: #007bff;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .copy-btn {
+            background: #6c757d;
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            margin-left: 8px;
+        }
+        
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        
+        .stat-card {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <i class="fas fa-search"></i>
+                Yahoo Auction データベース確認ツール
+            </h1>
+            <p>スクレイピングデータの実際の保存状況を確認</p>
+        </div>
+        
+        <div class="content">
+            <!-- データベース接続 -->
+            <div class="status-card">
+                <h3><i class="fas fa-database"></i> データベース接続情報</h3>
+                <p><strong>Host:</strong> localhost</p>
+                <p><strong>Database:</strong> nagano3_db</p>
+                <p><strong>User:</strong> postgres</p>
+                <p><strong>Table:</strong> yahoo_scraped_products</p>
+            </div>
+            
+            <!-- アクションボタン -->
+            <div style="text-align: center; margin: 2rem 0;">
+                <button class="btn btn-info" onclick="checkDatabase()">
+                    <i class="fas fa-search"></i> データベース確認実行
+                </button>
+                <button class="btn btn-success" onclick="generateQueries()">
+                    <i class="fas fa-code"></i> SQLクエリ生成
+                </button>
+                <button class="btn btn-warning" onclick="showManualSteps()">
+                    <i class="fas fa-terminal"></i> 手動確認手順
+                </button>
+            </div>
+            
+            <!-- ローディング -->
+            <div class="loading" id="loading">
+                <i class="fas fa-spinner"></i>
+                <p>データベースを確認中...</p>
+            </div>
+            
+            <!-- 統計サマリー -->
+            <div id="summaryStats" class="summary-stats" style="display: none;">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalCount">-</div>
+                    <div class="stat-label">総データ数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="unlistedCount">-</div>
+                    <div class="stat-label">未出品データ</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="listedCount">-</div>
+                    <div class="stat-label">出品済みデータ</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="latestDate">-</div>
+                    <div class="stat-label">最新データ日時</div>
+                </div>
+            </div>
+            
+            <!-- 結果表示エリア -->
+            <div id="results"></div>
+            
+            <!-- 手動確認手順 -->
+            <div id="manualSteps" style="display: none;">
+                <div class="status-card info">
+                    <h3><i class="fas fa-terminal"></i> ターミナルでの手動確認手順</h3>
+                    <div class="query-content">1. ターミナルを開く
+
+2. PostgreSQLに接続:
+   psql -h localhost -d nagano3_db -U postgres
+
+3. パスワード入力: Kn240914
+
+4. 以下のクエリを順番に実行:
+
+-- テーブル存在確認
+SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'yahoo_scraped_products');
+
+-- データ総数確認
+SELECT COUNT(*) as total_count FROM yahoo_scraped_products;
+
+-- 未出品データ確認
+SELECT COUNT(*) as unlisted_count FROM yahoo_scraped_products WHERE (ebay_item_id IS NULL OR ebay_item_id = '');
+
+-- 最新データ3件表示
+SELECT id, source_item_id, active_title, price_jpy, status, created_at FROM yahoo_scraped_products ORDER BY created_at DESC LIMIT 3;
+
+5. 結果を確認して問題を特定</div>
+                </div>
+            </div>
+            
+            <!-- 自動生成クエリ -->
+            <div id="generatedQueries" style="display: none;">
+                <div class="query-result">
+                    <div class="query-header">
+                        <i class="fas fa-code"></i> 実行可能SQLクエリ
+                        <button class="copy-btn" onclick="copyQueries()">
+                            <i class="fas fa-copy"></i> コピー
+                        </button>
+                    </div>
+                    <div class="query-content" id="queryContent">-- データベース確認用SQLクエリ
+
+-- 1. テーブル存在確認
+SELECT EXISTS (
+    SELECT FROM information_schema.tables 
+    WHERE table_name = 'yahoo_scraped_products'
+);
+
+-- 2. データ総数
+SELECT COUNT(*) as total_count FROM yahoo_scraped_products;
+
+-- 3. 未出品データ数
+SELECT COUNT(*) as unlisted_count 
+FROM yahoo_scraped_products 
+WHERE (ebay_item_id IS NULL OR ebay_item_id = '');
+
+-- 4. 出品済みデータ数
+SELECT COUNT(*) as listed_count 
+FROM yahoo_scraped_products 
+WHERE ebay_item_id IS NOT NULL AND ebay_item_id != '';
+
+-- 5. 最新データ5件
+SELECT 
+    id,
+    source_item_id,
+    LEFT(active_title, 50) as title_preview,
+    price_jpy,
+    status,
+    CASE 
+        WHEN ebay_item_id IS NULL OR ebay_item_id = '' THEN '未出品'
+        ELSE '出品済み'
+    END as listing_status,
+    created_at
+FROM yahoo_scraped_products 
+ORDER BY created_at DESC 
+LIMIT 5;
+
+-- 6. データの状態別集計
+SELECT 
+    status,
+    COUNT(*) as count,
+    AVG(price_jpy) as avg_price
+FROM yahoo_scraped_products 
+GROUP BY status;
+
+-- 7. テーブル構造確認
+SELECT 
+    column_name, 
+    data_type, 
+    is_nullable,
+    column_default
+FROM information_schema.columns 
+WHERE table_name = 'yahoo_scraped_products' 
+ORDER BY ordinal_position;</div>
+                </div>
+            </div>
+            
+            <!-- 問題診断 -->
+            <div class="status-card warning">
+                <h3><i class="fas fa-exclamation-triangle"></i> よくある問題と対処法</h3>
+                <div style="margin-top: 1rem;">
+                    <h4>1. データが表示されない場合</h4>
+                    <ul>
+                        <li><strong>テーブルが空:</strong> スクレイピングが実際には失敗している</li>
+                        <li><strong>全データが出品済み:</strong> ebay_item_idに値が入っている</li>
+                        <li><strong>WHERE条件が不適切:</strong> フィルター条件を確認</li>
+                    </ul>
+                    
+                    <h4>2. スクレイピング成功なのにデータなし</h4>
+                    <ul>
+                        <li><strong>エラーハンドリング:</strong> 実際にはエラーが発生</li>
+                        <li><strong>データベース接続失敗:</strong> 保存処理でエラー</li>
+                        <li><strong>トランザクション未コミット:</strong> データが保存されていない</li>
+                    </ul>
+                    
+                    <h4>3. 解決手順</h4>
+                    <ol>
+                        <li>上記のSQLで実際のデータを確認</li>
+                        <li>スクレイピングログを詳細確認</li>
+                        <li>データベース保存処理のエラーログ確認</li>
+                        <li>必要に応じてテストデータで動作確認</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <!-- リンク -->
+            <div style="text-align: center; margin: 2rem 0;">
+                <a href="new_structure/05_editing/editing.php" class="btn btn-info">
+                    <i class="fas fa-edit"></i> 編集システムへ
+                </a>
+                <a href="new_structure/02_scraping/scraping.php" class="btn btn-success">
+                    <i class="fas fa-spider"></i> スクレイピングシステムへ
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // データベース確認（シミュレーション）
+        function checkDatabase() {
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            const summaryStats = document.getElementById('summaryStats');
+            
+            loading.style.display = 'block';
+            results.innerHTML = '';
+            
+            // シミュレーション
+            setTimeout(() => {
+                loading.style.display = 'none';
+                
+                // サンプル結果（実際の値を入れてください）
+                const mockResults = {
+                    tableExists: true,
+                    totalCount: 0, // ここを実際の値に変更
+                    unlistedCount: 0,
+                    listedCount: 0,
+                    latestData: [],
+                    tableStructure: [
+                        { column_name: 'id', data_type: 'integer', is_nullable: 'NO' },
+                        { column_name: 'source_item_id', data_type: 'character varying', is_nullable: 'NO' },
+                        { column_name: 'active_title', data_type: 'text', is_nullable: 'YES' },
+                        { column_name: 'price_jpy', data_type: 'integer', is_nullable: 'YES' },
+                        { column_name: 'ebay_item_id', data_type: 'character varying', is_nullable: 'YES' }
+                    ]
+                };
+                
+                // 統計表示
+                document.getElementById('totalCount').textContent = mockResults.totalCount;
+                document.getElementById('unlistedCount').textContent = mockResults.unlistedCount;
+                document.getElementById('listedCount').textContent = mockResults.listedCount;
+                document.getElementById('latestDate').textContent = mockResults.totalCount > 0 ? '2025/09/16' : 'データなし';
+                summaryStats.style.display = 'grid';
+                
+                // 結果詳細
+                let resultHtml = '';
+                
+                if (mockResults.tableExists) {
+                    if (mockResults.totalCount === 0) {
+                        resultHtml += `
+                            <div class="query-result">
+                                <div class="query-header">
+                                    <i class="fas fa-exclamation-triangle"></i> 問題発見: テーブルは存在するがデータが0件
+                                </div>
+                                <div class="query-content">yahoo_scraped_products テーブルは存在しますが、データが1件もありません。
+
+考えられる原因:
+1. スクレイピングが実際には失敗している
+2. データベース保存処理でエラーが発生している
+3. 異なるテーブルに保存されている
+
+確認すべき点:
+• スクレイピングシステムのログを確認
+• データベース保存処理のエラーログを確認
+• 手動でテストデータを挿入してシステムが動作するか確認</div>
+                            </div>
+                        `;
+                    } else {
+                        resultHtml += `
+                            <div class="query-result">
+                                <div class="query-header">
+                                    <i class="fas fa-check-circle"></i> データ確認完了
+                                </div>
+                                <div class="query-content">総データ数: ${mockResults.totalCount}件
+未出品データ: ${mockResults.unlistedCount}件
+出品済みデータ: ${mockResults.listedCount}件
+
+${mockResults.unlistedCount === 0 ? '⚠️ 未出品データが0件です。編集システムで「未出品データ表示」を選択してもデータが表示されません。' : '✅ 未出品データがあります。編集システムで表示されるはずです。'}</div>
+                            </div>
+                        `;
+                    }
+                    
+                    // テーブル構造表示
+                    resultHtml += `
+                        <div class="query-result">
+                            <div class="query-header">
+                                <i class="fas fa-table"></i> テーブル構造
+                            </div>
+                            <div class="query-content">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>カラム名</th>
+                                            <th>データ型</th>
+                                            <th>NULL許可</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${mockResults.tableStructure.map(col => `
+                                            <tr>
+                                                <td>${col.column_name}</td>
+                                                <td>${col.data_type}</td>
+                                                <td>${col.is_nullable}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    resultHtml += `
+                        <div class="query-result">
+                            <div class="query-header">
+                                <i class="fas fa-times-circle"></i> エラー: テーブルが存在しません
+                            </div>
+                            <div class="query-content">yahoo_scraped_products テーブルが存在しません。
+テーブル作成ツールでテーブルを作成してください。</div>
+                        </div>
+                    `;
+                }
+                
+                results.innerHTML = resultHtml;
+                
+            }, 1500);
+        }
+        
+        // SQLクエリ生成表示
+        function generateQueries() {
+            document.getElementById('generatedQueries').style.display = 'block';
+            document.getElementById('manualSteps').style.display = 'none';
+        }
+        
+        // 手動手順表示
+        function showManualSteps() {
+            document.getElementById('manualSteps').style.display = 'block';
+            document.getElementById('generatedQueries').style.display = 'none';
+        }
+        
+        // クエリコピー
+        function copyQueries() {
+            const queryContent = document.getElementById('queryContent').textContent;
+            navigator.clipboard.writeText(queryContent).then(() => {
+                alert('SQLクエリをクリップボードにコピーしました！');
+            });
+        }
+        
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Yahoo Auction データベース確認ツール初期化完了');
+        });
+    </script>
+</body>
+</html>

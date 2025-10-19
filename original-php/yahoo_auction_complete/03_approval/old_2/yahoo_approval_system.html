@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yahoo!オークション 商品承認システム</title>
+    <link rel="stylesheet" href="../shared/css/common.css">
+    <link rel="stylesheet" href="approval.css">
+    <style>
+        /* CSS変数定義 */
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --bg-hover: #475569;
+            --text-primary: #f8fafc;
+            --text-secondary: #e2e8f0;
+            --text-white: #ffffff;
+            --border-color: #475569;
+            --filter-primary: #3b82f6;
+            --filter-success: #10b981;
+            --filter-danger: #ef4444;
+            --ai-approved: #10b981;
+            --ai-rejected: #ef4444;
+            --ai-pending: #f59e0b;
+            --accent-blue: #06b6d4;
+            --space-1: 0.25rem;
+            --space-2: 0.5rem;
+            --space-3: 0.75rem;
+            --space-4: 1rem;
+            --space-5: 1.25rem;
+            --space-6: 1.5rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+            --radius-xl: 1rem;
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+            --transition-fast: all 0.2s ease;
+        }
+
+        body {
+            font-family: "Inter", sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .approval__main-container {
+            padding: var(--space-4);
+            max-width: 100%;
+            margin: 0;
+        }
+
+        /* ヘッダーセクション */
+        .approval__page-header {
+            background: linear-gradient(135deg, #1e40af, #3b82f6);
+            border-radius: var(--radius-xl);
+            padding: var(--space-4);
+            margin-bottom: var(--space-4);
+            color: var(--text-white);
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .approval__page-header::before {
+            content: '';
+            position: absolute;
+            top: -30%;
+            right: -10%;
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+        }
+
+        .approval__header-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .approval__page-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: var(--space-2);
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+
+        .approval__title-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        /* 統合コントロールバー */
+        .approval__unified-controls {
+            background: var(--bg-secondary);
+            border: 2px solid var(--filter-primary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-3);
+            margin-bottom: var(--space-4);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow-lg);
+            position: sticky;
+            top: var(--space-4);
+            z-index: 100;
+            flex-wrap: wrap;
+            gap: var(--space-3);
+        }
+
+        .approval__controls-left {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+            flex-wrap: wrap;
+        }
+
+        .approval__selection-status {
+            font-weight: 600;
+            color: var(--filter-primary);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            font-size: 0.875rem;
+        }
+
+        .approval__controls-right {
+            display: flex;
+            gap: var(--space-2);
+            flex-wrap: wrap;
+        }
+
+        .approval__unified-btn {
+            padding: var(--space-2) var(--space-4);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            white-space: nowrap;
+        }
+
+        .approval__unified-btn--select {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+        }
+
+        .approval__unified-btn--select:hover {
+            background: #0891b2;
+        }
+
+        .approval__unified-btn--approve {
+            background: var(--filter-success);
+            border-color: var(--filter-success);
+            color: white;
+            font-size: 0.9rem;
+            padding: var(--space-3) var(--space-5);
+        }
+
+        .approval__unified-btn--approve:hover {
+            background: #059669;
+        }
+
+        .approval__unified-btn--reject {
+            background: var(--filter-danger);
+            border-color: var(--filter-danger);
+            color: white;
+            font-size: 0.9rem;
+            padding: var(--space-3) var(--space-5);
+        }
+
+        .approval__unified-btn--reject:hover {
+            background: #dc2626;
+        }
+
+        /* 統計とフィルターセクション */
+        .approval__controls {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-xl);
+            padding: var(--space-4);
+            margin-bottom: var(--space-4);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+        }
+
+        .approval__stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: var(--space-3);
+            margin-bottom: var(--space-4);
+        }
+
+        .approval__stat-card {
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-3);
+            text-align: center;
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s ease;
+        }
+
+        .approval__stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .approval__stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--space-1);
+        }
+
+        .approval__stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* フィルターコントロール */
+        .approval__filter-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-2);
+            align-items: center;
+            margin-bottom: var(--space-3);
+        }
+
+        .approval__filter-group {
+            display: flex;
+            gap: var(--space-2);
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .approval__filter-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .approval__filter-btn {
+            padding: var(--space-1) var(--space-3);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            white-space: nowrap;
+        }
+
+        .approval__filter-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--filter-primary);
+        }
+
+        .approval__filter-btn--active {
+            background: var(--filter-primary);
+            border-color: var(--filter-primary);
+            color: var(--text-white);
+        }
+
+        .approval__filter-count {
+            background: var(--bg-hover);
+            color: var(--text-secondary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            margin-left: var(--space-1);
+        }
+
+        .approval__filter-btn--active .approval__filter-count {
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--text-white);
+        }
+
+        /* AI判定状態のフィルター */
+        .approval__filter-btn[data-filter="ai-approved"] {
+            border-color: var(--ai-approved);
+        }
+
+        .approval__filter-btn[data-filter="ai-approved"]:hover,
+        .approval__filter-btn[data-filter="ai-approved"].approval__filter-btn--active {
+            background: var(--ai-approved);
+            border-color: var(--ai-approved);
+            color: white;
+        }
+
+        .approval__filter-btn[data-filter="ai-rejected"] {
+            border-color: var(--ai-rejected);
+        }
+
+        .approval__filter-btn[data-filter="ai-rejected"]:hover,
+        .approval__filter-btn[data-filter="ai-rejected"].approval__filter-btn--active {
+            background: var(--ai-rejected);
+            border-color: var(--ai-rejected);
+            color: white;
+        }
+
+        .approval__filter-btn[data-filter="ai-pending"] {
+            border-color: var(--ai-pending);
+        }
+
+        .approval__filter-btn[data-filter="ai-pending"]:hover,
+        .approval__filter-btn[data-filter="ai-pending"].approval__filter-btn--active {
+            background: var(--ai-pending);
+            border-color: var(--ai-pending);
+            color: white;
+        }
+
+        /* 商品グリッド */
+        .approval__product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: var(--space-4);
+            margin-bottom: var(--space-4);
+        }
+
+        .approval__product-card {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-4);
+            border: 1px solid var(--border-color);
+            transition: var(--transition-fast);
+            position: relative;
+            box-shadow: var(--shadow-md);
+        }
+
+        .approval__product-card:hover {
+            border-color: var(--filter-primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .approval__product-card--selected {
+            border-color: var(--filter-primary);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+        }
+
+        .approval__product-checkbox {
+            position: absolute;
+            top: var(--space-3);
+            left: var(--space-3);
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .approval__product-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-3);
+            background: var(--bg-tertiary);
+        }
+
+        .approval__product-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--space-2);
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .approval__product-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-2);
+            margin-bottom: var(--space-3);
+            font-size: 0.8rem;
+        }
+
+        .approval__info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .approval__info-label {
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+        }
+
+        .approval__info-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .approval__ai-status {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-1);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            margin-bottom: var(--space-3);
+        }
+
+        .approval__ai-status--approved {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--ai-approved);
+            border: 1px solid var(--ai-approved);
+        }
+
+        .approval__ai-status--rejected {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--ai-rejected);
+            border: 1px solid var(--ai-rejected);
+        }
+
+        .approval__ai-status--pending {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--ai-pending);
+            border: 1px solid var(--ai-pending);
+        }
+
+        .approval__product-actions {
+            display: flex;
+            gap: var(--space-2);
+        }
+
+        .approval__action-btn {
+            flex: 1;
+            padding: var(--space-2) var(--space-3);
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition-fast);
+        }
+
+        .approval__action-btn--approve {
+            background: var(--filter-success);
+            color: white;
+        }
+
+        .approval__action-btn--approve:hover {
+            background: #059669;
+        }
+
+        .approval__action-btn--reject {
+            background: var(--filter-danger);
+            color: white;
+        }
+
+        .approval__action-btn--reject:hover {
+            background: #dc2626;
+        }
+
+        /* 状態表示 */
+        .approval__state-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-6);
+            text-align: center;
+            min-height: 300px;
+        }
+
+        .approval__state-icon {
+            font-size: 4rem;
+            margin-bottom: var(--space-4);
+            opacity: 0.5;
+        }
+
+        .approval__state-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: var(--space-2);
+            color: var(--text-primary);
+        }
+
+        .approval__state-description {
+            color: var(--text-secondary);
+            margin-bottom: var(--space-4);
+            max-width: 600px;
+        }
+
+        .approval__state-actions {
+            display: flex;
+            gap: var(--space-3);
+            flex-wrap: wrap;
+        }
+
+        /* ローディングアニメーション */
+        .approval__loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--filter-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: var(--space-3);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* レスポンシブ対応 */
+        @media (max-width: 768px) {
+            .approval__main-container {
+                padding: var(--space-2);
+            }
+
+            .approval__unified-controls {
+                flex-direction: column;
+                align-items: stretch;
+                gap: var(--space-3);
+            }
+
+            .approval__controls-left,
+            .approval__controls-right {
+                justify-content: center;
+            }
+
+            .approval__product-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .approval__stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .approval__filter-controls {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="approval__main-container">
+        <!-- ページヘッダー -->
+        <header class="approval__page-header">
+            <div class="approval__header-content">
+                <h1 class="approval__page-title">
+                    <div class="approval__title-icon">
+                        📋
+                    </div>
+                    Yahoo!オークション 商品承認システム
+                </h1>
+                <p>スクレイピングで取得した商品の承認・否認を管理します</p>
+            </div>
+        </header>
+
+        <!-- 統合コントロールバー -->
+        <div class="approval__unified-controls">
+            <div class="approval__controls-left">
+                <div class="approval__selection-status">
+                    <span>📊</span>
+                    <span id="selectionCounter">0件選択中</span>
+                </div>
+                <div class="approval__stats-summary">
+                    <span id="totalProducts">総数: 0</span>
+                    <span style="margin: 0 var(--space-2);">|</span>
+                    <span id="pendingCount">承認待ち: 0</span>
+                </div>
+            </div>
+            <div class="approval__controls-right">
+                <button class="approval__unified-btn approval__unified-btn--select" onclick="selectAllVisible()">
+                    ✅ 全選択
+                </button>
+                <button class="approval__unified-btn" onclick="deselectAll()">
+                    ❌ 選択解除
+                </button>
+                <button class="approval__unified-btn approval__unified-btn--approve" onclick="bulkApprove()" id="bulkApproveBtn" disabled>
+                    ✅ 一括承認
+                </button>
+                <button class="approval__unified-btn approval__unified-btn--reject" onclick="bulkReject()" id="bulkRejectBtn" disabled>
+                    ❌ 一括否認
+                </button>
+            </div>
+        </div>
+
+        <!-- 統計とフィルターセクション -->
+        <div class="approval__controls">
+            <!-- 統計表示 -->
+            <div class="approval__stats-grid">
+                <div class="approval__stat-card">
+                    <div class="approval__stat-value" id="totalStat">0</div>
+                    <div class="approval__stat-label">総商品数</div>
+                </div>
+                <div class="approval__stat-card">
+                    <div class="approval__stat-value" id="pendingStat">0</div>
+                    <div class="approval__stat-label">承認待ち</div>
+                </div>
+                <div class="approval__stat-card">
+                    <div class="approval__stat-value" id="approvedStat">0</div>
+                    <div class="approval__stat-label">承認済み</div>
+                </div>
+                <div class="approval__stat-card">
+                    <div class="approval__stat-value" id="rejectedStat">0</div>
+                    <div class="approval__stat-label">否認済み</div>
+                </div>
+                <div class="approval__stat-card">
+                    <div class="approval__stat-value" id="aiRecommendedStat">0</div>
+                    <div class="approval__stat-label">AI推奨</div>
+                </div>
+            </div>
+
+            <!-- フィルターコントロール -->
+            <div class="approval__filter-controls">
+                <div class="approval__filter-group">
+                    <span class="approval__filter-label">状態:</span>
+                    <button class="approval__filter-btn approval__filter-btn--active" data-filter="all" onclick="applyFilter('all')">
+                        すべて <span class="approval__filter-count" id="allCount">0</span>
+                    </button>
+                    <button class="approval__filter-btn" data-filter="pending" onclick="applyFilter('pending')">
+                        承認待ち <span class="approval__filter-count" id="pendingFilterCount">0</span>
+                    </button>
+                    <button class="approval__filter-btn" data-filter="approved" onclick="applyFilter('approved')">
+                        承認済み <span class="approval__filter-count" id="approvedFilterCount">0</span>
+                    </button>
+                    <button class="approval__filter-btn" data-filter="rejected" onclick="applyFilter('rejected')">
+                        否認済み <span class="approval__filter-count" id="rejectedFilterCount">0</span>
+                    </button>
+                </div>
+
+                <div class="approval__filter-group">
+                    <span class="approval__filter-label">AI判定:</span>
+                    <button class="approval__filter-btn" data-filter="ai-approved" onclick="applyFilter('ai-approved')">
+                        AI推奨 <span class="approval__filter-count" id="aiApprovedCount">0</span>
+                    </button>
+                    <button class="approval__filter-btn" data-filter="ai-pending" onclick="applyFilter('ai-pending')">
+                        AI保留 <span class="approval__filter-count" id="aiPendingCount">0</span>
+                    </button>
+                    <button class="approval__filter-btn" data-filter="ai-rejected" onclick="applyFilter('ai-rejected')">
+                        AI非推奨 <span class="approval__filter-count" id="aiRejectedCount">0</span>
+                    </button>
+                </div>
+
+                <div class="approval__filter-group">
+                    <button class="approval__unified-btn" onclick="loadApprovalData()">
+                        🔄 データ更新
+                    </button>
+                    <button class="approval__unified-btn" onclick="exportData()">
+                        📊 CSV出力
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 商品グリッド表示エリア -->
+        <div id="productDisplayArea">
+            <!-- ローディング状態 -->
+            <div class="approval__state-container" id="loadingContainer">
+                <div class="approval__loading-spinner"></div>
+                <div class="approval__state-title">データ読み込み中...</div>
+                <div class="approval__state-description">データベースから承認待ち商品を取得しています</div>
+            </div>
+
+            <!-- データなし状態 -->
+            <div class="approval__state-container" id="noDataContainer" style="display: none;">
+                <div class="approval__state-icon">📦</div>
+                <div class="approval__state-title">承認待ち商品がありません</div>
+                <div class="approval__state-description">現在、承認が必要な商品はありません。スクレイピングで新しい商品を取得してください。</div>
+                <div class="approval__state-actions">
+                    <button class="approval__unified-btn approval__unified-btn--select" onclick="loadApprovalData()">
+                        🔄 データを再読み込み
+                    </button>
+                </div>
+            </div>
+
+            <!-- エラー状態 -->
+            <div class="approval__state-container" id="errorContainer" style="display: none;">
+                <div class="approval__state-icon">⚠️</div>
+                <div class="approval__state-title">データ読み込みエラー</div>
+                <div class="approval__state-description" id="errorMessage">データベースへの接続に失敗しました。</div>
+                <div class="approval__state-actions">
+                    <button class="approval__unified-btn approval__unified-btn--select" onclick="loadApprovalData()">
+                        🔄 再試行
+                    </button>
+                </div>
+            </div>
+
+            <!-- 商品グリッド（JavaScriptで動的生成） -->
+            <div class="approval__product-grid" id="productGrid" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // グローバル変数
+        let currentProducts = [];
+        let selectedProducts = new Set();
+        let currentFilter = 'all';
+        let statisticsData = {
+            total: 0,
+            pending: 0,
+            approved: 0,
+            rejected: 0,
+            aiRecommended: 0,
+            aiApproved: 0,
+            aiPending: 0,
+            aiRejected: 0
+        };
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Yahoo!オークション商品承認システム 初期化開始');
+            loadApprovalData();
+        });
+
+        // データ読み込み
+        async function loadApprovalData() {
+            showLoadingState();
+            
+            try {
+                const response = await fetch('approval.php?action=get_approval_queue');
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    currentProducts = data.data.products || [];
+                    updateStatistics(data.data.statistics || {});
+                    displayProducts(currentProducts);
+                    showProductGrid();
+                    updateSelectionCounter();
+                } else {
+                    console.error('データ取得失敗:', data.message);
+                    showNoDataState();
+                }
+            } catch (error) {
+                console.error('API呼び出しエラー:', error);
+                showErrorState('ネットワークエラーが発生しました: ' + error.message);
+            }
+        }
+
+        // 統計更新
+        function updateStatistics(stats) {
+            statisticsData = { ...statisticsData, ...stats };
+            
+            // 統計表示更新
+            document.getElementById('totalStat').textContent = statisticsData.total || 0;
+            document.getElementById('pendingStat').textContent = statisticsData.pending || 0;
+            document.getElementById('approvedStat').textContent = statisticsData.approved || 0;
+            document.getElementById('rejectedStat').textContent = statisticsData.rejected || 0;
+            document.getElementById('aiRecommendedStat').textContent = statisticsData.aiRecommended || 0;
+            
+            // フィルターカウンター更新
+            document.getElementById('allCount').textContent = statisticsData.total || 0;
+            document.getElementById('pendingFilterCount').textContent = statisticsData.pending || 0;
+            document.getElementById('approvedFilterCount').textContent = statisticsData.approved || 0;
+            document.getElementById('rejectedFilterCount').textContent = statisticsData.rejected || 0;
+            document.getElementById('aiApprovedCount').textContent = statisticsData.aiApproved || 0;
+            document.getElementById('aiPendingCount').textContent = statisticsData.aiPending || 0;
+            document.getElementById('aiRejectedCount').textContent = statisticsData.aiRejected || 0;
+            
+            // ヘッダー統計更新
+            document.getElementById('totalProducts').textContent = `総数: ${statisticsData.total || 0}`;
+            document.getElementById('pendingCount').textContent = `承認待ち: ${statisticsData.pending || 0}`;
+        }
+
+        // 商品表示
+        function displayProducts(products) {
+            const grid = document.getElementById('productGrid');
+            
+            if (!products || products.length === 0) {
+                grid.innerHTML = '';
+                return;
+            }
+            
+            grid.innerHTML = products.map(product => createProductCard(product)).join('');
+        }
+
+        // 商品カード生成
+        function createProductCard(product) {
+            const aiStatus = getAIStatus(product);
+            const aiStatusClass = `approval__ai-status--${aiStatus.toLowerCase()}`;
+            const imageUrl = product.image_url || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200"><rect width="300" height="200" fill="%23374151"/><text x="150" y="100" text-anchor="middle" fill="%23ffffff" font-size="14">No Image</text></svg>';
+            
+            return `
+                <div class="approval__product-card" data-product-id="${product.id}">
+                    <input type="checkbox" class="approval__product-checkbox" 
+                           onchange="toggleProductSelection(${product.id})" />
+                    
+                    <img src="${imageUrl}" alt="商品画像" class="approval__product-image" 
+                         onerror="this.src='data:image/svg+xml,<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; width=&quot;300&quot; height=&quot;200&quot; viewBox=&quot;0 0 300 200&quot;><rect width=&quot;300&quot; height=&quot;200&quot; fill=&quot;%23374151&quot;/><text x=&quot;150&quot; y=&quot;100&quot; text-anchor=&quot;middle&quot; fill=&quot;%23ffffff&quot; font-size=&quot;14&quot;>No Image</text></svg>'" />
+                    
+                    <div class="approval__ai-status ${aiStatusClass}">
+                        🤖 AI${aiStatus}
+                    </div>
+                    
+                    <h3 class="approval__product-title">${product.title || 'タイトル不明'}</h3>
+                    
+                    <div class="approval__product-info">
+                        <div class="approval__info-item">
+                            <div class="approval__info-label">現在価格</div>
+                            <div class="approval__info-value">¥${(product.current_price || 0).toLocaleString()}</div>
+                        </div>
+                        <div class="approval__info-item">
+                            <div class="approval__info-label">入札数</div>
+                            <div class="approval__info-value">${product.bid_count || 0}件</div>
+                        </div>
+                        <div class="approval__info-item">
+                            <div class="approval__info-label">終了日時</div>
+                            <div class="approval__info-value">${formatDate(product.end_date)}</div>
+                        </div>
+                        <div class="approval__info-item">
+                            <div class="approval__info-label">カテゴリー</div>
+                            <div class="approval__info-value">${product.category || '未分類'}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="approval__product-actions">
+                        <button class="approval__action-btn approval__action-btn--approve" 
+                                onclick="approveProduct(${product.id})">
+                            ✅ 承認
+                        </button>
+                        <button class="approval__action-btn approval__action-btn--reject" 
+                                onclick="rejectProduct(${product.id})">
+                            ❌ 否認
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // AI状態取得
+        function getAIStatus(product) {
+            if (product.ai_confidence_score >= 80) return '推奨';
+            if (product.ai_confidence_score >= 40) return '保留';
+            return '非推奨';
+        }
+
+        // 日付フォーマット
+        function formatDate(dateString) {
+            if (!dateString) return '未設定';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ja-JP', {
+                month: 'numeric',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric'
+            });
+        }
+
+        // 商品選択切り替え
+        function toggleProductSelection(productId) {
+            if (selectedProducts.has(productId)) {
+                selectedProducts.delete(productId);
+            } else {
+                selectedProducts.add(productId);
+            }
+            
+            updateSelectionUI(productId);
+            updateSelectionCounter();
+            updateBulkActionButtons();
+        }
+
+        // 選択UI更新
+        function updateSelectionUI(productId) {
+            const card = document.querySelector(`[data-product-id="${productId}"]`);
+            const checkbox = card.querySelector('.approval__product-checkbox');
+            
+            if (selectedProducts.has(productId)) {
+                card.classList.add('approval__product-card--selected');
+                checkbox.checked = true;
+            } else {
+                card.classList.remove('approval__product-card--selected');
+                checkbox.checked = false;
+            }
+        }
+
+        // 選択カウンター更新
+        function updateSelectionCounter() {
+            document.getElementById('selectionCounter').textContent = `${selectedProducts.size}件選択中`;
+        }
+
+        // 一括操作ボタン更新
+        function updateBulkActionButtons() {
+            const hasSelection = selectedProducts.size > 0;
+            document.getElementById('bulkApproveBtn').disabled = !hasSelection;
+            document.getElementById('bulkRejectBtn').disabled = !hasSelection;
+        }
+
+        // 全選択
+        function selectAllVisible() {
+            const visibleProducts = document.querySelectorAll('.approval__product-card:not([style*="display: none"])');
+            visibleProducts.forEach(card => {
+                const productId = parseInt(card.dataset.productId);
+                selectedProducts.add(productId);
+                updateSelectionUI(productId);
+            });
+            updateSelectionCounter();
+            updateBulkActionButtons();
+        }
+
+        // 全解除
+        function deselectAll() {
+            selectedProducts.clear();
+            document.querySelectorAll('.approval__product-card').forEach(card => {
+                const productId = parseInt(card.dataset.productId);
+                updateSelectionUI(productId);
+            });
+            updateSelectionCounter();
+            updateBulkActionButtons();
+        }
+
+        // フィルター適用
+        function applyFilter(filter) {
+            currentFilter = filter;
+            
+            // フィルターボタンのアクティブ状態更新
+            document.querySelectorAll('.approval__filter-btn').forEach(btn => {
+                if (btn.dataset.filter === filter) {
+                    btn.classList.add('approval__filter-btn--active');
+                } else {
+                    btn.classList.remove('approval__filter-btn--active');
+                }
+            });
+            
+            // 商品フィルタリング
+            const filteredProducts = filterProducts(currentProducts, filter);
+            displayProducts(filteredProducts);
+        }
+
+        // 商品フィルタリングロジック
+        function filterProducts(products, filter) {
+            if (filter === 'all') return products;
+            
+            return products.filter(product => {
+                switch (filter) {
+                    case 'pending':
+                        return product.approval_status === 'pending';
+                    case 'approved':
+                        return product.approval_status === 'approved';
+                    case 'rejected':
+                        return product.approval_status === 'rejected';
+                    case 'ai-approved':
+                        return product.ai_confidence_score >= 80;
+                    case 'ai-pending':
+                        return product.ai_confidence_score >= 40 && product.ai_confidence_score < 80;
+                    case 'ai-rejected':
+                        return product.ai_confidence_score < 40;
+                    default:
+                        return true;
+                }
+            });
+        }
+
+        // 単体承認
+        async function approveProduct(productId) {
+            try {
+                const response = await fetch('approval.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'approve_products',
+                        product_ids: [productId]
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    console.log(`商品 ${productId} を承認しました`);
+                    loadApprovalData(); // データ再読み込み
+                } else {
+                    alert('承認処理に失敗しました: ' + data.message);
+                }
+            } catch (error) {
+                console.error('承認処理エラー:', error);
+                alert('承認処理中にエラーが発生しました');
+            }
+        }
+
+        // 単体否認
+        async function rejectProduct(productId) {
+            try {
+                const response = await fetch('approval.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'reject_products',
+                        product_ids: [productId]
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    console.log(`商品 ${productId} を否認しました`);
+                    loadApprovalData(); // データ再読み込み
+                } else {
+                    alert('否認処理に失敗しました: ' + data.message);
+                }
+            } catch (error) {
+                console.error('否認処理エラー:', error);
+                alert('否認処理中にエラーが発生しました');
+            }
+        }
+
+        // 一括承認
+        async function bulkApprove() {
+            if (selectedProducts.size === 0) {
+                alert('商品を選択してください');
+                return;
+            }
+            
+            if (!confirm(`選択した${selectedProducts.size}件の商品を承認しますか？`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('approval.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'approve_products',
+                        product_ids: Array.from(selectedProducts)
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    console.log(`${selectedProducts.size}件の商品を一括承認しました`);
+                    selectedProducts.clear();
+                    loadApprovalData(); // データ再読み込み
+                } else {
+                    alert('一括承認処理に失敗しました: ' + data.message);
+                }
+            } catch (error) {
+                console.error('一括承認エラー:', error);
+                alert('一括承認中にエラーが発生しました');
+            }
+        }
+
+        // 一括否認
+        async function bulkReject() {
+            if (selectedProducts.size === 0) {
+                alert('商品を選択してください');
+                return;
+            }
+            
+            if (!confirm(`選択した${selectedProducts.size}件の商品を否認しますか？`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('approval.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'reject_products',
+                        product_ids: Array.from(selectedProducts)
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    console.log(`${selectedProducts.size}件の商品を一括否認しました`);
+                    selectedProducts.clear();
+                    loadApprovalData(); // データ再読み込み
+                } else {
+                    alert('一括否認処理に失敗しました: ' + data.message);
+                }
+            } catch (error) {
+                console.error('一括否認エラー:', error);
+                alert('一括否認中にエラーが発生しました');
+            }
+        }
+
+        // CSV出力
+        function exportData() {
+            const csvData = generateCSVData();
+            downloadCSV(csvData, 'approval_products.csv');
+        }
+
+        function generateCSVData() {
+            const headers = ['ID', 'タイトル', '現在価格', '入札数', '終了日時', 'AI信頼度', '承認状態'];
+            const rows = currentProducts.map(product => [
+                product.id,
+                `"${product.title || ''}"`,
+                product.current_price || 0,
+                product.bid_count || 0,
+                product.end_date || '',
+                product.ai_confidence_score || 0,
+                product.approval_status || 'pending'
+            ]);
+            
+            return [headers, ...rows].map(row => row.join(',')).join('\n');
+        }
+
+        function downloadCSV(csvData, filename) {
+            const blob = new Blob(['\uFEFF' + csvData], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // 状態表示切り替え
+        function showLoadingState() {
+            document.getElementById('loadingContainer').style.display = 'flex';
+            document.getElementById('noDataContainer').style.display = 'none';
+            document.getElementById('errorContainer').style.display = 'none';
+            document.getElementById('productGrid').style.display = 'none';
+        }
+
+        function showNoDataState() {
+            document.getElementById('loadingContainer').style.display = 'none';
+            document.getElementById('noDataContainer').style.display = 'flex';
+            document.getElementById('errorContainer').style.display = 'none';
+            document.getElementById('productGrid').style.display = 'none';
+        }
+
+        function showErrorState(message) {
+            document.getElementById('loadingContainer').style.display = 'none';
+            document.getElementById('noDataContainer').style.display = 'none';
+            document.getElementById('errorContainer').style.display = 'flex';
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('productGrid').style.display = 'none';
+        }
+
+        function showProductGrid() {
+            document.getElementById('loadingContainer').style.display = 'none';
+            document.getElementById('noDataContainer').style.display = 'none';
+            document.getElementById('errorContainer').style.display = 'none';
+            document.getElementById('productGrid').style.display = 'grid';
+        }
+    </script>
+</body>
+</html>

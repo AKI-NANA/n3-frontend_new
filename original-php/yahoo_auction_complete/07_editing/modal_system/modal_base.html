@@ -1,0 +1,193 @@
+<!-- 統合モーダルシステム - ベースHTML -->
+<div id="integrated-modal" class="integrated-modal-overlay" style="display: none;">
+    <div class="integrated-modal-content">
+        <!-- ヘッダー -->
+        <header class="integrated-modal-header">
+            <div class="product-info">
+                <img src="https://placehold.co/50x50/667eea/ffffff?text=商品" alt="商品" class="product-thumbnail" id="integrated-product-thumbnail">
+                <div>
+                    <h2 class="integrated-modal-title">
+                        <i class="fas fa-edit"></i> 
+                        <span id="integrated-title-text">商品データ読み込み中...</span>
+                    </h2>
+                    <div class="source-indicator">
+                        <i id="integrated-source-icon" class="fas fa-database"></i>
+                        <span id="integrated-source-name">データソース</span>
+                        <span class="separator">→</span>
+                        <i id="integrated-marketplace-icon" class="fab fa-ebay"></i>
+                        <span id="integrated-marketplace-name">eBay</span>
+                    </div>
+                </div>
+            </div>
+            <button class="integrated-modal-close" onclick="IntegratedModal.close()">
+                <i class="fas fa-times"></i>
+            </button>
+        </header>
+
+        <div class="integrated-modal-body">
+            <!-- マーケットプレイス選択 -->
+            <div class="integrated-marketplace-selector">
+                <label style="font-weight: 600; color: var(--text-primary);">出品先:</label>
+                <div class="marketplace-btn ebay active" data-marketplace="ebay" onclick="IntegratedModal.switchMarketplace('ebay')">
+                    <i class="fab fa-ebay"></i> eBay
+                </div>
+                <div class="marketplace-btn shopee" data-marketplace="shopee" onclick="IntegratedModal.switchMarketplace('shopee')">
+                    <i class="fas fa-shopping-bag"></i> Shopee
+                </div>
+                <div class="marketplace-btn amazon-global" data-marketplace="amazon-global" onclick="IntegratedModal.switchMarketplace('amazon-global')">
+                    <i class="fab fa-amazon"></i> Amazon海外
+                </div>
+            </div>
+
+            <!-- タブナビゲーション -->
+            <nav class="integrated-tabs">
+                <div class="integrated-tab-link active" data-tab="overview" onclick="IntegratedModal.switchTab('overview')">
+                    <i class="fas fa-chart-pie"></i> 統合概要
+                </div>
+                <div class="integrated-tab-link" data-tab="data" onclick="IntegratedModal.switchTab('data')">
+                    <i class="fas fa-database"></i> データ確認
+                </div>
+                <div class="integrated-tab-link" data-tab="images" onclick="IntegratedModal.switchTab('images')">
+                    <i class="fas fa-images"></i> 画像選択
+                </div>
+                <div class="integrated-tab-link" data-tab="tools" onclick="IntegratedModal.switchTab('tools')">
+                    <i class="fas fa-tools"></i> ツール連携
+                </div>
+                <div class="integrated-tab-link marketplace-specific" data-tab="listing" onclick="IntegratedModal.switchTab('listing')">
+                    <i class="fas fa-edit"></i> 出品情報
+                </div>
+                <div class="integrated-tab-link" data-tab="final" onclick="IntegratedModal.switchTab('final')">
+                    <i class="fas fa-check-circle"></i> 最終確認
+                </div>
+            </nav>
+
+            <!-- タブコンテンツコンテナ -->
+            <div class="integrated-tab-content-container">
+                <!-- 統合概要タブ（共通） -->
+                <section id="integrated-tab-overview" class="integrated-tab-pane active">
+                    <h3 style="margin-bottom: 1rem;">
+                        <i class="fas fa-dashboard"></i> 全ツール統合状況
+                    </h3>
+                    <div class="integrated-status-grid" id="integrated-tool-status-grid">
+                        <!-- 動的生成 -->
+                    </div>
+                </section>
+
+                <!-- データ確認タブ（仕入れ先別） -->
+                <section id="integrated-tab-data" class="integrated-tab-pane">
+                    <h3 style="margin-bottom: 1rem;">
+                        <i class="fas fa-database"></i> データソース別確認
+                    </h3>
+                    
+                    <!-- 仕入れ先別コンテンツがここに動的ロード -->
+                    <div id="integrated-source-content">
+                        <div style="text-align: center; padding: 2rem; color: #6c757d;">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                            <p>データを読み込み中...</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 画像選択タブ（共通） -->
+                <section id="integrated-tab-images" class="integrated-tab-pane">
+                    <h3 style="margin-bottom: 1rem;">
+                        <i class="fas fa-images"></i> 画像管理・順序設定
+                    </h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                        <div>
+                            <h4>取得済み画像 (<span id="integrated-available-image-count">0</span>枚)</h4>
+                            <div class="integrated-images-grid" id="integrated-available-images">
+                                <!-- 動的生成 -->
+                            </div>
+                        </div>
+                        <div>
+                            <h4>出品用画像順序 (<span id="integrated-selected-image-count">0</span>/<span id="integrated-max-images">12</span>枚)</h4>
+                            <div class="integrated-images-grid" id="integrated-selected-images">
+                                <!-- 動的生成 -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ツール連携タブ（共通） -->
+                <section id="integrated-tab-tools" class="integrated-tab-pane">
+                    <h3 style="margin-bottom: 1rem;">
+                        <i class="fas fa-tools"></i> 統合ツール実行
+                    </h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="integrated-data-section">
+                            <div class="integrated-section-header">
+                                <i class="fas fa-tags"></i> カテゴリ判定
+                                <button class="integrated-btn integrated-btn-primary" onclick="IntegratedModal.runCategoryTool()">
+                                    <i class="fas fa-play"></i> 実行
+                                </button>
+                            </div>
+                            <div id="integrated-category-results">実行してください</div>
+                        </div>
+                        <div class="integrated-data-section">
+                            <div class="integrated-section-header">
+                                <i class="fas fa-yen-sign"></i> 利益計算
+                                <button class="integrated-btn integrated-btn-success" onclick="IntegratedModal.runProfitTool()">
+                                    <i class="fas fa-play"></i> 実行
+                                </button>
+                            </div>
+                            <div id="integrated-profit-results">実行してください</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 出品情報タブ（マーケットプレイス別） -->
+                <section id="integrated-tab-listing" class="integrated-tab-pane">
+                    <h3 style="margin-bottom: 1rem;">
+                        <i class="fas fa-edit"></i> <span id="integrated-listing-marketplace-name">eBay</span> 出品情報
+                    </h3>
+                    
+                    <!-- マーケットプレイス別コンテンツがここに動的ロード -->
+                    <div id="integrated-marketplace-content">
+                        <div style="text-align: center; padding: 2rem; color: #6c757d;">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                            <p>出品フォームを読み込み中...</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 最終確認タブ（共通） -->
+                <section id="integrated-tab-final" class="integrated-tab-pane">
+                    <h3 style="margin-bottom: 1rem;">
+                        <i class="fas fa-check-circle"></i> 最終確認・出品実行
+                    </h3>
+                    <div class="integrated-data-section">
+                        <div class="integrated-section-header">
+                            <i class="fas fa-clipboard-check"></i> 出品データ検証結果
+                        </div>
+                        <div id="integrated-validation-results">
+                            <!-- 動的生成 -->
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin-top: 2rem;">
+                        <button class="integrated-btn integrated-btn-success integrated-btn-large" onclick="IntegratedModal.submitListing()">
+                            <i class="fas fa-rocket"></i> <span id="integrated-submit-marketplace">eBay</span>に出品する
+                        </button>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- フッター -->
+        <footer class="integrated-modal-footer">
+            <div class="footer-info">
+                <span><i class="fas fa-database"></i> データソース: <strong id="integrated-footer-source">Yahoo</strong></span>
+                <span><i class="fas fa-store"></i> 出品先: <strong id="integrated-footer-marketplace">eBay</strong></span>
+                <span><i class="fas fa-check"></i> 検証: <strong id="integrated-footer-validation">待機中</strong></span>
+            </div>
+            <div class="footer-actions">
+                <button class="integrated-btn integrated-btn-secondary" onclick="IntegratedModal.close()">
+                    <i class="fas fa-times"></i> 閉じる
+                </button>
+                <button class="integrated-btn integrated-btn-primary" onclick="IntegratedModal.goToNextTab()">
+                    <i class="fas fa-arrow-right"></i> 次へ
+                </button>
+            </div>
+        </footer>
+    </div>
+</div>

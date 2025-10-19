@@ -1,0 +1,565 @@
+<body>
+    <div class="container">
+        <div class="main-dashboard">
+            <div class="dashboard-header">
+                <h1><i class="fas fa-sync-alt"></i> Yahoo→eBay統合ワークフロー完全版（eBayカテゴリー統合版）</h1>
+                <p>N3デザイン適用・データベース統合・送料計算・禁止品フィルター管理・eBayカテゴリー自動判定・商品承認システム</p>
+            </div>
+
+            <div class="caids-constraints-bar">
+                <div class="constraint-item">
+                    <div class="constraint-value" id="totalRecords">{{TOTAL_RECORDS}}</div>
+                    <div class="constraint-label">総データ数</div>
+                </div>
+                <div class="constraint-item">
+                    <div class="constraint-value" id="scrapedCount">{{SCRAPED_COUNT}}</div>
+                    <div class="constraint-label">取得済</div>
+                </div>
+                <div class="constraint-item">
+                    <div class="constraint-value" id="calculatedCount">{{CALCULATED_COUNT}}</div>
+                    <div class="constraint-label">計算済</div>
+                </div>
+                <div class="constraint-item">
+                    <div class="constraint-value" id="filteredCount">{{FILTERED_COUNT}}</div>
+                    <div class="constraint-label">フィルター済</div>
+                </div>
+                <div class="constraint-item">
+                    <div class="constraint-value" id="readyCount">{{READY_COUNT}}</div>
+                    <div class="constraint-label">出品準備完了</div>
+                </div>
+                <div class="constraint-item">
+                    <div class="constraint-value" id="listedCount">{{LISTED_COUNT}}</div>
+                    <div class="constraint-label">出品済</div>
+                </div>
+            </div>
+
+            <div class="tab-navigation">
+                <button class="tab-btn active" data-tab="dashboard" onclick="switchTab('dashboard')">
+                    <i class="fas fa-tachometer-alt"></i>
+                    ダッシュボード
+                </button>
+                <button class="tab-btn" data-tab="approval" onclick="switchTab('approval')">
+                    <i class="fas fa-check-circle"></i>
+                    商品承認
+                </button>
+                <button class="tab-btn" data-tab="analysis" onclick="switchTab('analysis')">
+                    <i class="fas fa-chart-bar"></i>
+                    承認分析
+                </button>
+                <button class="tab-btn" data-tab="scraping" onclick="switchTab('scraping')">
+                    <i class="fas fa-spider"></i>
+                    データ取得
+                </button>
+                <button class="tab-btn" data-tab="editing" onclick="switchTab('editing')">
+                    <i class="fas fa-edit"></i>
+                    データ編集
+                </button>
+                <button class="tab-btn" data-tab="calculation" onclick="switchTab('calculation')">
+                    <i class="fas fa-calculator"></i>
+                    送料計算
+                </button>
+                <button class="tab-btn" data-tab="filters" onclick="switchTab('filters')">
+                    <i class="fas fa-filter"></i>
+                    フィルター
+                </button>
+                <!-- 🆕 eBayカテゴリータブを追加 -->
+                <button class="tab-btn" data-tab="ebay-category" onclick="switchTab('ebay-category')">
+                    <i class="fas fa-tags"></i>
+                    eBayカテゴリー
+                </button>
+                <button class="tab-btn" data-tab="listing" onclick="switchTab('listing')">
+                    <i class="fas fa-store"></i>
+                    出品管理
+                </button>
+                <button class="tab-btn" data-tab="inventory-mgmt" onclick="switchTab('inventory-mgmt')">
+                    <i class="fas fa-warehouse"></i>
+                    在庫管理
+                </button>
+            </div>
+
+            <!-- ダッシュボードタブ -->
+            <div id="dashboard" class="tab-content active fade-in">
+                <div class="section">
+                    <div class="section-header">
+                        <i class="fas fa-search"></i>
+                        <h3 class="section-title">商品検索</h3>
+                        <div style="margin-left: auto; display: flex; gap: var(--space-sm);">
+                            <input type="text" id="searchQuery" placeholder="検索キーワード" style="padding: 0.4rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.8rem;">
+                            <button class="btn btn-primary" onclick="searchDatabase()">
+                                <i class="fas fa-search"></i> 検索
+                            </button>
+                        </div>
+                    </div>
+                    <div id="searchResults">
+                        <div class="notification info">
+                            <i class="fas fa-info-circle"></i>
+                            <span>検索条件を入力して「検索」ボタンを押してください</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 商品承認タブ -->
+            <div id="approval" class="tab-content fade-in">
+                <div class="approval-system">
+                    <!-- AI推奨表示バー -->
+                    <div style="background: linear-gradient(135deg, #8b5cf6, #06b6d4); color: white; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h2 style="margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
+                                <i class="fas fa-brain"></i>
+                                AI推奨: データベースから商品読み込み中
+                            </h2>
+                            <p style="margin: 0; font-size: 0.8rem; opacity: 0.9;">
+                                データベースから承認待ち商品を取得しています。<span id="totalProductCount">0</span>件の商品を読み込み中です。
+                            </p>
+                        </div>
+                        <button class="btn" style="background: white; color: var(--primary-color); font-weight: 700; padding: 0.75rem 1.5rem; border-radius: 0.5rem; border: none; cursor: pointer;" onclick="openNewProductModal()">
+                            <i class="fas fa-plus-circle"></i> 新規商品登録
+                        </button>
+                    </div>
+
+                    <!-- 統計表示 -->
+                    <div class="approval-stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="pendingCount">-</div>
+                            <div class="stat-label">承認待ち</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="autoApprovedCount">-</div>
+                            <div class="stat-label">自動承認済み</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="highRiskCount">-</div>
+                            <div class="stat-label">高リスク</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="mediumRiskCount">-</div>
+                            <div class="stat-label">中リスク</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="avgProcessTime">-</div>
+                            <div class="stat-label">平均処理時間</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="totalRegistered">-</div>
+                            <div class="stat-label">登録済商品</div>
+                        </div>
+                    </div>
+
+                    <!-- 商品グリッド（データベースから動的読み込み） -->
+                    <div class="approval-grid" id="approval-product-grid">
+                        <!-- 初期ローディング表示 -->
+                        <div class="loading-container" id="loadingContainer">
+                            <div class="loading-spinner"></div>
+                            <p>データベースから承認待ち商品を読み込み中...</p>
+                        </div>
+                        
+                        <!-- データがない場合の表示 -->
+                        <div class="no-data-container" id="noDataContainer" style="display: none;">
+                            <div class="no-data-icon">
+                                <i class="fas fa-inbox"></i>
+                            </div>
+                            <h3>承認待ち商品がありません</h3>
+                            <p>現在、承認が必要な商品はありません。新しいデータを取得するか、商品を手動で追加してください。</p>
+                            <div class="no-data-actions">
+                                <button class="btn btn-primary" onclick="loadApprovalData()">
+                                    <i class="fas fa-sync"></i> データを再読み込み
+                                </button>
+                                <button class="btn btn-success" onclick="openNewProductModal()">
+                                    <i class="fas fa-plus"></i> 新規商品追加
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 実際の商品データ表示エリア -->
+                        <div class="products-container" id="productsContainer" style="display: none;">
+                            <!-- JavaScriptでデータベースから取得した商品を動的生成 -->
+                        </div>
+                    </div>
+
+                    <!-- メインアクション -->
+                    <div class="main-actions">
+                        <div class="action-group">
+                            <button class="action-btn action-btn-primary" onclick="selectAllVisible()">
+                                <i class="fas fa-check-square"></i> 全選択
+                            </button>
+                            <button class="action-btn action-btn-secondary" onclick="deselectAll()">
+                                <i class="fas fa-square"></i> 全解除
+                            </button>
+                            <button class="action-btn action-btn-info" onclick="loadApprovalData()">
+                                <i class="fas fa-sync"></i> 更新
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 承認分析タブ -->
+            <div id="analysis" class="tab-content fade-in">
+                <div class="section">
+                    <div class="section-header">
+                        <i class="fas fa-chart-bar"></i>
+                        <h3 class="section-title">承認分析ダッシュボード</h3>
+                        <div style="margin-left: auto;">
+                            <button class="btn btn-info" onclick="loadAnalysisData()">
+                                <i class="fas fa-sync"></i> データ更新
+                            </button>
+                        </div>
+                    </div>
+                    <div id="analysis-content">
+                        <div class="notification info">
+                            <i class="fas fa-info-circle"></i>
+                            <span>承認データの分析機能は開発中です。今後の更新で詳細な分析機能を追加予定です。</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- データ取得タブ -->
+            <div id="scraping" class="tab-content fade-in">
+                <div class="section">
+                    <div class="section-header">
+                        <i class="fas fa-download"></i>
+                        <h3 class="section-title">Yahoo オークションデータ取得</h3>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
+                        <div>
+                            <form action="yahoo_auction_tool_content.php" method="POST">
+                                <input type="hidden" name="action" value="scrape">
+                                <div style="margin-bottom: var(--space-sm);">
+                                    <label style="display: block; margin-bottom: 0.3rem; font-size: 0.8rem; font-weight: 600;">Yahoo オークション URL</label>
+                                    <textarea name="url" id="yahooUrls" placeholder="https://auctions.yahoo.co.jp/jp/auction/xxxxx" style="width: 100%; height: 80px; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.8rem;"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-play"></i> スクレイピング開始
+                                </button>
+                                <button type="button" class="btn btn-info" onclick="testConnection()">
+                                    <i class="fas fa-link"></i> 接続テスト
+                                </button>
+                            </form>
+                        </div>
+                        <div>
+                            <form action="yahoo_auction_tool_content.php" method="POST" enctype="multipart/form-data">
+                                <input type="hidden" name="action" value="process_edited">
+                                <div style="margin-bottom: var(--space-sm);">
+                                    <label style="display: block; margin-bottom: 0.3rem; font-size: 0.8rem; font-weight: 600;">CSVファイル選択</label>
+                                    <input type="file" name="csvFile" id="csvFile" accept=".csv" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.8rem;">
+                                </div>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-upload"></i> CSV取込
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- データ編集タブ -->
+            <div id="editing" class="tab-content fade-in">
+                <div class="section">
+                    <div class="section-header">
+                        <i class="fas fa-edit"></i>
+                        <h3 class="section-title">データ編集 & 検証</h3>
+                        <div style="margin-left: auto; display: flex; gap: var(--space-sm);">
+                            <button class="btn btn-info" onclick="loadEditingData()">
+                                <i class="fas fa-sync"></i> データ読込
+                            </button>
+                            <button class="btn btn-secondary" onclick="downloadEditingCSV()">
+                                <i class="fas fa-download"></i> CSV出力
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="data-table-container">
+                        <table class="data-table" id="editingTable">
+                            <thead>
+                                <tr>
+                                    <th>操作</th>
+                                    <th>モール</th>
+                                    <th>画像</th>
+                                    <th>商品ID</th>
+                                    <th>取得タイトル</th>
+                                    <th>取得カテゴリ</th>
+                                    <th>価格(円)</th>
+                                    <th>ステータス</th>
+                                    <th>URL</th>
+                                </tr>
+                            </thead>
+                            <tbody id="editingTableBody">
+                                <tr>
+                                    <td colspan="9" style="text-align: center; padding: var(--space-lg); color: var(--text-muted);">
+                                        「データ読込」ボタンを押してデータを表示してください。
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 送料計算タブ -->
+            <div id="calculation" class="tab-content fade-in">
+                <div class="section">
+                    <div class="section-header">
+                        <i class="fas fa-calculator"></i>
+                        <h3 class="section-title">送料計算システム</h3>
+                    </div>
+                    <div class="notification info">
+                        <i class="fas fa-info-circle"></i>
+                        <span>送料計算機能は開発中です</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- フィルタータブ -->
+            <div id="filters" class="tab-content fade-in">
+                <div class="section">
+                    <div class="section-header">
+                        <i class="fas fa-filter"></i>
+                        <h3 class="section-title">禁止キーワード管理</h3>
+                    </div>
+                    <div class="notification info">
+                        <i class="fas fa-info-circle"></i>
+                        <span>禁止キーワード管理機能は開発中です</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 🆕 eBayカテゴリータブ -->
+            <!-- eBayカテゴリー自動判定タブ（統合版） -->
+<div id="ebay-category" class="tab-content fade-in">
+    <div class="section">
+        <!-- システム統計ダッシュボード -->
+        <div class="ebay-stats-dashboard">
+            <div class="section-header">
+                <i class="fas fa-chart-line"></i>
+                <h3 class="section-title">eBayカテゴリー自動判定システム</h3>
+                <div style="margin-left: auto;">
+                    <button class="btn btn-info" onclick="refreshEbayCategoryStats()">
+                        <i class="fas fa-sync"></i> 統計更新
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 統計カードグリッド -->
+            <div class="stats-grid">
+                <div class="stat-card stat-primary">
+                    <div class="stat-icon">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="totalCategoriesCount">50,000</div>
+                        <div class="stat-label">対応カテゴリー</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card stat-success">
+                    <div class="stat-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="supportedCategoriesCount">150</div>
+                        <div class="stat-label">学習済みカテゴリー</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card stat-info">
+                    <div class="stat-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="avgConfidence">87.5%</div>
+                        <div class="stat-label">平均判定精度</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card stat-warning">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="todayDetections">0</div>
+                        <div class="stat-label">今日の判定回数</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card stat-danger">
+                    <div class="stat-icon">
+                        <i class="fas fa-cloud"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="apiUsageToday">0/4,500</div>
+                        <div class="stat-label">API使用量</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card stat-secondary">
+                    <div class="stat-icon">
+                        <i class="fas fa-tachometer-alt"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="avgResponseTime">0.12秒</div>
+                        <div class="stat-label">平均応答時間</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 単一商品テストツール -->
+    <div class="section">
+        <div class="section-header">
+            <i class="fas fa-search"></i>
+            <h3 class="section-title">単一商品カテゴリー判定テスト</h3>
+            <div style="margin-left: auto;">
+                <button class="btn btn-secondary" onclick="clearSingleTest()">
+                    <i class="fas fa-eraser"></i> クリア
+                </button>
+            </div>
+        </div>
+        
+        <div class="single-test-container">
+            <div class="test-input-section">
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-tag"></i>
+                        商品タイトル <span class="required-mark">*</span>
+                    </label>
+                    <input type="text" 
+                           class="form-input" 
+                           id="singleTestTitle" 
+                           placeholder="例: iPhone 14 Pro 128GB 新品未使用"
+                           maxlength="200">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-align-left"></i>
+                        商品説明（オプション）
+                    </label>
+                    <textarea class="form-input" 
+                              id="singleTestDescription" 
+                              placeholder="商品の詳細説明..."
+                              rows="3"
+                              maxlength="500"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-yen-sign"></i>
+                        価格（オプション）
+                    </label>
+                    <input type="number" 
+                           class="form-input" 
+                           id="singleTestPrice" 
+                           placeholder="例: 120000"
+                           min="0" 
+                           step="1">
+                </div>
+                
+                <div class="test-actions">
+                    <button class="btn btn-primary" onclick="executeSingleTest()">
+                        <i class="fas fa-magic"></i> カテゴリー判定実行
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 判定結果表示 -->
+            <div class="test-result-section" id="singleTestResult" style="display: none;">
+                <h4 class="result-title">
+                    <i class="fas fa-bullseye"></i>
+                    判定結果
+                </h4>
+                
+                <div class="result-content">
+                    <div class="result-main">
+                        <div class="result-category">
+                            <div class="category-id" id="resultCategoryId">9355</div>
+                            <div class="category-name" id="resultCategoryName">Cell Phones & Smartphones</div>
+                        </div>
+                        
+                        <div class="result-metrics">
+                            <div class="metric">
+                                <span class="metric-label">信頼度:</span>
+                                <span class="metric-value confidence" id="resultConfidence">95%</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">処理時間:</span>
+                                <span class="metric-value" id="resultProcessingTime">0.12秒</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">判定方法:</span>
+                                <span class="metric-value" id="resultSource">ローカルDB</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="result-specifics">
+                        <h5>必須項目（Item Specifics）</h5>
+                        <div class="specifics-list" id="resultItemSpecifics">
+                            <span class="specific-item">Brand=Apple</span>
+                            <span class="specific-item">Model=iPhone</span>
+                            <span class="specific-item">Storage=128GB</span>
+                            <span class="specific-item">Condition=Used</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+            <!-- 出品管理タブ -->
+            <div id="listing" class="tab-content fade-in">
+                <div class="section">
+                    <div class="section-header">
+                        <i class="fas fa-store"></i>
+                        <h3 class="section-title">出品・管理</h3>
+                    </div>
+                    <div class="notification info">
+                        <i class="fas fa-info-circle"></i>
+                        <span>出品管理機能は開発中です</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 在庫管理タブ -->
+            <div id="inventory-mgmt" class="tab-content fade-in">
+                <div class="section">
+                    <div class="section-header">
+                        <i class="fas fa-chart-line"></i>
+                        <h3 class="section-title">在庫・売上分析ダッシュボード</h3>
+                        <div style="margin-left: auto;">
+                            <button class="btn btn-info" onclick="loadInventoryData()">
+                                <i class="fas fa-sync"></i> データ更新
+                            </button>
+                        </div>
+                    </div>
+                    <div class="notification info">
+                        <i class="fas fa-info-circle"></i>
+                        <span>在庫管理機能は開発中です</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- システムログ -->
+        <div class="log-area">
+            <h4 style="color: var(--info-color); margin-bottom: var(--space-xs); font-size: 0.8rem;">
+                <i class="fas fa-history"></i> システムログ
+            </h4>
+            <div id="logSection">
+                <div class="log-entry">
+                    <span class="log-timestamp">[09:15:32]</span>
+                    <span class="log-level info">INFO</span>
+                    <span>システムが正常に起動しました（eBayカテゴリー統合版）。</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-timestamp">[09:15:33]</span>
+                    <span class="log-level info">INFO</span>
+                    <span>データベース接続確認完了。</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

@@ -1,0 +1,46 @@
+/* 
+ * 📁 style.css - NAGANO3統合CSS【KICHO追加版】
+ * KICHO記帳ツール統合対応済み
+ */
+
+/* === 1. 基本システム（core/ディレクトリ） === */
+@import url('core/common.css');
+@import url('core/themes-pure.css');
+@import url('core/layout.css');
+@import url('core/components.css');
+@import url('core/loading-supplement.css');
+@import url('core/extensions.css');
+@import url('core/utilities.css');
+@import url('core/debug.css');
+
+/* === 2. テンプレート（templates/ディレクトリ） === */
+@import url('templates/header.css');
+@import url('templates/sidebar.css');
+@import url('templates/footer.css');
+@import url('templates/templates_coming_soon.css');
+
+/* === 3. システムコア === */
+@import url('../../system_core/debug_system/debug_dashboard_cyan.css');
+
+/* === 4. ページ固有CSS（直接配置されているもの） === */
+@import url('kicho.css');
+
+/* === 5. ページディレクトリ（pages/ディレクトリ） === */
+/* 🎯 KICHO記帳ツール統合CSS - 自動追加 */
+@import url('pages/kicho.css');
+
+/* 将来追加予定のページCSS */
+/* @import url('pages/zaiko.css'); */
+/* @import url('pages/juchu.css'); */
+/* @import url('pages/shukka.css'); */
+
+/* =====================================
+   📋 NAGANO3統合管理システム対応完了
+   
+   ✅ KICHO記帳ツール統合CSS追加
+   ✅ pages/kicho.css自動インポート
+   ✅ 既存システムとの競合回避
+   ✅ 将来拡張性確保
+   
+   🚀 動的システム統合完了
+   ===================================== */

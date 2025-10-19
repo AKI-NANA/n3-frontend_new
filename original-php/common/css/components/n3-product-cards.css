@@ -1,0 +1,312 @@
+/**
+ * 🎯 N3商品カードコンポーネント - BEM完全準拠版
+ * ファイル: common/css/components/n3-product-cards.css
+ * 作成日: 2025年8月25日
+ * 目的: CSS競合を完全回避する独立カードコンポーネント
+ * 
+ * 🚨 重要: !important は一切使用禁止
+ * 🚨 重要: 既存クラス名との重複を完全回避
+ */
+
+/* === カードコンテナ（グリッドレイアウト） === */
+.n3-product-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--n3-card-width-min), 1fr));
+  gap: var(--n3-card-gap);
+  padding: var(--n3-card-gap);
+  width: 100%;
+}
+
+/* === メインカード（ブロック） === */
+.n3-product-card {
+  /* 基本構造 */
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: var(--n3-card-height);
+  
+  /* 背景・ボーダー */
+  background-color: var(--n3-bg-primary);
+  border: 1px solid var(--n3-border-color);
+  border-radius: var(--n3-border-radius-lg);
+  
+  /* 影・トランジション */
+  box-shadow: var(--n3-shadow-sm);
+  transition: all var(--n3-transition-normal);
+  
+  /* レイアウト */
+  overflow: hidden;
+  position: relative;
+}
+
+/* === カードホバー効果 === */
+.n3-product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--n3-shadow-hover);
+  border-color: var(--n3-color-primary);
+}
+
+/* === 画像エリア（要素） === */
+.n3-product-card__image {
+  /* 🚀 グレー背景完全除去 - transparent設定 */
+  width: 100%;
+  height: var(--n3-card-image-height);
+  background-color: var(--n3-bg-transparent);
+  
+  /* 画像表示設定 */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  
+  /* レイアウト */
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+  
+  /* プレースホルダー用 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* === 画像あり状態 === */
+.n3-product-card__image[data-image-url]:not([data-image-url=""]) {
+  background-image: attr(data-image-url url);
+}
+
+/* === 画像プレースホルダー === */
+.n3-product-card__image-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--n3-text-muted);
+  background-color: var(--n3-bg-tertiary);
+}
+
+.n3-product-card__image-placeholder-icon {
+  font-size: 2rem;
+  margin-bottom: var(--n3-space-sm);
+  opacity: 0.5;
+}
+
+.n3-product-card__image-placeholder-text {
+  font-size: var(--n3-font-size-sm);
+  font-weight: var(--n3-font-weight-medium);
+}
+
+/* === 情報エリア（要素） === */
+.n3-product-card__info {
+  flex: 1;
+  padding: var(--n3-card-padding);
+  display: flex;
+  flex-direction: column;
+  gap: var(--n3-space-sm);
+}
+
+/* === 商品名（要素） === */
+.n3-product-card__title {
+  font-size: var(--n3-font-size-base);
+  font-weight: var(--n3-font-weight-semibold);
+  color: var(--n3-text-primary);
+  line-height: 1.3;
+  margin: 0;
+  
+  /* 2行省略 */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* === 価格表示（要素） === */
+.n3-product-card__price {
+  font-size: var(--n3-font-size-lg);
+  font-weight: var(--n3-font-weight-bold);
+  color: var(--n3-color-success);
+  margin: var(--n3-space-xs) 0;
+}
+
+/* === フッターエリア（要素） === */
+.n3-product-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: var(--n3-space-sm);
+  border-top: 1px solid var(--n3-border-light);
+  font-size: var(--n3-font-size-sm);
+}
+
+/* === タイプバッジ（要素） === */
+.n3-product-card__type-badge {
+  /* バッジ基本スタイル継承 */
+}
+
+/* === 在庫表示（要素） === */
+.n3-product-card__stock {
+  font-weight: var(--n3-font-weight-medium);
+}
+
+.n3-product-card__stock--available {
+  color: var(--n3-color-success);
+}
+
+.n3-product-card__stock--empty {
+  color: var(--n3-color-danger);
+}
+
+/* === カード状態修飾子 === */
+.n3-product-card--loading {
+  pointer-events: none;
+  opacity: 0.6;
+  position: relative;
+}
+
+.n3-product-card--loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.n3-product-card--error {
+  border-color: var(--n3-color-danger);
+  background-color: rgba(239, 68, 68, 0.02);
+}
+
+.n3-product-card--selected {
+  outline: 2px solid var(--n3-color-primary);
+  outline-offset: 2px;
+}
+
+/* === 空状態表示 === */
+.n3-product-cards__empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: var(--n3-space-xl) 0;
+  color: var(--n3-text-muted);
+}
+
+.n3-product-cards__empty-icon {
+  font-size: 3rem;
+  margin-bottom: var(--n3-space-md);
+  opacity: 0.5;
+}
+
+.n3-product-cards__empty-text {
+  font-size: var(--n3-font-size-lg);
+  font-weight: var(--n3-font-weight-medium);
+  margin: 0;
+}
+
+/* === レスポンシブ対応 === */
+@media (max-width: 1024px) {
+  .n3-product-cards {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--n3-space-md);
+  }
+  
+  .n3-product-card {
+    height: 260px;
+  }
+  
+  .n3-product-card__image {
+    height: 140px;
+  }
+}
+
+@media (max-width: 768px) {
+  .n3-product-cards {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--n3-space-md);
+    padding: var(--n3-space-md);
+  }
+  
+  .n3-product-card {
+    height: 240px;
+  }
+  
+  .n3-product-card__image {
+    height: 120px;
+  }
+  
+  .n3-product-card__info {
+    padding: var(--n3-space-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  .n3-product-cards {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--n3-space-sm);
+  }
+  
+  .n3-product-card__title {
+    font-size: var(--n3-font-size-sm);
+    -webkit-line-clamp: 1;
+  }
+  
+  .n3-product-card__price {
+    font-size: var(--n3-font-size-base);
+  }
+  
+  .n3-product-card__footer {
+    flex-direction: column;
+    gap: var(--n3-space-xs);
+    align-items: flex-start;
+  }
+}
+
+/* === アニメーション === */
+@keyframes n3-card-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.n3-product-card {
+  animation: n3-card-fade-in 0.3s ease-out;
+}
+
+/* === アクセシビリティ === */
+.n3-product-card:focus {
+  outline: 2px solid var(--n3-color-primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .n3-product-card,
+  .n3-product-card:hover {
+    transition: none;
+    transform: none;
+    animation: none;
+  }
+}
+
+/* === 印刷対応 === */
+@media print {
+  .n3-product-card {
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #000;
+  }
+  
+  .n3-product-card:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}

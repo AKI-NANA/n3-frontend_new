@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>eBay商品データ完全取得テスト</title>
+</head>
+<body style="font-family: Arial, sans-serif; margin: 20px; background-color: #f8f9fa; padding: 0;">
+    <div style="max-width: 1200px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+        
+        <!-- ヘッダー -->
+        <h1 style="color: #333; text-align: center; margin-bottom: 10px; font-size: 28px;">🛒 eBay商品データ完全取得テスト</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 30px; font-size: 16px;">実際の商品1つから全データを取得・保存・表示</p>
+        
+        <!-- ステップ1: 商品検索 -->
+        <div style="background-color: #e7f3ff; padding: 20px; border-radius: 8px; margin-bottom: 25px; border-left: 5px solid #007bff;">
+            <h3 style="color: #0056b3; margin-top: 0;">Step 1: 商品検索</h3>
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">検索キーワード:</label>
+                <input type="text" id="search-term" value="iphone 14" style="width: 300px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                <button onclick="searchProducts()" style="padding: 10px 20px; margin-left: 10px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: bold; background-color: #007bff; color: white;">
+                    🔍 商品検索
+                </button>
+            </div>
+        </div>
+        
+        <!-- ステップ2: 商品選択 -->
+        <div style="background-color: #fff3cd; padding: 20px; border-radius: 8px; margin-bottom: 25px; border-left: 5px solid #ffc107;">
+            <h3 style="color: #856404; margin-top: 0;">Step 2: 商品選択</h3>
+            <div id="products-list" style="margin-bottom: 15px;">
+                <p style="color: #666;">まず商品検索を実行してください</p>
+            </div>
+        </div>
+        
+        <!-- ステップ3: 詳細データ取得 -->
+        <div style="background-color: #d1ecf1; padding: 20px; border-radius: 8px; margin-bottom: 25px; border-left: 5px solid #17a2b8;">
+            <h3 style="color: #0c5460; margin-top: 0;">Step 3: 詳細データ取得・保存</h3>
+            <div id="detailed-actions" style="margin-bottom: 15px;">
+                <button id="get-details-btn" onclick="getProductDetails()" disabled style="padding: 12px 24px; margin: 5px; border: none; border-radius: 5px; cursor: not-allowed; font-size: 14px; font-weight: bold; background-color: #6c757d; color: white;">
+                    📊 詳細データ取得
+                </button>
+                <button id="save-data-btn" onclick="saveToDatabase()" disabled style="padding: 12px 24px; margin: 5px; border: none; border-radius: 5px; cursor: not-allowed; font-size: 14px; font-weight: bold; background-color: #6c757d; color: white;">
+                    💾 データベース保存
+                </button>
+            </div>
+        </div>
+        
+        <!-- ローディング表示 -->
+        <div id="loading" style="display: none; color: #007bff; font-weight: bold; text-align: center; font-size: 18px; margin: 20px 0;">
+            🔄 処理中...
+        </div>
+        
+        <!-- 結果表示エリア -->
+        <div id="result" style="margin-top: 25px; padding: 20px; border-radius: 8px; font-family: 'Courier New', monospace; white-space: pre-wrap; max-height: 400px; overflow-y: auto; border: 2px solid #ddd; background-color: #f8f9fa; font-size: 12px; line-height: 1.4;"></div>
+        
+        <!-- 詳細データ表示エリア -->
+        <div id="detailed-display" style="margin-top: 25px;"></div>
+    </div>
+
+    <script>
+        let selectedItemId = '';
+        let currentProductData = null;
+        
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        async function makeRequest(action, data = {}) {
+            try {
+                const formData = new FormData();
+                formData.append('action', action);
+                
+                for (const [key, value] of Object.entries(data)) {
+                    formData.append(key, value);
+                }
+                
+                const response = await fetch('ebay_product_detailed_test.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const text = await response.text();
+                
+                try {
+                    return JSON.parse(text);
+                } catch (e) {
+                    return {
+                        success: false,
+                        error: 'レスポンスの解析に失敗しました',
+                        raw_response: text.substring(0, 500)
+                    };
+                }
+            } catch (error) {
+                return {
+                    success: false,
+                    error: error.message
+                };
+            }
+        }
+        
+        function displayResult(result) {
+            const resultElement = document.getElementById('result');
+            
+            if (result.success) {
+                resultElement.style.backgroundColor = '#d4edda';
+                resultElement.style.color = '#155724';
+                resultElement.style.borderColor = '#c3e6cb';
+            } else {
+                resultElement.style.backgroundColor = '#f8d7da';
+                resultElement.style.color = '#721c24';
+                resultElement.style.borderColor = '#f5c6cb';
+            }
+            
+            resultElement.innerHTML = JSON.stringify(result, null, 2);
+        }
+        
+        async function searchProducts() {
+            const searchTerm = document.getElementById('search-term').value;
+            showLoading();
+            
+            const result = await makeRequest('search_products', { search_term: searchTerm });
+            hideLoading();
+            
+            displayResult(result);
+            
+            if (result.success && result.items) {
+                displayProductsList(result.items);
+            }
+        }
+        
+        function displayProductsList(items) {
+            const productsList = document.getElementById('products-list');
+            
+            let html = '<h4 style="margin-bottom: 15px; color: #333;">検索結果（商品を選択してください）:</h4>';
+            
+            items.forEach((item, index) => {
+                html += `
+                    <div style="border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 5px; background-color: white;">
+                        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                            <input type="radio" name="selected-product" value="${item.itemId}" onchange="selectProduct('${item.itemId}')" style="margin-right: 10px;">
+                            <strong style="color: #333; font-size: 16px;">${item.title}</strong>
+                        </div>
+                        <div style="margin-left: 25px; color: #666; font-size: 14px;">
+                            <p style="margin: 5px 0;"><strong>価格:</strong> $${item.price} ${item.currency}</p>
+                            <p style="margin: 5px 0;"><strong>状態:</strong> ${item.condition}</p>
+                            <p style="margin: 5px 0;"><strong>販売者:</strong> ${item.seller}</p>
+                            <p style="margin: 5px 0;"><strong>場所:</strong> ${item.location}</p>
+                            <p style="margin: 5px 0;"><strong>商品ID:</strong> ${item.itemId}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            productsList.innerHTML = html;
+        }
+        
+        function selectProduct(itemId) {
+            selectedItemId = itemId;
+            
+            // ボタンを有効化
+            const getDetailsBtn = document.getElementById('get-details-btn');
+            getDetailsBtn.disabled = false;
+            getDetailsBtn.style.cursor = 'pointer';
+            getDetailsBtn.style.backgroundColor = '#17a2b8';
+            
+            console.log('選択された商品ID:', itemId);
+        }
+        
+        async function getProductDetails() {
+            if (!selectedItemId) {
+                alert('まず商品を選択してください');
+                return;
+            }
+            
+            showLoading();
+            
+            const result = await makeRequest('get_product_details', { item_id: selectedItemId });
+            hideLoading();
+            
+            displayResult(result);
+            
+            if (result.success && result.detailed_data) {
+                currentProductData = result;
+                displayDetailedData(result.detailed_data);
+                
+                // 保存ボタンを有効化
+                const saveBtn = document.getElementById('save-data-btn');
+                saveBtn.disabled = false;
+                saveBtn.style.cursor = 'pointer';
+                saveBtn.style.backgroundColor = '#28a745';
+            }
+        }
+        
+        function displayDetailedData(detailedData) {
+            const detailedDisplay = document.getElementById('detailed-display');
+            
+            let html = '<h3 style="color: #333; margin-bottom: 20px; text-align: center;">📋 取得した詳細データ</h3>';
+            
+            // 基本情報
+            if (detailedData.basic_info) {
+                html += '<div style="background-color: #f8f9fa; padding: 15px; margin-bottom: 15px; border-radius: 5px; border-left: 4px solid #007bff;">';
+                html += '<h4 style="color: #007bff; margin-top: 0;">基本情報</h4>';
+                html += '<table style="width: 100%; border-collapse: collapse;">';
+                for (const [key, value] of Object.entries(detailedData.basic_info)) {
+                    html += `<tr><td style="padding: 5px; border-bottom: 1px solid #ddd; font-weight: bold; width: 30%;">${key}</td><td style="padding: 5px; border-bottom: 1px solid #ddd;">${value}</td></tr>`;
+                }
+                html += '</table></div>';
+            }
+            
+            // 価格情報
+            if (detailedData.pricing) {
+                html += '<div style="background-color: #fff3cd; padding: 15px; margin-bottom: 15px; border-radius: 5px; border-left: 4px solid #ffc107;">';
+                html += '<h4 style="color: #856404; margin-top: 0;">価格情報</h4>';
+                html += '<table style="width: 100%; border-collapse: collapse;">';
+                for (const [key, value] of Object.entries(detailedData.pricing)) {
+                    html += `<tr><td style="padding: 5px; border-bottom: 1px solid #ddd; font-weight: bold; width: 30%;">${key}</td><td style="padding: 5px; border-bottom: 1px solid #ddd;">${value}</td></tr>`;
+                }
+                html += '</table></div>';
+            }
+            
+            // 販売者情報
+            if (detailedData.seller_info) {
+                html += '<div style="background-color: #d4edda; padding: 15px; margin-bottom: 15px; border-radius: 5px; border-left: 4px solid #28a745;">';
+                html += '<h4 style="color: #155724; margin-top: 0;">販売者情報</h4>';
+                html += '<table style="width: 100%; border-collapse: collapse;">';
+                for (const [key, value] of Object.entries(detailedData.seller_info)) {
+                    html += `<tr><td style="padding: 5px; border-bottom: 1px solid #ddd; font-weight: bold; width: 30%;">${key}</td><td style="padding: 5px; border-bottom: 1px solid #ddd;">${value}</td></tr>`;
+                }
+                html += '</table></div>';
+            }
+            
+            // 商品仕様
+            if (detailedData.item_specifics) {
+                html += '<div style="background-color: #d1ecf1; padding: 15px; margin-bottom: 15px; border-radius: 5px; border-left: 4px solid #17a2b8;">';
+                html += '<h4 style="color: #0c5460; margin-top: 0;">商品仕様</h4>';
+                html += '<table style="width: 100%; border-collapse: collapse;">';
+                for (const [key, value] of Object.entries(detailedData.item_specifics)) {
+                    html += `<tr><td style="padding: 5px; border-bottom: 1px solid #ddd; font-weight: bold; width: 30%;">${key}</td><td style="padding: 5px; border-bottom: 1px solid #ddd;">${value}</td></tr>`;
+                }
+                html += '</table></div>';
+            }
+            
+            // データサマリー
+            const totalFields = Object.keys(detailedData).reduce((total, section) => {
+                return total + (typeof detailedData[section] === 'object' ? Object.keys(detailedData[section]).length : 1);
+            }, 0);
+            
+            html += `<div style="background-color: #e2e3e5; padding: 15px; border-radius: 5px; text-align: center;">
+                <strong>📊 データサマリー: ${Object.keys(detailedData).length}セクション, ${totalFields}個のフィールドを取得</strong>
+            </div>`;
+            
+            detailedDisplay.innerHTML = html;
+        }
+        
+        async function saveToDatabase() {
+            if (!currentProductData) {
+                alert('まず詳細データを取得してください');
+                return;
+            }
+            
+            showLoading();
+            
+            const result = await makeRequest('save_to_database', { 
+                item_data: JSON.stringify(currentProductData) 
+            });
+            hideLoading();
+            
+            displayResult(result);
+            
+            if (result.success) {
+                alert('データベース保存成功！');
+            }
+        }
+        
+        // ページ読み込み時の初期化
+        window.onload = function() {
+            console.log('🚀 eBay商品データ完全取得テスト起動完了');
+            
+            const resultElement = document.getElementById('result');
+            resultElement.style.backgroundColor = '#e7f3ff';
+            resultElement.style.color = '#0c5460';
+            resultElement.style.borderColor = '#bee5eb';
+            resultElement.innerHTML = '🎉 eBay商品データ完全取得システム起動完了！\n\nStep 1: 検索キーワードを入力して商品検索\nStep 2: 検索結果から商品を1つ選択\nStep 3: 詳細データ取得→データベース保存\n\n全てのステップを順番に実行してください。';
+        };
+    </script>
+</body>
+</html>

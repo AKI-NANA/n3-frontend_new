@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emverze SaaS - ハイブリッド在庫管理</title>
+    <style>
+        /* 基本スタイルは前のファイルと同じ */
+        :root {
+            --bg-primary: #f0f2f5;
+            --bg-secondary: #ffffff;
+            --shadow-light: #ffffff;
+            --shadow-dark: #d1d5db;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-yellow: #f59e0b;
+            --accent-purple: #8b5cf6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: grid;
+            grid-template-areas: 
+                "sidebar header"
+                "sidebar main";
+            grid-template-rows: 80px 1fr;
+            grid-template-columns: 280px 1fr;
+            height: 100vh;
+        }
+
+        .header {
+            grid-area: header;
+            background: var(--bg-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+
+        .sidebar {
+            grid-area: sidebar;
+            background: var(--bg-secondary);
+            padding: 2rem 1rem;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+
+        .main {
+            grid-area: main;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        /* 他のスタイルは省略 - 前のCSSを流用 */
+
+        /* 在庫特有のスタイル */
+        .stock-badge {
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .physical-stock {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--accent-green);
+        }
+
+        .virtual-stock {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--accent-blue);
+        }
+
+        .display-stock {
+            background-color: rgba(139, 92, 246, 0.1);
+            color: var(--accent-purple);
+        }
+
+        .risk-level {
+            width: 50px;
+            height: 10px;
+            border-radius: 5px;
+            margin-top: 0.5rem;
+            background: linear-gradient(to right, var(--accent-green), var(--accent-yellow), var(--accent-red));
+        }
+
+        .risk-indicator {
+            height: 14px;
+            width: 14px;
+            border-radius: 50%;
+            background-color: var(--accent-blue);
+            transform: translateY(-2px);
+            transition: margin-left 0.3s ease;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
+        }
+
+        .stat-title {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-item {
+            flex: 1;
+            min-width: 200px;
+        }
+    </style>
+<script>
+// CAIDS error_handling Hook
+
+// CAIDS エラー処理Hook - 完全実装
+window.CAIDS_ERROR_HANDLER = {
+    isActive: true,
+    errorCount: 0,
+    errorHistory: [],
+    
+    initialize: function() {
+        this.setupGlobalErrorHandler();
+        this.setupUnhandledPromiseRejection();
+        this.setupNetworkErrorHandler();
+        console.log('⚠️ CAIDS エラーハンドリングシステム完全初期化');
+    },
+    
+    setupGlobalErrorHandler: function() {
+        window.addEventListener('error', (event) => {
+            this.handleError({
+                type: 'JavaScript Error',
+                message: event.message,
+                filename: event.filename,
+                lineno: event.lineno,
+                colno: event.colno,
+                stack: event.error?.stack
+            });
+        });
+    },
+    
+    setupUnhandledPromiseRejection: function() {
+        window.addEventListener('unhandledrejection', (event) => {
+            this.handleError({
+                type: 'Unhandled Promise Rejection',
+                message: event.reason?.message || String(event.reason),
+                stack: event.reason?.stack
+            });
+        });
+    },
+    
+    setupNetworkErrorHandler: function() {
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            try {
+                const response = await originalFetch.apply(this, args);
+                if (!response.ok) {
+                    window.CAIDS_ERROR_HANDLER.handleError({
+                        type: 'Network Error',
+                        message: `HTTP ${response.status}: ${response.statusText}`,
+                        url: args[0]
+                    });
+                }
+                return response;
+            } catch (error) {
+                window.CAIDS_ERROR_HANDLER.handleError({
+                    type: 'Network Fetch Error',
+                    message: error.message,
+                    url: args[0]
+                });
+                throw error;
+            }
+        };
+    },
+    
+    handleError: function(errorInfo) {
+        this.errorCount++;
+        this.errorHistory.push({...errorInfo, timestamp: new Date().toISOString()});
+        
+        console.error('🚨 CAIDS Error Handler:', errorInfo);
+        this.showErrorNotification(errorInfo);
+        this.reportError(errorInfo);
+    },
+    
+    showErrorNotification: function(errorInfo) {
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = `
+            position: fixed; top: 10px; right: 10px; z-index: 999999;
+            background: linear-gradient(135deg, #ff4444, #cc0000);
+            color: white; padding: 15px 20px; border-radius: 8px;
+            max-width: 350px; box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            font-size: 13px; font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            border: 2px solid #ff6666; animation: caids-error-shake 0.5s ease-in-out;
+        `;
+        errorDiv.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 18px;">🚨</span>
+                <div>
+                    <strong>エラーが発生しました</strong><br>
+                    <small style="opacity: 0.9;">${errorInfo.type}: ${errorInfo.message}</small>
+                </div>
+            </div>
+        `;
+        
+        // CSS Animation
+        if (!document.getElementById('caids-error-styles')) {
+            const style = document.createElement('style');
+            style.id = 'caids-error-styles';
+            style.textContent = `
+                @keyframes caids-error-shake {
+                    0%, 100% { transform: translateX(0); }
+                    25% { transform: translateX(-5px); }
+                    75% { transform: translateX(5px); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(errorDiv);
+        setTimeout(() => errorDiv.remove(), 7000);
+    },
+    
+    reportError: function(errorInfo) {
+        // エラーレポート生成・送信（将来の拡張用）
+        const report = {
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent,
+            url: window.location.href,
+            errorCount: this.errorCount,
+            sessionId: this.getSessionId(),
+            ...errorInfo
+        };
+        
+        console.log('📋 CAIDS Error Report:', report);
+        localStorage.setItem('caids_last_error', JSON.stringify(report));
+    },
+    
+    getSessionId: function() {
+        let sessionId = sessionStorage.getItem('caids_session_id');
+        if (!sessionId) {
+            sessionId = 'caids_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            sessionStorage.setItem('caids_session_id', sessionId);
+        }
+        return sessionId;
+    },
+    
+    getErrorStats: function() {
+        return {
+            totalErrors: this.errorCount,
+            recentErrors: this.errorHistory.slice(-10),
+            sessionId: this.getSessionId()
+        };
+    }
+};
+
+window.CAIDS_ERROR_HANDLER.initialize();
+
+</script>
+<script>
+// CAIDS user_feedback Hook
+// CAIDS user_feedback Hook - 基本実装
+console.log('✅ user_feedback Hook loaded');
+</script>
+<script>
+// CAIDS character_limit Hook
+// CAIDS character_limit Hook - 基本実装
+console.log('✅ character_limit Hook loaded');
+</script>
+<script>
+// CAIDS character_monitoring Hook
+// CAIDS character_monitoring Hook - 基本実装
+console.log('✅ character_monitoring Hook loaded');
+</script>
+<script>
+// CAIDS emergency_accumulation Hook
+// CAIDS emergency_accumulation Hook - 基本実装
+console.log('✅ emergency_accumulation Hook loaded');
+</script>
+<script>
+// CAIDS pre_analysis_enforcement Hook
+// CAIDS pre_analysis_enforcement Hook - 基本実装
+console.log('✅ pre_analysis_enforcement Hook loaded');
+</script>
+<script>
+// CAIDS development_control Hook
+// CAIDS development_control Hook - 基本実装
+console.log('✅ development_control Hook loaded');
+</script>
+<script>
+// CAIDS natural_explanation Hook
+// CAIDS natural_explanation Hook - 基本実装
+console.log('✅ natural_explanation Hook loaded');
+</script>
+<script>
+// CAIDS user_approval_required Hook
+// CAIDS user_approval_required Hook - 基本実装
+console.log('✅ user_approval_required Hook loaded');
+</script>
+</head>
+<body>
+    <div class="container">
+        <!-- ヘッダー -->
+        <header class="header">
+            <h1>📦 Emverze SaaS - ハイブリッド在庫管理</h1>
+            <div class="header-actions">
+                <div class="notification-badge">🔔</div>
+                <div class="status-indicator online">
+                    <span class="loading"></span>
+                    システム正常
+                </div>
+            </div>
+        </header>
+
+        <!-- サイドバー - 基本的には他のページと同じ -->
+        <nav class="sidebar">
+            <div class="logo">
+                <h2>🚀 Emverze</h2>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="dashboard_improved.html" class="nav-link">
+                        📊 ダッシュボード
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        📦 商品管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="key_management.html" class="nav-link">
+                        🔑 キー管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link active">
+                        📋 在庫管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="listings.html" class="nav-link">
+                        🛒 出品管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="filters.html" class="nav-link">
+                        🔍 フィルター
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        🌐 マルチチャネル
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        🤖 AI分析
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        📈 売上分析
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="settings_management.html" class="nav-link">
+                        ⚙️ 設定
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- メインコンテンツ -->
+        <main class="main">
+            <h1 class="page-title">ハイブリッド在庫管理</h1>
+
+            <!-- 在庫サマリー -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-title">有在庫商品</div>
+                    <div class="stat-value">1,247</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">無在庫商品</div>
+                    <div class="stat-value">3,586</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">在庫警告</div>
+                    <div class="stat-value" style="color: var(--accent-yellow);">23</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">在庫切れ</div>
+                    <div class="stat-value" style="color: var(--accent-red);">15</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">合計価値</div>
+                    <div class="stat-value">¥5.4M</div>
+                </div>
+            </div>
+
+            <!-- フィルター -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">在庫フィルター</h2>
+                </div>
+                <div class="filter-row">
+                    <div class="filter-item">
+                        <label class="form-label">カテゴリ</label>
+                        <select class="form-select">
+                            <option value="">すべて</option>
+                            <option value="electronics">電化製品</option>
+                            <option value="toys">おもちゃ</option>
+                            <option value="fashion">ファッション</option>
+                            <option value="home">ホーム</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label class="form-label">在庫タイプ</label>
+                        <select class="form-select">
+                            <option value="">すべて</option>
+                            <option value="physical">有在庫のみ</option>
+                            <option value="virtual">無在庫のみ</option>
+                            <option value="mixed">混合</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label class="form-label">リスクレベル</label>
+                        <select class="form-select">
+                            <option value="">すべて</option>
+                            <option value="1">低リスク</option>
+                            <option value="2">中リスク</option>
+                            <option value="3">高リスク</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label class="form-label">SKU / 商品名</label>
+                        <input type="text" class="form-input" placeholder="検索...">
+                    </div>
+                </div>
+                <button class="btn btn-primary">フィルター適用</button>
+            </div>
+
+            <!-- 在庫一覧 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">ハイブリッド在庫一覧</h2>
+                    <div class="btn-group">
+                        <button class="btn">CSV出力</button>
+                        <button class="btn btn-primary">在庫追加</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>表示SKU</th>
+                                <th>商品名</th>
+                                <th>有在庫</th>
+                                <th>無在庫</th>
+                                <th>表示在庫</th>
+                                <th>リスクレベル</th>
+                                <th>チェック間隔</th>
+                                <th>最終チェック</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>EMV-STOCK-NEW-1500</td>
+                                <td>Nintendo Switch Pro Controller</td>
+                                <td><span class="stock-badge physical-stock">3</span></td>
+                                <td><span class="stock-badge virtual-stock">0</span></td>
+                                <td><span class="stock-badge display-stock">2</span></td>
+                                <td>
+                                    <div class="risk-level">
+                                        <div class="risk-indicator" style="margin-left: 20%;"></div>
+                                    </div>
+                                </td>
+                                <td>12時間</td>
+                                <td>3時間前</td>
+                                <td>
+                                    <div class="btn-group">
+                                        <button class="btn">調整</button>
+                                        <button class="btn">詳細</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>EMV-STOCK-USED-800</td>
+                                <td>Apple AirPods Pro</td>
+                                <td><span class="stock-badge physical-stock">0</span></td>
+                                <td><span class="stock-badge virtual-stock">5</span></td>
+                                <td><span class="stock-badge display-stock">4</span></td>
+                                <td>
+                                    <div class="risk-level">
+                                        <div class="risk-indicator" style="margin-left: 60%;"></div>
+                                    </div>
+                                </td>
+                                <td>6時間</td>
+                                <td>5時間前</td>
+                                <td>
+                                    <div class="btn-group">
+                                        <button class="btn">調整</button>
+                                        <button class="btn">詳細</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>EMV-STOCK-NEW-2400</td>
+                                <td>Sony WH-1000XM4</td>
+                                <td><span class="stock-badge physical-stock">1</span></td>
+                                <td><span class="stock-badge virtual-stock">2</span></td>
+                                <td><span class="stock-badge display-stock">1</span></td>
+                                <td>
+                                    <div class="risk-level">
+                                        <div class="risk-indicator" style="margin-left: 80%;"></div>
+                                    </div>
+                                </td>
+                                <td>1時間</td>
+                                <td>20分前</td>
+                                <td>
+                                    <div class="btn-group">
+                                        <button class="btn">調整</button>
+                                        <button class="btn">詳細</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 在庫ポリシー設定 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">在庫安全マージン設定</h2>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">有在庫安全マージン</label>
+                        <select class="form-select">
+                            <option value="0">0 (マージンなし)</option>
+                            <option value="1" selected>1 (デフォルト)</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">無在庫安全マージン</label>
+                        <select class="form-select">
+                            <option value="0">0 (マージンなし)</option>
+                            <option value="1" selected>1 (デフォルト)</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label

@@ -1,0 +1,338 @@
+# スコアリングシステム セットアップ手順
+
+## 📋 前提条件
+
+- Node.js 16以上
+- Supabaseアカウント
+- React開発環境
+
+---
+
+## 🚀 Supabaseセットアップ
+
+### 1. Supabaseプロジェクト作成
+
+1. https://supabase.com にアクセス
+2. "New Project"をクリック
+3. プロジェクト名、データベースパスワードを設定
+4. リージョンを選択（日本なら Tokyo）
+
+### 2. データベーススキーマ作成
+
+1. Supabaseダッシュボードで「SQL Editor」を開く
+2. `supabase_scoring_schema.sql` の内容をコピー
+3. 実行（Run）をクリック
+
+### 3. API認証情報取得
+
+1. Settings → API から以下を取得:
+   - `Project URL` → `REACT_APP_SUPABASE_URL`
+   - `anon public` → `REACT_APP_SUPABASE_ANON_KEY`
+
+---
+
+## ⚛️ Reactアプリケーションセットアップ
+
+### 1. プロジェクト作成
+
+```bash
+# Create React Appで新規プロジェクト作成
+npx create-react-app scoring-system
+cd scoring-system
+
+# Supabaseクライアントインストール
+npm install @supabase/supabase-js
+
+# Tailwind CSS インストール（オプション）
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p
+```
+
+### 2. 環境変数設定
+
+`.env` ファイルをプロジェクトルートに作成:
+
+```env
+REACT_APP_SUPABASE_URL=https://your-project.supabase.co
+REACT_APP_SUPABASE_ANON_KEY=your-anon-key
+```
+
+### 3. Tailwind CSS設定（使用する場合）
+
+`tailwind.config.js`:
+
+```javascript
+module.exports = {
+  content: [
+    "./src/**/*.{js,jsx,ts,tsx}",
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}
+```
+
+`src/index.css`:
+
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
+### 4. コンポーネント配置
+
+`src/components/ScoringDashboard.jsx` に `ScoringDashboard.jsx` の内容を配置
+
+### 5. App.js 編集
+
+```javascript
+import React from 'react';
+import ScoringDashboard from './components/ScoringDashboard';
+import './index.css';
+
+function App() {
+  return (
+    <div className="App">
+      <ScoringDashboard />
+    </div>
+  );
+}
+
+export default App;
+```
+
+### 6. 起動
+
+```bash
+npm start
+```
+
+ブラウザで http://localhost:3000 を開く
+
+---
+
+## 📂 プロジェクト構造
+
+```
+scoring-system/
+├── public/
+├── src/
+│   ├── components/
+│   │   └── ScoringDashboard.jsx
+│   ├── App.js
+│   ├── index.js
+│   └── index.css
+├── .env
+├── package.json
+└── tailwind.config.js
+```
+
+---
+
+## 🔧 Supabase Edge Functions（オプション）
+
+スコア計算をバックエンドで実行する場合:
+
+### 1. Supabase CLIインストール
+
+```bash
+npm install -g supabase
+```
+
+### 2. Edge Function作成
+
+```bash
+supabase functions new calculate-score
+```
+
+### 3. `supabase/functions/calculate-score/index.ts`:
+
+```typescript
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+serve(async (req) => {
+  try {
+    const { productId } = await req.json()
+    
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+    
+    // スコア計算ロジック
+    // （PHPのScoreCalculator.phpをTypeScriptに移植）
+    
+    const totalScore = 8500.00 // 計算結果
+    
+    // データベース更新
+    const { error } = await supabase
+      .from('product_scores')
+      .upsert({
+        product_id: productId,
+        total_score: totalScore,
+        last_calculated_at: new Date().toISOString()
+      })
+    
+    if (error) throw error
+    
+    return new Response(
+      JSON.stringify({ success: true, score: totalScore }),
+      { headers: { 'Content-Type': 'application/json' } }
+    )
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ success: false, error: error.message }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    )
+  }
+})
+```
+
+### 4. デプロイ
+
+```bash
+supabase functions deploy calculate-score
+```
+
+---
+
+## 🌐 本番環境デプロイ
+
+### Vercelへのデプロイ
+
+```bash
+# Vercel CLIインストール
+npm install -g vercel
+
+# デプロイ
+vercel
+
+# 環境変数設定
+vercel env add REACT_APP_SUPABASE_URL
+vercel env add REACT_APP_SUPABASE_ANON_KEY
+```
+
+### Netlifyへのデプロイ
+
+```bash
+# Netlify CLIインストール
+npm install -g netlify-cli
+
+# デプロイ
+netlify deploy --prod
+
+# 環境変数はNetlifyダッシュボードから設定
+```
+
+---
+
+## 🔐 セキュリティ設定
+
+### Row Level Security（RLS）ポリシー
+
+すべてのテーブルにRLSが有効化されています:
+
+- **読み取り**: すべてのユーザーに許可
+- **書き込み**: 認証済みユーザーのみ
+
+### 認証が必要な場合
+
+```javascript
+// Supabase認証
+const { data, error } = await supabase.auth.signInWithPassword({
+  email: 'user@example.com',
+  password: 'password'
+})
+```
+
+---
+
+## 📊 データ投入
+
+### テストデータ作成
+
+```sql
+-- Supabase SQL Editorで実行
+
+INSERT INTO product_scores (
+  product_id, total_score, 
+  profit_amount_score, profit_rate_score,
+  market_size_score, competition_count_score
+) VALUES
+(1, 8500.00, 850.00, 650.00, 500.00, 450.00),
+(2, 7800.50, 780.00, 600.00, 480.00, 420.00),
+(3, 9200.75, 920.00, 720.00, 580.00, 480.00);
+```
+
+---
+
+## 🛠️ トラブルシューティング
+
+### CORS エラー
+
+Supabaseダッシュボード → Settings → API で許可するオリジンを追加
+
+### 接続エラー
+
+`.env` ファイルの環境変数が正しいか確認:
+
+```bash
+echo $REACT_APP_SUPABASE_URL
+echo $REACT_APP_SUPABASE_ANON_KEY
+```
+
+### RLSポリシーエラー
+
+Supabase SQL Editorで確認:
+
+```sql
+SELECT * FROM pg_policies WHERE tablename = 'product_scores';
+```
+
+---
+
+## 📚 参考リンク
+
+- [Supabase公式ドキュメント](https://supabase.com/docs)
+- [React公式ドキュメント](https://react.dev/)
+- [Tailwind CSS](https://tailwindcss.com/)
+
+---
+
+## 💾 バックアップ
+
+### データベースバックアップ
+
+Supabaseダッシュボード → Database → Backups
+
+### 定期バックアップスクリプト
+
+```bash
+# supabaseのpg_dumpを使用
+supabase db dump -f backup.sql
+```
+
+---
+
+## 🎯 次のステップ
+
+1. ✅ Supabaseプロジェクト作成
+2. ✅ スキーマ実行
+3. ✅ Reactアプリセットアップ
+4. ⬜ 外部API連携（eBay, Amazon）
+5. ⬜ AI分析機能統合
+6. ⬜ 自動スコア更新機能
+
+---
+
+## 📞 サポート
+
+問題が発生した場合は、以下を確認:
+
+1. Supabaseプロジェクトが稼働中か
+2. 環境変数が正しく設定されているか
+3. RLSポリシーが正しいか
+4. ネットワーク接続が正常か

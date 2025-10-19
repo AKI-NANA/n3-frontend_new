@@ -1,0 +1,159 @@
+version: '3.8'
+
+services:
+  # PostgreSQL データベース
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: pokemon_content
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (Celery用)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Django バックエンド
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+      - static_volume:/app/static
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=1
+      - SECRET_KEY=dev-secret-key-change-in-production
+      - DATABASE_URL=postgresql://postgres:postgres123@db:5432/pokemon_content
+      - REDIS_URL=redis://redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
+      - YOUTUBE_CLIENT_ID=${YOUTUBE_CLIENT_ID}
+      - YOUTUBE_CLIENT_SECRET=${YOUTUBE_CLIENT_SECRET}
+      - WORDPRESS_SITE_URL=${WORDPRESS_SITE_URL}
+      - WORDPRESS_USERNAME=${WORDPRESS_USERNAME}
+      - WORDPRESS_APP_PASSWORD=${WORDPRESS_APP_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Celery Worker
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: celery -A config worker -l info
+    volumes:
+      - .:/app
+      - media_volume:/app/media
+    environment:
+      - DEBUG=1
+      - SECRET_KEY=dev-secret-key-change-in-production
+      - DATABASE_URL=postgresql://postgres:postgres123@db:5432/pokemon_content
+      - REDIS_URL=redis://redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+
+  # Celery Beat (スケジューラー)
+  beat:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: celery -A config beat -l info
+    volumes:
+      - .:/app
+    environment:
+      - DEBUG=1
+      - SECRET_KEY=dev-secret-key-change-in-production
+      - DATABASE_URL=postgresql://postgres:postgres123@db:5432/pokemon_content
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+
+  # Flower (Celery監視)
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: celery -A config flower --port=5555
+    ports:
+      - "5555:5555"
+    volumes:
+      - .:/app
+    environment:
+      - DEBUG=1
+      - SECRET_KEY=dev-secret-key-change-in-production
+      - DATABASE_URL=postgresql://postgres:postgres123@db:5432/pokemon_content
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+
+  # React フロントエンド
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    command: npm start
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - REACT_APP_API_URL=http://localhost:8000/api/v1
+    depends_on:
+      - web
+    restart: unless-stopped
+
+  # Nginx (本番環境用、開発時はオプション)
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/dev.conf:/etc/nginx/conf.d/default.conf
+      - static_volume:/app/static
+      - media_volume:/app/media
+    depends_on:
+      - web
+      - frontend
+    restart: unless-stopped
+    profiles:
+      - production
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:

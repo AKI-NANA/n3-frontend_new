@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ポケモンカード相場自動システム - セットアップマニュアル</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #feca57);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            margin: 1rem 0 0 0;
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 2rem;
+        }
+        
+        .step {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-left: 5px solid #007bff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .step h2 {
+            margin: 0 0 1rem 0;
+            color: #007bff;
+            font-size: 1.5rem;
+        }
+        
+        .step h3 {
+            color: #495057;
+            margin: 1.5rem 0 0.5rem 0;
+        }
+        
+        .command {
+            background: #2d3748;
+            color: #68d391;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid #ffeaa7;
+            margin: 1rem 0;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid #c3e6cb;
+            margin: 1rem 0;
+        }
+        
+        .file-tree {
+            background: #f1f3f4;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 0.5rem;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #0056b3;
+        }
+        
+        .btn-success {
+            background: #28a745;
+        }
+        
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        
+        .feature {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-top: 4px solid #007bff;
+        }
+        
+        .feature h3 {
+            margin: 0 0 1rem 0;
+            color: #007bff;
+        }
+        
+        .urls {
+            background: #e3f2fd;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+        }
+        
+        .urls h3 {
+            margin: 0 0 1rem 0;
+            color: #1976d2;
+        }
+        
+        .urls a {
+            display: block;
+            padding: 0.5rem;
+            background: white;
+            margin: 0.5rem 0;
+            border-radius: 4px;
+            color: #1976d2;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        
+        .urls a:hover {
+            background: #f5f5f5;
+        }
+        
+        .progress {
+            display: flex;
+            align-items: center;
+            margin: 1rem 0;
+        }
+        
+        .progress-step {
+            flex: 1;
+            text-align: center;
+            padding: 1rem;
+            background: #f8f9fa;
+            margin: 0 0.25rem;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        
+        .progress-step.completed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .progress-step.current {
+            background: #007bff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎮 ポケモンカード相場自動システム</h1>
+            <p>AI による完全自動コンテンツ生成＆投稿システム セットアップマニュアル</p>
+        </div>
+
+        <div class="content">
+            <div class="progress">
+                <div class="progress-step current">STEP 1<br>ファイル配置</div>
+                <div class="progress-step">STEP 2<br>環境構築</div>
+                <div class="progress-step">STEP 3<br>API設定</div>
+                <div class="progress-step">STEP 4<br>起動確認</div>
+                <div class="progress-step">STEP 5<br>運用開始</div>
+            </div>
+
+            <div class="step">
+                <h2>🚀 STEP 1: プロジェクトファイル作成</h2>
+                
+                <h3>1.1 基本ディレクトリ作成</h3>
+                <div class="command">mkdir pokemon_content_system
+cd pokemon_content_system
+
+# 必要ディレクトリ構造を作成
+mkdir -p config/settings
+mkdir -p apps/{cards,price_tracking,ai_generation,publishing}
+mkdir -p requirements
+mkdir -p scripts
+mkdir -p logs media static staticfiles fixtures
+mkdir -p nginx
+mkdir -p frontend</div>
+
+                <h3>1.2 各ファイル作成</h3>
+                <p>以下のファイルを上記のArtifactからコピーして作成してください：</p>
+                
+                <div class="file-tree">pokemon_content_system/
+├── docker-compose.yml              # ← Artifact からコピー
+├── Dockerfile.dev                  # ← Artifact からコピー
+├── .env.example                    # ← Artifact からコピー
+├── requirements/
+│   └── development.txt             # ← Artifact からコピー
+├── scripts/
+│   └── start-dev.sh               # ← Artifact からコピー
+├── config/
+│   ├── __init__.py                # 空ファイル
+│   └── settings/
+│       ├── __init__.py            # 空ファイル
+│       └── development.py         # ← Artifact からコピー
+└── apps/
+    ├── __init__.py                # 空ファイル
+    ├── cards/
+    │   ├── __init__.py            # 空ファイル
+    │   └── models.py              # ← Artifact からコピー
+    ├── price_tracking/
+    │   ├── __init__.py            # 空ファイル
+    │   └── tasks.py               # ← Artifact からコピー
+    ├── ai_generation/
+    │   ├── __init__.py            # 空ファイル
+    │   ├── models.py              # ← Artifact からコピー
+    │   ├── tasks.py               # ← Artifact からコピー
+    │   └── content_generator.py   # ← Artifact からコピー
+    └── publishing/
+        ├── __init__.py            # 空ファイル
+        ├── models.py              # ← Artifact からコピー
+        └── wordpress_publisher.py # ← Artifact からコピー</div>
+
+                <div class="warning">
+                    <strong>⚠️ 重要:</strong> 各 `__init__.py` ファイルは空ファイルを作成してください。
+                    <br>コマンド: `touch apps/__init__.py` など
+                </div>
+            </div>
+
+            <div class="step">
+                <h2>⚙️ STEP 2: 環境設定</h2>
+                
+                <h3>2.1 環境変数設定</h3>
+                <div class="command">cp .env.example .env</div>
+                
+                <p>`.env` ファイルを編集して以下のAPI キーを設定：</p>
+                <div class="command"># OpenAI API キー (必須)
+OPENAI_API_KEY=sk-your-openai-api-key-here
+
+# WordPress 設定 (ブログ投稿用)
+WORDPRESS_SITE_URL=https://your-blog.com
+WORDPRESS_USERNAME=your-username
+WORDPRESS_APP_PASSWORD=your-app-password
+
+# その他のAPI (オプション)
+ELEVENLABS_API_KEY=your-elevenlabs-key
+YOUTUBE_CLIENT_ID=your-youtube-client-id</div>
+
+                <h3>2.2 実行権限付与</h3>
+                <div class="command">chmod +x scripts/start-dev.sh</div>
+            </div>
+
+            <div class="step">
+                <h2>🐳 STEP 3: Docker 環境起動</h2>
+                
+                <h3>3.1 Docker のインストール確認</h3>
+                <div class="command">docker --version
+docker-compose --version</div>
+                
+                <div class="warning">
+                    Docker がインストールされていない場合: <br>
+                    <a href="https://www.docker.com/products/docker-desktop/" target="_blank" class="btn">Docker Desktop をダウンロード</a>
+                </div>
+
+                <h3>3.2 開発環境起動</h3>
+                <div class="command">./scripts/start-dev.sh</div>
+                
+                <p>このスクリプトが以下を自動実行します：</p>
+                <ul>
+                    <li>✅ Docker コンテナ起動</li>
+                    <li>✅ データベース設定</li>
+                    <li>✅ 管理者ユーザー作成 (admin/admin123)</li>
+                    <li>✅ 初期カードデータ投入</li>
+                    <li>✅ 静的ファイル収集</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h2>✅ STEP 4: 動作確認</h2>
+                
+                <div class="urls">
+                    <h3>🌐 アクセスURL 一覧</h3>
+                    <a href="http://localhost:8000/admin/" target="_blank">Django Admin (admin/admin123)</a>
+                    <a href="http://localhost:8000/api/v1/" target="_blank">API エンドポイント</a>
+                    <a href="http://localhost:5555" target="_blank">Flower (Celery監視)</a>
+                    <a href="http://localhost:3000" target="_blank">React フロントエンド</a>
+                </div>
+
+                <h3>4.1 システム状態確認</h3>
+                <div class="command"># コンテナ状態確認
+docker-compose ps
+
+# ログ確認
+docker-compose logs -f web</div>
+
+                <div class="success">
+                    <strong>✅ 成功の兆候:</strong>
+                    <ul>
+                        <li>Django Admin にアクセス可能</li>
+                        <li>「ポケモンカード」管理画面でサンプルデータが表示される</li>
+                        <li>Flower でCelery worker が動作中</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="step">
+                <h2>🚀 STEP 5: 実際に使ってみる</h2>
+                
+                <h3>5.1 最初のブログ記事生成</h3>
+                <div class="command"># Django shell を起動
+docker-compose exec web python manage.py shell
+
+# 以下をコピー＆ペースト
+from apps.ai_generation.tasks import generate_content_task
+from apps.cards.models import PokemonCard
+
+# 最初のカード（ピカチュウ）で記事生成
+pikachu = PokemonCard.objects.first()
+result = generate_content_task.delay(pikachu.id, 'blog', 'ja')
+print(f"タスクID: {result.id}")
+
+# 終了
+exit()</div>
+
+                <h3>5.2 生成結果確認</h3>
+                <p>Django Admin の「AI生成コンテンツ」から結果を確認できます。</p>
+                
+                <h3>5.3 WordPress 自動投稿</h3>
+                <p>品質スコア70点以上の記事は自動でWordPressに投稿されます。</p>
+            </div>
+
+            <div class="step">
+                <h2>🎯 主要機能一覧</h2>
+                
+                <div class="features">
+                    <div class="feature">
+                        <h3>🎴 カード管理</h3>
+                        <p>ポケモンカード情報の完全管理。投資グレード評価、画像自動取得機能付き。</p>
+                    </div>
+                    
+                    <div class="feature">
+                        <h3>📊 価格追跡</h3>
+                        <p>メルカリ・ヤフオクから6時間おきに自動価格収集。トレンド分析・予測機能。</p>
+                    </div>
+                    
+                    <div class="feature">
+                        <h3>🤖 AI記事生成</h3>
+                        <p>GPT-4による3000文字の詳細相場分析記事を自動生成。品質チェック付き。</p>
+                    </div>
+                    
+                    <div class="feature">
+                        <h3>📝 WordPress投稿</h3>
+                        <p>生成された記事を自動でWordPressに投稿。SEO最適化・画像挿入も自動。</p>
+                    </div>
+                    
+                    <div class="feature">
+                        <h3>📱 SNS連携</h3>
+                        <p>Twitter・Instagram用の投稿を自動生成。エンゲージメント向上のための工夫込み。</p>
+                    </div>
+                    
+                    <div class="feature">
+                        <h3>📈 分析ダッシュボード</h3>
+                        <p>コンテンツパフォーマンス、収益分析、市場トレンドを可視化。</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step">
+                <h2>🔧 トラブルシューティング</h2>
+                
+                <h3>よくある問題と解決方法</h3>
+                
+                <div class="warning">
+                    <strong>❌ Docker起動エラー</strong><br>
+                    解決方法: Docker Desktop を起動してから再実行
+                </div>
+                
+                <div class="warning">
+                    <strong>❌ ポート競合エラー</strong><br>
+                    解決方法: <code>docker-compose down</code> で停止後、再起動
+                </div>
+                
+                <div class="warning">
+                    <strong>❌ API キーエラー</strong><br>
+                    解決方法: `.env` ファイルの OPENAI_API_KEY を確認
+                </div>
+
+                <h3>ログ確認コマンド</h3>
+                <div class="command"># 全体ログ
+docker-compose logs -f
+
+# 特定サービスのログ
+docker-compose logs -f web
+docker-compose logs -f worker</div>
+
+                <h3>システムリセット</h3>
+                <div class="command"># 完全リセット
+docker-compose down
+docker volume prune -f
+docker-compose up -d --build</div>
+            </div>
+
+            <div class="step">
+                <h2>💰 収益化設定</h2>
+                
+                <h3>アフィリエイト設定</h3>
+                <p>生成記事にアフィリエイトリンクを自動挿入する設定：</p>
+                <div class="command"># Django Admin → コンテンツテンプレート
+# 以下を template_data に追加:
+{
+  "affiliate_links": {
+    "pokemon_cards": "https://your-affiliate-link",
+    "trading_sites": "https://your-mercari-link"
+  },
+  "cta_text": "おすすめポケカ販売サイト"
+}</div>
+
+                <h3>Google AdSense 連携</h3>
+                <p>WordPressサイトにAdSenseコードを設置し、自動広告表示を設定。</p>
+            </div>
+
+            <div class="success">
+                <h2>🎉 セットアップ完了！</h2>
+                <p>お疲れ様でした！これでポケモンカード相場の自動コンテンツ生成システムが動作開始です。</p>
+                <p>毎日自動で相場分析記事が生成され、WordPressブログに投稿されます。</p>
+                
+                <div style="text-align: center; margin: 2rem 0;">
+                    <a href="http://localhost:8000/admin/" class="btn btn-success">Django Admin で管理開始</a>
+                    <a href="http://localhost:5555" class="btn btn-warning">Celery監視画面</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 簡単な進捗管理
+        document.addEventListener('DOMContentLoaded', function() {
+            const steps = document.querySelectorAll('.progress-step');
+            let currentStep = 0;
+            
+            // クリックで進捗更新
+            steps.forEach((step, index) => {
+                step.addEventListener('click', function() {
+                    steps.forEach(s => s.classList.remove('current', 'completed'));
+                    
+                    for (let i = 0; i < index; i++) {
+                        steps[i].classList.add('completed');
+                    }
+                    step.classList.add('current');
+                });
+            });
+        });
+    </script>
+</body>
+</html>

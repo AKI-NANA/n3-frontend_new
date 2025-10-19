@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品データアップロード - マルチモール対応</title>
+    <style>
+        /* NAGANO-3 CSS変数（common/css/core/common.css準拠） */
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-tertiary: #f1f5f9;
+            --bg-hover: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --border-color: #e2e8f0;
+            --border-light: #f1f5f9;
+            --color-primary: #3b82f6;
+            --color-secondary: #6366f1;
+            --color-success: #10b981;
+            --color-warning: #f59e0b;
+            --color-danger: #ef4444;
+            --space-2: 0.5rem;
+            --space-3: 0.75rem;
+            --space-4: 1rem;
+            --space-6: 1.5rem;
+            --space-8: 2rem;
+            --radius-md: 0.375rem;
+            --radius-lg: 0.5rem;
+            --radius-xl: 0.75rem;
+            --text-sm: 0.875rem;
+            --text-base: 1rem;
+            --text-lg: 1.125rem;
+            --text-xl: 1.25rem;
+            --text-2xl: 1.5rem;
+            --transition-fast: all 0.15s ease;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 🎨 アップロード専用CSS（BEM準拠） */
+        .upload-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--space-6);
+            background: var(--bg-primary);
+            min-height: 100vh;
+        }
+
+        .upload__header {
+            text-align: center;
+            margin-bottom: var(--space-8);
+            padding-bottom: var(--space-6);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .upload__title {
+            font-size: var(--text-2xl);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--space-2);
+        }
+
+        .upload__subtitle {
+            font-size: var(--text-base);
+            color: var(--text-secondary);
+        }
+
+        /* === モール選択セクション === */
+        .upload__mall-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-xl);
+            padding: var(--space-6);
+            margin-bottom: var(--space-6);
+        }
+
+        .upload__mall-title {
+            font-size: var(--text-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--space-4);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+
+        .upload__mall-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-4);
+        }
+
+        .upload__mall-card {
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--space-4);
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            position: relative;
+        }
+
+        .upload__mall-card:hover {
+            border-color: var(--color-primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .upload__mall-card--active {
+            border-color: var(--color-primary);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .upload__mall-icon {
+            font-size: 2rem;
+            margin-bottom: var(--space-2);
+        }
+
+        .upload__mall-name {
+            font-size: var(--text-sm);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--space-2);
+        }
+
+        .upload__mall-status {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* === 選択済みモール表示 === */
+        .upload__selected-mall {
+            background: var(--bg-secondary);
+            border: 1px solid var(--color-primary);
+            border-radius: var(--radius-md);
+            padding: var(--space-3);
+            margin-bottom: var(--space-6);
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+
+        .upload__selected-icon {
+            color: var(--color-primary);
+        }
+
+        .upload__selected-text {
+            font-size: var(--text-sm);
+            color: var(--text-primary);
+        }
+
+        /* === 動的フォーム === */
+        .upload__form-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-xl);
+            padding: var(--space-6);
+            margin-bottom: var(--space-6);
+        }
+
+        .upload__form-title {
+            font-size: var(--text-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--space-4);
+        }
+
+        .upload__input-group {
+            margin-bottom: var(--space-4);
+        }
+
+        .upload__label {
+            display: block;
+            font-size: var(--text-sm);
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: var(--space-2);
+        }
+
+        .upload__input {
+            width: 100%;
+            padding: var(--space-3);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-size: var(--text-sm);
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            transition: var(--transition-fast);
+        }
+
+        .upload__input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .upload__textarea {
+            min-height: 120px;
+            resize: vertical;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* === 条件表示要素 === */
+        .upload__conditional {
+            display: none;
+            margin-top: var(--space-4);
+            padding: var(--space-4);
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            border-left: 4px solid var(--color-primary);
+        }
+
+        .upload__conditional--active {
+            display: block;
+        }
+
+        /* === ファイルアップロード === */
+        .upload__file-zone {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--space-8);
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            background: var(--bg-primary);
+            position: relative;
+        }
+
+        .upload__file-zone:hover,
+        .upload__file-zone--dragover {
+            border-color: var(--color-primary);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .upload__file-icon {
+            font-size: 3rem;
+            color: var(--text-muted);
+            margin-bottom: var(--space-4);
+        }
+
+        .upload__file-text {
+            font-size: var(--text-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--space-2);
+        }
+
+        .upload__file-subtext {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+        }
+
+        .upload__file-input {
+            position: absolute;
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        /* === CSVサンプル === */
+        .upload__sample {
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            padding: var(--space-4);
+            margin-top: var(--space-4);
+        }
+
+        .upload__sample-title {
+            font-size: var(--text-sm);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--space-2);
+        }
+
+        .upload__sample-code {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: var(--space-3);
+            font-family: 'Courier New', monospace;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            white-space: pre-line;
+            overflow-x: auto;
+        }
+
+        /* === ボタン === */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+            padding: var(--space-3) var(--space-6);
+            border: 1px solid transparent;
+            border-radius: var(--radius-md);
+            font-size: var(--text-sm);
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            user-select: none;
+        }
+
+        .btn--primary {
+            background: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+        }
+
+        .btn--primary:hover {
+            background: #2563eb;
+            border-color: #2563eb;
+        }
+
+        .btn--secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        .btn--secondary:hover {
+            background: var(--bg-hover);
+        }
+
+        .upload__actions {
+            display: flex;
+            gap: var(--space-3);
+            justify-content: center;
+            margin-top: var(--space-6);
+        }
+
+        /* === レスポンシブ === */
+        @media (max-width: 768px) {
+            .upload-container {
+                padding: var(--space-4);
+            }
+
+            .upload__mall-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: var(--space-3);
+            }
+
+            .upload__actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+<script>
+// CAIDS error_handling Hook
+
+// CAIDS エラー処理Hook - 完全実装
+window.CAIDS_ERROR_HANDLER = {
+    isActive: true,
+    errorCount: 0,
+    errorHistory: [],
+    
+    initialize: function() {
+        this.setupGlobalErrorHandler();
+        this.setupUnhandledPromiseRejection();
+        this.setupNetworkErrorHandler();
+        console.log('⚠️ CAIDS エラーハンドリングシステム完全初期化');
+    },
+    
+    setupGlobalErrorHandler: function() {
+        window.addEventListener('error', (event) => {
+            this.handleError({
+                type: 'JavaScript Error',
+                message: event.message,
+                filename: event.filename,
+                lineno: event.lineno,
+                colno: event.colno,
+                stack: event.error?.stack
+            });
+        });
+    },
+    
+    setupUnhandledPromiseRejection: function() {
+        window.addEventListener('unhandledrejection', (event) => {
+            this.handleError({
+                type: 'Unhandled Promise Rejection',
+                message: event.reason?.message || String(event.reason),
+                stack: event.reason?.stack
+            });
+        });
+    },
+    
+    setupNetworkErrorHandler: function() {
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            try {
+                const response = await originalFetch.apply(this, args);
+                if (!response.ok) {
+                    window.CAIDS_ERROR_HANDLER.handleError({
+                        type: 'Network Error',
+                        message: `HTTP ${response.status}: ${response.statusText}`,
+                        url: args[0]
+                    });
+                }
+                return response;
+            } catch (error) {
+                window.CAIDS_ERROR_HANDLER.handleError({
+                    type: 'Network Fetch Error',
+                    message: error.message,
+                    url: args[0]
+                });
+                throw error;
+            }
+        };
+    },
+    
+    handleError: function(errorInfo) {
+        this.errorCount++;
+        this.errorHistory.push({...errorInfo, timestamp: new Date().toISOString()});
+        
+        console.error('🚨 CAIDS Error Handler:', errorInfo);
+        this.showErrorNotification(errorInfo);
+        this.reportError(errorInfo);
+    },
+    
+    showErrorNotification: function(errorInfo) {
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = `
+            position: fixed; top: 10px; right: 10px; z-index: 999999;
+            background: linear-gradient(135deg, #ff4444, #cc0000);
+            color: white; padding: 15px 20px; border-radius: 8px;
+            max-width: 350px; box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            font-size: 13px; font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            border: 2px solid #ff6666; animation: caids-error-shake 0.5s ease-in-out;
+        `;
+        errorDiv.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 18px;">🚨</span>
+                <div>
+                    <strong>エラーが発生しました</strong><br>
+                    <small style="opacity: 0.9;">${errorInfo.type}: ${errorInfo.message}</small>
+                </div>
+            </div>
+        `;
+        
+        // CSS Animation
+        if (!document.getElementById('caids-error-styles')) {
+            const style = document.createElement('style');
+            style.id = 'caids-error-styles';
+            style.textContent = `
+                @keyframes caids-error-shake {
+                    0%, 100% { transform: translateX(0); }
+                    25% { transform: translateX(-5px); }
+                    75% { transform: translateX(5px); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(errorDiv);
+        setTimeout(() => errorDiv.remove(), 7000);
+    },
+    
+    reportError: function(errorInfo) {
+        // エラーレポート生成・送信（将来の拡張用）
+        const report = {
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent,
+            url: window.location.href,
+            errorCount: this.errorCount,
+            sessionId: this.getSessionId(),
+            ...errorInfo
+        };
+        
+        console.log('📋 CAIDS Error Report:', report);
+        localStorage.setItem('caids_last_error', JSON.stringify(report));
+    },
+    
+    getSessionId: function() {
+        let sessionId = sessionStorage.getItem('caids_session_id');
+        if (!sessionId) {
+            sessionId = 'caids_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            sessionStorage.setItem('caids_session_id', sessionId);
+        }
+        return sessionId;
+    },
+    
+    getErrorStats: function() {
+        return {
+            totalErrors: this.errorCount,
+            recentErrors: this.errorHistory.slice(-10),
+            sessionId: this.getSessionId()
+        };
+    }
+};
+
+window.CAIDS_ERROR_HANDLER.initialize();
+
+</script>
+<script>
+// CAIDS user_feedback Hook
+// CAIDS user_feedback Hook - 基本実装
+console.log('✅ user_feedback Hook loaded');
+</script>
+<script>
+// CAIDS character_limit Hook
+// CAIDS character_limit Hook - 基本実装
+console.log('✅ character_limit Hook loaded');
+</script>
+<script>
+// CAIDS natural_explanation Hook
+// CAIDS natural_explanation Hook - 基本実装
+console.log('✅ natural_explanation Hook loaded');
+</script>
+<script>
+// CAIDS character_monitoring Hook
+// CAIDS character_monitoring Hook - 基本実装
+console.log('✅ character_monitoring Hook loaded');
+</script>
+<script>
+// CAIDS emergency_accumulation Hook
+// CAIDS emergency_accumulation Hook - 基本実装
+console.log('✅ emergency_accumulation Hook loaded');
+</script>
+<script>
+// CAIDS processing_capacity_monitoring Hook
+// CAIDS processing_capacity_monitoring Hook - 基本実装
+console.log('✅ processing_capacity_monitoring Hook loaded');
+</script>
+<script>
+// CAIDS pre_analysis_enforcement Hook
+// CAIDS pre_analysis_enforcement Hook - 基本実装
+console.log('✅ pre_analysis_enforcement Hook loaded');
+</script>
+<script>
+// CAIDS user_approval_required Hook
+// CAIDS user_approval_required Hook - 基本実装
+console.log('✅ user_approval_required Hook loaded');
+</script>
+<script>
+// CAIDS timeout_management Hook
+// CAIDS timeout_management Hook - 基本実装
+console.log('✅ timeout_management Hook loaded');
+</script>
+<script>
+// CAIDS development_control Hook
+// CAIDS development_control Hook - 基本実装
+console.log('✅ development_control Hook loaded');
+</script>
+</head>
+<body>
+    <div class="upload-container">
+        <!-- ヘッダー -->
+        <div class="upload__header">
+            <h1 class="upload__title">📦 商品データアップロード</h1>
+            <p class="upload__subtitle">Amazon・楽天・Yahoo・eBay等の商品データを一括取得</p>
+        </div>
+
+        <!-- モール選択セクション -->
+        <div class="upload__mall-section">
+            <h2 class="upload__mall-title">
+                🏪 対象モールを選択
+            </h2>
+            <div class="upload__mall-grid">
+                <div class="upload__mall-card upload__mall-card--active" data-mall="amazon" onclick="selectMall('amazon')">
+                    <div class="upload__mall-icon">📦</div>
+                    <div class="upload__mall-name">Amazon</div>
+                    <div class="upload__mall-status">推奨</div>
+                </div>
+                <div class="upload__mall-card" data-mall="rakuten" onclick="selectMall('rakuten')">
+                    <div class="upload__mall-icon">🛍️</div>
+                    <div class="upload__mall-name">楽天市場</div>
+                    <div class="upload__mall-status">対応中</div>
+                </div>
+                <div class="upload__mall-card" data-mall="yahoo" onclick="selectMall('yahoo')">
+                    <div class="upload__mall-icon">🛒</div>
+                    <div class="upload__mall-name">Yahoo!</div>
+                    <div class="upload__mall-status">対応中</div>
+                </div>
+                <div class="upload__mall-card" data-mall="ebay" onclick="selectMall('ebay')">
+                    <div class="upload__mall-icon">🌐</div>
+                    <div class="upload__mall-name">eBay</div>
+                    <div class="upload__mall-status">新機能</div>
+                </div>
+                <div class="upload__mall-card" data-mall="mercari" onclick="selectMall('mercari')">
+                    <div class="upload__mall-icon">📱</div>
+                    <div class="upload__mall-name">メルカリ</div>
+                    <div class="upload__mall-status">ベータ</div>
+                </div>
+                <div class="upload__mall-card" data-mall="other" onclick="showComingSoon()">
+                    <div class="upload__mall-icon">➕</div>
+                    <div class="upload__mall-name">その他</div>
+                    <div class="upload__mall-status">順次対応</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 選択済みモール表示 -->
+        <div class="upload__selected-mall">
+            <span class="upload__selected-icon">✅</span>
+            <span class="upload__selected-text">選択済み: <strong id="selectedMallDisplay">Amazon</strong></span>
+        </div>
+
+        <!-- 動的フォームセクション -->
+        <div class="upload__form-section">
+            <h2 class="upload__form-title">📝 データ入力</h2>
+            
+            <!-- 個別入力 -->
+            <div class="upload__input-group">
+                <label class="upload__label" id="idLabel">ASIN</label>
+                <input 
+                    type="text" 
+                    id="idInput" 
+                    class="upload__input" 
+                    placeholder="例: B08N5WRWNW"
+                >
+            </div>
+
+            <!-- URL入力 -->
+            <div class="upload__input-group">
+                <label class="upload__label">商品URL（オプション）</label>
+                <input 
+                    type="url" 
+                    id="urlInput" 
+                    class="upload__input" 
+                    placeholder="https://amazon.co.jp/dp/B08N5WRWNW"
+                >
+            </div>
+
+            <!-- 一括入力 -->
+            <div class="upload__input-group">
+                <label class="upload__label" id="bulkLabel">ASIN・URL一括入力</label>
+                <textarea 
+                    id="bulkInput" 
+                    class="upload__input upload__textarea" 
+                    placeholder="B08N5WRWNW&#10;B09B8RRQT5&#10;https://amazon.co.jp/dp/B08N5WRWNW"
+                ></textarea>
+            </div>
+
+            <!-- モール固有機能（条件表示） -->
+            
+            <!-- Amazon専用機能 -->
+            <div class="upload__conditional upload__conditional--active" data-mall="amazon">
+                <h3 style="font-size: var(--text-base); margin-bottom: var(--space-3);">🔧 Amazon専用設定</h3>
+                <div class="upload__input-group">
+                    <label class="upload__label">取得件数制限</label>
+                    <select class="upload__input">
+                        <option value="100">100件</option>
+                        <option value="500">500件</option>
+                        <option value="1000" selected>1000件</option>
+                        <option value="unlimited">制限なし</option>
+                    </select>
+                </div>
+                <div class="upload__input-group">
+                    <label class="upload__label">
+                        <input type="checkbox" checked> レビュー情報を取得
+                    </label>
+                    <label class="upload__label">
+                        <input type="checkbox" checked> 価格履歴を取得
+                    </label>
+                </div>
+            </div>
+
+            <!-- 楽天専用機能 -->
+            <div class="upload__conditional" data-mall="rakuten">
+                <h3 style="font-size: var(--text-base); margin-bottom: var(--space-3);">🛍️ 楽天市場専用設定</h3>
+                <div class="upload__input-group">
+                    <label class="upload__label">ショップ情報取得</label>
+                    <label class="upload__label">
+                        <input type="checkbox" checked> ショップ評価を取得
+                    </label>
+                    <label class="upload__label">
+                        <input type="checkbox"> ポイント情報を取得
+                    </label>
+                </div>
+            </div>
+
+            <!-- eBay専用機能 -->
+            <div class="upload__conditional" data-mall="ebay">
+                <h3 style="font-size: var(--text-base); margin-bottom: var(--space-3);">🌐 eBay専用設定</h3>
+                <div class="upload__input-group">
+                    <label class="upload__label">対象地域</label>
+                    <select class="upload__input">
+                        <option value="us">United States</option>
+                        <option value="uk">United Kingdom</option>
+                        <option value="de">Germany</option>
+                        <option value="jp">Japan</option>
+                    </select>
+                </div>
+                <div class="upload__input-group">
+                    <label class="upload__label">
+                        <input type="checkbox"> 送料情報を取得
+                    </label>
+                    <label class="upload__label">
+                        <input type="checkbox"> オークション形式のみ
+                    </label>
+                </div>
+            </div>
+
+            <!-- CSVファイルアップロード -->
+            <div class="upload__input-group">
+                <label class="upload__label">📄 CSVファイルアップロード</label>
+                <div class="upload__file-zone" onclick="document.getElementById('csvFile').click()">
+                    <div class="upload__file-icon">📄</div>
+                    <div class="upload__file-text">CSVファイルをドロップまたはクリック</div>
+                    <div class="upload__file-subtext">最大10MB、1000件まで</div>
+                    <input type="file" id="csvFile" class="upload__file-input" accept=".csv,.xlsx" onchange="handleFileSelect(this)">
+                </div>
+                
+                <!-- CSVサンプル表示（動的） -->
+                <div class="upload__sample">
+                    <div class="upload__sample-title">📝 CSVサンプル形式</div>
+                    <div class="upload__sample-code" id="csvSample">ASIN,URL,商品名,価格
+B08N5WRWNW,https://amazon.co.jp/dp/B08N5WRWNW,Echo Dot,3980
+B09B8RRQT5,https://amazon.co.jp/dp/B09B8RRQT5,Fire Stick,4980</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- アクション -->
+        <div class="upload__actions">
+            <button class="btn btn--secondary" onclick="clearForm()">
+                🗑️ クリア
+            </button>
+            <button class="btn btn--primary" onclick="startUpload()" data-action="start-upload">
+                🚀 アップロード開始
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // モール設定（設定ファイル駆動）
+        const mallConfigs = {
+            amazon: {
+                name: 'Amazon',
+                idLabel: 'ASIN',
+                bulkLabel: 'ASIN・URL一括入力',
+                placeholder: 'B08N5WRWNW',
+                urlPattern: 'https://amazon.co.jp/dp/',
+                csvFormat: ['ASIN', 'URL', '商品名', '価格']
+            },
+            rakuten: {
+                name: '楽天市場',
+                idLabel: '商品ID',
+                bulkLabel: '商品ID・URL一括入力',
+                placeholder: 'rakuten-item-123',
+                urlPattern: 'https://item.rakuten.co.jp/',
+                csvFormat: ['商品ID', 'URL', '商品名', '価格', 'カテゴリ']
+            },
+            yahoo: {
+                name: 'Yahoo!ショッピング',
+                idLabel: '商品コード',
+                bulkLabel: '商品コード・URL一括入力',
+                placeholder: 'yahoo-abc123',
+                urlPattern: 'https://shopping.yahoo.co.jp/',
+                csvFormat: ['商品コード', 'URL', '商品名', '価格']
+            },
+            ebay: {
+                name: 'eBay',
+                idLabel: 'Item ID',
+                bulkLabel: 'Item ID・URL一括入力',
+                placeholder: '123456789012',
+                urlPattern: 'https://ebay.com/itm/',
+                csvFormat: ['ItemID', 'URL', 'Title', 'Price', 'Category']
+            },
+            mercari: {
+                name: 'メルカリ',
+                idLabel: '商品ID',
+                bulkLabel: '商品ID・URL一括入力',
+                placeholder: 'm12345678901',
+                urlPattern: 'https://mercari.com/jp/items/',
+                csvFormat: ['商品ID', 'URL', '商品名', '価格', '状態']
+            }
+        };
+        
+        let selectedMall = 'amazon';
+        
+        // モール選択機能
+        function selectMall(mallId) {
+            selectedMall = mallId;
+            
+            // モールカードの状態更新
+            document.querySelectorAll('.upload__mall-card').forEach(card => {
+                card.classList.remove('upload__mall-card--active');
+            });
+            document.querySelector(`[data-mall="${mallId}"]`).classList.add('upload__mall-card--active');
+            
+            // 選択モール表示更新
+            document.getElementById('selectedMallDisplay').textContent = mallConfigs[mallId].name;
+            
+            // フォームラベル更新
+            const config = mallConfigs[mallId];
+            document.getElementById('idLabel').textContent = config.idLabel;
+            document.getElementById('bulkLabel').textContent = config.bulkLabel;
+            document.getElementById('idInput').placeholder = `例: ${config.placeholder}`;
+            
+            // 条件表示機能の切り替え
+            document.querySelectorAll('.upload__conditional').forEach(el => {
+                el.classList.remove('upload__conditional--active');
+            });
+            const targetConditional = document.querySelector(`[data-mall="${mallId}"].upload__conditional`);
+            if (targetConditional) {
+                targetConditional.classList.add('upload__conditional--active');
+            }
+            
+            // CSVサンプル更新
+            updateCSVSample(config.csvFormat);
+            
+            showNotification(`${config.name}が選択されました。`, 'info');
+        }
+        
+        function showComingSoon() {
+            showNotification('その他のモールは順次対応予定です。お楽しみに！', 'info');
+        }
+        
+        function updateCSVSample(format) {
+            const sampleData = {
+                amazon: `ASIN,URL,商品名,価格
+B08N5WRWNW,https://amazon.co.jp/dp/B08N5WRWNW,Echo Dot,3980
+B09B8RRQT5,https://amazon.co.jp/dp/B09B8RRQT5,Fire Stick,4980`,
+                rakuten: `商品ID,URL,商品名,価格,カテゴリ
+rakuten-123,https://item.rakuten.co.jp/shop/item123,商品名,2980,家電
+rakuten-456,https://item.rakuten.co.jp/shop/item456,商品名,4980,生活用品`,
+                yahoo: `商品コード,URL,商品名,価格
+yahoo-abc123,https://shopping.yahoo.co.jp/products/abc123,商品名,1980
+yahoo-def456,https://shopping.yahoo.co.jp/products/def456,商品名,3980`,
+                ebay: `ItemID,URL,Title,Price,Category
+123456789012,https://ebay.com/itm/123456789012,Product Name,29.99,Electronics
+123456789013,https://ebay.com/itm/123456789013,Product Name,49.99,Home`,
+                mercari: `商品ID,URL,商品名,価格,状態
+m12345678901,https://mercari.com/jp/items/m123456,商品名,1500,新品・未使用
+m12345678902,https://mercari.com/jp/items/m123457,商品名,2800,目立った傷や汚れなし`
+            };
+            
+            document.getElementById('csvSample').textContent = sampleData[selectedMall] || sampleData.amazon;
+        }
+        
+        // ファイル選択処理
+        function handleFileSelect(input) {
+            const file = input.files[0];
+            if (file) {
+                showNotification(`ファイル「${file.name}」が選択されました。`, 'success');
+                
+                // ファイル名表示
+                const fileZone = document.querySelector('.upload__file-zone');
+                fileZone.querySelector('.upload__file-text').textContent = file.name;
+                fileZone.style.borderColor = 'var(--color-success)';
+                fileZone.style.background = 'rgba(16, 185, 129, 0.05)';
+            }
+        }
+        
+        // フォームクリア
+        function clearForm() {
+            document.getElementById('idInput').value = '';
+            document.getElementById('urlInput').value = '';
+            document.getElementById('bulkInput').value = '';
+            document.getElementById('csvFile').value = '';
+            
+            // ファイルゾーンリセット
+            const fileZone = document.querySelector('.upload__file-zone');
+            fileZone.querySelector('.upload__file-text').textContent = 'CSVファイルをドロップまたはクリック';
+            fileZone.style.borderColor = 'var(--border-color)';
+            fileZone.style.background = 'var(--bg-primary)';
+            
+            showNotification('フォームをクリアしました。', 'info');
+        }
+        
+        // アップロード開始
+        function startUpload() {
+            const idValue = document.getElementById('idInput').value.trim();
+            const urlValue = document.getElementById('urlInput').value.trim();
+            const bulkValue = document.getElementById('bulkInput').value.trim();
+            const fileValue = document.getElementById('csvFile').files.length > 0;
+            
+            if (!idValue && !urlValue && !bulkValue && !fileValue) {
+                showNotification('商品ID、URL、一括入力、またはCSVファイルのいずれかを入力してください。', 'error');
+                return;
+            }
+            
+            // 実際の処理はここでAjax送信
+            showNotification(`${mallConfigs[selectedMall].name}の商品データ取得を開始します...`, 'success');
+            
+            // デモ用: 3秒後に完了通知
+            setTimeout(() => {
+                showNotification('商品データの取得が完了しました！', 'success');
+            }, 3000);
+        }
+        
+        // 通知システム（簡易版）
+        function showNotification(message, type = 'info') {
+            // 通知要素作成
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 16px;
+                border-radius: 6px;
+                color: white;
+                font-size: 14px;
+                z-index: 1000;
+                max-width: 300px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                transition: all 0.3s ease;
+            `;
+            
+            // タイプ別スタイル
+            const colors = {
+                info: '#3b82f6',
+                success: '#10b981',
+                error: '#ef4444',
+                warning: '#f59e0b'
+            };
+            notification.style.background = colors[type] || colors.info;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // 3秒後に削除
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+        
+        // ドラッグ&ドロップ対応
+        const fileZone = document.querySelector('.upload__file-zone');
+        
+        fileZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileZone.classList.add('upload__file-zone--dragover');
+        });
+        
+        fileZone.addEventListener('dragleave', () => {
+            fileZone.classList.remove('upload__file-zone--dragover');
+        });
+        
+        fileZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileZone.classList.remove('upload__file-zone--dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById('csvFile').files = files;
+                handleFileSelect(document.getElementById('csvFile'));
+            }
+        });
+        
+        // 初期化
+        selectMall('amazon');
+    </script>
+</body>
+</html>

@@ -1,0 +1,1712 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>利益計算システム最終版 - Yahoo Auction Tool</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* 利益計算システム専用CSS - 共通CSSベース */
+        
+        /* ===== CSS変数（共通CSS準拠） ===== */
+        :root {
+            /* スペース */
+            --space-xs: 0.25rem;
+            --space-sm: 0.5rem;
+            --space-md: 1rem;
+            --space-lg: 1.5rem;
+            --space-xl: 2rem;
+            --space-2xl: 3rem;
+            
+            /* カラーパレット */
+            --color-primary: #3b82f6;
+            --color-secondary: #6366f1;
+            --color-success: #10b981;
+            --color-warning: #f59e0b;
+            --color-danger: #ef4444;
+            --color-info: #06b6d4;
+            --color-gray: #6b7280;
+            
+            /* 利益計算専用カラー */
+            --calculation-primary: #f59e0b;
+            --calculation-secondary: #d97706;
+            --profit-positive: #059669;
+            --profit-negative: #dc2626;
+            --profit-neutral: #6b7280;
+            
+            /* 背景色 */
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f1f5f9;
+            --bg-hover: #e2e8f0;
+            --bg-active: #cbd5e1;
+            
+            /* テキスト色 */
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+            --text-white: #ffffff;
+            
+            /* ボーダー */
+            --border-color: #e2e8f0;
+            --border-color-hover: #cbd5e1;
+            --border-width: 1px;
+            
+            /* 角丸 */
+            --radius-sm: 0.25rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+            --radius-xl: 1rem;
+            
+            /* シャドウ */
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            
+            /* アニメーション */
+            --transition-fast: all 0.15s ease-in-out;
+            --transition-normal: all 0.2s ease-in-out;
+            --transition-slow: all 0.3s ease-in-out;
+        }
+
+        /* ===== リセット・基本設定 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            font-size: 1rem;
+        }
+
+        /* ===== コンテナ・レイアウト ===== */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: var(--space-md);
+            min-height: 100vh;
+        }
+
+        /* ===== ナビゲーション ===== */
+        .navbar {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            color: white;
+            padding: var(--space-lg);
+            border-radius: var(--radius-xl);
+            margin-bottom: var(--space-xl);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .nav-brand i {
+            background: linear-gradient(45deg, var(--calculation-primary), var(--calculation-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 1.75rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: var(--space-sm);
+        }
+
+        .nav-links a {
+            color: #cbd5e1;
+            text-decoration: none;
+            padding: var(--space-sm) var(--space-md);
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+            transition: var(--transition-normal);
+            border: 1px solid transparent;
+        }
+
+        .nav-links a:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-links a.active {
+            background: linear-gradient(135deg, var(--calculation-primary), var(--calculation-secondary));
+            color: white;
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+        }
+
+        /* ===== ページヘッダー ===== */
+        .page-header {
+            background: linear-gradient(135deg, var(--calculation-primary) 0%, var(--calculation-secondary) 100%);
+            color: white;
+            padding: var(--space-2xl);
+            border-radius: var(--radius-xl);
+            margin-bottom: var(--space-xl);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .page-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .page-header h1 {
+            font-size: 2.5rem;
+            margin: 0 0 var(--space-md) 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .page-header p {
+            font-size: 1.125rem;
+            margin: 0 0 var(--space-lg) 0;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .system-status {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-xl);
+            margin-top: var(--space-lg);
+            position: relative;
+            z-index: 1;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            background: rgba(255, 255, 255, 0.2);
+            padding: var(--space-sm) var(--space-md);
+            border-radius: var(--radius-md);
+            backdrop-filter: blur(10px);
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--color-success);
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-warning {
+            background: var(--color-warning);
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+        }
+
+        .status-danger {
+            background: var(--color-danger);
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+        }
+
+        /* ===== タブナビゲーション ===== */
+        .tab-navigation {
+            display: flex;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-sm);
+            margin-bottom: var(--space-xl);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: var(--space-md) var(--space-lg);
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--text-secondary);
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition-normal);
+            white-space: nowrap;
+            text-decoration: none;
+        }
+
+        .tab-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border-color: var(--border-color-hover);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--calculation-primary), var(--calculation-secondary));
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .tab-btn i {
+            font-size: 1rem;
+        }
+
+        /* ===== タブコンテンツ ===== */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== セクション ===== */
+        .section {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl);
+            margin-bottom: var(--space-xl);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-lg);
+            padding-bottom: var(--space-md);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .section-title i {
+            color: var(--calculation-primary);
+            font-size: 1.25rem;
+        }
+
+        /* ===== フォーム要素 ===== */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--space-xl);
+        }
+
+        .form-section {
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            border: 1px solid var(--border-color);
+        }
+
+        .form-section h4 {
+            color: var(--text-primary);
+            margin-bottom: var(--space-md);
+            font-size: 1.125rem;
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .form-section h4 i {
+            color: var(--calculation-primary);
+        }
+
+        .form-group {
+            margin-bottom: var(--space-lg);
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: var(--space-sm);
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: var(--space-md);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            transition: var(--transition-normal);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--calculation-primary);
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+        }
+
+        .form-group .input-addon {
+            position: relative;
+        }
+
+        .form-group .input-addon input {
+            padding-left: 2.5rem;
+        }
+
+        .form-group .input-addon .addon-text {
+            position: absolute;
+            left: var(--space-md);
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-weight: 600;
+            pointer-events: none;
+        }
+
+        /* ===== ボタン ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: var(--space-md) var(--space-lg);
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition-normal);
+            text-decoration: none;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--calculation-primary), var(--calculation-secondary));
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-color-hover);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--color-success), #059669);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, var(--color-warning), #d97706);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, var(--color-info), #0891b2);
+            color: white;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: var(--space-sm);
+            margin-top: var(--space-md);
+        }
+
+        /* ===== 結果表示 ===== */
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-lg);
+            margin-top: var(--space-xl);
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            text-align: center;
+            transition: var(--transition-normal);
+        }
+
+        .result-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--calculation-primary);
+        }
+
+        .result-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: var(--space-sm);
+            color: var(--profit-positive);
+        }
+
+        .result-value.negative {
+            color: var(--profit-negative);
+        }
+
+        .result-value.neutral {
+            color: var(--profit-neutral);
+        }
+
+        .result-label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ===== 推奨事項 ===== */
+        .recommendation {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 2px solid var(--color-info);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            margin-top: var(--space-xl);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .recommendation::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(135deg, var(--color-info), #0284c7);
+        }
+
+        .recommendation-content {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--space-md);
+        }
+
+        .recommendation i {
+            color: var(--color-info);
+            font-size: 1.5rem;
+            margin-top: 0.25rem;
+        }
+
+        .recommendation-text {
+            flex: 1;
+            font-weight: 500;
+            line-height: 1.6;
+            color: #0c4a6e;
+        }
+
+        /* ===== カテゴリー手数料表示 ===== */
+        .category-fee-display {
+            background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%);
+            border: 2px solid var(--color-warning);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            margin-top: var(--space-md);
+        }
+
+        .fee-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: var(--space-md);
+            margin-top: var(--space-md);
+        }
+
+        .fee-item {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.7);
+            padding: var(--space-md);
+            border-radius: var(--radius-md);
+        }
+
+        .fee-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #92400e;
+            margin-bottom: var(--space-xs);
+        }
+
+        .fee-label {
+            font-size: 0.75rem;
+            color: #78350f;
+            font-weight: 500;
+        }
+
+        /* ===== 設定管理 ===== */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: var(--space-xl);
+        }
+
+        .settings-panel {
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+        }
+
+        .settings-panel h4 {
+            color: var(--text-primary);
+            margin-bottom: var(--space-md);
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .settings-panel h4 i {
+            color: var(--calculation-primary);
+        }
+
+        /* ===== データテーブル ===== */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: var(--space-lg);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: var(--space-md);
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-table th {
+            background: var(--bg-tertiary);
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
+        .data-table tr:hover {
+            background: var(--bg-hover);
+        }
+
+        /* ===== レスポンシブデザイン ===== */
+        @media (max-width: 768px) {
+            .container {
+                padding: var(--space-sm);
+            }
+            
+            .nav-links {
+                display: none;
+            }
+
+            .page-header h1 {
+                font-size: 1.875rem;
+            }
+
+            .system-status {
+                flex-direction: column;
+                gap: var(--space-md);
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tab-navigation {
+                flex-direction: column;
+                gap: var(--space-xs);
+            }
+
+            .tab-btn {
+                justify-content: center;
+                width: 100%;
+            }
+        }
+
+        /* ===== アニメーション効果 ===== */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .slide-up {
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .bounce-in {
+            animation: bounceIn 0.6s ease-out;
+        }
+
+        @keyframes bounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+            70% {
+                transform: scale(0.9);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ナビゲーション -->
+        <nav class="navbar">
+            <div class="nav-brand">
+                <i class="fas fa-calculator"></i>
+                <span>利益計算システム最終版</span>
+            </div>
+            <div class="nav-links">
+                <a href="#"><i class="fas fa-tachometer-alt"></i> ダッシュボード</a>
+                <a href="#"><i class="fas fa-spider"></i> データ取得</a>
+                <a href="#"><i class="fas fa-check-circle"></i> 商品承認</a>
+                <a href="#" class="active"><i class="fas fa-calculator"></i> 利益計算</a>
+                <a href="#"><i class="fas fa-warehouse"></i> 在庫管理</a>
+            </div>
+        </nav>
+
+        <!-- ページヘッダー -->
+        <div class="page-header">
+            <h1><i class="fas fa-chart-line"></i> 出品前利益シミュレーションシステム</h1>
+            <p>eBayカテゴリー別手数料・為替変動・階層型利益率設定による高精度価格計算</p>
+            
+            <div class="system-status">
+                <div class="status-item">
+                    <div class="status-indicator"></div>
+                    <span>データベース接続</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-indicator"></div>
+                    <span>為替レート取得</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-indicator status-warning"></div>
+                    <span>カテゴリー手数料（ハイブリッド）</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- タブナビゲーション -->
+        <div class="tab-navigation">
+            <button class="tab-btn active" data-tab="simulation">
+                <i class="fas fa-chart-line"></i> 利益シミュレーション
+            </button>
+            <button class="tab-btn" data-tab="fee-management">
+                <i class="fas fa-tags"></i> 手数料管理
+            </button>
+            <button class="tab-btn" data-tab="profit-settings">
+                <i class="fas fa-sliders-h"></i> 利益率設定
+            </button>
+            <button class="tab-btn" data-tab="exchange-rates">
+                <i class="fas fa-exchange-alt"></i> 為替レート
+            </button>
+            <button class="tab-btn" data-tab="history">
+                <i class="fas fa-history"></i> 計算履歴
+            </button>
+        </div>
+
+        <!-- 利益シミュレーションタブ -->
+        <div id="simulation" class="tab-content active">
+            <div class="section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fas fa-calculator"></i> 出品前利益シミュレーション
+                    </h3>
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" onclick="clearSimulation()">
+                            <i class="fas fa-eraser"></i> クリア
+                        </button>
+                        <button class="btn btn-info" onclick="loadSampleData()">
+                            <i class="fas fa-file-import"></i> サンプルデータ
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <!-- 商品情報 -->
+                    <div class="form-section">
+                        <h4><i class="fas fa-box"></i> 商品情報</h4>
+                        
+                        <div class="form-group">
+                            <label>Yahoo!オークション価格</label>
+                            <div class="input-addon">
+                                <span class="addon-text">¥</span>
+                                <input type="number" id="yahooPrice" placeholder="15000" value="15000">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>国内送料</label>
+                            <div class="input-addon">
+                                <span class="addon-text">¥</span>
+                                <input type="number" id="domesticShipping" placeholder="800" value="800">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>eBayカテゴリー</label>
+                            <select id="ebayCategory">
+                                <option value="293">Consumer Electronics (10.0% + $0.35)</option>
+                                <option value="11450">Clothing, Shoes & Accessories (12.9% + $0.30)</option>
+                                <option value="58058">Collectibles (9.15% + $0.35)</option>
+                                <option value="267">Books (15.0% + $0.30)</option>
+                                <option value="550">Art (12.9% + $0.35)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>商品コンディション</label>
+                            <select id="itemCondition">
+                                <option value="New">新品 (目標利益率: 28%)</option>
+                                <option value="Used" selected>中古 (目標利益率: 20%)</option>
+                                <option value="Refurbished">リファビッシュ品 (目標利益率: 25%)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 販売予定価格 -->
+                    <div class="form-section">
+                        <h4><i class="fas fa-dollar-sign"></i> 販売予定価格（シミュレーション）</h4>
+                        
+                        <div class="form-group">
+                            <label>想定販売価格</label>
+                            <div class="input-addon">
+                                <span class="addon-text">$</span>
+                                <input type="number" id="assumedPrice" placeholder="120.00" value="120.00" step="0.01">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>想定送料（買い手負担）</label>
+                            <div class="input-addon">
+                                <span class="addon-text">$</span>
+                                <input type="number" id="assumedShipping" placeholder="15.00" value="15.00" step="0.01">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>出品からの経過日数（価格調整用）</label>
+                            <input type="number" id="daysSinceListing" value="0" min="0" max="365">
+                        </div>
+                        
+                        <div class="btn-group">
+                            <button class="btn btn-primary" onclick="calculateProfit()">
+                                <i class="fas fa-magic"></i> 利益計算実行
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 為替・手数料情報 -->
+                    <div class="form-section">
+                        <h4><i class="fas fa-info-circle"></i> 適用レート・手数料</h4>
+                        
+                        <div class="category-fee-display">
+                            <h5><i class="fas fa-tags"></i> 選択カテゴリー手数料</h5>
+                            <div class="fee-breakdown" id="feeBreakdown">
+                                <div class="fee-item">
+                                    <div class="fee-value" id="finalValueFee">10.0%</div>
+                                    <div class="fee-label">Final Value Fee</div>
+                                </div>
+                                <div class="fee-item">
+                                    <div class="fee-value" id="insertionFee">$0.35</div>
+                                    <div class="fee-label">Insertion Fee</div>
+                                </div>
+                                <div class="fee-item">
+                                    <div class="fee-value" id="totalFeeRate">10.3%</div>
+                                    <div class="fee-label">実効手数料率</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: var(--space-md); padding: var(--space-md); background: var(--bg-tertiary); border-radius: var(--radius-md);">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: var(--space-sm);">
+                                <span>現在の為替レート:</span>
+                                <span id="currentRate">1 USD = ¥148.5</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: var(--space-sm);">
+                                <span>安全マージン:</span>
+                                <span id="safetyMargin">5.0%</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-weight: 700;">
+                                <span>計算用レート:</span>
+                                <span id="calculationRate">1 USD = ¥155.9</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 計算結果 -->
+                <div class="result-grid" id="resultGrid" style="display: none;">
+                    <div class="result-card">
+                        <div class="result-value" id="totalRevenue">$135.00</div>
+                        <div class="result-label">総収入</div>
+                    </div>
+                    <div class="result-card">
+                        <div class="result-value" id="totalCost">$110.50</div>
+                        <div class="result-label">総コスト</div>
+                    </div>
+                    <div class="result-card">
+                        <div class="result-value" id="ebayFees">$13.85</div>
+                        <div class="result-label">eBay手数料</div>
+                    </div>
+                    <div class="result-card">
+                        <div class="result-value" id="netProfit">$10.65</div>
+                        <div class="result-label">純利益</div>
+                    </div>
+                    <div class="result-card">
+                        <div class="result-value" id="profitMargin">7.9%</div>
+                        <div class="result-label">利益率</div>
+                    </div>
+                    <div class="result-card">
+                        <div class="result-value" id="roi">9.6%</div>
+                        <div class="result-label">ROI</div>
+                    </div>
+                </div>
+
+                <!-- 推奨事項 -->
+                <div class="recommendation" id="recommendation" style="display: none;">
+                    <div class="recommendation-content">
+                        <i class="fas fa-lightbulb"></i>
+                        <div class="recommendation-text" id="recommendationText">
+                            利益率が低めです。販売価格を$140以上に設定するか、より安価な商品を選択することをお勧めします。
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 手数料管理タブ -->
+        <div id="fee-management" class="tab-content">
+            <div class="section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fas fa-tags"></i> eBayカテゴリー手数料管理（ハイブリッド方式）
+                    </h3>
+                    <div class="btn-group">
+                        <button class="btn btn-info" onclick="updateFeesFromAPI()">
+                            <i class="fas fa-sync"></i> API更新
+                        </button>
+                        <button class="btn btn-warning" onclick="openManualFeeEditor()">
+                            <i class="fas fa-edit"></i> 手動編集
+                        </button>
+                    </div>
+                </div>
+
+                <div class="settings-grid">
+                    <div class="settings-panel">
+                        <h4><i class="fas fa-robot"></i> 自動更新設定</h4>
+                        
+                        <div class="form-group">
+                            <label>eBay API更新頻度</label>
+                            <select id="apiUpdateFreq">
+                                <option value="daily">毎日</option>
+                                <option value="weekly" selected>毎週</option>
+                                <option value="monthly">毎月</option>
+                                <option value="manual">手動のみ</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>変更検知通知</label>
+                            <div style="display: flex; align-items: center; gap: var(--space-sm);">
+                                <input type="checkbox" id="feeChangeNotification" checked>
+                                <span>手数料変更時にメール通知</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>最後の更新</label>
+                            <input type="text" value="2025-09-17 06:00:00" readonly>
+                        </div>
+                    </div>
+
+                    <div class="settings-panel">
+                        <h4><i class="fas fa-shield-alt"></i> 手動保護設定</h4>
+                        
+                        <div class="form-group">
+                            <label>手動設定の保護</label>
+                            <div style="display: flex; align-items: center; gap: var(--space-sm);">
+                                <input type="checkbox" id="protectManualSettings" checked>
+                                <span>手動で設定した手数料をAPI更新から保護</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>変更閾値</label>
+                            <div class="input-addon">
+                                <span class="addon-text">±</span>
+                                <input type="number" id="changeThreshold" value="1.0" step="0.1">
+                            </div>
+                            <small style="color: var(--text-muted);">この値以上の変更があった場合に通知</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- カテゴリー手数料一覧 -->
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>カテゴリーID</th>
+                            <th>カテゴリー名</th>
+                            <th>Final Value Fee</th>
+                            <th>Insertion Fee</th>
+                            <th>設定方法</th>
+                            <th>最終更新</th>
+                            <th>アクション</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>293</td>
+                            <td>Consumer Electronics</td>
+                            <td>10.0%</td>
+                            <td>$0.35</td>
+                            <td><span style="color: var(--color-info);">API</span></td>
+                            <td>2025-09-17</td>
+                            <td>
+                                <button class="btn btn-secondary" style="padding: var(--space-xs) var(--space-sm); font-size: 0.75rem;">
+                                    <i class="fas fa-edit"></i> 編集
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>11450</td>
+                            <td>Clothing, Shoes & Accessories</td>
+                            <td>12.9%</td>
+                            <td>$0.30</td>
+                            <td><span style="color: var(--color-warning);">手動</span></td>
+                            <td>2025-09-15</td>
+                            <td>
+                                <button class="btn btn-secondary" style="padding: var(--space-xs) var(--space-sm); font-size: 0.75rem;">
+                                    <i class="fas fa-edit"></i> 編集
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>58058</td>
+                            <td>Collectibles</td>
+                            <td>9.15%</td>
+                            <td>$0.35</td>
+                            <td><span style="color: var(--color-info);">API</span></td>
+                            <td>2025-09-17</td>
+                            <td>
+                                <button class="btn btn-secondary" style="padding: var(--space-xs) var(--space-sm); font-size: 0.75rem;">
+                                    <i class="fas fa-edit"></i> 編集
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 利益率設定タブ -->
+        <div id="profit-settings" class="tab-content">
+            <div class="section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fas fa-sliders-h"></i> 階層型利益率設定
+                    </h3>
+                    <button class="btn btn-primary" onclick="addProfitSetting()">
+                        <i class="fas fa-plus"></i> 新規設定追加
+                    </button>
+                </div>
+
+                <div class="settings-grid">
+                    <div class="settings-panel">
+                        <h4><i class="fas fa-globe"></i> グローバル設定</h4>
+                        
+                        <div class="form-group">
+                            <label>デフォルト目標利益率</label>
+                            <div class="input-addon">
+                                <input type="number" id="globalProfitMargin" value="25.0" step="0.1">
+                                <span class="addon-text">%</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>最低利益額</label>
+                            <div class="input-addon">
+                                <span class="addon-text">$</span>
+                                <input type="number" id="globalMinProfit" value="5.00" step="0.01">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>為替安全マージン</label>
+                            <div class="input-addon">
+                                <input type="number" id="exchangeMargin" value="5.0" step="0.1">
+                                <span class="addon-text">%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-panel">
+                        <h4><i class="fas fa-layer-group"></i> 優先順位設定</h4>
+                        
+                        <div style="background: var(--bg-secondary); padding: var(--space-md); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                            <div style="display: flex; justify-content: space-between; padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
+                                <span>1. 期間別設定</span>
+                                <span style="color: var(--color-success); font-weight: 600;">最高優先</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
+                                <span>2. コンディション別設定</span>
+                                <span style="color: var(--color-info); font-weight: 600;">高優先</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
+                                <span>3. カテゴリー別設定</span>
+                                <span style="color: var(--color-warning); font-weight: 600;">中優先</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: var(--space-xs) 0;">
+                                <span>4. グローバル設定</span>
+                                <span style="color: var(--color-gray); font-weight: 600;">デフォルト</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 設定一覧 -->
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>設定タイプ</th>
+                            <th>対象値</th>
+                            <th>目標利益率</th>
+                            <th>最低利益額</th>
+                            <th>優先順位</th>
+                            <th>状態</th>
+                            <th>アクション</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span style="color: var(--color-success);">期間</span></td>
+                            <td>30日経過</td>
+                            <td>15.0%</td>
+                            <td>$2.00</td>
+                            <td>50</td>
+                            <td><span style="color: var(--color-success);">有効</span></td>
+                            <td>
+                                <button class="btn btn-secondary" style="padding: var(--space-xs) var(--space-sm); font-size: 0.75rem;">
+                                    <i class="fas fa-edit"></i> 編集
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span style="color: var(--color-info);">コンディション</span></td>
+                            <td>新品</td>
+                            <td>28.0%</td>
+                            <td>$7.00</td>
+                            <td>200</td>
+                            <td><span style="color: var(--color-success);">有効</span></td>
+                            <td>
+                                <button class="btn btn-secondary" style="padding: var(--space-xs) var(--space-sm); font-size: 0.75rem;">
+                                    <i class="fas fa-edit"></i> 編集
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span style="color: var(--color-warning);">カテゴリー</span></td>
+                            <td>エレクトロニクス (293)</td>
+                            <td>30.0%</td>
+                            <td>$8.00</td>
+                            <td>100</td>
+                            <td><span style="color: var(--color-success);">有効</span></td>
+                            <td>
+                                <button class="btn btn-secondary" style="padding: var(--space-xs) var(--space-sm); font-size: 0.75rem;">
+                                    <i class="fas fa-edit"></i> 編集
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 為替レートタブ -->
+        <div id="exchange-rates" class="tab-content">
+            <div class="section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fas fa-exchange-alt"></i> 為替レート管理
+                    </h3>
+                    <button class="btn btn-info" onclick="updateExchangeRate()">
+                        <i class="fas fa-sync"></i> レート更新
+                    </button>
+                </div>
+
+                <div class="settings-grid">
+                    <div class="settings-panel">
+                        <h4><i class="fas fa-chart-line"></i> 現在のレート</h4>
+                        
+                        <div style="text-align: center; padding: var(--space-lg);">
+                            <div style="font-size: 2.5rem; font-weight: 700; color: var(--calculation-primary); margin-bottom: var(--space-sm);">
+                                ¥148.50
+                            </div>
+                            <div style="color: var(--text-muted);">1 USD = 148.50 JPY</div>
+                            <div style="font-size: 0.875rem; color: var(--text-muted); margin-top: var(--space-sm);">
+                                最終更新: 2025-09-17 14:30:00
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>安全マージン</label>
+                            <div class="input-addon">
+                                <input type="number" id="currentSafetyMargin" value="5.0" step="0.1">
+                                <span class="addon-text">%</span>
+                            </div>
+                        </div>
+                        
+                        <div style="background: var(--bg-tertiary); padding: var(--space-md); border-radius: var(--radius-md); margin-top: var(--space-md);">
+                            <div style="display: flex; justify-content: space-between; font-weight: 600;">
+                                <span>計算用レート:</span>
+                                <span style="color: var(--calculation-primary);">¥155.93</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-panel">
+                        <h4><i class="fas fa-cog"></i> 自動取得設定</h4>
+                        
+                        <div class="form-group">
+                            <label>API提供元</label>
+                            <select id="exchangeApiProvider">
+                                <option value="openexchangerates" selected>Open Exchange Rates</option>
+                                <option value="fixer">Fixer.io</option>
+                                <option value="currencylayer">CurrencyLayer</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>更新頻度</label>
+                            <select id="exchangeUpdateFreq">
+                                <option value="hourly">1時間ごと</option>
+                                <option value="daily" selected>1日1回</option>
+                                <option value="manual">手動のみ</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>変動アラート</label>
+                            <div class="input-addon">
+                                <input type="number" id="volatilityAlert" value="2.0" step="0.1">
+                                <span class="addon-text">%</span>
+                            </div>
+                            <small style="color: var(--text-muted);">この値以上の変動があった場合に通知</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- レート履歴 -->
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>取得日時</th>
+                            <th>基本レート</th>
+                            <th>安全マージン</th>
+                            <th>計算用レート</th>
+                            <th>変動率</th>
+                            <th>ソース</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2025-09-17 14:30</td>
+                            <td>¥148.50</td>
+                            <td>5.0%</td>
+                            <td>¥155.93</td>
+                            <td style="color: var(--profit-positive);">+0.3%</td>
+                            <td>Open Exchange Rates</td>
+                        </tr>
+                        <tr>
+                            <td>2025-09-17 06:00</td>
+                            <td>¥148.05</td>
+                            <td>5.0%</td>
+                            <td>¥155.45</td>
+                            <td style="color: var(--profit-negative);">-0.2%</td>
+                            <td>Open Exchange Rates</td>
+                        </tr>
+                        <tr>
+                            <td>2025-09-16 06:00</td>
+                            <td>¥148.32</td>
+                            <td>5.0%</td>
+                            <td>¥155.74</td>
+                            <td style="color: var(--profit-positive);">+0.1%</td>
+                            <td>Open Exchange Rates</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 計算履歴タブ -->
+        <div id="history" class="tab-content">
+            <div class="section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fas fa-history"></i> 計算履歴・分析
+                    </h3>
+                    <div class="btn-group">
+                        <button class="btn btn-success" onclick="exportHistory()">
+                            <i class="fas fa-download"></i> CSV出力
+                        </button>
+                        <button class="btn btn-secondary" onclick="filterHistory()">
+                            <i class="fas fa-filter"></i> フィルタ
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 履歴一覧 -->
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>計算日時</th>
+                            <th>商品価格(円)</th>
+                            <th>想定販売価格($)</th>
+                            <th>カテゴリー</th>
+                            <th>コンディション</th>
+                            <th>純利益($)</th>
+                            <th>利益率</th>
+                            <th>ROI</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2025-09-17 15:45</td>
+                            <td>¥15,800</td>
+                            <td>$120.00</td>
+                            <td>Electronics</td>
+                            <td>中古</td>
+                            <td>$10.65</td>
+                            <td style="color: var(--profit-neutral);">7.9%</td>
+                            <td style="color: var(--profit-neutral);">9.6%</td>
+                        </tr>
+                        <tr>
+                            <td>2025-09-17 14:22</td>
+                            <td>¥8,500</td>
+                            <td>$89.99</td>
+                            <td>Clothing</td>
+                            <td>新品</td>
+                            <td>$22.45</td>
+                            <td style="color: var(--profit-positive);">24.9%</td>
+                            <td style="color: var(--profit-positive);">35.2%</td>
+                        </tr>
+                        <tr>
+                            <td>2025-09-17 13:10</td>
+                            <td>¥25,000</td>
+                            <td>$199.99</td>
+                            <td>Collectibles</td>
+                            <td>中古</td>
+                            <td>$-5.25</td>
+                            <td style="color: var(--profit-negative);">-2.6%</td>
+                            <td style="color: var(--profit-negative);">-3.1%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // タブ切り替え機能
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('利益計算システム最終版 初期化開始');
+            
+            // タブボタンのイベントリスナー
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const targetTab = this.dataset.tab;
+                    switchTab(targetTab);
+                });
+            });
+            
+            // カテゴリー選択時の手数料表示更新
+            document.getElementById('ebayCategory').addEventListener('change', updateCategoryFees);
+            
+            // 初期データの読み込み
+            updateCategoryFees();
+            
+            console.log('利益計算システム最終版 初期化完了');
+        });
+
+        // タブ切り替え関数
+        function switchTab(tabName) {
+            // 全てのタブボタンから active クラスを削除
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // 全てのタブコンテンツを非表示
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 指定されたタブボタンとコンテンツを表示
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        // カテゴリー手数料表示更新
+        function updateCategoryFees() {
+            const categorySelect = document.getElementById('ebayCategory');
+            const selectedValue = categorySelect.value;
+            
+            // カテゴリー別手数料データ
+            const feeData = {
+                '293': { final: 10.0, insertion: 0.35, name: 'Consumer Electronics' },
+                '11450': { final: 12.9, insertion: 0.30, name: 'Clothing, Shoes & Accessories' },
+                '58058': { final: 9.15, insertion: 0.35, name: 'Collectibles' },
+                '267': { final: 15.0, insertion: 0.30, name: 'Books' },
+                '550': { final: 12.9, insertion: 0.35, name: 'Art' }
+            };
+            
+            const fees = feeData[selectedValue];
+            if (fees) {
+                document.getElementById('finalValueFee').textContent = `${fees.final}%`;
+                document.getElementById('insertionFee').textContent = `${fees.insertion}`;
+                
+                // 実効手数料率の計算（$100販売時の例）
+                const samplePrice = 100;
+                const finalValueFeeAmount = samplePrice * (fees.final / 100);
+                const totalFeeAmount = finalValueFeeAmount + fees.insertion;
+                const effectiveRate = (totalFeeAmount / samplePrice) * 100;
+                
+                document.getElementById('totalFeeRate').textContent = `${effectiveRate.toFixed(1)}%`;
+            }
+        }
+
+        // 利益計算実行
+        function calculateProfit() {
+            try {
+                // 入力値の取得
+                const yahooPrice = parseFloat(document.getElementById('yahooPrice').value) || 0;
+                const domesticShipping = parseFloat(document.getElementById('domesticShipping').value) || 0;
+                const assumedPrice = parseFloat(document.getElementById('assumedPrice').value) || 0;
+                const assumedShipping = parseFloat(document.getElementById('assumedShipping').value) || 0;
+                const categorySelect = document.getElementById('ebayCategory');
+                const selectedCategory = categorySelect.value;
+                
+                // 入力値検証
+                if (yahooPrice <= 0 || assumedPrice <= 0) {
+                    alert('商品価格と想定販売価格を正しく入力してください。');
+                    return;
+                }
+                
+                // カテゴリー手数料データ
+                const feeData = {
+                    '293': { final: 10.0, insertion: 0.35 },
+                    '11450': { final: 12.9, insertion: 0.30 },
+                    '58058': { final: 9.15, insertion: 0.35 },
+                    '267': { final: 15.0, insertion: 0.30 },
+                    '550': { final: 12.9, insertion: 0.35 }
+                };
+                
+                const fees = feeData[selectedCategory];
+                
+                // 為替レート（安全マージン込み）
+                const exchangeRate = 155.93; // ¥155.93 per USD
+                
+                // 計算ロジック
+                const totalCostJPY = yahooPrice + domesticShipping;
+                const totalCostUSD = totalCostJPY / exchangeRate;
+                const totalRevenueUSD = assumedPrice + assumedShipping;
+                
+                // eBay手数料計算
+                const finalValueFeeUSD = totalRevenueUSD * (fees.final / 100);
+                const insertionFeeUSD = fees.insertion;
+                const totalEbayFeesUSD = finalValueFeeUSD + insertionFeeUSD;
+                
+                // 利益計算
+                const netProfitUSD = totalRevenueUSD - totalCostUSD - totalEbayFeesUSD;
+                const profitMargin = (netProfitUSD / totalRevenueUSD) * 100;
+                const roi = (netProfitUSD / totalCostUSD) * 100;
+                
+                // 結果表示
+                displayResults({
+                    totalRevenue: totalRevenueUSD,
+                    totalCost: totalCostUSD,
+                    ebayFees: totalEbayFeesUSD,
+                    netProfit: netProfitUSD,
+                    profitMargin: profitMargin,
+                    roi: roi
+                });
+                
+                // 推奨事項生成
+                generateRecommendation(profitMargin, roi, netProfitUSD);
+                
+            } catch (error) {
+                console.error('計算エラー:', error);
+                alert('計算中にエラーが発生しました。入力値を確認してください。');
+            }
+        }
+
+        // 結果表示
+        function displayResults(results) {
+            // 結果グリッドを表示
+            const resultGrid = document.getElementById('resultGrid');
+            resultGrid.style.display = 'grid';
+            resultGrid.classList.add('bounce-in');
+            
+            // 各値の更新
+            document.getElementById('totalRevenue').textContent = `${results.totalRevenue.toFixed(2)}`;
+            document.getElementById('totalCost').textContent = `${results.totalCost.toFixed(2)}`;
+            document.getElementById('ebayFees').textContent = `${results.ebayFees.toFixed(2)}`;
+            
+            // 利益に応じた色分け
+            const profitElement = document.getElementById('netProfit');
+            const marginElement = document.getElementById('profitMargin');
+            const roiElement = document.getElementById('roi');
+            
+            profitElement.textContent = `${results.netProfit.toFixed(2)}`;
+            marginElement.textContent = `${results.profitMargin.toFixed(1)}%`;
+            roiElement.textContent = `${results.roi.toFixed(1)}%`;
+            
+            // 色分け
+            const profitClass = results.netProfit > 0 ? '' : 'negative';
+            const marginClass = results.profitMargin > 15 ? '' : results.profitMargin > 5 ? 'neutral' : 'negative';
+            
+            profitElement.className = `result-value ${profitClass}`;
+            marginElement.className = `result-value ${marginClass}`;
+            roiElement.className = `result-value ${marginClass}`;
+        }
+
+        // 推奨事項生成
+        function generateRecommendation(profitMargin, roi, netProfit) {
+            const recommendationDiv = document.getElementById('recommendation');
+            const recommendationText = document.getElementById('recommendationText');
+            
+            let recommendation = '';
+            let iconClass = 'fas fa-lightbulb';
+            
+            if (netProfit <= 0) {
+                recommendation = '🔴 この設定では損失が発生します。販売価格を上げるか、より安価な商品を選択してください。';
+                iconClass = 'fas fa-exclamation-triangle';
+            } else if (profitMargin < 5) {
+                recommendation = '⚠️ 利益率が非常に低いです。リスクを考慮すると推奨できません。価格を見直してください。';
+                iconClass = 'fas fa-exclamation-circle';
+            } else if (profitMargin < 15) {
+                recommendation = '🟡 利益率が低めです。販売価格を上げるか、コストを削減することを検討してください。';
+                iconClass = 'fas fa-chart-line';
+            } else if (profitMargin < 25) {
+                recommendation = '✅ 標準的な利益率です。この設定で進めても問題ありませんが、さらなる最適化の余地があります。';
+                iconClass = 'fas fa-check-circle';
+            } else {
+                recommendation = '🎉 優秀な利益率です！この価格設定を維持し、同様の商品の仕入れを増やすことを検討してください。';
+                iconClass = 'fas fa-star';
+            }
+            
+            // ROIに基づく追加アドバイス
+            if (roi > 30) {
+                recommendation += ' ROIも良好で、資金効率の良い取引です。';
+            } else if (roi > 15) {
+                recommendation += ' ROIは標準的です。';
+            } else if (roi > 0) {
+                recommendation += ' ROIが低めなので、より効率的な商品選択を検討してください。';
+            }
+            
+            // 推奨事項表示
+            recommendationText.textContent = recommendation;
+            recommendationDiv.querySelector('i').className = iconClass;
+            recommendationDiv.style.display = 'block';
+            recommendationDiv.classList.add('slide-up');
+        }
+
+        // サンプルデータ読み込み
+        function loadSampleData() {
+            document.getElementById('yahooPrice').value = '15000';
+            document.getElementById('domesticShipping').value = '800';
+            document.getElementById('assumedPrice').value = '120.00';
+            document.getElementById('assumedShipping').value = '15.00';
+            document.getElementById('ebayCategory').value = '293';
+            document.getElementById('itemCondition').value = 'Used';
+            document.getElementById('daysSinceListing').value = '0';
+            
+            updateCategoryFees();
+            
+            // 自動計算実行
+            setTimeout(() => {
+                calculateProfit();
+            }, 500);
+        }
+
+        // フォームクリア
+        function clearSimulation() {
+            document.getElementById('yahooPrice').value = '';
+            document.getElementById('domesticShipping').value = '';
+            document.getElementById('assumedPrice').value = '';
+            document.getElementById('assumedShipping').value = '';
+            document.getElementById('daysSinceListing').value = '0';
+            
+            // 結果を非表示
+            document.getElementById('resultGrid').style.display = 'none';
+            document.getElementById('recommendation').style.display = 'none';
+        }
+
+        // 手数料管理関連
+        function updateFeesFromAPI() {
+            // API更新のシミュレーション
+            const loadingText = 'API更新中...';
+            const originalText = 'API更新';
+            const btn = event.target;
+            
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${loadingText}`;
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                btn.innerHTML = `<i class="fas fa-sync"></i> ${originalText}`;
+                btn.disabled = false;
+                alert('📡 eBay APIから最新の手数料情報を取得しました！\n\n更新されたカテゴリー: 3件\n変更があったカテゴリー: 1件\n\n詳細は手数料管理画面でご確認ください。');
+            }, 2000);
+        }
+
+        function openManualFeeEditor() {
+            alert('🖊️ 手動編集機能\n\n選択したカテゴリーの手数料を手動で設定できます。\n手動設定された手数料は、API更新の対象外となります。\n\n※ この機能は実装後に利用可能になります。');
+        }
+
+        // 利益率設定関連
+        function addProfitSetting() {
+            alert('➕ 新規利益率設定\n\n新しい利益率設定を追加できます：\n\n• カテゴリー別設定\n• コンディション別設定\n• 期間別設定\n• カスタム設定\n\n※ この機能は実装後に利用可能になります。');
+        }
+
+        // 為替レート関連
+        function updateExchangeRate() {
+            const btn = event.target;
+            const originalHTML = btn.innerHTML;
+            
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 更新中...';
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+                
+                // 新しいレートをシミュレーション
+                const newRate = (148.50 + (Math.random() - 0.5) * 2).toFixed(2);
+                const change = ((newRate - 148.50) / 148.50 * 100).toFixed(1);
+                const changeText = change > 0 ? `+${change}%` : `${change}%`;
+                
+                alert(`💱 為替レートを更新しました！\n\n新しいレート: 1 USD = ¥${newRate}\n変動率: ${changeText}\n\n計算用レート（5%マージン込み）: ¥${(newRate * 1.05).toFixed(2)}`);
+            }, 1500);
+        }
+
+        // 履歴関連
+        function exportHistory() {
+            alert('📄 CSV出力機能\n\n計算履歴をCSVファイルとして出力します：\n\n• 期間指定可能\n• フィルタ条件適用\n• 詳細な計算データ含む\n\n※ この機能は実装後に利用可能になります。');
+        }
+
+        function filterHistory() {
+            alert('🔍 履歴フィルタ機能\n\n以下の条件でフィルタできます：\n\n• 日付範囲\n• カテゴリー\n• 利益率範囲\n• ROI範囲\n\n※ この機能は実装後に利用可能になります。');
+        }
+
+        // ユーティリティ関数
+        function formatCurrency(amount, currency = 'USD') {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: currency,
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount);
+        }
+
+        function formatPercentage(value, decimals = 1) {
+            return `${parseFloat(value).toFixed(decimals)}%`;
+        }
+
+        // エラーハンドリング
+        window.addEventListener('error', function(event) {
+            console.error('JavaScript エラー:', event.error);
+        });
+
+        // 開発者用コンソール機能
+        if (typeof window !== 'undefined') {
+            window.ProfitCalculatorDebug = {
+                calculateProfit,
+                loadSampleData,
+                clearSimulation,
+                switchTab,
+                updateCategoryFees,
+                displayResults,
+                generateRecommendation
+            };
+            
+            console.log('🎯 利益計算システム最終版 デバッグコンソール利用可能');
+            console.log('使用例: ProfitCalculatorDebug.loadSampleData()');
+        }
+    </script>
+</body>
+</html>
+            

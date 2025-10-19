@@ -1,0 +1,31 @@
+/*
+ * Yahoo Auction Tool - Data Scraping Tab Styles
+ * -------------------------------------------------------------
+ * Styles for the scraping form and progress display.
+ * -------------------------------------------------------------
+ */
+.scraping-form {
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+.progress-container {
+  margin-top: var(--space-md);
+}
+.progress-bar {
+  width: 100%;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  height: 20px;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: var(--color-success);
+  transition: width 0.4s ease;
+}
+.progress-text {
+  text-align: center;
+  font-size: 0.875rem;
+  margin-top: var(--space-sm);
+}

@@ -1,0 +1,131 @@
+/* ========================================
+   Research Tool 専用スタイル
+   app/globals.css の末尾に追加
+   ======================================== */
+
+/* CSS変数定義 */
+:root {
+  --research-primary: #3D74B6;
+  --research-primary-light: #FBF5DE;
+  --research-secondary: #EAC8A6;
+  --research-accent: #DC3C22;
+  --research-success: #7AE2CF;
+  --research-dark: #06202B;
+  --research-teal: #077A7D;
+  --research-background-light: #F5EEDD;
+}
+
+/* グラデーション背景 */
+.research-gradient-bg {
+  background: linear-gradient(135deg, var(--research-background-light) 0%, #ffffff 100%);
+}
+
+.research-header-gradient {
+  background: linear-gradient(135deg, var(--research-primary) 0%, var(--research-teal) 100%);
+}
+
+.research-ai-gradient {
+  background: linear-gradient(135deg, var(--research-success) 0%, var(--research-teal) 100%);
+}
+
+/* グレインパターン背景 */
+.research-grain-pattern::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* スピナーアニメーション */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* パルスアニメーション */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ホバーエフェクト */
+.hover\:transform:hover {
+  transform: translateY(-2px);
+}
+
+.hover\:scale-105:hover {
+  transform: scale(1.05);
+}
+
+/* テキスト切り詰め */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* スクロールバーカスタマイズ */
+.research-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.research-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.research-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--research-primary);
+  border-radius: 4px;
+}
+
+.research-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--research-teal);
+}
+
+/* レスポンシブ調整 */
+@media (max-width: 768px) {
+  .research-header-gradient {
+    padding: 1.5rem 1rem;
+  }
+  
+  .research-ai-gradient {
+    padding: 1.5rem 1rem;
+  }
+}
+
+/* FontAwesome アイコンがロードされない場合のフォールバック */
+.fas::before, .far::before, .fab::before {
+  font-family: 'Font Awesome 6 Free', 'Font Awesome 6 Brands', sans-serif;
+  font-weight: 900;
+}

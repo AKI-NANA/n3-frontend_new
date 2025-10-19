@@ -1,0 +1,134 @@
+<!-- Yahoo オークション データ確認テンプレート -->
+<div class="integrated-data-section source-yahoo-section">
+    <div class="integrated-section-header" style="background: linear-gradient(135deg, #0B1D51, #725CAD); color: white;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fas fa-gavel"></i>
+            <span>Yahoo オークション データ</span>
+        </div>
+    </div>
+    <div style="padding: 1rem;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div>
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">Item ID</label>
+                <input type="text" class="integrated-form-input" id="yahoo-item-id" readonly style="background: #f8f9fa;">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">データベースID</label>
+                <input type="text" class="integrated-form-input" id="yahoo-db-id" readonly style="background: #f8f9fa;">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">SKU</label>
+                <input type="text" class="integrated-form-input" id="yahoo-sku" readonly style="background: #f8f9fa;">
+            </div>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">商品名（日本語）</label>
+            <input type="text" class="integrated-form-input" id="yahoo-title">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div>
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">価格（円）</label>
+                <input type="number" class="integrated-form-input" id="yahoo-price" min="0">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">状態</label>
+                <select class="integrated-form-input" id="yahoo-condition">
+                    <option value="新品">新品</option>
+                    <option value="未使用に近い">未使用に近い</option>
+                    <option value="目立った傷や汚れなし">目立った傷や汚れなし</option>
+                    <option value="やや傷や汚れあり">やや傷や汚れあり</option>
+                    <option value="傷や汚れあり">傷や汚れあり</option>
+                    <option value="全体的に状態が悪い">全体的に状態が悪い</option>
+                </select>
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">カテゴリ</label>
+                <input type="text" class="integrated-form-input" id="yahoo-category">
+            </div>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">商品説明</label>
+            <textarea class="integrated-form-input" id="yahoo-description" rows="4"></textarea>
+        </div>
+
+        <div style="background: #f8f9fa; border-radius: 8px; padding: 1rem; margin-top: 1rem;">
+            <h4 style="margin: 0 0 0.75rem 0; font-size: 0.95rem;">
+                <i class="fas fa-box"></i> 配送情報
+            </h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 1rem;">
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.85rem;">重量 (g)</label>
+                    <input type="number" class="integrated-form-input" id="yahoo-weight" min="0">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.85rem;">長さ (cm)</label>
+                    <input type="number" class="integrated-form-input" id="yahoo-length" min="0" step="0.1">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.85rem;">幅 (cm)</label>
+                    <input type="number" class="integrated-form-input" id="yahoo-width" min="0" step="0.1">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.85rem;">高さ (cm)</label>
+                    <input type="number" class="integrated-form-input" id="yahoo-height" min="0" step="0.1">
+                </div>
+            </div>
+        </div>
+
+        <div style="background: #e3f2fd; border-radius: 8px; padding: 1rem; margin-top: 1rem;">
+            <h4 style="margin: 0 0 0.5rem 0; font-size: 0.95rem; color: #1976d2;">
+                <i class="fas fa-info-circle"></i> Yahoo固有情報
+            </h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; font-size: 0.85rem;">
+                <div style="display: flex; justify-content: space-between; padding: 0.25rem 0;">
+                    <span style="color: #666;">取得日時:</span>
+                    <strong id="yahoo-acquired-date">N/A</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 0.25rem 0;">
+                    <span style="color: #666;">元URL:</span>
+                    <a href="#" id="yahoo-source-url" target="_blank" style="color: #1976d2;">確認する</a>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 0.25rem 0;">
+                    <span style="color: #666;">画像枚数:</span>
+                    <strong id="yahoo-image-count">0枚</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 0.25rem 0;">
+                    <span style="color: #666;">データ状態:</span>
+                    <span class="integrated-badge integrated-badge-success" id="yahoo-data-status">完全</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.integrated-form-input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    transition: border-color 0.3s ease;
+}
+
+.integrated-form-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+.integrated-badge {
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.integrated-badge-success {
+    background: #d4edda;
+    color: #155724;
+}
+</style>

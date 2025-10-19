@@ -1,0 +1,91 @@
+/* クイックテスト用CSS */
+body {
+    background-color: #f0f8ff !important;
+    font-family: Arial, sans-serif !important;
+}
+
+.container {
+    max-width: 1200px !important;
+    margin: 0 auto !important;
+    padding: 20px !important;
+}
+
+.navbar {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    padding: 15px 20px !important;
+    border-radius: 10px !important;
+    margin-bottom: 20px !important;
+    color: white !important;
+}
+
+.main-content {
+    background: white !important;
+    padding: 30px !important;
+    border-radius: 15px !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+}
+
+.page-header h1 {
+    color: #3b82f6 !important;
+    text-align: center !important;
+    margin-bottom: 10px !important;
+}
+
+.workflow-step {
+    background: #f8fafc !important;
+    padding: 25px !important;
+    margin-bottom: 25px !important;
+    border-radius: 10px !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+.step-number {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 50px !important;
+    height: 50px !important;
+    background: #3b82f6 !important;
+    color: white !important;
+    border-radius: 50% !important;
+    font-weight: bold !important;
+    margin-right: 15px !important;
+}
+
+.csv-gen-card {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    padding: 20px !important;
+    background: white !important;
+    border: 2px solid #e2e8f0 !important;
+    border-radius: 10px !important;
+    margin: 10px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+.csv-gen-card:hover {
+    border-color: #3b82f6 !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+.btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 10px 20px !important;
+    background: #3b82f6 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    text-decoration: none !important;
+    font-weight: 500 !important;
+}
+
+.btn:hover {
+    background: #2563eb !important;
+    transform: translateY(-1px) !important;
+}

@@ -1,0 +1,210 @@
+<!-- 📚 動的マニュアル生成タブ - 新規追加 -->
+<!-- 既存タブに追加する新しいタブコンテンツ -->
+
+<div id="csv-manual" class="tab-content fade-in">
+    <div class="csv-management-section">
+        <!-- セクションヘッダー -->
+        <div class="section-header">
+            <div class="section-title">
+                <i class="fas fa-book"></i>
+                CSV項目動的マニュアル
+            </div>
+            <div class="section-actions">
+                <button class="btn btn--primary" onclick="refreshManual()">
+                    <i class="fas fa-sync"></i> 更新
+                </button>
+                <button class="btn btn--secondary" onclick="exportManual()">
+                    <i class="fas fa-download"></i> PDF出力
+                </button>
+                <button class="btn btn--success" onclick="editFieldDocumentation()">
+                    <i class="fas fa-edit"></i> 項目編集
+                </button>
+            </div>
+        </div>
+
+        <!-- CSV統計 -->
+        <div class="csv-stats">
+            <div class="csv-stat-card">
+                <div class="csv-stat-value" id="totalFields">68</div>
+                <div class="csv-stat-label">総項目数</div>
+            </div>
+            <div class="csv-stat-card">
+                <div class="csv-stat-value" id="requiredFields">15</div>
+                <div class="csv-stat-label">必須項目</div>
+            </div>
+            <div class="csv-stat-card">
+                <div class="csv-stat-value" id="optionalFields">53</div>
+                <div class="csv-stat-label">任意項目</div>
+            </div>
+            <div class="csv-stat-card">
+                <div class="csv-stat-value" id="lastUpdated">2分前</div>
+                <div class="csv-stat-label">最終更新</div>
+            </div>
+        </div>
+
+        <!-- 検索機能 -->
+        <div class="manual-search">
+            <input type="text" placeholder="項目名、説明、例を検索..." id="manualSearchInput">
+            <div class="search-filters">
+                <button class="filter-btn active" data-filter="all" onclick="filterFields('all')">
+                    すべて <span>68</span>
+                </button>
+                <button class="filter-btn" data-filter="required" onclick="filterFields('required')">
+                    必須項目 <span>15</span>
+                </button>
+                <button class="filter-btn" data-filter="optional" onclick="filterFields('optional')">
+                    任意項目 <span>53</span>
+                </button>
+                <button class="filter-btn" data-filter="ebay" onclick="filterFields('ebay')">
+                    eBay必須 <span>12</span>
+                </button>
+                <button class="filter-btn" data-filter="calculation" onclick="filterFields('calculation')">
+                    計算系 <span>8</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 動的マニュアル表示エリア -->
+        <div class="dynamic-manual-container" id="dynamicManual">
+            <!-- JavaScriptで動的生成される内容 -->
+            <div class="manual-section">
+                <h2 class="manual-section-title">
+                    <i class="fas fa-info-circle"></i>
+                    基本情報セクション
+                </h2>
+                
+                <div class="field-documentation">
+                    <h4>master_sku <span class="required">*</span></h4>
+                    <p>統合管理キー。全システムで商品を一意に識別するためのSKU。自動生成または手動入力。</p>
+                    <div class="field-example">例: AUTO-YAHOO-12345</div>
+                    <div class="field-details">
+                        <span class="field-type-badge">VARCHAR(255)</span>
+                        <span class="field-required-badge">必須</span>
+                    </div>
+                </div>
+
+                <div class="field-documentation">
+                    <h4>action_flag <span class="required">*</span></h4>
+                    <p>操作指示フラグ。商品に対する処理アクションを指定します。</p>
+                    <div class="field-example">例: ADD, UPDATE, DELETE, PREPARE, PUBLISH</div>
+                    <div class="validation">制約: ADD|UPDATE|DELETE|PREPARE|PUBLISH のいずれか</div>
+                </div>
+
+                <div class="field-documentation">
+                    <h4>delete_flag <span class="required">*</span></h4>
+                    <p>削除フラグ。論理削除用のフラグで、1の場合は削除予定を示します。</p>
+                    <div class="field-example">例: 0 (有効), 1 (削除予定)</div>
+                    <div class="validation">制約: 0 または 1</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CSV項目テーブル -->
+        <div class="csv-fields-table">
+            <div class="section-header">
+                <h3>CSV項目一覧表</h3>
+                <button class="btn btn--secondary" onclick="toggleTableView()">
+                    <i class="fas fa-table"></i> 表示切替
+                </button>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>項目名</th>
+                        <th>表示名</th>
+                        <th>データ型</th>
+                        <th>必須</th>
+                        <th>説明</th>
+                        <th>例</th>
+                        <th>制約</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="csvFieldsTableBody">
+                    <tr>
+                        <td><code>master_sku</code></td>
+                        <td>統合管理SKU</td>
+                        <td><span class="field-type-badge">VARCHAR</span></td>
+                        <td><span class="field-required-badge">必須</span></td>
+                        <td>全システム統合キー</td>
+                        <td>AUTO-YAHOO-12345</td>
+                        <td>255文字以内</td>
+                        <td>
+                            <button class="btn btn--sm btn--secondary" onclick="editField('master_sku')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>action_flag</code></td>
+                        <td>操作指示</td>
+                        <td><span class="field-type-badge">ENUM</span></td>
+                        <td><span class="field-required-badge">必須</span></td>
+                        <td>処理アクション指定</td>
+                        <td>ADD, UPDATE, DELETE</td>
+                        <td>5つの値から選択</td>
+                        <td>
+                            <button class="btn btn--sm btn--secondary" onclick="editField('action_flag')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+// 動的マニュアル機能
+function refreshManual() {
+    if (window.dynamicManualGenerator) {
+        window.dynamicManualGenerator.loadFieldDocumentation();
+    }
+    console.log('マニュアル更新');
+}
+
+function exportManual() {
+    console.log('マニュアルPDF出力');
+    alert('PDF出力機能は近日実装予定です。');
+}
+
+function editFieldDocumentation() {
+    alert('項目編集機能は個別の項目の編集ボタンをご利用ください。');
+}
+
+function filterFields(filterType) {
+    // フィルターボタンのアクティブ状態更新
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    const activeBtn = document.querySelector(`[data-filter="${filterType}"]`);
+    if (activeBtn) {
+        activeBtn.classList.add('active');
+    }
+    
+    console.log('フィールドフィルタリング:', filterType);
+}
+
+function toggleTableView() {
+    const table = document.querySelector('.csv-fields-table table');
+    const manual = document.getElementById('dynamicManual');
+    
+    if (table.style.display === 'none') {
+        table.style.display = 'table';
+        manual.style.display = 'none';
+    } else {
+        table.style.display = 'none';
+        manual.style.display = 'block';
+    }
+}
+
+function editField(fieldName) {
+    console.log('フィールド編集:', fieldName);
+    alert(`${fieldName} の編集機能は実装中です。`);
+}
+
+console.log('✅ 動的マニュアル生成タブ初期化完了');
+</script>

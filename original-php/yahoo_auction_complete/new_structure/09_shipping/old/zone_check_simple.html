@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>配送ゾーン確認（簡易版）</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .header { background: #2563eb; color: white; padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 20px; }
+        .zone-section { background: white; margin: 15px 0; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .carrier-header { font-size: 18px; font-weight: bold; margin-bottom: 15px; padding: 10px; border-radius: 5px; }
+        .elogi { background: #ff6b6b; color: white; }
+        .ems { background: #2ec4b6; color: white; }
+        .cpass { background: #1e90ff; color: white; }
+        .zone-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+        .zone-item { border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: #f9f9f9; }
+        .country-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .country-table th, .country-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        .country-table th { background: #f0f0f0; }
+        .supported { background: #d4edda; color: #155724; }
+        .not-supported { background: #f8d7da; color: #721c24; }
+        .test-section { background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .api-test { background: #d1ecf1; padding: 10px; border-radius: 5px; margin: 10px 0; font-family: monospace; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌍 配送会社別ゾーン体系確認</h1>
+            <p>問題解決: 各社の異なるゾーン体系を独立管理</p>
+        </div>
+
+        <div class="test-section">
+            <h3>🔧 システム状態テスト</h3>
+            <button onclick="testDatabaseConnection()">データベース接続テスト</button>
+            <button onclick="testZoneAPI()">ゾーンAPIテスト</button>
+            <button onclick="testCountryZones()">国別ゾーンテスト</button>
+            
+            <div id="testResults" class="api-test">
+                テスト結果がここに表示されます...
+            </div>
+        </div>
+
+        <div class="zone-section">
+            <div class="carrier-header elogi">eMoji（eLogi統合）- サービスレベル別ゾーン</div>
+            <div class="zone-grid">
+                <div class="zone-item">
+                    <strong>Zone 1</strong><br>
+                    最高速サービス（1-3日）<br>
+                    <small>アメリカ、シンガポール、香港、韓国</small>
+                </div>
+                <div class="zone-item">
+                    <strong>Zone 2</strong><br>
+                    高速サービス（2-4日）<br>
+                    <small>イギリス、ドイツ、フランス、カナダ</small>
+                </div>
+                <div class="zone-item">
+                    <strong>Zone 3</strong><br>
+                    標準サービス（3-6日）<br>
+                    <small>オーストラリア、ブラジル、インド、メキシコ</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="zone-section">
+            <div class="carrier-header ems">日本郵便EMS - 地理的距離別ゾーン</div>
+            <div class="zone-grid">
+                <div class="zone-item">
+                    <strong>第1地帯</strong><br>
+                    近隣アジア（3-6日）<br>
+                    <small>中国、韓国、台湾</small>
+                </div>
+                <div class="zone-item">
+                    <strong>第2地帯</strong><br>
+                    アジア（3-6日）<br>
+                    <small>シンガポール、香港、タイ等</small>
+                </div>
+                <div class="zone-item">
+                    <strong>第3地帯</strong><br>
+                    欧州・オセアニア（3-6日）<br>
+                    <small>イギリス、ドイツ、オーストラリア等</small>
+                </div>
+                <div class="zone-item">
+                    <strong>第4地帯</strong><br>
+                    アメリカ（3-6日）<br>
+                    <small>アメリカ合衆国専用</small>
+                </div>
+                <div class="zone-item">
+                    <strong>第5地帯</strong><br>
+                    中南米・アフリカ（3-6日）<br>
+                    <small>ブラジル、南アフリカ等</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="zone-section">
+            <div class="carrier-header cpass">CPass SpeedPAK - 対応国限定ゾーン</div>
+            <div class="zone-grid">
+                <div class="zone-item">
+                    <strong>USA対応</strong><br>
+                    アメリカ向け（8-12日）<br>
+                    <small>エコノミー配送</small>
+                </div>
+                <div class="zone-item">
+                    <strong>UK対応</strong><br>
+                    イギリス向け（7-10日）<br>
+                    <small>エコノミー配送</small>
+                </div>
+                <div class="zone-item">
+                    <strong>DE対応</strong><br>
+                    ドイツ向け（7-11日）<br>
+                    <small>エコノミー配送</small>
+                </div>
+                <div class="zone-item">
+                    <strong>AU対応</strong><br>
+                    オーストラリア向け（6-12日）<br>
+                    <small>エコノミー配送</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="zone-section">
+            <h3>🌍 主要国の配送会社別対応状況</h3>
+            <p>同一国でも配送会社によってゾーン分類が全く異なることを確認</p>
+            
+            <table class="country-table">
+                <thead>
+                    <tr>
+                        <th>国名</th>
+                        <th>eMoji（eLogi）</th>
+                        <th>日本郵便EMS</th>
+                        <th>CPass SpeedPAK</th>
+                        <th>特徴</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>🇺🇸 アメリカ</td>
+                        <td class="supported">Zone 1<br><small>1-3日・高価格</small></td>
+                        <td class="supported">第4地帯<br><small>3-6日・高価格</small></td>
+                        <td class="supported">USA対応<br><small>8-12日・エコノミー</small></td>
+                        <td>全社対応・価格帯多様</td>
+                    </tr>
+                    <tr>
+                        <td>🇬🇧 イギリス</td>
+                        <td class="supported">Zone 2<br><small>2-4日・中価格</small></td>
+                        <td class="supported">第3地帯<br><small>3-6日・中価格</small></td>
+                        <td class="supported">UK対応<br><small>7-10日・エコノミー</small></td>
+                        <td>全社対応・バランス良い</td>
+                    </tr>
+                    <tr>
+                        <td>🇸🇬 シンガポール</td>
+                        <td class="supported">Zone 1<br><small>1-3日・高価格</small></td>
+                        <td class="supported">第2地帯<br><small>3-6日・低価格</small></td>
+                        <td class="not-supported">対応外<br><small>利用不可</small></td>
+                        <td>CPass未対応</td>
+                    </tr>
+                    <tr>
+                        <td>🇨🇳 中国</td>
+                        <td class="not-supported">対応外<br><small>利用不可</small></td>
+                        <td class="supported">第1地帯<br><small>3-6日・最安</small></td>
+                        <td class="not-supported">対応外<br><small>利用不可</small></td>
+                        <td>EMS独占</td>
+                    </tr>
+                    <tr>
+                        <td>🇩🇪 ドイツ</td>
+                        <td class="supported">Zone 2<br><small>2-4日・中価格</small></td>
+                        <td class="supported">第3地帯<br><small>3-6日・中価格</small></td>
+                        <td class="supported">DE対応<br><small>7-11日・エコノミー</small></td>
+                        <td>全社対応</td>
+                    </tr>
+                    <tr>
+                        <td>🇦🇺 オーストラリア</td>
+                        <td class="supported">Zone 3<br><small>3-6日・標準価格</small></td>
+                        <td class="supported">第3地帯<br><small>3-6日・中価格</small></td>
+                        <td class="supported">AU対応<br><small>6-12日・エコノミー</small></td>
+                        <td>全社対応・配送日数長め</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="zone-section">
+            <h3>📊 実装効果</h3>
+            <ul>
+                <li><strong>✅ 問題解決</strong>: 各社の異なるゾーン体系を独立管理</li>
+                <li><strong>✅ データ整合性</strong>: zone_code混在問題を完全解決</li>
+                <li><strong>✅ 可視化</strong>: 国別各社対応状況が一目で分かる</li>
+                <li><strong>✅ 拡張性</strong>: 新しい配送会社・ゾーンの追加が容易</li>
+                <li><strong>✅ API対応</strong>: プログラムからの利用も可能</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        async function testDatabaseConnection() {
+            const resultDiv = document.getElementById('testResults');
+            resultDiv.innerHTML = '📋 データベース接続テスト中...';
+            
+            try {
+                // 簡単なAPIテスト（存在チェック）
+                const response = await fetch('/new_structure/09_shipping/api/matrix_data_api_zone_integrated.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'test_zone_system' })
+                });
+                
+                if (response.ok) {
+                    const data = await response.text();
+                    resultDiv.innerHTML = `✅ API応答成功:\n${data.substring(0, 300)}...`;
+                } else {
+                    resultDiv.innerHTML = `⚠️ API応答エラー: HTTP ${response.status}`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `❌ API接続エラー: ${error.message}`;
+            }
+        }
+        
+        async function testZoneAPI() {
+            const resultDiv = document.getElementById('testResults');
+            resultDiv.innerHTML = '📋 ゾーンAPIテスト中...';
+            
+            try {
+                const response = await fetch('/new_structure/09_shipping/api/zone_price_integrated_api.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        action: 'get_country_shipping_options',
+                        country_code: 'US',
+                        weight: 1.0
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        resultDiv.innerHTML = `✅ ゾーンAPI成功:\n配送オプション数: ${data.data.option_count}\n最安オプション: ${data.data.cheapest_option?.carrier_name}`;
+                    } else {
+                        resultDiv.innerHTML = `⚠️ API応答エラー: ${data.message}`;
+                    }
+                } else {
+                    resultDiv.innerHTML = `⚠️ HTTP エラー: ${response.status}`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `❌ API接続エラー: ${error.message}`;
+            }
+        }
+        
+        async function testCountryZones() {
+            const resultDiv = document.getElementById('testResults');
+            resultDiv.innerHTML = '📋 国別ゾーンテスト中...';
+            
+            const countries = ['US', 'GB', 'SG'];
+            let results = [];
+            
+            for (const country of countries) {
+                try {
+                    const response = await fetch('/new_structure/09_shipping/api/matrix_data_api_zone_integrated.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            action: 'get_country_zones',
+                            country_code: country
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success) {
+                            results.push(`${country}: ${data.data.zone_count}社対応`);
+                        } else {
+                            results.push(`${country}: エラー`);
+                        }
+                    } else {
+                        results.push(`${country}: HTTP ${response.status}`);
+                    }
+                } catch (error) {
+                    results.push(`${country}: 接続エラー`);
+                }
+            }
+            
+            resultDiv.innerHTML = `✅ 国別ゾーンテスト結果:\n${results.join('\n')}`;
+        }
+        
+        // ページ読み込み時の初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🌍 配送ゾーン確認システム（簡易版）初期化完了');
+        });
+    </script>
+</body>
+</html>

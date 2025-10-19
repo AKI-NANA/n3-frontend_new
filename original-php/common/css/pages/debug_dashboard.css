@@ -1,0 +1,734 @@
+/**
+ * NAGANO-3 統合デバッグダッシュボード CSS
+ * ファイル: common/css/pages/debug_dashboard.css
+ * 
+ * 🎯 完全機能CSS:
+ * ✅ 4コア選択インターフェース
+ * ✅ ディレクトリマップ表示
+ * ✅ モジュール一覧カード
+ * ✅ 統計サマリー表示
+ * ✅ ログコンソール
+ * ✅ レスポンシブ対応
+ * ✅ タブ統合対応
+ * ✅ VPS環境対応
+ */
+
+/* ===== 基本変数（NAGANO-3統合） ===== */
+:root {
+    /* 4コア専用色 */
+    --core-system: #e74c3c;      /* システムコア */
+    --core-orchestrator: #f39c12; /* オーケストレーター */
+    --core-common: #3498db;       /* 共通機能 */
+    --core-modules: #27ae60;      /* 業務モジュール */
+    
+    /* デバッグシステム専用色 */
+    --debug-primary: #6f42c1;
+    --debug-secondary: #e83e8c;
+    --debug-success: #28a745;
+    --debug-warning: #ffc107;
+    --debug-danger: #dc3545;
+    --debug-info: #17a2b8;
+    
+    /* 背景・テキスト */
+    --debug-bg-primary: #f8f9fa;
+    --debug-bg-secondary: #e9ecef;
+    --debug-bg-card: #ffffff;
+    --debug-bg-dark: #1a1a1a;
+    --debug-text-primary: #495057;
+    --debug-text-secondary: #6c757d;
+    --debug-text-muted: #868e96;
+    --debug-text-white: #ffffff;
+    
+    /* 空間・効果 */
+    --debug-border-color: #dee2e6;
+    --debug-border-radius: 8px;
+    --debug-shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+    --debug-shadow-md: 0 4px 8px rgba(0,0,0,0.15);
+    --debug-shadow-lg: 0 8px 16px rgba(0,0,0,0.2);
+    --debug-space-xs: 4px;
+    --debug-space-sm: 8px;
+    --debug-space-md: 16px;
+    --debug-space-lg: 24px;
+    --debug-space-xl: 32px;
+    --debug-transition: all 0.3s ease;
+}
+
+/* ===== デバッグダッシュボードコンテナ ===== */
+.debug-dashboard-container {
+    background: var(--debug-bg-primary);
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--debug-text-primary);
+}
+
+/* ===== ヘッダー ===== */
+.debug-header {
+    background: linear-gradient(135deg, var(--debug-primary), var(--debug-secondary));
+    color: var(--debug-text-white);
+    padding: var(--debug-space-md) var(--debug-space-lg);
+    box-shadow: var(--debug-shadow-md);
+    margin-bottom: var(--debug-space-lg);
+}
+
+.debug-header h1 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: var(--debug-space-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--debug-space-sm);
+}
+
+.debug-status {
+    display: flex;
+    gap: var(--debug-space-md);
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: var(--debug-space-sm);
+}
+
+.status-chip {
+    padding: var(--debug-space-xs) var(--debug-space-sm);
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: var(--debug-space-xs);
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    transition: var(--debug-transition);
+}
+
+.status-chip:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+.status-chip--success { background: var(--debug-success); }
+.status-chip--warning { background: var(--debug-warning); color: var(--debug-text-primary); }
+.status-chip--danger { background: var(--debug-danger); }
+.status-chip--info { background: var(--debug-info); }
+
+.debug-meta {
+    font-size: 12px;
+    opacity: 0.9;
+    margin-top: var(--debug-space-sm);
+    display: flex;
+    gap: var(--debug-space-md);
+    align-items: center;
+}
+
+/* ===== 4コア選択パネル ===== */
+.core-selector {
+    background: var(--debug-bg-card);
+    border-radius: var(--debug-border-radius);
+    padding: var(--debug-space-md);
+    margin: 0 var(--debug-space-lg) var(--debug-space-lg);
+    box-shadow: var(--debug-shadow-sm);
+    border: 2px solid var(--debug-primary);
+}
+
+.core-selector h2 {
+    color: var(--debug-primary);
+    margin-bottom: var(--debug-space-md);
+    display: flex;
+    align-items: center;
+    gap: var(--debug-space-sm);
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.core-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--debug-space-md);
+    margin-bottom: var(--debug-space-md);
+}
+
+.core-checkbox {
+    display: flex;
+    align-items: center;
+    padding: var(--debug-space-md);
+    border: 2px solid var(--debug-border-color);
+    border-radius: var(--debug-border-radius);
+    cursor: pointer;
+    transition: var(--debug-transition);
+    background: var(--debug-bg-secondary);
+}
+
+.core-checkbox:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--debug-shadow-md);
+}
+
+.core-checkbox.selected {
+    border-color: var(--debug-primary);
+    background: #f0f8ff;
+}
+
+.core-checkbox input {
+    margin-right: var(--debug-space-sm);
+    transform: scale(1.2);
+}
+
+.core-info {
+    flex: 1;
+}
+
+.core-name {
+    font-weight: 600;
+    margin-bottom: var(--debug-space-xs);
+    display: flex;
+    align-items: center;
+    gap: var(--debug-space-xs);
+    font-size: 15px;
+}
+
+.core-desc {
+    font-size: 12px;
+    color: var(--debug-text-secondary);
+    margin-bottom: var(--debug-space-xs);
+}
+
+.core-modules-count {
+    font-size: 11px;
+    color: var(--debug-text-muted);
+    font-weight: 500;
+}
+
+/* 4コア個別色 */
+.core-system .core-name { color: var(--core-system); }
+.core-orchestrator .core-name { color: var(--core-orchestrator); }
+.core-common .core-name { color: var(--core-common); }
+.core-modules .core-name { color: var(--core-modules); }
+
+/* ===== スキャンコントロール ===== */
+.scan-controls {
+    display: flex;
+    gap: var(--debug-space-md);
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: var(--debug-space-sm) var(--debug-space-md);
+    border: none;
+    border-radius: var(--debug-border-radius);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--debug-transition);
+    display: flex;
+    align-items: center;
+    gap: var(--debug-space-xs);
+    text-decoration: none;
+    color: inherit;
+    white-space: nowrap;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--debug-shadow-sm);
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn--primary {
+    background: var(--debug-primary);
+    color: var(--debug-text-white);
+}
+
+.btn--primary:hover {
+    background: #5a2d91;
+}
+
+.btn--success {
+    background: var(--debug-success);
+    color: var(--debug-text-white);
+}
+
+.btn--warning {
+    background: var(--debug-warning);
+    color: var(--debug-text-primary);
+}
+
+.btn--danger {
+    background: var(--debug-danger);
+    color: var(--debug-text-white);
+}
+
+.btn--secondary {
+    background: var(--debug-bg-secondary);
+    color: var(--debug-text-primary);
+}
+
+.btn--small {
+    padding: var(--debug-space-xs) var(--debug-space-sm);
+    font-size: 11px;
+}
+
+/* ===== 統計サマリー ===== */
+.stats-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--debug-space-md);
+    margin: 0 var(--debug-space-lg) var(--debug-space-lg);
+}
+
+.stat-card {
+    background: var(--debug-bg-card);
+    padding: var(--debug-space-md);
+    border-radius: var(--debug-border-radius);
+    text-align: center;
+    transition: var(--debug-transition);
+    box-shadow: var(--debug-shadow-sm);
+    border: 1px solid var(--debug-border-color);
+}
+
+.stat-card:hover {
+    background: #d1ecf1;
+    transform: scale(1.05);
+    box-shadow: var(--debug-shadow-md);
+}
+
+.stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--debug-primary);
+    margin-bottom: var(--debug-space-xs);
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 11px;
+    color: var(--debug-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+/* ===== 結果表示グリッド ===== */
+.results-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--debug-space-lg);
+    margin: 0 var(--debug-space-lg) var(--debug-space-lg);
+}
+
+@media (max-width: 1200px) {
+    .results-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ===== デバッグパネル ===== */
+.debug-panel {
+    background: var(--debug-bg-card);
+    border-radius: var(--debug-border-radius);
+    box-shadow: var(--debug-shadow-sm);
+    overflow: hidden;
+    border: 1px solid var(--debug-border-color);
+    transition: var(--debug-transition);
+}
+
+.debug-panel:hover {
+    box-shadow: var(--debug-shadow-md);
+}
+
+.panel-header {
+    background: linear-gradient(135deg, var(--debug-primary), var(--debug-secondary));
+    color: var(--debug-text-white);
+    padding: var(--debug-space-md);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: var(--debug-space-sm);
+    font-size: 16px;
+}
+
+.panel-content {
+    padding: var(--debug-space-md);
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+/* ===== 空状態 ===== */
+.empty-state {
+    text-align: center;
+    padding: var(--debug-space-xl);
+    color: var(--debug-text-muted);
+}
+
+.empty-state i {
+    font-size: 48px;
+    margin-bottom: var(--debug-space-md);
+    opacity: 0.5;
+}
+
+.empty-state p {
+    font-size: 14px;
+}
+
+/* ===== ディレクトリマップ ===== */
+.directory-map {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    background: var(--debug-bg-dark);
+    color: #00ff00;
+    padding: var(--debug-space-md);
+    border-radius: var(--debug-border-radius);
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid var(--debug-primary);
+}
+
+.dir-item {
+    padding: 2px 0;
+    display: flex;
+    align-items: center;
+    gap: var(--debug-space-xs);
+    transition: var(--debug-transition);
+}
+
+.dir-item:hover {
+    background: rgba(0, 255, 0, 0.1);
+}
+
+.dir-icon {
+    width: 16px;
+    flex-shrink: 0;
+}
+
+.dir-name {
+    flex: 1;
+    color: #00ff00;
+}
+
+.dir-status {
+    font-size: 10px;
+    padding: 1px 4px;
+    border-radius: 4px;
+    margin-left: auto;
+    font-weight: 600;
+}
+
+.dir-status--exists {
+    background: var(--debug-success);
+    color: var(--debug-text-white);
+}
+
+.dir-status--missing {
+    background: var(--debug-danger);
+    color: var(--debug-text-white);
+}
+
+.dir-status--partial {
+    background: var(--debug-warning);
+    color: var(--debug-text-primary);
+}
+
+.dir-status--complete {
+    background: var(--debug-success);
+    color: var(--debug-text-white);
+}
+
+/* ===== モジュール一覧 ===== */
+.modules-complete {
+    display: grid;
+    gap: var(--debug-space-sm);
+}
+
+.module-card {
+    background: var(--debug-bg-secondary);
+    border-radius: var(--debug-border-radius);
+    padding: var(--debug-space-md);
+    border-left: 4px solid;
+    transition: var(--debug-transition);
+}
+
+.module-card:hover {
+    box-shadow: var(--debug-shadow-sm);
+    transform: translateX(2px);
+}
+
+.module-card--complete {
+    border-left-color: var(--debug-success);
+    background: #f0fff0;
+}
+
+.module-card--partial {
+    border-left-color: var(--debug-warning);
+    background: #fff9e6;
+}
+
+.module-card--missing {
+    border-left-color: var(--debug-danger);
+    background: #ffe6e6;
+}
+
+.module-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--debug-space-sm);
+}
+
+.module-name {
+    font-weight: 600;
+    color: var(--debug-text-primary);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: var(--debug-space-xs);
+}
+
+.module-path {
+    font-size: 11px;
+    color: var(--debug-text-muted);
+    font-family: 'Courier New', monospace;
+    margin-bottom: var(--debug-space-xs);
+}
+
+.module-status {
+    display: flex;
+    gap: var(--debug-space-xs);
+    margin-bottom: var(--debug-space-sm);
+    flex-wrap: wrap;
+}
+
+.status-badge {
+    padding: 2px 6px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-badge--success {
+    background: var(--debug-success);
+    color: var(--debug-text-white);
+}
+
+.status-badge--danger {
+    background: var(--debug-danger);
+    color: var(--debug-text-white);
+}
+
+.status-badge--warning {
+    background: var(--debug-warning);
+    color: var(--debug-text-primary);
+}
+
+.status-badge--info {
+    background: var(--debug-info);
+    color: var(--debug-text-white);
+}
+
+.module-actions {
+    display: flex;
+    gap: var(--debug-space-xs);
+    flex-wrap: wrap;
+}
+
+/* ===== ログコンソール ===== */
+.log-container {
+    background: var(--debug-bg-dark);
+    color: #00ff00;
+    padding: var(--debug-space-md);
+    border-radius: var(--debug-border-radius);
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    height: 250px;
+    overflow-y: auto;
+    border: 1px solid var(--debug-primary);
+}
+
+.log-entry {
+    margin-bottom: var(--debug-space-xs);
+    padding: var(--debug-space-xs);
+    border-left: 3px solid transparent;
+    transition: var(--debug-transition);
+}
+
+.log-entry:hover {
+    background: rgba(0, 255, 0, 0.1);
+}
+
+.log-entry--success {
+    border-left-color: var(--debug-success);
+}
+
+.log-entry--warning {
+    border-left-color: var(--debug-warning);
+    color: #ffff00;
+}
+
+.log-entry--error {
+    border-left-color: var(--debug-danger);
+    color: #ff4444;
+}
+
+.log-entry--info {
+    border-left-color: var(--debug-info);
+    color: #44ddff;
+}
+
+.log-timestamp {
+    opacity: 0.7;
+    margin-right: var(--debug-space-xs);
+}
+
+/* ===== スピナー ===== */
+.spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid var(--debug-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ===== アニメーション ===== */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* ===== レスポンシブ ===== */
+@media (max-width: 768px) {
+    .debug-header {
+        padding: var(--debug-space-sm);
+    }
+
+    .debug-header h1 {
+        font-size: 20px;
+    }
+
+    .debug-status {
+        gap: var(--debug-space-sm);
+    }
+
+    .status-chip {
+        font-size: 11px;
+        padding: var(--debug-space-xs);
+    }
+
+    .core-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .scan-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .btn {
+        justify-content: center;
+    }
+
+    .stats-summary {
+        grid-template-columns: repeat(2, 1fr);
+        margin: 0 var(--debug-space-sm) var(--debug-space-md);
+    }
+
+    .results-grid {
+        margin: 0 var(--debug-space-sm);
+    }
+
+    .core-selector {
+        margin: 0 var(--debug-space-sm) var(--debug-space-md);
+    }
+
+    .debug-meta {
+        flex-direction: column;
+        gap: var(--debug-space-xs);
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .stats-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .module-actions {
+        flex-direction: column;
+    }
+
+    .module-status {
+        justify-content: flex-start;
+    }
+}
+
+/* ===== タブ統合対応 ===== */
+.tab-link {
+    position: relative;
+}
+
+.tab-link::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    background: var(--debug-info);
+    border-radius: 50%;
+    opacity: 0;
+    transition: var(--debug-transition);
+}
+
+.tab-link:hover::after {
+    opacity: 1;
+}
+
+/* ===== 印刷対応 ===== */
+@media print {
+    .debug-dashboard-container {
+        color: #000;
+        background: #fff;
+    }
+
+    .debug-header {
+        background: #000;
+        color: #fff;
+    }
+
+    .btn {
+        border: 1px solid #000;
+    }
+
+    .log-container,
+    .directory-map {
+        background: #fff;
+        color: #000;
+        border: 1px solid #000;
+    }
+}

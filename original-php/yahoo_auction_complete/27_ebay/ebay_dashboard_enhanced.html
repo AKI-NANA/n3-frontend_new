@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eBay Seller Hub - 完全日本語対応版</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ===== eBay完全準拠CSS ===== */
+        :root {
+            --ebay-blue: #0064d2;
+            --ebay-blue-dark: #0053ba;
+            --ebay-red: #e53e3e;
+            --ebay-yellow: #f5af02;
+            --ebay-green: #00a650;
+            --ebay-gray: #707070;
+            --ebay-light-gray: #f7f7f7;
+            --ebay-border: #e5e5e5;
+            --ebay-white: #ffffff;
+            --ebay-text: #191919;
+            --ebay-text-light: #707070;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: "Helvetica Neue", Arial, sans-serif;
+            background: var(--ebay-light-gray);
+            color: var(--ebay-text);
+            line-height: 1.4;
+            font-size: 14px;
+        }
+
+        /* ===== ヘッダー（完全eBay準拠） ===== */
+        .ebay-header {
+            background: var(--ebay-white);
+            border-bottom: 1px solid var(--ebay-border);
+            padding: 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-content {
+            max-width: 1300px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 16px;
+        }
+
+        .ebay-logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--ebay-blue);
+            text-decoration: none;
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 32px;
+            align-items: center;
+        }
+
+        .nav-item {
+            color: var(--ebay-text);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: normal;
+            padding: 8px 0;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover {
+            color: var(--ebay-blue);
+        }
+
+        .nav-item.active {
+            color: var(--ebay-blue);
+            border-bottom-color: var(--ebay-blue);
+            font-weight: 600;
+        }
+
+        /* ===== サブナビゲーション ===== */
+        .sub-nav {
+            background: var(--ebay-white);
+            border-bottom: 1px solid var(--ebay-border);
+            padding: 0;
+        }
+
+        .sub-nav-content {
+            max-width: 1300px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+        }
+
+        .sub-nav-item {
+            color: var(--ebay-text-light);
+            text-decoration: none;
+            font-size: 14px;
+            padding: 12px 16px;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .sub-nav-item:hover {
+            color: var(--ebay-blue);
+        }
+
+        .sub-nav-item.active {
+            color: var(--ebay-blue);
+            border-bottom-color: var(--ebay-blue);
+            font-weight: 600;
+        }
+
+        /* ===== メインコンテナ ===== */
+        .main-container {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        /* ===== ページタイトル ===== */
+        .page-title-section {
+            margin-bottom: 16px;
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--ebay-text);
+            margin-bottom: 4px;
+        }
+
+        .page-title-ja {
+            font-size: 16px;
+            color: var(--ebay-blue);
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .page-subtitle {
+            font-size: 12px;
+            color: var(--ebay-text-light);
+        }
+
+        /* ===== ダッシュボードレイアウト（3カラム） ===== */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        /* ===== セクションカード（eBay準拠） ===== */
+        .section-card {
+            background: var(--ebay-white);
+            border: 1px solid var(--ebay-border);
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--ebay-border);
+            background: #fafafa;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--ebay-text);
+            margin: 0;
+        }
+
+        .section-title-ja {
+            font-size: 18px;
+            color: var(--ebay-blue);
+            font-weight: 700;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .section-title-en {
+            font-size: 14px;
+            color: var(--ebay-text-light);
+            font-weight: normal;
+        }
+
+        .section-content {
+            padding: 20px;
+        }
+
+        /* ===== タスクセクション ===== */
+        .task-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .task-item:last-child {
+            border-bottom: none;
+        }
+
+        .task-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .task-icon {
+            width: 20px;
+            height: 20px;
+            color: var(--ebay-blue);
+        }
+
+        .task-details h4 {
+            font-size: 14px;
+            font-weight: normal;
+            color: var(--ebay-text-light);
+            margin-bottom: 2px;
+        }
+
+        .task-details .task-ja {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--ebay-text);
+        }
+
+        .task-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--ebay-blue);
+        }
+
+        .task-value.urgent {
+            color: var(--ebay-red);
+        }
+
+        /* ===== 売上チャートエリア ===== */
+        .sales-chart {
+            height: 200px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 1px solid var(--ebay-border);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 16px 0;
+            position: relative;
+        }
+
+        .chart-placeholder {
+            text-align: center;
+            color: var(--ebay-text-light);
+        }
+
+        /* ===== 統計数値表示 ===== */
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .stats-row:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-en {
+            font-size: 14px;
+            color: var(--ebay-text-light);
+        }
+
+        .stat-ja {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--ebay-text);
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--ebay-blue);
+        }
+
+        /* ===== リンクボタン ===== */
+        .ebay-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--ebay-blue);
+            color: var(--ebay-white);
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .ebay-btn:hover {
+            background: var(--ebay-blue-dark);
+            transform: translateY(-1px);
+        }
+
+        .ebay-btn-secondary {
+            background: var(--ebay-white);
+            color: var(--ebay-blue);
+            border: 1px solid var(--ebay-blue);
+        }
+
+        .ebay-btn-secondary:hover {
+            background: var(--ebay-blue);
+            color: var(--ebay-white);
+        }
+
+        /* ===== フルリンクリスト ===== */
+        .full-links-section {
+            margin-top: 32px;
+            background: var(--ebay-white);
+            border: 1px solid var(--ebay-border);
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 24px;
+            padding: 24px;
+        }
+
+        .link-category {
+            border: 1px solid var(--ebay-border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .link-category-header {
+            background: var(--ebay-blue);
+            color: var(--ebay-white);
+            padding: 12px 16px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .link-category-content {
+            padding: 16px;
+        }
+
+        .link-item {
+            display: block;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s;
+        }
+
+        .link-item:last-child {
+            border-bottom: none;
+        }
+
+        .link-item:hover {
+            background: #f8f9fa;
+            transform: translateX(4px);
+        }
+
+        .link-item-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .link-item-ja {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--ebay-text);
+        }
+
+        .link-item-en {
+            font-size: 14px;
+            color: var(--ebay-text-light);
+        }
+
+        .link-item-desc {
+            font-size: 13px;
+            color: var(--ebay-text-light);
+            margin: 4px 0;
+        }
+
+        .link-item-usage {
+            font-size: 12px;
+            color: var(--ebay-blue);
+            background: #e3f2fd;
+            padding: 4px 8px;
+            border-radius: 12px;
+            display: inline-block;
+        }
+
+        /* ===== レスポンシブ ===== */
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .links-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-nav {
+                display: none;
+            }
+            
+            .sub-nav-content {
+                overflow-x: auto;
+            }
+        }
+
+        /* ===== 特別なアラート ===== */
+        .urgent-alert {
+            background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+            border: 1px solid var(--ebay-red);
+            border-radius: 4px;
+            padding: 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .alert-icon {
+            color: var(--ebay-red);
+            font-size: 20px;
+        }
+
+        .alert-content h3 {
+            color: var(--ebay-red);
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .alert-content p {
+            color: var(--ebay-text);
+            font-size: 14px;
+        }
+
+        /* ===== ショートカットアクション ===== */
+        .quick-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+
+        .quick-action-btn {
+            flex: 1;
+            min-width: 120px;
+            text-align: center;
+            padding: 12px 8px;
+            background: var(--ebay-white);
+            border: 1px solid var(--ebay-border);
+            border-radius: 4px;
+            text-decoration: none;
+            color: var(--ebay-text);
+            transition: all 0.2s;
+        }
+
+        .quick-action-btn:hover {
+            border-color: var(--ebay-blue);
+            background: #f8fafe;
+        }
+
+        .quick-action-icon {
+            display: block;
+            font-size: 20px;
+            color: var(--ebay-blue);
+            margin-bottom: 8px;
+        }
+
+        .quick-action-label {
+            font-size: 12px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <!-- eBayヘッダー完全再現 -->
+    <header class="ebay-header">
+        <div class="header-content">
+            <a href="https://www.ebay.com" class="ebay-logo">
+                <i class="fab fa-ebay"></i> eBay
+            </a>
+            <nav class="header-nav">
+                <a href="https://www.ebay.com" class="nav-item">ホーム</a>
+                <a href="https://www.ebay.com/mys" class="nav-item active">マイeBay</a>
+                <a href="https://community.ebay.com" class="nav-item">コミュニティ</a>
+                <a href="https://www.ebay.com/help" class="nav-item">ヘルプ・お問い合わせ</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- サブナビゲーション -->
+    <nav class="sub-nav">
+        <div class="sub-nav-content">
+            <a href="https://www.ebay.com/sh/ovw" class="sub-nav-item active">Overview</a>
+            <a href="https://www.ebay.com/sh/ord" class="sub-nav-item">Orders</a>
+            <a href="https://www.ebay.com/sh/lst" class="sub-nav-item">Listings</a>
+            <a href="https://www.ebay.com/sh/mkt" class="sub-nav-item">Marketing</a>
+            <a href="https://www.ebay.com/sh/str" class="sub-nav-item">Store</a>
+            <a href="https://www.ebay.com/sh/prf" class="sub-nav-item">Performance</a>
+            <a href="https://www.ebay.com/sh/pmt" class="sub-nav-item">Payments</a>
+            <a href="https://www.ebay.com/sh/rch" class="sub-nav-item">Research</a>
+        </div>
+    </nav>
+
+    <main class="main-container">
+        <!-- ページタイトル -->
+        <div class="page-title-section">
+            <h1 class="page-title">Seller Hub</h1>
+            <h2 class="page-title-ja">販売者ハブ - すべての販売活動を一箇所で管理</h2>
+            <p class="page-subtitle">eBayでの販売業務に必要なすべてのツールと情報を集約したダッシュボードです</p>
+        </div>
+
+        <!-- 緊急アラート -->
+        <div class="urgent-alert">
+            <i class="fas fa-exclamation-triangle alert-icon"></i>
+            <div class="alert-content">
+                <h3>緊急対応が必要な項目があります</h3>
+                <p>ケース対応期限まで2時間、発送期限の注文3件、未読メッセージ5件</p>
+            </div>
+        </div>
+
+        <!-- メインダッシュボード（3カラムレイアウト） -->
+        <div class="dashboard-grid">
+            <!-- タスクセクション -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div>
+                        <div class="section-title-ja">やるべきタスク</div>
+                        <div class="section-title-en">Tasks</div>
+                    </div>
+                    <a href="https://www.ebay.com/mys/messages" class="ebay-btn ebay-btn-secondary">
+                        すべて見る
+                    </a>
+                </div>
+                <div class="section-content">
+                    <div class="task-item">
+                        <div class="task-info">
+                            <i class="fas fa-envelope task-icon"></i>
+                            <div class="task-details">
+                                <h4>Unread messages</h4>
+                                <div class="task-ja">未読メッセージ</div>
+                            </div>
+                        </div>
+                        <div class="task-value urgent">5</div>
+                    </div>
+
+                    <div class="task-item">
+                        <div class="task-info">
+                            <i class="fas fa-print task-icon"></i>
+                            <div class="task-details">
+                                <h4>Print shipping labels</h4>
+                                <div class="task-ja">発送ラベル印刷</div>
+                            </div>
+                        </div>
+                        <div class="task-value urgent">3</div>
+                    </div>
+
+                    <div class="task-item">
+                        <div class="task-info">
+                            <i class="fas fa-gavel task-icon"></i>
+                            <div class="task-details">
+                                <h4>Cases requiring action</h4>
+                                <div class="task-ja">対応必要なケース</div>
+                            </div>
+                        </div>
+                        <div class="task-value urgent">1</div>
+                    </div>
+
+                    <div class="task-item">
+                        <div class="task-info">
+                            <i class="fas fa-star task-icon"></i>
+                            <div class="task-details">
+                                <h4>Leave feedback</h4>
+                                <div class="task-ja">評価を残す</div>
+                            </div>
+                        </div>
+                        <div class="task-value">2</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 売上セクション -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div>
+                        <div class="section-title-ja">売上実績</div>
+                        <div class="section-title-en">Sales</div>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <div class="sales-chart">
+                        <div class="chart-placeholder">
+                            <i class="fas fa-chart-line" style="font-size: 48px; color: var(--ebay-blue); margin-bottom: 16px;"></i>
+                            <p>過去31日間の売上グラフ</p>
+                        </div>
+                    </div>
+
+                    <div class="stats-row">
+                        <div class="stat-label">
+                            <span class="stat-en">Today</span>
+                            <span class="stat-ja">今日の売上</span>
+                        </div>
+                        <div class="stat-value">$89.50</div>
+                    </div>
+
+                    <div class="stats-row">
+                        <div class="stat-label">
+                            <span class="stat-en">Last 7 days</span>
+                            <span class="stat-ja">過去7日間</span>
+                        </div>
+                        <div class="stat-value">$1,204.25</div>
+                    </div>
+
+                    <div class="stats-row">
+                        <div class="stat-label">
+                            <span class="stat-en">Last 31 days</span>
+                            <span class="stat-ja">過去31日間</span>
+                        </div>
+                        <div class="stat-value">$3,389.43</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 注文セクション -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div>
+                        <div class="section-title-ja">注文管理</div>
+                        <div class="section-title-en">Orders</div>
+                    </div>
+                    <a href="https://www.ebay.com/mys/sold" class="ebay-btn ebay-btn-secondary">
+                        すべて見る
+                    </a>
+                </div>
+                <div class="section-content">
+                    <div class="stats-row">
+                        <div class="stat-label">
+                            <span class="stat-en">Awaiting payment</span>
+                            <span class="stat-ja">支払い待ち</span>
+                        </div>
+                        <div class="stat-value">3</div>
+                    </div>
+
+                    <div class="stats-row">
+                        <div class="stat-label">
+                            <span class="stat-en">Awaiting shipment</span>
+                            <span class="stat-ja">発送待ち</span>
+                        </div>
+                        <div class="stat-value" style="color: var(--ebay-red);">12</div>
+                    </div>
+
+                    <div class="stats-row">
+                        <div class="stat-label">
+                            <span class="stat-en">Returns/cancellations</span>
+                            <span class="stat-ja">返品・キャンセル</span>
+                        </div>
+                        <div class="stat-value">1</div>
+                    </div>
+
+                    <div class="stats-row">
+                        <div class="stat-label">
+                            <span class="stat-en">Feedback to leave</span>
+                            <span class="stat-ja">評価待ち</span>
+                        </div>
+                        <div class="stat-value">2</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- クイックアクション -->
+        <div class="section-card">
+            <div class="section-header">
+                <div>
+                    <div class="section-title-ja">よく使う機能</div>
+                    <div class="section-title-en">Quick Actions</div>
+                </div>
+            </div>
+            <div class="section-content">
+                <div class="quick-actions">
+                    <a href="https://www.ebay.com/sellform" target="_blank" class="quick-action-btn">
+                        <i class="fas fa-plus quick-action-icon"></i>
+                        <div class="quick-action-label">新規出品</div>
+                    </a>
+                    <a href="https://www.ebay.com/mys/messages" target="_blank" class="quick-action-btn">
+                        <i class="fas fa-envelope quick-action-icon"></i>
+                        <div class="quick-action-label">メッセージ</div>
+                    </a>
+                    <a href="https://www.ebay.com/mys/sold" target="_blank" class="quick-action-btn">
+                        <i class="fas fa-shipping-fast quick-action-icon"></i>
+                        <div class="quick-action-label">注文管理</div>
+                    </a>
+                    <a href="https://www.ebay.com/mys/listing" target="_blank" class="quick-action-btn">
+                        <i class="fas fa-list quick-action-icon"></i>
+                        <div class="quick-action-label">出品管理</div>
+                    </a>
+                    <a href="https://www.ebay.com/sh/performance" target="_blank" class="quick-action-btn">
+                        <i class="fas fa-chart-bar quick-action-icon"></i>
+                        <div class="quick-action-label">パフォーマンス</div>
+                    </a>
+                    <a href="https://www.ebay.com/mys/feedback" target="_blank" class="quick-action-btn">
+                        <i class="fas fa-star quick-action-icon"></i>
+                        <div class="quick-action-label">評価確認</div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 全eBayページリンク集 -->
+        <div class="full-links-section">
+            <div class="section-header">
+                <div>
+                    <div class="section-title-ja">eBay全ページリンク集</div>
+                    <div class="section-title-en">Complete eBay Page Directory</div>
+                </div>
+            </div>
+            
+            <div class="links-grid">
+                <!-- 販売管理 -->
+                <div class="link-category">
+                    <div class="link-category-header">
+                        <i class="fas fa-store"></i> 販売管理 (Selling Management)
+                    </div>
+                    <div class="link-category-content">
+                        <a href="https://www.ebay.com/sellform" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-plus"></i>
+                                <div>
+                                    <div class="link-item-ja">新規商品出品</div>
+                                    <div class="link-item-en">Sell an Item</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">新しい商品をeBayに出品する</div>
+                            <div class="link-item-usage">使用: 商品を販売したい時</div>
+                        </a>
+
+                        <a href="https://www.ebay.com/mys/listing" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-list"></i>
+                                <div>
+                                    <div class="link-item-ja">出品商品管理</div>
+                                    <div class="link-item-en">Active Listings</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">現在出品中の商品の確認・編集</div>
+                            <div class="link-item-usage">使用: 価格変更・説明修正時</div>
+                        </a>
+
+                        <a href="https://www.ebay.com/mys/unsold" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-archive"></i>
+                                <div>
+                                    <div class="link-item-ja">売れなかった商品</div>
+                                    <div class="link-item-en">Unsold Items</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">期間終了で売れなかった商品の再出品</div>
+                            <div class="link-item-usage">使用: 再出品・価格見直し時</div>
+                        </a>
+
+                        <a href="https://www.ebay.com/mys/scheduled" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-clock"></i>
+                                <div>
+                                    <div class="link-item-ja">予約出品</div>
+                                    <div class="link-item-en">Scheduled Listings</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">将来の日時に開始予定の出品</div>
+                            <div class="link-item-usage">使用: 出品タイミング調整時</div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 注文・発送管理 -->
+                <div class="link-category">
+                    <div class="link-category-header">
+                        <i class="fas fa-shipping-fast"></i> 注文・発送管理 (Orders & Shipping)
+                    </div>
+                    <div class="link-category-content">
+                        <a href="https://www.ebay.com/mys/sold" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-box"></i>
+                                <div>
+                                    <div class="link-item-ja">売れた商品・注文管理</div>
+                                    <div class="link-item-en">Sold Listings</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">売れた商品の発送手続き・追跡番号入力</div>
+                            <div class="link-item-usage">使用: 毎日の発送作業時</div>
+                        </a>
+
+                        <a href="https://www.ebay.com/myb/orders" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-truck"></i>
+                                <div>
+                                    <div class="link-item-ja">配送ラベル印刷</div>
+                                    <div class="link-item-en">Print Shipping Labels</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">配送ラベルの作成・印刷</div>
+                            <div class="link-item-usage">使用: 商品発送準備時</div>
+                        </a>
+
+                        <a href="https://www.ebay.com/mys/returns" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-undo"></i>
+                                <div>
+                                    <div class="link-item-ja">返品・返金管理</div>
+                                    <div class="link-item-en">Returns</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">返品リクエストの対応・返金処理</div>
+                            <div class="link-item-usage">使用: 返品要求があった時</div>
+                        </a>
+
+                        <a href="https://www.ebay.com/mys/cancellations" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-times-circle"></i>
+                                <div>
+                                    <div class="link-item-ja">キャンセル管理</div>
+                                    <div class="link-item-en">Cancellations</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">注文キャンセルの処理</div>
+                            <div class="link-item-usage">使用: 買い手からキャンセル要求時</div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- コミュニケーション -->
+                <div class="link-category">
+                    <div class="link-category-header">
+                        <i class="fas fa-comments"></i> コミュニケーション (Communication)
+                    </div>
+                    <div class="link-category-content">
+                        <a href="https://www.ebay.com/mys/messages" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-envelope"></i>
+                                <div>
+                                    <div class="link-item-ja">メッセージ</div>
+                                    <div class="link-item-en">Messages</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">買い手からの質問・メッセージの確認・返信</div>
+                            <div class="link-item-usage">使用: 毎日のメッセージ確認</div>
+                        </a>
+
+                        <a href="https://www.ebay.com/mys/feedback" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-star"></i>
+                                <div>
+                                    <div class="link-item-ja">評価・フィードバック</div>
+                                    <div class="link-item-en">Feedback</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">受けた評価の確認・買い手への評価</div>
+                            <div class="link-item-usage">使用: 評価確認・評価を残す時</div>
+                        </a>
+
+                        <a href="https://www.ebay.com/mys/cases" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-gavel"></i>
+                                <div>
+                                    <div class="link-item-ja">ケース対応</div>
+                                    <div class="link-item-en">Resolution Center</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">トラブルやクレームのケース対応</div>
+                            <div class="link-item-usage">使用: 問題発生時の解決</div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- パフォーマンス・分析 -->
+                <div class="link-category">
+                    <div class="link-category-header">
+                        <i class="fas fa-chart-line"></i> パフォーマンス・分析 (Performance & Analytics)
+                    </div>
+                    <div class="link-category-content">
+                        <a href="https://www.ebay.com/sh/performance" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-chart-bar"></i>
+                                <div>
+                                    <div class="link-item-ja">販売パフォーマンス</div>
+                                    <div class="link-item-en">Performance</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">セラーレベル・評価指標の確認</div>
+                            <div class="link-item-usage">使用: 週1回の成績確認</div>
+                        </a>
+
+                        <a href="https://www.ebay.com/sh/analytics" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-chart-pie"></i>
+                                <div>
+                                    <div class="link-item-ja">売上分析</div>
+                                    <div class="link-item-en">Sales Analytics</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">詳細な売上データ・トレンド分析</div>
+                            <div class="link-item-usage">使用: 月次業績レビュー</div>
+                        </a>
+
+                        <a href="https://www.ebay.com/sh/traffic" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-eye"></i>
+                                <div>
+                                    <div class="link-item-ja">トラフィック分析</div>
+                                    <div class="link-item-en">Traffic Report</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">商品閲覧数・検索流入の分析</div>
+                            <div class="link-item-usage">使用: 商品タイトル最適化時</div>
+                        </a>
+
+                        <a href="https://www.ebay.com/sh/research" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-search"></i>
+                                <div>
+                                    <div class="link-item-ja">市場調査・リサーチ</div>
+                                    <div class="link-item-en">Research</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">売れ筋商品・競合価格の調査</div>
+                            <div class="link-item-usage">使用: 新商品発掘・価格設定時</div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 金銭管理 -->
+                <div class="link-category">
+                    <div class="link-category-header">
+                        <i class="fas fa-dollar-sign"></i> 金銭管理 (Financial Management)
+                    </div>
+                    <div class="link-category-content">
+                        <a href="https://www.ebay.com/mys/invoices" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-file-invoice-dollar"></i>
+                                <div>
+                                    <div class="link-item-ja">請求書・手数料</div>
+                                    <div class="link-item-en">Invoices</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">eBay手数料・月次請求書の確認</div>
+                            <div class="link-item-usage">使用: 月末の手数料確認</div>
+                        </a>
+
+                        <a href="https://www.ebay.com/sh/payments" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-credit-card"></i>
+                                <div>
+                                    <div class="link-item-ja">支払い・入金管理</div>
+                                    <div class="link-item-en">Payments</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">売上金の入金状況・支払い方法管理</div>
+                            <div class="link-item-usage">使用: 入金確認・税務処理時</div>
+                        </a>
+
+                        <a href="https://www.ebay.com/mys/ebaybalance" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-wallet"></i>
+                                <div>
+                                    <div class="link-item-ja">eBay残高</div>
+                                    <div class="link-item-en">eBay Balance</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">eBayアカウント内の残高確認</div>
+                            <div class="link-item-usage">使用: 手数料支払い前確認</div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- アカウント設定 -->
+                <div class="link-category">
+                    <div class="link-category-header">
+                        <i class="fas fa-cog"></i> アカウント設定 (Account Settings)
+                    </div>
+                    <div class="link-category-content">
+                        <a href="https://www.ebay.com/mys/account" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-user-cog"></i>
+                                <div>
+                                    <div class="link-item-ja">アカウント設定</div>
+                                    <div class="link-item-en">Account Settings</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">個人情報・連絡先・パスワード変更</div>
+                            <div class="link-item-usage">使用: 情報更新・セキュリティ設定</div>
+                        </a>
+
+                        <a href="https://www.ebay.com/mys/preferences" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-sliders-h"></i>
+                                <div>
+                                    <div class="link-item-ja">販売設定</div>
+                                    <div class="link-item-en">Selling Preferences</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">出品時のデフォルト設定・配送設定</div>
+                            <div class="link-item-usage">使用: 出品効率化設定時</div>
+                        </a>
+
+                        <a href="https://www.ebay.com/mys/notifications" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-bell"></i>
+                                <div>
+                                    <div class="link-item-ja">通知設定</div>
+                                    <div class="link-item-en">Notification Preferences</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">メール通知・アラート設定</div>
+                            <div class="link-item-usage">使用: 通知頻度調整時</div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- ストア・マーケティング -->
+                <div class="link-category">
+                    <div class="link-category-header">
+                        <i class="fas fa-storefront"></i> ストア・マーケティング (Store & Marketing)
+                    </div>
+                    <div class="link-category-content">
+                        <a href="https://www.ebay.com/str/manage" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-store-alt"></i>
+                                <div>
+                                    <div class="link-item-ja">eBayストア管理</div>
+                                    <div class="link-item-en">Manage Store</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">ストアのデザイン・カテゴリ・プロモーション</div>
+                            <div class="link-item-usage">使用: ストア運営・カスタマイズ</div>
+                        </a>
+
+                        <a href="https://www.ebay.com/sh/marketing" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-bullhorn"></i>
+                                <div>
+                                    <div class="link-item-ja">プロモーション作成</div>
+                                    <div class="link-item-en">Promotions Manager</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">割引・セール・クーポンの作成</div>
+                            <div class="link-item-usage">使用: 売上向上キャンペーン時</div>
+                        </a>
+
+                        <a href="https://www.ebay.com/sh/advertising" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-ad"></i>
+                                <div>
+                                    <div class="link-item-ja">広告管理</div>
+                                    <div class="link-item-en">Promoted Listings</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">商品の有料広告・露出向上</div>
+                            <div class="link-item-usage">使用: 売上拡大・競合対策</div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- サポート・ヘルプ -->
+                <div class="link-category">
+                    <div class="link-category-header">
+                        <i class="fas fa-question-circle"></i> サポート・ヘルプ (Support & Help)
+                    </div>
+                    <div class="link-category-content">
+                        <a href="https://www.ebay.com/help" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-life-ring"></i>
+                                <div>
+                                    <div class="link-item-ja">ヘルプセンター</div>
+                                    <div class="link-item-en">Help Center</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">よくある質問・ガイド・ポリシー確認</div>
+                            <div class="link-item-usage">使用: 問題解決・ルール確認時</div>
+                        </a>
+
+                        <a href="https://www.ebay.com/help/contact" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-phone"></i>
+                                <div>
+                                    <div class="link-item-ja">カスタマーサポート</div>
+                                    <div class="link-item-en">Contact eBay</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">電話・チャットでのサポート問い合わせ</div>
+                            <div class="link-item-usage">使用: 解決できない問題時</div>
+                        </a>
+
+                        <a href="https://community.ebay.com" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-users"></i>
+                                <div>
+                                    <div class="link-item-ja">コミュニティ</div>
+                                    <div class="link-item-en">Community</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">他のセラーとの情報交換・質問</div>
+                            <div class="link-item-usage">使用: 販売ノウハウ習得時</div>
+                        </a>
+
+                        <a href="https://www.ebay.com/help/selling" target="_blank" class="link-item">
+                            <div class="link-item-title">
+                                <i class="fas fa-graduation-cap"></i>
+                                <div>
+                                    <div class="link-item-ja">販売ガイド</div>
+                                    <div class="link-item-en">Selling Guide</div>
+                                </div>
+                            </div>
+                            <div class="link-item-desc">販売のコツ・ベストプラクティス</div>
+                            <div class="link-item-usage">使用: 販売スキル向上時</div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // ページ読み込み時の初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            // リンククリック時のトラッキング
+            const allLinks = document.querySelectorAll('a[target="_blank"]');
+            allLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    const linkText = this.querySelector('.link-item-ja')?.textContent || this.textContent;
+                    console.log(`eBayページに移動: ${linkText} - ${this.href}`);
+                });
+            });
+
+            // 緊急アラートの更新
+            updateUrgentTasks();
+        });
+
+        // 緊急タスクの更新
+        function updateUrgentTasks() {
+            const urgentValues = document.querySelectorAll('.task-value.urgent');
+            let totalUrgent = 0;
+            
+            urgentValues.forEach(value => {
+                totalUrgent += parseInt(value.textContent);
+            });
+
+            if (totalUrgent > 0) {
+                const alertText = document.querySelector('.alert-content p');
+                if (alertText) {
+                    alertText.textContent = `緊急対応が必要な項目が${totalUrgent}件あります。すぐに対応してください。`;
+                }
+            }
+        }
+
+        // キーボードショートカット
+        document.addEventListener('keydown', function(e) {
+            if (e.altKey) {
+                switch(e.key) {
+                    case 'm':
+                        e.preventDefault();
+                        window.open('https://www.ebay.com/mys/messages', '_blank');
+                        console.log('メッセージページを開きました');
+                        break;
+                    case 'o':
+                        e.preventDefault();
+                        window.open('https://www.ebay.com/mys/sold', '_blank');
+                        console.log('注文管理ページを開きました');
+                        break;
+                    case 'l':
+                        e.preventDefault();
+                        window.open('https://www.ebay.com/mys/listing', '_blank');
+                        console.log('出品管理ページを開きました');
+                        break;
+                    case 'p':
+                        e.preventDefault();
+                        window.open('https://www.ebay.com/sh/performance', '_blank');
+                        console.log('パフォーマンスページを開きました');
+                        break;
+                }
+            }
+        });
+
+        // 統計数値の自動更新シミュレーション
+        function updateStats() {
+            const statValues = document.querySelectorAll('.stat-value, .task-value');
+            statValues.forEach(stat => {
+                if (!stat.classList.contains('urgent')) {
+                    const currentValue = parseInt(stat.textContent.replace(/[^\d]/g, ''));
+                    if (!isNaN(currentValue) && currentValue < 1000) {
+                        const variation = Math.floor(Math.random() * 3) - 1; // -1, 0, 1
+                        const newValue = Math.max(0, currentValue + variation);
+                        if (stat.textContent.includes('$')) {
+                            stat.textContent = `$${newValue.toLocaleString()}`;
+                        } else {
+                            stat.textContent = newValue;
+                        }
+                    }
+                }
+            });
+        }
+
+        // 30秒ごとにデータ更新
+        setInterval(updateStats, 30000);
+    </script>
+</body>
+</html>

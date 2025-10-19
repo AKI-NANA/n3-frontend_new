@@ -28,7 +28,7 @@ export default function MainContent({ children }: { children: React.ReactNode })
           setLeftMargin(60) // アイコンのみ表示時
           break
         case 'expanded':
-          setLeftMargin(220) // 展開時
+          setLeftMargin(170) // 展開時 (Sidebarの実際の幅に合わせる)
           break
         default:
           setLeftMargin(0)

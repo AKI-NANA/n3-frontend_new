@@ -1,0 +1,3777 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>棚卸しシステム - 完全版</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<style>
+/* ===== NAGANO-3統一CSS変数 ===== */
+:root {
+    --space-xs: 0.25rem;
+    --space-sm: 0.5rem;
+    --space-md: 1rem;
+    --space-lg: 1.5rem;
+    --space-xl: 2rem;
+    --space-2xl: 3rem;
+    
+    --color-primary: #3b82f6;
+    --color-secondary: #6366f1;
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-danger: #ef4444;
+    --color-info: #06b6d4;
+    
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f1f5f9;
+    --bg-hover: #e2e8f0;
+    --bg-active: #cbd5e1;
+    
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --text-tertiary: #64748b;
+    --text-muted: #94a3b8;
+    --text-white: #ffffff;
+    
+    --border-color: #e2e8f0;
+    --border-light: #f1f5f9;
+    --border-dark: #cbd5e1;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    
+    --radius-sm: 0.25rem;
+    --radius-md: 0.375rem;
+    --radius-lg: 0.5rem;
+    --radius-xl: 0.75rem;
+    --radius-full: 9999px;
+    --transition-fast: all 0.15s ease-in-out;
+    --transition-normal: all 0.2s ease-in-out;
+    
+    --text-xs: 0.75rem;
+    --text-sm: 0.875rem;
+    --text-base: 1rem;
+    --text-lg: 1.125rem;
+    --text-xl: 1.25rem;
+    --text-2xl: 1.5rem;
+    
+    /* 棚卸し専用カラー */
+    --inventory-stock: #059669;
+    --inventory-dropship: #7c3aed;
+    --inventory-set: #dc6803;
+    --inventory-hybrid: #0e7490;
+    --inventory-out: #dc2626;
+    --inventory-used: #8b5cf6;
+
+    /* Excel基盤カラー */
+    --excel-primary: #dc2626;
+    --excel-primary-rgb: 220, 38, 38;
+    --excel-secondary: #f59e0b;
+    --excel-success: #10b981;
+    --excel-warning: #f59e0b;
+    --excel-danger: #dc2626;
+    --excel-info: #06b6d4;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'Yu Gothic', sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+.content {
+    margin: 0;
+    max-width: 100vw;
+    padding: var(--space-lg);
+    overflow-x: hidden;
+}
+
+/* ===== ボタンシステム ===== */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    white-space: nowrap;
+    font-family: inherit;
+}
+
+.btn:hover {
+    background: var(--bg-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn--small {
+    padding: var(--space-xs) var(--space-sm);
+    font-size: var(--text-xs);
+}
+
+.btn--primary {
+    background: var(--color-primary);
+    color: var(--text-white);
+    border-color: var(--color-primary);
+}
+
+.btn--success {
+    background: var(--color-success);
+    color: var(--text-white);
+    border-color: var(--color-success);
+}
+
+.btn--warning {
+    background: var(--color-warning);
+    color: var(--text-white);
+    border-color: var(--color-warning);
+}
+
+.btn--danger {
+    background: var(--color-danger);
+    color: var(--text-white);
+    border-color: var(--color-danger);
+}
+
+.btn--secondary {
+    background: transparent;
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
+}
+
+/* ===== Excel風テーブル ===== */
+.excel-grid {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    margin-bottom: var(--space-lg);
+}
+
+.excel-toolbar {
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+    padding: var(--space-sm) var(--space-md);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-md);
+    min-height: 40px;
+    flex-wrap: wrap;
+}
+
+.excel-toolbar__left,
+.excel-toolbar__right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+}
+
+.excel-toolbar__search {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.excel-toolbar__search-input {
+    padding: var(--space-xs) var(--space-sm) var(--space-xs) var(--space-xl);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-secondary);
+    font-size: 0.8rem;
+    width: 200px;
+    height: 28px;
+}
+
+.excel-toolbar__search-icon {
+    position: absolute;
+    left: var(--space-sm);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.excel-btn {
+    padding: var(--space-xs) var(--space-sm);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    white-space: nowrap;
+}
+
+.excel-btn:hover {
+    background: var(--bg-hover);
+    border-color: var(--excel-primary);
+}
+
+.excel-btn--primary {
+    background: var(--excel-primary);
+    border-color: var(--excel-primary);
+    color: var(--text-white);
+}
+
+.excel-btn--success {
+    background: var(--excel-success);
+    border-color: var(--excel-success);
+    color: var(--text-white);
+}
+
+.excel-btn--warning {
+    background: var(--excel-warning);
+    border-color: var(--excel-warning);
+    color: var(--text-white);
+}
+
+.excel-btn--small {
+    padding: 2px var(--space-xs);
+    font-size: 0.7rem;
+    height: 24px;
+}
+
+.excel-table-wrapper {
+    overflow: auto;
+    max-height: 600px;
+    border-top: 1px solid var(--border-color);
+}
+
+.excel-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-secondary);
+    font-size: 0.75rem;
+    line-height: 1.2;
+    table-layout: fixed;
+}
+
+.excel-table th {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    padding: var(--space-xs) var(--space-sm);
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.7rem;
+    height: 28px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    user-select: none;
+    cursor: pointer;
+}
+
+.excel-table th:hover {
+    background: var(--bg-hover);
+}
+
+.excel-table td {
+    border: 1px solid var(--border-light);
+    padding: 1px 2px;
+    height: 22px;
+    vertical-align: middle;
+    position: relative;
+}
+
+.excel-table tr:hover {
+    background: rgba(var(--excel-primary-rgb), 0.02);
+}
+
+.excel-table tr:nth-child(even) {
+    background: rgba(0, 0, 0, 0.01);
+}
+
+.excel-table tr:nth-child(even):hover {
+    background: rgba(var(--excel-primary-rgb), 0.03);
+}
+
+.excel-cell {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: transparent;
+    font-size: 0.75rem;
+    padding: 2px 4px;
+    outline: none;
+    font-family: inherit;
+    color: var(--text-primary);
+}
+
+.excel-cell:focus {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--excel-primary);
+    border-radius: 2px;
+}
+
+.excel-select {
+    width: 100%;
+    height: 20px;
+    border: none;
+    background: transparent;
+    font-size: 0.75rem;
+    outline: none;
+    cursor: pointer;
+}
+
+.excel-select:focus {
+    background: var(--bg-tertiary);
+}
+
+.excel-checkbox {
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+}
+
+.excel-pagination {
+    background: var(--bg-tertiary);
+    border-top: 1px solid var(--border-color);
+    padding: var(--space-sm) var(--space-md);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+    min-height: 32px;
+}
+
+.excel-pagination__info {
+    color: var(--text-secondary);
+}
+
+.excel-pagination__controls {
+    display: flex;
+    gap: var(--space-xs);
+}
+
+/* ===== ヘッダー ===== */
+.inventory__header {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+}
+
+.inventory__title {
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 var(--space-md) 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.inventory__title-icon {
+    color: var(--color-primary);
+    font-size: var(--text-xl);
+}
+
+.inventory__header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-lg);
+    flex-wrap: wrap;
+    gap: var(--space-md);
+}
+
+.inventory__exchange-rate {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+
+.inventory__exchange-icon {
+    color: var(--color-warning);
+}
+
+.inventory__exchange-text {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.inventory__exchange-value {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.inventory__stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+}
+
+.inventory__stat {
+    text-align: center;
+    padding: var(--space-sm);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-light);
+}
+
+.inventory__stat-number {
+    display: block;
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.inventory__stat-label {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+/* ===== 独立フィルターバー ===== */
+.inventory__filter-bar {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+}
+
+.inventory__filter-title {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 var(--space-md) 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.inventory__filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
+}
+
+.inventory__filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.inventory__filter-label {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.inventory__filter-select {
+    padding: var(--space-sm);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-primary);
+    font-size: var(--text-sm);
+    transition: var(--transition-fast);
+}
+
+.inventory__filter-select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.inventory__filter-actions {
+    display: flex;
+    gap: var(--space-md);
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.inventory__filter-left {
+    display: flex;
+    gap: var(--space-sm);
+    align-items: center;
+}
+
+.inventory__filter-right {
+    display: flex;
+    gap: var(--space-sm);
+    align-items: center;
+}
+
+.inventory__search-box {
+    position: relative;
+    min-width: 250px;
+}
+
+.inventory__search-input {
+    width: 100%;
+    padding: var(--space-sm) var(--space-md) var(--space-sm) var(--space-xl);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-primary);
+    font-size: var(--text-sm);
+    transition: var(--transition-fast);
+}
+
+.inventory__search-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.inventory__search-icon {
+    position: absolute;
+    left: var(--space-md);
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+}
+
+/* ===== 価格チャート ===== */
+.inventory__chart-section {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+}
+
+.inventory__chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-lg);
+}
+
+.inventory__chart-title {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.inventory__chart-controls {
+    display: flex;
+    gap: var(--space-sm);
+    align-items: center;
+}
+
+.inventory__currency-toggle {
+    display: flex;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--bg-primary);
+}
+
+.inventory__currency-btn {
+    padding: var(--space-xs) var(--space-md);
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    font-size: var(--text-sm);
+}
+
+.inventory__currency-btn--active {
+    background: var(--color-primary);
+    color: var(--text-white);
+}
+
+.inventory__chart-container {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: var(--space-lg);
+    align-items: start;
+}
+
+.inventory__chart-canvas {
+    max-height: 300px;
+}
+
+.inventory__chart-stats {
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    border: 1px solid var(--border-light);
+}
+
+.inventory__chart-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-sm) 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.inventory__chart-stat:last-child {
+    border-bottom: none;
+}
+
+.inventory__chart-stat-label {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.inventory__chart-stat-value {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* ===== ビュー切り替えコントロール ===== */
+.inventory__view-controls {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-md);
+    margin-bottom: var(--space-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+}
+
+.inventory__view-toggle {
+    display: flex;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--bg-primary);
+}
+
+.inventory__view-btn {
+    padding: var(--space-sm) var(--space-md);
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    font-size: var(--text-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.inventory__view-btn--active {
+    background: var(--color-primary);
+    color: var(--text-white);
+}
+
+.inventory__view-btn:hover:not(.inventory__view-btn--active) {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.inventory__actions {
+    display: flex;
+    gap: var(--space-sm);
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* ===== CSVインポート ===== */
+.inventory__import {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    margin-bottom: var(--space-lg);
+    box-shadow: var(--shadow-sm);
+    border: 2px dashed var(--border-color);
+    text-align: center;
+    transition: var(--transition-fast);
+}
+
+.inventory__import:hover,
+.inventory__import--dragover {
+    border-color: var(--color-primary);
+    background: rgba(59, 130, 246, 0.02);
+}
+
+.inventory__import-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-md);
+}
+
+.inventory__import-icon {
+    font-size: var(--text-lg);
+    color: var(--color-primary);
+}
+
+.inventory__import-text {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.inventory__import-input {
+    display: none;
+}
+
+/* ===== カードビュー ===== */
+.inventory__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+
+.inventory__card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    cursor: pointer;
+    transition: var(--transition-normal);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-sm);
+}
+
+.inventory__card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-info);
+}
+
+.inventory__card--selected {
+    border-color: var(--excel-primary);
+    background: rgba(var(--excel-primary-rgb), 0.05);
+    box-shadow: 0 0 0 3px rgba(var(--excel-primary-rgb), 0.3);
+    transform: translateY(-2px);
+}
+
+.inventory__card--selected::after {
+    content: '✓';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: var(--excel-primary);
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    z-index: 10;
+    box-shadow: var(--shadow-md);
+}
+
+.inventory__card-image {
+    position: relative;
+    height: 160px;
+    background: var(--bg-tertiary);
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.inventory__card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    transition: var(--transition-normal);
+}
+
+.inventory__card:hover .inventory__card-img {
+    transform: scale(1.05);
+}
+
+.inventory__card-placeholder {
+    color: var(--text-muted);
+    font-size: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+.inventory__card-badges {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: 40px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.inventory__badge {
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    box-shadow: var(--shadow-sm);
+    color: var(--text-white);
+}
+
+.inventory__badge--stock {
+    background: var(--inventory-stock);
+}
+
+.inventory__badge--dropship {
+    background: var(--inventory-dropship);
+}
+
+.inventory__badge--set {
+    background: var(--inventory-set);
+}
+
+.inventory__badge--hybrid {
+    background: var(--inventory-hybrid);
+}
+
+.inventory__channel-badges {
+    display: flex;
+    gap: 2px;
+    margin-top: 4px;
+}
+
+.inventory__channel-badge {
+    padding: 2px 4px;
+    border-radius: 2px;
+    font-size: 0.5rem;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.inventory__channel-badge--ebay {
+    background: #0064d2;
+    color: white;
+}
+
+.inventory__channel-badge--mercari {
+    background: #d63384;
+    color: white;
+}
+
+.inventory__channel-badge--shopify {
+    background: #96bf48;
+    color: white;
+}
+
+.inventory__card-info {
+    padding: var(--space-md);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    justify-content: space-between;
+}
+
+.inventory__card-title {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.3;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.inventory__card-price {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.inventory__card-price-main {
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.inventory__card-price-sub {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.inventory__card-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-sm);
+    font-size: var(--text-xs);
+}
+
+.inventory__meta-item {
+    display: flex;
+    justify-content: space-between;
+    color: var(--text-secondary);
+}
+
+.inventory__meta-value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.inventory__card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+    padding-top: var(--space-sm);
+    border-top: 1px solid var(--border-light);
+}
+
+.inventory__card-sku {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-family: monospace;
+    background: var(--bg-tertiary);
+    padding: 2px 4px;
+    border-radius: var(--radius-sm);
+}
+
+.inventory__stock-edit {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.inventory__stock-input {
+    width: 50px;
+    height: 24px;
+    padding: 2px 4px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.7rem;
+    text-align: center;
+    background: var(--bg-primary);
+}
+
+.inventory__stock-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+/* ===== モーダル ===== */
+.inventory__modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: var(--transition-normal);
+}
+
+.inventory__modal--active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.inventory__modal-content {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    max-width: 1200px;
+    width: 90vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-xl);
+    transition: var(--transition-normal);
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.inventory__modal--active .inventory__modal-content {
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.inventory__modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-lg);
+    padding-bottom: var(--space-md);
+    border-bottom: 2px solid var(--border-color);
+}
+
+.inventory__modal-title {
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.inventory__modal-close {
+    background: none;
+    border: none;
+    font-size: var(--text-xl);
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: var(--space-sm);
+    border-radius: var(--radius-md);
+    transition: var(--transition-fast);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.inventory__modal-close:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+/* ===== フォーム要素 ===== */
+.inventory__form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+
+.inventory__form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.inventory__form-label {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: var(--text-sm);
+}
+
+.inventory__form-input,
+.inventory__form-select {
+    padding: var(--space-sm);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    background: var(--bg-primary);
+    transition: var(--transition-fast);
+}
+
+.inventory__form-input:focus,
+.inventory__form-select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.inventory__form-actions {
+    display: flex;
+    gap: var(--space-md);
+    justify-content: flex-end;
+    margin-top: var(--space-lg);
+}
+
+/* ===== 商品タイプ選択 ===== */
+.inventory__product-type-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: var(--space-sm);
+    margin: var(--space-lg) 0;
+}
+
+.inventory__product-type-option {
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.inventory__product-type-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    background: var(--bg-secondary);
+    transition: var(--transition-fast);
+    text-align: center;
+}
+
+.inventory__product-type-option:hover .inventory__product-type-card {
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.inventory__product-type-option--active .inventory__product-type-card {
+    border-color: var(--color-primary);
+    background: rgba(59, 130, 246, 0.1);
+    box-shadow: var(--shadow-md);
+}
+
+.inventory__product-type-card i {
+    font-size: var(--text-lg);
+    color: var(--text-secondary);
+}
+
+.inventory__product-type-option--active .inventory__product-type-card i {
+    color: var(--color-primary);
+}
+
+.inventory__product-type-card span {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* ===== 画像アップロード ===== */
+.inventory__image-upload {
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    background: var(--bg-tertiary);
+    position: relative;
+    overflow: hidden;
+}
+
+.inventory__image-upload:hover,
+.inventory__image-upload--dragover {
+    border-color: var(--color-primary);
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.inventory__image-upload-icon {
+    font-size: 1.5rem;
+    color: var(--text-muted);
+    margin-bottom: var(--space-sm);
+}
+
+.inventory__image-upload-text {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    text-align: center;
+    line-height: 1.3;
+}
+
+.inventory__image-preview {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: var(--radius-md);
+}
+
+.inventory__image-remove {
+    position: absolute;
+    top: var(--space-xs);
+    right: var(--space-xs);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.8rem;
+    opacity: 0;
+    transition: var(--transition-fast);
+}
+
+.inventory__image-upload:hover .inventory__image-remove {
+    opacity: 1;
+}
+
+/* ===== セット品構成品フォーム ===== */
+.inventory__components-section {
+    margin: var(--space-lg) 0;
+}
+
+.inventory__components-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-md);
+}
+
+.inventory__components-title {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.inventory__component-form {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-md);
+    position: relative;
+    transition: var(--transition-normal);
+}
+
+.inventory__component-form:hover {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-md);
+}
+
+.inventory__component-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-md);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.inventory__component-title {
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.inventory__component-number {
+    background: var(--color-primary);
+    color: white;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    font-size: var(--text-xs);
+    font-weight: 700;
+}
+
+.inventory__component-remove {
+    background: var(--color-danger);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: var(--space-xs) var(--space-sm);
+    cursor: pointer;
+    font-size: var(--text-xs);
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    transition: var(--transition-fast);
+}
+
+.inventory__component-remove:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+}
+
+.inventory__component-grid {
+    display: grid;
+    grid-template-columns: 150px 1fr 1fr;
+    gap: var(--space-lg);
+    align-items: start;
+}
+
+.inventory__component-image-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.inventory__component-image-upload {
+    width: 150px;
+    height: 120px;
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    background: var(--bg-tertiary);
+    position: relative;
+    overflow: hidden;
+}
+
+.inventory__component-image-upload:hover,
+.inventory__component-image-upload--dragover {
+    border-color: var(--color-primary);
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.inventory__component-upload-icon {
+    font-size: 1.5rem;
+    color: var(--text-muted);
+    margin-bottom: var(--space-xs);
+}
+
+.inventory__component-upload-text {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    text-align: center;
+    line-height: 1.2;
+}
+
+.inventory__component-image-preview {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: var(--radius-md);
+}
+
+.inventory__component-image-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.7rem;
+    opacity: 0;
+    transition: var(--transition-fast);
+}
+
+.inventory__component-image-upload:hover .inventory__component-image-remove {
+    opacity: 1;
+}
+
+.inventory__component-basic-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+}
+
+.inventory__component-stock-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+}
+
+.inventory__component-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.inventory__component-form-label {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.inventory__component-form-input,
+.inventory__component-form-select {
+    padding: var(--space-sm);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    background: var(--bg-primary);
+    transition: var(--transition-fast);
+}
+
+.inventory__component-form-input:focus,
+.inventory__component-form-select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.inventory__component-form-textarea {
+    grid-column: 1 / -1;
+    min-height: 60px;
+    padding: var(--space-sm);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    background: var(--bg-primary);
+    resize: vertical;
+    font-family: inherit;
+}
+
+.inventory__component-form-textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+/* ===== セット品統計 ===== */
+.inventory__set-statistics {
+    background: var(--bg-tertiary);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    margin: var(--space-lg) 0;
+}
+
+.inventory__set-statistics h4 {
+    margin: 0 0 var(--space-md) 0;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.inventory__set-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--space-md);
+    font-size: var(--text-sm);
+}
+
+.inventory__set-stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.inventory__set-stat-label {
+    color: var(--text-secondary);
+}
+
+.inventory__set-stat-value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* ===== サイドバー ===== */
+.inventory__sidebar {
+    position: fixed;
+    top: 0;
+    right: -400px;
+    width: 400px;
+    height: 100vh;
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border-color);
+    box-shadow: var(--shadow-xl);
+    z-index: 1001;
+    transition: right 0.3s ease;
+    overflow-y: auto;
+}
+
+.inventory__sidebar--active {
+    right: 0;
+}
+
+.inventory__sidebar-header {
+    padding: var(--space-lg);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-tertiary);
+}
+
+.inventory__sidebar-title {
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.inventory__sidebar-close {
+    background: none;
+    border: none;
+    font-size: var(--text-xl);
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: var(--space-sm);
+    border-radius: var(--radius-md);
+    transition: var(--transition-fast);
+}
+
+.inventory__sidebar-close:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.inventory__overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.inventory__overlay--active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* ===== レスポンシブ対応 ===== */
+@media (max-width: 1200px) {
+    .inventory__grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
+    
+    .inventory__chart-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .content {
+        padding: var(--space-md);
+    }
+    
+    .inventory__header-top {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .inventory__filter-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .inventory__filter-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .inventory__view-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .inventory__grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: var(--space-sm);
+    }
+    
+    .inventory__card-image {
+        height: 120px;
+    }
+    
+    .inventory__actions {
+        flex-wrap: wrap;
+        width: 100%;
+    }
+    
+    .inventory__form-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .inventory__sidebar {
+        width: 100vw;
+        right: -100vw;
+    }
+    
+    .inventory__component-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-md);
+    }
+    
+    .inventory__component-image-upload {
+        width: 120px;
+        height: 100px;
+        margin: 0 auto;
+    }
+    
+    .inventory__component-basic-info,
+    .inventory__component-stock-info {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .inventory__stats {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .inventory__product-type-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .inventory__set-stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+</head>
+<body>
+    <div class="content">
+        <!-- ヘッダー -->
+        <header class="inventory__header">
+            <div class="inventory__header-top">
+                <h1 class="inventory__title">
+                    <i class="fas fa-warehouse inventory__title-icon"></i>
+                    棚卸しシステム
+                </h1>
+                
+                <div class="inventory__exchange-rate">
+                    <i class="fas fa-exchange-alt inventory__exchange-icon"></i>
+                    <span class="inventory__exchange-text">USD/JPY:</span>
+                    <span class="inventory__exchange-value" id="exchange-rate">¥150.25</span>
+                </div>
+            </div>
+            
+            <div class="inventory__stats">
+                <div class="inventory__stat">
+                    <span class="inventory__stat-number" id="total-products">1,284</span>
+                    <span class="inventory__stat-label">総商品数</span>
+                </div>
+                <div class="inventory__stat">
+                    <span class="inventory__stat-number" id="stock-products">912</span>
+                    <span class="inventory__stat-label">有在庫</span>
+                </div>
+                <div class="inventory__stat">
+                    <span class="inventory__stat-number" id="dropship-products">203</span>
+                    <span class="inventory__stat-label">無在庫</span>
+                </div>
+                <div class="inventory__stat">
+                    <span class="inventory__stat-number" id="set-products">169</span>
+                    <span class="inventory__stat-label">セット品</span>
+                </div>
+                <div class="inventory__stat">
+                    <span class="inventory__stat-number" id="hybrid-products">45</span>
+                    <span class="inventory__stat-label">ハイブリッド</span>
+                </div>
+                <div class="inventory__stat">
+                    <span class="inventory__stat-number" id="total-value">$102.5K</span>
+                    <span class="inventory__stat-label">総在庫価値</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- 独立フィルターバー -->
+        <div class="inventory__filter-bar">
+            <h2 class="inventory__filter-title">
+                <i class="fas fa-filter"></i>
+                フィルター設定
+            </h2>
+            
+            <div class="inventory__filter-grid">
+                <div class="inventory__filter-group">
+                    <label class="inventory__filter-label">商品種類</label>
+                    <select class="inventory__filter-select" id="filter-type">
+                        <option value="">すべて</option>
+                        <option value="stock">有在庫</option>
+                        <option value="dropship">無在庫</option>
+                        <option value="set">セット品</option>
+                        <option value="hybrid">ハイブリッド</option>
+                    </select>
+                </div>
+                
+                <div class="inventory__filter-group">
+                    <label class="inventory__filter-label">出品モール</label>
+                    <select class="inventory__filter-select" id="filter-channel">
+                        <option value="">すべて</option>
+                        <option value="ebay">eBay</option>
+                        <option value="shopify">Shopify</option>
+                        <option value="mercari">メルカリ</option>
+                    </select>
+                </div>
+                
+                <div class="inventory__filter-group">
+                    <label class="inventory__filter-label">在庫状況</label>
+                    <select class="inventory__filter-select" id="filter-stock-status">
+                        <option value="">すべて</option>
+                        <option value="sufficient">十分</option>
+                        <option value="warning">注意</option>
+                        <option value="low">少量</option>
+                        <option value="out">在庫切れ</option>
+                    </select>
+                </div>
+                
+                <div class="inventory__filter-group">
+                    <label class="inventory__filter-label">価格範囲 (USD)</label>
+                    <select class="inventory__filter-select" id="filter-price-range">
+                        <option value="">すべて</option>
+                        <option value="0-25">$0 - $25</option>
+                        <option value="25-50">$25 - $50</option>
+                        <option value="50-100">$50 - $100</option>
+                        <option value="100+">$100+</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="inventory__filter-actions">
+                <div class="inventory__filter-left">
+                    <button class="btn btn--secondary" onclick="resetFilters()">
+                        <i class="fas fa-undo"></i>
+                        リセット
+                    </button>
+                    <button class="btn btn--info" onclick="applyFilters()">
+                        <i class="fas fa-search"></i>
+                        適用
+                    </button>
+                </div>
+                
+                <div class="inventory__filter-right">
+                    <div class="inventory__search-box">
+                        <i class="fas fa-search inventory__search-icon"></i>
+                        <input type="text" class="inventory__search-input" id="search-input" 
+                               placeholder="商品名・SKU・カテゴリで検索...">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 価格チャートセクション -->
+        <div class="inventory__chart-section">
+            <div class="inventory__chart-header">
+                <h2 class="inventory__chart-title">
+                    <i class="fas fa-chart-pie"></i>
+                    有在庫価格分析
+                </h2>
+                <div class="inventory__chart-controls">
+                    <div class="inventory__currency-toggle">
+                        <button class="inventory__currency-btn inventory__currency-btn--active" id="currency-usd">USD</button>
+                        <button class="inventory__currency-btn" id="currency-jpy">JPY</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="inventory__chart-container">
+                <div class="inventory__chart-canvas-wrapper">
+                    <canvas id="price-chart" class="inventory__chart-canvas"></canvas>
+                </div>
+                
+                <div class="inventory__chart-stats">
+                    <div class="inventory__chart-stat">
+                        <span class="inventory__chart-stat-label">合計金額</span>
+                        <span class="inventory__chart-stat-value" id="total-amount">$102,500</span>
+                    </div>
+                    <div class="inventory__chart-stat">
+                        <span class="inventory__chart-stat-label">平均単価</span>
+                        <span class="inventory__chart-stat-value" id="average-price">$112.3</span>
+                    </div>
+                    <div class="inventory__chart-stat">
+                        <span class="inventory__chart-stat-label">最高額商品</span>
+                        <span class="inventory__chart-stat-value" id="highest-price">$899</span>
+                    </div>
+                    <div class="inventory__chart-stat">
+                        <span class="inventory__chart-stat-label">$100以上</span>
+                        <span class="inventory__chart-stat-value" id="high-value-count">342点</span>
+                    </div>
+                    <div class="inventory__chart-stat">
+                        <span class="inventory__chart-stat-label">$50-$100</span>
+                        <span class="inventory__chart-stat-value" id="mid-value-count">298点</span>
+                    </div>
+                    <div class="inventory__chart-stat">
+                        <span class="inventory__chart-stat-label">$50未満</span>
+                        <span class="inventory__chart-stat-value" id="low-value-count">272点</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ビュー切り替えコントロール -->
+        <div class="inventory__view-controls">
+            <div class="inventory__view-toggle">
+                <button class="inventory__view-btn inventory__view-btn--active" id="card-view-btn">
+                    <i class="fas fa-th-large"></i>
+                    カードビュー
+                </button>
+                <button class="inventory__view-btn" id="list-view-btn">
+                    <i class="fas fa-table"></i>
+                    Excelビュー
+                </button>
+            </div>
+            
+            <div class="inventory__actions">
+                <button class="btn btn--success" id="add-product-btn">
+                    <i class="fas fa-plus"></i>
+                    新規商品登録
+                </button>
+                
+                <button class="btn btn--warning" id="create-set-btn" disabled>
+                    <i class="fas fa-layer-group"></i>
+                    <span id="set-btn-text">新規セット品作成</span>
+                </button>
+                
+                <button class="btn btn--secondary" onclick="exportData()">
+                    <i class="fas fa-download"></i>
+                    エクスポート
+                </button>
+            </div>
+        </div>
+
+        <!-- CSVインポート -->
+        <div class="inventory__import" id="csv-import-area">
+            <input type="file" class="inventory__import-input" id="csv-import" accept=".csv">
+            <div class="inventory__import-content">
+                <i class="fas fa-cloud-upload-alt inventory__import-icon"></i>
+                <span class="inventory__import-text">CSVファイルをインポート (eBay、メルカリ、Shopify、テンプレート対応)</span>
+            </div>
+        </div>
+
+        <!-- カードビュー -->
+        <div class="inventory__grid" id="card-view">
+            <!-- サンプル商品カード1 - eBay商品（有在庫） -->
+            <div class="inventory__card" data-id="1">
+                <div class="inventory__card-image">
+                    <img src="https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=300&h=200&fit=crop" alt="ワイヤレスマウス" class="inventory__card-img">
+                    <div class="inventory__card-badges">
+                        <span class="inventory__badge inventory__badge--stock">有在庫</span>
+                        <div class="inventory__channel-badges">
+                            <span class="inventory__channel-badge inventory__channel-badge--ebay">E</span>
+                            <span class="inventory__channel-badge inventory__channel-badge--shopify">S</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="inventory__card-info">
+                    <h3 class="inventory__card-title">Wireless Gaming Mouse RGB LED 7 Buttons</h3>
+                    <div class="inventory__card-price">
+                        <div class="inventory__card-price-main">$21.84</div>
+                        <div class="inventory__card-price-sub">¥3,280</div>
+                    </div>
+                    <div class="inventory__card-meta">
+                        <div class="inventory__meta-item">
+                            <span>仕入価格:</span>
+                            <span class="inventory__meta-value">$12.33</span>
+                        </div>
+                        <div class="inventory__meta-item">
+                            <span>利益:</span>
+                            <span class="inventory__meta-value">$9.51</span>
+                        </div>
+                        <div class="inventory__meta-item">
+                            <span>状態:</span>
+                            <span class="inventory__meta-value">新品</span>
+                        </div>
+                        <div class="inventory__meta-item">
+                            <span>カテゴリ:</span>
+                            <span class="inventory__meta-value">Electronics</span>
+                        </div>
+                    </div>
+                    <div class="inventory__card-footer">
+                        <span class="inventory__card-sku">MS-WR70-001</span>
+                        <div class="inventory__stock-edit">
+                            <span style="font-size: 0.7rem; color: var(--text-secondary);">在庫:</span>
+                            <input type="number" class="inventory__stock-input" value="48">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- サンプル商品カード2 - セット品 -->
+            <div class="inventory__card" data-id="2">
+                <div class="inventory__card-image">
+                    <img src="https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=300&h=200&fit=crop" alt="PCセット" class="inventory__card-img">
+                    <div class="inventory__card-badges">
+                        <span class="inventory__badge inventory__badge--set">セット品</span>
+                        <div class="inventory__channel-badges">
+                            <span class="inventory__channel-badge inventory__channel-badge--ebay">E</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="inventory__card-info">
+                    <h3 class="inventory__card-title">Gaming PC Accessories Bundle (3 Items)</h3>
+                    <div class="inventory__card-price">
+                        <div class="inventory__card-price-main">$59.26</div>
+                        <div class="inventory__card-price-sub">¥8,900</div>
+                    </div>
+                    <div class="inventory__card-meta">
+                        <div class="inventory__meta-item">
+                            <span>構成品:</span>
+                            <span class="inventory__meta-value">3点</span>
+                        </div>
+                        <div class="inventory__meta-item">
+                            <span>利益:</span>
+                            <span class="inventory__meta-value">$21.30</span>
+                        </div>
+                        <div class="inventory__meta-item">
+                            <span>作成可能:</span>
+                            <span class="inventory__meta-value">15セット</span>
+                        </div>
+                        <div class="inventory__meta-item">
+                            <span>カテゴリ:</span>
+                            <span class="inventory__meta-value">Bundle</span>
+                        </div>
+                    </div>
+                    <div class="inventory__card-footer">
+                        <span class="inventory__card-sku">SET-PC01-003</span>
+                        <button class="btn btn--small btn--warning" onclick="event.stopPropagation(); showProductDetail(2);">
+                            <i class="fas fa-edit"></i>
+                            編集
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- サンプル商品カード3 - 無在庫 -->
+            <div class="inventory__card" data-id="3">
+                <div class="inventory__card-image">
+                    <img src="https://images.unsplash.com/photo-1541140532154-b024d705b90a?w=300&h=200&fit=crop" alt="キーボード" class="inventory__card-img">
+                    <div class="inventory__card-badges">
+                        <span class="inventory__badge inventory__badge--dropship">無在庫</span>
+                        <div class="inventory__channel-badges">
+                            <span class="inventory__channel-badge inventory__channel-badge--mercari">M</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="inventory__card-info">
+                    <h3 class="inventory__card-title">Mechanical Keyboard RGB Backlit</h3>
+                    <div class="inventory__card-price">
+                        <div class="inventory__card-price-main">$52.24</div>
+                        <div class="inventory__card-price-sub">¥7,850</div>
+                    </div>
+                    <div class="inventory__card-meta">
+                        <div class="inventory__meta-item">
+                            <span>仕入先:</span>
+                            <span class="inventory__meta-value">AliExpress</span>
+                        </div>
+                        <div class="inventory__meta-item">
+                            <span>利益:</span>
+                            <span class="inventory__meta-value">$17.57</span>
+                        </div>
+                        <div class="inventory__meta-item">
+                            <span>状態:</span>
+                            <span class="inventory__meta-value">新品</span>
+                        </div>
+                        <div class="inventory__meta-item">
+                            <span>在庫:</span>
+                            <span class="inventory__meta-value">∞</span>
+                        </div>
+                    </div>
+                    <div class="inventory__card-footer">
+                        <span class="inventory__card-sku">KB-MR88-002</span>
+                        <div style="font-size: 0.7rem; color: var(--color-success);">
+                            <i class="fas fa-check-circle"></i>
+                            有効
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- サンプル商品カード4 - ハイブリッド -->
+            <div class="inventory__card" data-id="4">
+                <div class="inventory__card-image">
+                    <img src="https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=300&h=200&fit=crop" alt="ヘッドセット" class="inventory__card-img">
+                    <div class="inventory__card-badges">
+                        <span class="inventory__badge inventory__badge--hybrid">ハイブリッド</span>
+                        <div class="inventory__channel-badges">
+                            <span class="inventory__channel-badge inventory__channel-badge--ebay">E</span>
+                            <span class="inventory__channel-badge inventory__channel-badge--shopify">S</span>
+                            <span class="inventory__channel-badge inventory__channel-badge--mercari">M</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="inventory__card-info">
+                    <h3 class="inventory__card-title">Gaming Headset with Microphone</h3>
+                    <div class="inventory__card-price">
+                        <div class="inventory__card-price-main">$35.20</div>
+                        <div class="inventory__card-price-sub">¥5,290</div>
+                    </div>
+                    <div class="inventory__card-meta">
+                        <div class="inventory__meta-item">
+                            <span>在庫:</span>
+                            <span class="inventory__meta-value">3</span>
+                        </div>
+                        <div class="inventory__meta-item">
+                            <span>無在庫:</span>
+                            <span class="inventory__meta-value">有効</span>
+                        </div>
+                        <div class="inventory__meta-item">
+                            <span>利益:</span>
+                            <span class="inventory__meta-value">$12.58</span>
+                        </div>
+                        <div class="inventory__meta-item">
+                            <span>状態:</span>
+                            <span class="inventory__meta-value">新品</span>
+                        </div>
+                    </div>
+                    <div class="inventory__card-footer">
+                        <span class="inventory__card-sku">HS-GM55-004</span>
+                        <div class="inventory__stock-edit">
+                            <span style="font-size: 0.7rem; color: var(--text-secondary);">在庫:</span>
+                            <input type="number" class="inventory__stock-input" value="3">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Excel風リストビュー -->
+        <div class="excel-grid" id="list-view" style="display: none;">
+            <div class="excel-toolbar">
+                <div class="excel-toolbar__left">
+                    <button class="excel-btn excel-btn--primary" id="add-product-from-list-btn">
+                        <i class="fas fa-plus"></i>
+                        新規商品登録
+                    </button>
+                    <button class="excel-btn" id="delete-selected-btn">
+                        <i class="fas fa-trash"></i>
+                        選択削除
+                    </button>
+                    <button class="excel-btn excel-btn--warning" id="create-set-from-list-btn">
+                        <i class="fas fa-layer-group"></i>
+                        セット品作成
+                    </button>
+                    <button class="excel-btn">
+                        <i class="fas fa-toggle-on"></i>
+                        有効/無効切替
+                    </button>
+                </div>
+                
+                <div class="excel-toolbar__right">
+                    <div class="excel-toolbar__search">
+                        <i class="fas fa-search excel-toolbar__search-icon"></i>
+                        <input type="text" class="excel-toolbar__search-input" placeholder="商品検索..." />
+                    </div>
+                    <button class="excel-btn" onclick="exportData()">
+                        <i class="fas fa-download"></i>
+                        エクスポート
+                    </button>
+                </div>
+            </div>
+
+            <div class="excel-table-wrapper">
+                <table class="excel-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">
+                                <input type="checkbox" class="excel-checkbox" id="select-all-checkbox" />
+                            </th>
+                            <th style="width: 60px;">画像</th>
+                            <th style="width: 250px;">商品名</th>
+                            <th style="width: 120px;">SKU</th>
+                            <th style="width: 80px;">種類</th>
+                            <th style="width: 80px;">状態</th>
+                            <th style="width: 100px;">販売価格(USD)</th>
+                            <th style="width: 80px;">在庫数</th>
+                            <th style="width: 100px;">仕入価格(USD)</th>
+                            <th style="width: 80px;">利益</th>
+                            <th style="width: 120px;">出品モール</th>
+                            <th style="width: 100px;">カテゴリ</th>
+                            <th style="width: 80px;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="products-table-body">
+                        <tr data-id="1">
+                            <td><input type="checkbox" class="excel-checkbox product-checkbox" data-id="1" /></td>
+                            <td>
+                                <img src="https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=50&h=40&fit=crop" alt="商品画像" style="width: 40px; height: 32px; object-fit: cover; border-radius: 4px;">
+                            </td>
+                            <td><input type="text" class="excel-cell" value="Wireless Gaming Mouse RGB LED 7 Buttons" /></td>
+                            <td><input type="text" class="excel-cell" value="MS-WR70-001" /></td>
+                            <td>
+                                <select class="excel-select">
+                                    <option value="stock" selected>有在庫</option>
+                                    <option value="dropship">無在庫</option>
+                                    <option value="set">セット品</option>
+                                    <option value="hybrid">ハイブリッド</option>
+                                </select>
+                            </td>
+                            <td>
+                                <select class="excel-select">
+                                    <option value="new" selected>新品</option>
+                                    <option value="used">中古</option>
+                                </select>
+                            </td>
+                            <td><input type="number" class="excel-cell" value="21.84" style="text-align: right;" step="0.01" /></td>
+                            <td><input type="number" class="excel-cell" value="48" style="text-align: center;" /></td>
+                            <td><input type="number" class="excel-cell" value="12.33" style="text-align: right;" step="0.01" /></td>
+                            <td style="text-align: center; font-weight: 600; color: var(--color-success);">$9.51</td>
+                            <td>
+                                <div style="display: flex; gap: 2px;">
+                                    <span style="padding: 1px 3px; background: #0064d2; color: white; border-radius: 2px; font-size: 0.6rem;">E</span>
+                                    <span style="padding: 1px 3px; background: #96bf48; color: white; border-radius: 2px; font-size: 0.6rem;">S</span>
+                                </div>
+                            </td>
+                            <td><input type="text" class="excel-cell" value="Electronics" /></td>
+                            <td>
+                                <div style="display: flex; gap: 2px;">
+                                    <button class="excel-btn excel-btn--small" onclick="showProductDetail(1)" title="詳細">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="excel-btn excel-btn--small" onclick="deleteProduct(1)" title="削除" style="color: var(--color-danger);">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr data-id="2">
+                            <td><input type="checkbox" class="excel-checkbox product-checkbox" data-id="2" /></td>
+                            <td>
+                                <img src="https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=50&h=40&fit=crop" alt="商品画像" style="width: 40px; height: 32px; object-fit: cover; border-radius: 4px;">
+                            </td>
+                            <td><input type="text" class="excel-cell" value="Gaming PC Accessories Bundle (3 Items)" /></td>
+                            <td><input type="text" class="excel-cell" value="SET-PC01-003" /></td>
+                            <td>
+                                <select class="excel-select">
+                                    <option value="stock">有在庫</option>
+                                    <option value="dropship">無在庫</option>
+                                    <option value="set" selected>セット品</option>
+                                    <option value="hybrid">ハイブリッド</option>
+                                </select>
+                            </td>
+                            <td>
+                                <select class="excel-select">
+                                    <option value="new" selected>新品</option>
+                                    <option value="used">中古</option>
+                                </select>
+                            </td>
+                            <td><input type="number" class="excel-cell" value="59.26" style="text-align: right;" step="0.01" /></td>
+                            <td style="text-align: center; color: var(--text-secondary);">15セット</td>
+                            <td><input type="number" class="excel-cell" value="37.96" style="text-align: right;" step="0.01" /></td>
+                            <td style="text-align: center; font-weight: 600; color: var(--color-success);">$21.30</td>
+                            <td>
+                                <div style="display: flex; gap: 2px;">
+                                    <span style="padding: 1px 3px; background: #0064d2; color: white; border-radius: 2px; font-size: 0.6rem;">E</span>
+                                </div>
+                            </td>
+                            <td><input type="text" class="excel-cell" value="Bundle" /></td>
+                            <td>
+                                <div style="display: flex; gap: 2px;">
+                                    <button class="excel-btn excel-btn--small excel-btn--warning" onclick="showProductDetail(2)" title="セット編集">
+                                        <i class="fas fa-layer-group"></i>
+                                    </button>
+                                    <button class="excel-btn excel-btn--small" onclick="showProductDetail(2)" title="詳細">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="excel-pagination">
+                <div class="excel-pagination__info">
+                    商品: 1-25 / 1,284件表示
+                </div>
+                <div class="excel-pagination__controls">
+                    <button class="excel-btn excel-btn--small" disabled>
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="excel-btn excel-btn--small" style="background: var(--excel-primary); color: white;">1</button>
+                    <button class="excel-btn excel-btn--small">2</button>
+                    <button class="excel-btn excel-btn--small">3</button>
+                    <button class="excel-btn excel-btn--small">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 新規商品登録モーダル -->
+        <div class="inventory__modal" id="add-product-modal">
+            <div class="inventory__modal-content" style="max-width: 800px;">
+                <div class="inventory__modal-header">
+                    <h2 class="inventory__modal-title">新規商品登録</h2>
+                    <button class="inventory__modal-close" id="add-product-modal-close">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <!-- 商品タイプ選択 -->
+                <div style="margin-bottom: var(--space-lg);">
+                    <h3 style="margin-bottom: var(--space-md);">
+                        <i class="fas fa-tag"></i>
+                        商品タイプ
+                    </h3>
+                    <div class="inventory__product-type-grid">
+                        <label class="inventory__product-type-option inventory__product-type-option--active" data-type="stock">
+                            <input type="radio" name="product-type" value="stock" checked style="display: none;">
+                            <div class="inventory__product-type-card">
+                                <i class="fas fa-warehouse"></i>
+                                <span>有在庫</span>
+                            </div>
+                        </label>
+                        <label class="inventory__product-type-option" data-type="dropship">
+                            <input type="radio" name="product-type" value="dropship" style="display: none;">
+                            <div class="inventory__product-type-card">
+                                <i class="fas fa-truck"></i>
+                                <span>無在庫</span>
+                            </div>
+                        </label>
+                        <label class="inventory__product-type-option" data-type="set">
+                            <input type="radio" name="product-type" value="set" style="display: none;">
+                            <div class="inventory__product-type-card">
+                                <i class="fas fa-layer-group"></i>
+                                <span>セット品</span>
+                            </div>
+                        </label>
+                        <label class="inventory__product-type-option" data-type="hybrid">
+                            <input type="radio" name="product-type" value="hybrid" style="display: none;">
+                            <div class="inventory__product-type-card">
+                                <i class="fas fa-sync-alt"></i>
+                                <span>ハイブリッド</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 商品画像 -->
+                <div style="margin-bottom: var(--space-lg);">
+                    <h3 style="margin-bottom: var(--space-md);">
+                        <i class="fas fa-image"></i>
+                        商品画像
+                    </h3>
+                    <div class="inventory__image-upload" onclick="document.getElementById('new-product-image').click();" style="width: 250px; height: 180px;">
+                        <input type="file" id="new-product-image" style="display: none;" accept="image/*">
+                        <i class="fas fa-camera inventory__image-upload-icon" id="new-product-upload-icon"></i>
+                        <div class="inventory__image-upload-text" id="new-product-upload-text">
+                            商品画像を<br>アップロード
+                        </div>
+                        <button class="inventory__image-remove" id="new-product-image-remove" style="display: none;" onclick="event.stopPropagation(); removeNewProductImage()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 基本情報 -->
+                <div class="inventory__form-grid">
+                    <div class="inventory__form-group">
+                        <label class="inventory__form-label">商品名 <span style="color: var(--color-danger);">*</span></label>
+                        <input type="text" class="inventory__form-input" id="new-product-name" placeholder="商品名を入力">
+                    </div>
+                    <div class="inventory__form-group">
+                        <label class="inventory__form-label">SKU <span style="color: var(--color-danger);">*</span></label>
+                        <input type="text" class="inventory__form-input" id="new-product-sku" placeholder="SKU-XXX-001">
+                    </div>
+                    <div class="inventory__form-group">
+                        <label class="inventory__form-label">販売価格 (USD)</label>
+                        <input type="number" class="inventory__form-input" id="new-product-price" placeholder="0" min="0" step="0.01">
+                    </div>
+                    <div class="inventory__form-group">
+                        <label class="inventory__form-label">仕入価格 (USD)</label>
+                        <input type="number" class="inventory__form-input" id="new-product-cost" placeholder="0" min="0" step="0.01">
+                    </div>
+                    <div class="inventory__form-group" id="stock-field">
+                        <label class="inventory__form-label">在庫数</label>
+                        <input type="number" class="inventory__form-input" id="new-product-stock" placeholder="0" min="0">
+                    </div>
+                    <div class="inventory__form-group">
+                        <label class="inventory__form-label">状態</label>
+                        <select class="inventory__form-input" id="new-product-condition">
+                            <option value="new">新品</option>
+                            <option value="used">中古</option>
+                            <option value="refurbished">整備済み</option>
+                        </select>
+                    </div>
+                    <div class="inventory__form-group">
+                        <label class="inventory__form-label">カテゴリ</label>
+                        <input type="text" class="inventory__form-input" id="new-product-category" placeholder="Electronics">
+                    </div>
+                    <div class="inventory__form-group" id="supplier-field" style="display: none;">
+                        <label class="inventory__form-label">仕入先</label>
+                        <input type="text" class="inventory__form-input" id="new-product-supplier" placeholder="AliExpress, Amazon, etc.">
+                    </div>
+                </div>
+
+                <!-- 商品説明 -->
+                <div class="inventory__form-group" style="margin: var(--space-lg) 0;">
+                    <label class="inventory__form-label">商品説明</label>
+                    <textarea class="inventory__form-input" id="new-product-description" placeholder="商品の詳細な説明を入力してください..." style="min-height: 80px; resize: vertical;"></textarea>
+                </div>
+
+                <!-- セット品作成通知 -->
+                <div id="set-creation-notice" style="display: none; background: var(--bg-tertiary); padding: var(--space-md); border-radius: var(--radius-md); margin: var(--space-lg) 0;">
+                    <p style="margin: 0; color: var(--text-secondary); font-size: var(--text-sm);">
+                        <i class="fas fa-info-circle"></i>
+                        セット品を選択しています。基本情報を保存後、構成品管理画面に移ります。
+                    </p>
+                </div>
+                
+                <div class="inventory__form-actions">
+                    <button class="btn btn--secondary" id="add-product-modal-cancel">キャンセル</button>
+                    <button class="btn btn--success" id="save-new-product-btn">
+                        <i class="fas fa-save"></i>
+                        <span id="save-product-btn-text">商品を保存</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- セット品作成・編集モーダル -->
+        <div class="inventory__modal" id="set-modal">
+            <div class="inventory__modal-content" style="max-width: 1200px;">
+                <div class="inventory__modal-header">
+                    <h2 class="inventory__modal-title">セット品作成・編集</h2>
+                    <button class="inventory__modal-close" id="set-modal-close">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <!-- セット品基本情報 -->
+                <div class="inventory__form-grid">
+                    <div class="inventory__form-group">
+                        <label class="inventory__form-label">セット品名</label>
+                        <input type="text" class="inventory__form-input" id="set-name" placeholder="Gaming Accessories Bundle">
+                    </div>
+                    <div class="inventory__form-group">
+                        <label class="inventory__form-label">SKU</label>
+                        <input type="text" class="inventory__form-input" id="set-sku" placeholder="SET-XXX-001">
+                    </div>
+                    <div class="inventory__form-group">
+                        <label class="inventory__form-label">販売価格 (USD)</label>
+                        <input type="number" class="inventory__form-input" id="set-price" placeholder="59.26" step="0.01" onchange="updateSetStatistics()">
+                    </div>
+                    <div class="inventory__form-group">
+                        <label class="inventory__form-label">カテゴリ</label>
+                        <input type="text" class="inventory__form-input" id="set-category" placeholder="Bundle">
+                    </div>
+                    <div class="inventory__form-group">
+                        <label class="inventory__form-label">仕入価格 (USD)</label>
+                        <input type="number" class="inventory__form-input" id="set-cost" placeholder="37.96" step="0.01">
+                    </div>
+                    <div class="inventory__form-group">
+                        <label class="inventory__form-label">状態</label>
+                        <select class="inventory__form-input" id="set-condition">
+                            <option value="new">新品</option>
+                            <option value="used">中古</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- セット品画像アップロード -->
+                <div style="margin: var(--space-lg) 0;">
+                    <h3 style="margin-bottom: var(--space-md);">
+                        <i class="fas fa-image"></i>
+                        セット品画像
+                    </h3>
+                    <div class="inventory__image-upload" onclick="document.getElementById('set-main-image').click();" style="width: 200px; height: 150px; margin-bottom: var(--space-md);">
+                        <input type="file" id="set-main-image" style="display: none;" accept="image/*">
+                        <i class="fas fa-camera inventory__image-upload-icon" id="set-main-upload-icon"></i>
+                        <div class="inventory__image-upload-text" id="set-main-upload-text">
+                            セット品の<br>メイン画像
+                        </div>
+                        <button class="inventory__image-remove" id="set-main-image-remove" style="display: none;" onclick="event.stopPropagation(); removeSetMainImage()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 構成品管理セクション -->
+                <div class="inventory__components-section">
+                    <div class="inventory__components-header">
+                        <h3 class="inventory__components-title">
+                            <i class="fas fa-layer-group"></i>
+                            構成品管理
+                        </h3>
+                        <button class="btn btn--primary" id="add-component-btn">
+                            <i class="fas fa-plus"></i>
+                            構成品を追加
+                        </button>
+                    </div>
+                    
+                    <div style="background: var(--bg-tertiary); padding: var(--space-md); border-radius: var(--radius-md); margin-bottom: var(--space-md);">
+                        <p style="margin: 0; color: var(--text-secondary); font-size: var(--text-sm);">
+                            <i class="fas fa-info-circle"></i>
+                            構成品ごとに商品名・SKU・数量・画像・在庫数・有在庫/無在庫タイプを個別管理できます。セット品1個販売時に、各構成品の在庫が設定数量分減算されます。
+                        </p>
+                    </div>
+                    
+                    <div id="set-components-list" style="display: flex; flex-direction: column; gap: var(--space-md);">
+                        <!-- 動的に構成品フォームが追加される -->
+                    </div>
+                </div>
+                
+                <!-- セット品統計 -->
+                <div class="inventory__set-statistics" id="set-statistics">
+                    <h4>
+                        <i class="fas fa-calculator"></i>
+                        セット品統計
+                    </h4>
+                    <div class="inventory__set-stats-grid">
+                        <div class="inventory__set-stat-item">
+                            <span class="inventory__set-stat-label">構成品数:</span>
+                            <span class="inventory__set-stat-value" id="components-count">0点</span>
+                        </div>
+                        <div class="inventory__set-stat-item">
+                            <span class="inventory__set-stat-label">総仕入価格:</span>
+                            <span class="inventory__set-stat-value" id="total-cost">$0</span>
+                        </div>
+                        <div class="inventory__set-stat-item">
+                            <span class="inventory__set-stat-label">販売価格:</span>
+                            <span class="inventory__set-stat-value" id="selling-price">$0</span>
+                        </div>
+                        <div class="inventory__set-stat-item">
+                            <span class="inventory__set-stat-label">予想利益:</span>
+                            <span class="inventory__set-stat-value" id="expected-profit">$0</span>
+                        </div>
+                        <div class="inventory__set-stat-item">
+                            <span class="inventory__set-stat-label">利益率:</span>
+                            <span class="inventory__set-stat-value" id="profit-rate">0%</span>
+                        </div>
+                        <div class="inventory__set-stat-item">
+                            <span class="inventory__set-stat-label">作成可能数:</span>
+                            <span class="inventory__set-stat-value" id="possible-sets">0セット</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="inventory__form-actions">
+                    <button class="btn btn--secondary" id="set-modal-cancel">キャンセル</button>
+                    <button class="btn btn--success" id="save-set-btn">
+                        <i class="fas fa-layer-group"></i>
+                        セット品を保存
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 商品詳細サイドバー -->
+        <div class="inventory__overlay" id="sidebar-overlay"></div>
+        <div class="inventory__sidebar" id="product-sidebar">
+            <div class="inventory__sidebar-header">
+                <h2 class="inventory__sidebar-title">商品詳細</h2>
+                <button class="inventory__sidebar-close" id="sidebar-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="inventory__sidebar-content">
+                <!-- サイドバーの内容は省略 -->
+            </div>
+        </div>
+    </div>
+
+<script>
+// グローバル変数
+let selectedProducts = [];
+let currentDetailProductId = null;
+let currentSetComponents = [];
+let componentCounter = 0;
+let exchangeRate = 150.25; // USD/JPY レート
+let priceChart = null;
+
+// サンプルデータ
+const sampleProducts = [
+    {
+        id: 1,
+        name: "Wireless Gaming Mouse RGB LED 7 Buttons",
+        sku: "MS-WR70-001",
+        type: "stock",
+        condition: "new",
+        priceUSD: 21.84,
+        costUSD: 12.33,
+        stock: 48,
+        category: "Electronics",
+        channels: ["ebay", "shopify"],
+        image: "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=300&h=200&fit=crop",
+        description: "高性能なワイヤレスゲーミングマウス。RGB LED搭載で7つのボタンを配置。"
+    },
+    {
+        id: 2,
+        name: "Gaming PC Accessories Bundle (3 Items)",
+        sku: "SET-PC01-003",
+        type: "set",
+        condition: "new",
+        priceUSD: 59.26,
+        costUSD: 37.96,
+        stock: 15,
+        category: "Bundle",
+        channels: ["ebay"],
+        image: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=300&h=200&fit=crop",
+        description: "ゲーミングPC周辺機器の3点セット商品。",
+        components: [
+            { productId: 1, quantity: 1 },
+            { productId: 3, quantity: 1 },
+            { productId: 4, quantity: 1 }
+        ]
+    },
+    {
+        id: 3,
+        name: "Mechanical Keyboard RGB Backlit",
+        sku: "KB-MR88-002",
+        type: "dropship",
+        condition: "new",
+        priceUSD: 52.24,
+        costUSD: 34.67,
+        stock: "∞",
+        category: "Electronics",
+        channels: ["mercari"],
+        image: "https://images.unsplash.com/photo-1541140532154-b024d705b90a?w=300&h=200&fit=crop",
+        description: "RGBバックライト付きメカニカルキーボード。"
+    },
+    {
+        id: 4,
+        name: "Gaming Headset with Microphone",
+        sku: "HS-GM55-004",
+        type: "hybrid",
+        condition: "new",
+        priceUSD: 35.20,
+        costUSD: 22.62,
+        stock: 3,
+        category: "Electronics",
+        channels: ["ebay", "shopify", "mercari"],
+        image: "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=300&h=200&fit=crop",
+        description: "マイク付きゲーミングヘッドセット。"
+    }
+];
+
+// 初期化
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('棚卸しシステム初期化開始');
+    
+    // イベントリスナーの設定
+    setupEventListeners();
+    setupDragAndDrop();
+    initializePriceChart();
+    updateExchangeRate();
+    
+    console.log('棚卸しシステムが正常に初期化されました');
+});
+
+// イベントリスナー設定
+function setupEventListeners() {
+    // ビュー切り替えボタン
+    const cardViewBtn = document.getElementById('card-view-btn');
+    const listViewBtn = document.getElementById('list-view-btn');
+    
+    if (cardViewBtn) {
+        cardViewBtn.addEventListener('click', () => switchView('grid'));
+    }
+    if (listViewBtn) {
+        listViewBtn.addEventListener('click', () => switchView('list'));
+    }
+    
+    // カード選択
+    const cards = document.querySelectorAll('.inventory__card');
+    cards.forEach(card => {
+        card.addEventListener('click', function(e) {
+            // 中の要素をクリックした場合は除外
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') {
+                return;
+            }
+            selectCard(this);
+        });
+    });
+    
+    // 新規商品登録ボタン
+    const addProductBtn = document.getElementById('add-product-btn');
+    const addProductFromListBtn = document.getElementById('add-product-from-list-btn');
+    
+    if (addProductBtn) {
+        addProductBtn.addEventListener('click', showAddProductModal);
+    }
+    if (addProductFromListBtn) {
+        addProductFromListBtn.addEventListener('click', showAddProductModal);
+    }
+    
+    // セット品作成ボタン
+    const createSetBtn = document.getElementById('create-set-btn');
+    const createSetFromListBtn = document.getElementById('create-set-from-list-btn');
+    
+    if (createSetBtn) {
+        createSetBtn.addEventListener('click', handleSetCreation);
+    }
+    if (createSetFromListBtn) {
+        createSetFromListBtn.addEventListener('click', handleSetCreation);
+    }
+    
+    // 新規商品登録モーダル関連
+    const addProductModalClose = document.getElementById('add-product-modal-close');
+    const addProductModalCancel = document.getElementById('add-product-modal-cancel');
+    const saveNewProductBtn = document.getElementById('save-new-product-btn');
+    
+    if (addProductModalClose) {
+        addProductModalClose.addEventListener('click', hideAddProductModal);
+    }
+    if (addProductModalCancel) {
+        addProductModalCancel.addEventListener('click', hideAddProductModal);
+    }
+    if (saveNewProductBtn) {
+        saveNewProductBtn.addEventListener('click', saveNewProduct);
+    }
+    
+    // 商品タイプ選択
+    const productTypeOptions = document.querySelectorAll('.inventory__product-type-option');
+    productTypeOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            // 他のオプションの選択を解除
+            productTypeOptions.forEach(opt => opt.classList.remove('inventory__product-type-option--active'));
+            // 現在のオプションを選択
+            this.classList.add('inventory__product-type-option--active');
+            // ラジオボタンも更新
+            this.querySelector('input[type="radio"]').checked = true;
+            
+            // UIの更新
+            updateProductTypeUI(this.dataset.type);
+        });
+    });
+    
+    // セット品モーダル関連
+    const setModalClose = document.getElementById('set-modal-close');
+    const setModalCancel = document.getElementById('set-modal-cancel');
+    const saveSetBtn = document.getElementById('save-set-btn');
+    const addComponentBtn = document.getElementById('add-component-btn');
+    
+    if (setModalClose) {
+        setModalClose.addEventListener('click', hideSetModal);
+    }
+    if (setModalCancel) {
+        setModalCancel.addEventListener('click', hideSetModal);
+    }
+    if (saveSetBtn) {
+        saveSetBtn.addEventListener('click', saveSetProduct);
+    }
+    if (addComponentBtn) {
+        addComponentBtn.addEventListener('click', addNewComponent);
+    }
+    
+    // サイドバー関連
+    const sidebarClose = document.getElementById('sidebar-close');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    
+    if (sidebarClose) {
+        sidebarClose.addEventListener('click', hideProductDetail);
+    }
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', hideProductDetail);
+    }
+    
+    // チェックボックス関連
+    const selectAllCheckbox = document.getElementById('select-all-checkbox');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            toggleAllProducts(this.checked);
+        });
+    }
+    
+    const productCheckboxes = document.querySelectorAll('.product-checkbox');
+    productCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const productId = parseInt(this.dataset.id);
+            toggleProductSelection(productId, this.checked);
+        });
+    });
+    
+    // CSV インポート
+    const csvImportArea = document.getElementById('csv-import-area');
+    const csvImport = document.getElementById('csv-import');
+    
+    if (csvImportArea && csvImport) {
+        csvImportArea.addEventListener('click', () => csvImport.click());
+        csvImport.addEventListener('change', handleCSVImport);
+    }
+    
+    // 通貨切り替え
+    const currencyUsdBtn = document.getElementById('currency-usd');
+    const currencyJpyBtn = document.getElementById('currency-jpy');
+    
+    if (currencyUsdBtn) {
+        currencyUsdBtn.addEventListener('click', () => switchCurrency('USD'));
+    }
+    if (currencyJpyBtn) {
+        currencyJpyBtn.addEventListener('click', () => switchCurrency('JPY'));
+    }
+    
+    // 検索機能
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', handleSearch);
+    }
+    
+    // フィルター機能
+    const filterSelects = document.querySelectorAll('.inventory__filter-select');
+    filterSelects.forEach(select => {
+        select.addEventListener('change', applyFilters);
+    });
+}
+
+// ビュー切り替え - 修正版（データ同期追加）
+function switchView(view) {
+    console.log(`ビュー切り替え: ${view}`);
+    
+    const cardView = document.getElementById('card-view');
+    const listView = document.getElementById('list-view');
+    const cardViewBtn = document.getElementById('card-view-btn');
+    const listViewBtn = document.getElementById('list-view-btn');
+    
+    if (!cardView || !listView || !cardViewBtn || !listViewBtn) {
+        console.error('ビュー要素が見つかりません');
+        return;
+    }
+    
+    // ボタンの状態更新
+    cardViewBtn.classList.remove('inventory__view-btn--active');
+    listViewBtn.classList.remove('inventory__view-btn--active');
+    
+    if (view === 'grid') {
+        cardView.style.display = 'grid';
+        listView.style.display = 'none';
+        cardViewBtn.classList.add('inventory__view-btn--active');
+        
+        // 修正: テーブルデータをカードに同期
+        syncTableDataToCards();
+        console.log('カードビューに切り替えました');
+    } else {
+        cardView.style.display = 'none';
+        listView.style.display = 'block';
+        listViewBtn.classList.add('inventory__view-btn--active');
+        
+        // 修正: カードデータをテーブルに同期
+        syncCardDataToTable();
+        console.log('リストビューに切り替えました');
+    }
+}
+
+// 🔧 新機能: カードデータをテーブルに同期
+function syncCardDataToTable() {
+    console.log('カードデータをテーブルに同期中...');
+    
+    try {
+        const tableBody = document.getElementById('products-table-body');
+        if (!tableBody) {
+            console.warn('テーブルボディが見つかりません');
+            return;
+        }
+        
+        // カードからデータを取得してテーブルを更新
+        const cards = document.querySelectorAll('.inventory__card');
+        cards.forEach((card, index) => {
+            const row = tableBody.rows[index];
+            if (row) {
+                // 在庫入力値の同期
+                const cardStockInput = card.querySelector('.inventory__stock-input');
+                const tableStockInput = row.querySelector('input[type="number"]');
+                
+                if (cardStockInput && tableStockInput) {
+                    tableStockInput.value = cardStockInput.value;
+                }
+                
+                // 選択状態の同期
+                const isSelected = card.classList.contains('inventory__card--selected');
+                const checkbox = row.querySelector('.product-checkbox');
+                if (checkbox) {
+                    checkbox.checked = isSelected;
+                }
+            }
+        });
+        
+        console.log('カードデータのテーブル同期完了');
+    } catch (error) {
+        console.error('カードデータ同期エラー:', error);
+    }
+}
+
+// 🔧 新機能: テーブルデータをカードに同期
+function syncTableDataToCards() {
+    console.log('テーブルデータをカードに同期中...');
+    
+    try {
+        const tableBody = document.getElementById('products-table-body');
+        if (!tableBody) {
+            console.warn('テーブルボディが見つかりません');
+            return;
+        }
+        
+        // テーブルからデータを取得してカードを更新
+        const rows = tableBody.querySelectorAll('tr');
+        rows.forEach((row, index) => {
+            const card = document.querySelector(`.inventory__card[data-id="${row.dataset.id}"]`);
+            if (card) {
+                // 在庫入力値の同期
+                const tableStockInput = row.querySelector('input[type="number"]');
+                const cardStockInput = card.querySelector('.inventory__stock-input');
+                
+                if (tableStockInput && cardStockInput) {
+                    cardStockInput.value = tableStockInput.value;
+                }
+                
+                // 選択状態の同期
+                const checkbox = row.querySelector('.product-checkbox');
+                if (checkbox) {
+                    if (checkbox.checked) {
+                        card.classList.add('inventory__card--selected');
+                    } else {
+                        card.classList.remove('inventory__card--selected');
+                    }
+                }
+            }
+        });
+        
+        console.log('テーブルデータのカード同期完了');
+    } catch (error) {
+        console.error('テーブルデータ同期エラー:', error);
+    }
+}
+
+// カード選択
+function selectCard(card) {
+    const productId = parseInt(card.dataset.id);
+    
+    card.classList.toggle('inventory__card--selected');
+    
+    if (card.classList.contains('inventory__card--selected')) {
+        if (!selectedProducts.includes(productId)) {
+            selectedProducts.push(productId);
+        }
+    } else {
+        selectedProducts = selectedProducts.filter(id => id !== productId);
+    }
+    
+    updateSelectionUI();
+    console.log('選択中の商品:', selectedProducts);
+}
+
+// 商品選択（チェックボックス）
+function toggleProductSelection(productId, checked) {
+    if (checked) {
+        if (!selectedProducts.includes(productId)) {
+            selectedProducts.push(productId);
+        }
+    } else {
+        selectedProducts = selectedProducts.filter(id => id !== productId);
+    }
+    updateSelectionUI();
+    console.log('選択中の商品:', selectedProducts);
+}
+
+// 全選択
+function toggleAllProducts(checked) {
+    const productCheckboxes = document.querySelectorAll('.product-checkbox');
+    productCheckboxes.forEach(checkbox => {
+        checkbox.checked = checked;
+        const productId = parseInt(checkbox.dataset.id);
+        
+        if (checked) {
+            if (!selectedProducts.includes(productId)) {
+                selectedProducts.push(productId);
+            }
+        } else {
+            selectedProducts = selectedProducts.filter(id => id !== productId);
+        }
+    });
+    
+    updateSelectionUI();
+    console.log('全選択:', checked, '選択中の商品:', selectedProducts);
+}
+
+// 選択UI更新（ボタン状態管理）
+function updateSelectionUI() {
+    const selectedCount = selectedProducts.length;
+    const createSetBtn = document.getElementById('create-set-btn');
+    const setBtnText = document.getElementById('set-btn-text');
+    
+    if (createSetBtn && setBtnText) {
+        if (selectedCount >= 2) {
+            createSetBtn.disabled = false;
+            createSetBtn.classList.remove('btn--secondary');
+            createSetBtn.classList.add('btn--warning');
+            setBtnText.textContent = `選択商品からセット品作成 (${selectedCount}点)`;
+        } else {
+            createSetBtn.disabled = false; // 常に有効（新規セット品作成のため）
+            createSetBtn.classList.remove('btn--warning');
+            createSetBtn.classList.add('btn--secondary');
+            setBtnText.textContent = '新規セット品作成';
+        }
+    }
+    
+    console.log(`選択商品数: ${selectedCount}件`);
+}
+
+// セット品作成ハンドラー - 修正版
+function handleSetCreation() {
+    console.log('セット品作成ボタンが押されました');
+    console.log('現在の選択商品:', selectedProducts);
+    
+    if (selectedProducts.length >= 2) {
+        // 選択商品からセット品作成
+        console.log('選択商品からセット品作成を実行');
+        createSetFromSelectedProducts();
+    } else {
+        // 新規セット品作成（修正箇所）
+        console.log('新規セット品作成（空の状態）を実行');
+        showSetModal('create-empty');  // 直接呼び出し
+    }
+}
+
+// 選択商品からセット品作成
+function createSetFromSelectedProducts() {
+    console.log('選択された商品でセット品作成:', selectedProducts);
+    
+    // 選択された商品データを構成品として設定
+    const selectedProductsData = selectedProducts.map(id => {
+        const product = sampleProducts.find(p => p.id === id);
+        return product;
+    }).filter(Boolean);
+    
+    showSetModal('create-from-selected', selectedProductsData);
+}
+
+// 空のセット品作成
+function createEmptySet() {
+    console.log('新規セット品作成（空の状態）');
+    showSetModal('create-empty');
+}
+
+// セット品モーダル表示 - 修正版（確実な表示）
+function showSetModal(mode = 'create-empty', selectedProductsData = []) {
+    console.log(`セット品モーダル表示開始: mode=${mode}`);
+    
+    const modal = document.getElementById('set-modal');
+    
+    if (!modal) {
+        console.error('セット品モーダル要素が見つかりません');
+        return;
+    }
+    
+    // フォームリセット
+    resetSetForm();
+    
+    // モードに応じた処理
+    if (mode === 'create-from-selected' && selectedProductsData.length > 0) {
+        console.log('選択商品を構成品として追加:', selectedProductsData);
+        selectedProductsData.forEach(product => {
+            addComponentFromProduct(product);
+        });
+    }
+    
+    // 修正: 確実にモーダルを表示
+    setTimeout(() => {
+        modal.classList.add('inventory__modal--active');
+        console.log('セット品モーダルが表示されました');
+        
+        // モーダル表示確認
+        const isVisible = modal.classList.contains('inventory__modal--active');
+        console.log('モーダル表示状態:', isVisible);
+    }, 100);  // 少し遅延させて確実に実行
+    
+    updateSetStatistics();
+}
+
+// セット品モーダル非表示
+function hideSetModal() {
+    const modal = document.getElementById('set-modal');
+    if (modal) {
+        modal.classList.remove('inventory__modal--active');
+        console.log('セット品モーダルを非表示');
+    }
+}
+
+// セット品フォームリセット
+function resetSetForm() {
+    // 基本情報リセット
+    document.getElementById('set-name').value = '';
+    document.getElementById('set-sku').value = '';
+    document.getElementById('set-price').value = '';
+    document.getElementById('set-category').value = '';
+    document.getElementById('set-cost').value = '';
+    document.getElementById('set-condition').value = 'new';
+    
+    // メイン画像リセット
+    removeSetMainImage();
+    
+    // 構成品リストクリア
+    const componentsList = document.getElementById('set-components-list');
+    componentsList.innerHTML = '';
+    componentCounter = 0;
+    
+    // 統計リセット
+    updateSetStatistics();
+}
+
+// 構成品追加ボタン
+function addNewComponent() {
+    componentCounter++;
+    const componentsList = document.getElementById('set-components-list');
+    
+    const componentForm = document.createElement('div');
+    componentForm.className = 'inventory__component-form';
+    componentForm.dataset.componentId = componentCounter;
+    
+    componentForm.innerHTML = createComponentFormHTML(componentCounter);
+    
+    componentsList.appendChild(componentForm);
+    updateSetStatistics();
+    
+    console.log(`新規構成品 #${componentCounter} を追加`);
+}
+
+// 構成品フォームHTML生成
+function createComponentFormHTML(componentId, product = null) {
+    return `
+        <div class="inventory__component-header">
+            <h4 class="inventory__component-title">
+                <span class="inventory__component-number">${componentId}</span>
+                構成品 #${componentId}
+            </h4>
+            <button class="inventory__component-remove" onclick="removeComponent(${componentId})">
+                <i class="fas fa-trash"></i>
+                削除
+            </button>
+        </div>
+        
+        <div class="inventory__component-grid">
+            <!-- 画像セクション -->
+            <div class="inventory__component-image-section">
+                <label class="inventory__component-form-label">商品画像</label>
+                <div class="inventory__component-image-upload" onclick="document.getElementById('component-image-${componentId}').click();">
+                    ${product && product.image ? 
+                        `<img src="${product.image}" alt="${product.name}" class="inventory__component-image-preview">
+                         <button class="inventory__component-image-remove" style="opacity: 1;" onclick="removeComponentImage(${componentId}); event.stopPropagation();">
+                             <i class="fas fa-times"></i>
+                         </button>` :
+                        `<i class="fas fa-camera inventory__component-upload-icon" id="component-upload-icon-${componentId}"></i>
+                         <div class="inventory__component-upload-text" id="component-upload-text-${componentId}">
+                             構成品の<br>画像をアップロード
+                         </div>`
+                    }
+                    <input type="file" id="component-image-${componentId}" style="display: none;" accept="image/*" onchange="handleComponentImageUpload(${componentId}, this)">
+                </div>
+            </div>
+            
+            <!-- 基本情報 -->
+            <div class="inventory__component-basic-info">
+                <div class="inventory__component-form-group">
+                    <label class="inventory__component-form-label">商品名</label>
+                    <input type="text" class="inventory__component-form-input" value="${product ? product.name : ''}" onchange="updateSetStatistics()">
+                </div>
+                <div class="inventory__component-form-group">
+                    <label class="inventory__component-form-label">商品番号 (SKU)</label>
+                    <input type="text" class="inventory__component-form-input" value="${product ? product.sku : ''}" onchange="updateSetStatistics()">
+                </div>
+                <div class="inventory__component-form-group">
+                    <label class="inventory__component-form-label">数量</label>
+                    <input type="number" class="inventory__component-form-input" value="1" min="1" onchange="updateSetStatistics()">
+                </div>
+                <div class="inventory__component-form-group">
+                    <label class="inventory__component-form-label">商品タイプ</label>
+                    <select class="inventory__component-form-select" onchange="updateComponentType(${componentId}, this.value)">
+                        <option value="stock" ${product && product.type === 'stock' ? 'selected' : ''}>有在庫</option>
+                        <option value="dropship" ${product && product.type === 'dropship' ? 'selected' : ''}>無在庫</option>
+                        <option value="hybrid" ${product && product.type === 'hybrid' ? 'selected' : ''}>ハイブリッド</option>
+                    </select>
+                </div>
+                <div class="inventory__component-form-group" style="grid-column: 1 / -1;">
+                    <label class="inventory__component-form-label">商品説明</label>
+                    <textarea class="inventory__component-form-textarea" placeholder="構成品の詳細説明（任意）">${product ? product.description || '' : ''}</textarea>
+                </div>
+            </div>
+            
+            <!-- 在庫・価格情報 -->
+            <div class="inventory__component-stock-info">
+                <div class="inventory__component-form-group">
+                    <label class="inventory__component-form-label">在庫数</label>
+                    <input type="number" class="inventory__component-form-input" value="${product ? product.stock : 0}" min="0" onchange="updateSetStatistics()">
+                </div>
+                <div class="inventory__component-form-group">
+                    <label class="inventory__component-form-label">仕入価格 (USD)</label>
+                    <input type="number" class="inventory__component-form-input" value="${product ? product.costUSD || 0 : 0}" min="0" step="0.01" onchange="updateSetStatistics()">
+                </div>
+                <div class="inventory__component-form-group">
+                    <label class="inventory__component-form-label">個別販売価格 (USD)</label>
+                    <input type="number" class="inventory__component-form-input" value="${product ? product.priceUSD || 0 : 0}" min="0" step="0.01" placeholder="個別販売時の価格（任意）">
+                </div>
+                <div class="inventory__component-form-group">
+                    <label class="inventory__component-form-label">状態</label>
+                    <select class="inventory__component-form-select">
+                        <option value="new" ${product && product.condition === 'new' ? 'selected' : ''}>新品</option>
+                        <option value="used" ${product && product.condition === 'used' ? 'selected' : ''}>中古</option>
+                        <option value="refurbished" ${product && product.condition === 'refurbished' ? 'selected' : ''}>整備済み</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// 既存商品から構成品追加
+function addComponentFromProduct(product) {
+    componentCounter++;
+    const componentsList = document.getElementById('set-components-list');
+    
+    const componentForm = document.createElement('div');
+    componentForm.className = 'inventory__component-form';
+    componentForm.dataset.componentId = componentCounter;
+    
+    componentForm.innerHTML = createComponentFormHTML(componentCounter, product);
+    
+    componentsList.appendChild(componentForm);
+    updateSetStatistics();
+    
+    console.log(`既存商品から構成品 #${componentCounter} を追加:`, product.name);
+}
+
+// 構成品削除
+function removeComponent(componentId) {
+    const componentForm = document.querySelector(`[data-component-id="${componentId}"]`);
+    if (componentForm) {
+        componentForm.remove();
+        updateSetStatistics();
+        console.log(`構成品 #${componentId} を削除`);
+    }
+}
+
+// セット品統計更新
+function updateSetStatistics() {
+    const componentForms = document.querySelectorAll('.inventory__component-form');
+    const setPriceInput = document.getElementById('set-price');
+    
+    let totalCost = 0;
+    let componentsCount = componentForms.length;
+    let minPossibleSets = Infinity;
+    
+    componentForms.forEach(form => {
+        const costInput = form.querySelector('input[type="number"]:nth-of-type(4)'); // 仕入価格
+        const quantityInput = form.querySelector('input[type="number"]:nth-of-type(3)'); // 数量
+        const stockInput = form.querySelector('input[type="number"]:nth-of-type(4)'); // 在庫数
+        
+        if (costInput && quantityInput) {
+            const cost = parseFloat(costInput.value) || 0;
+            const quantity = parseInt(quantityInput.value) || 1;
+            const stock = parseInt(stockInput?.value) || 0;
+            
+            totalCost += cost * quantity;
+            
+            if (stock > 0) {
+                const possibleSets = Math.floor(stock / quantity);
+                minPossibleSets = Math.min(minPossibleSets, possibleSets);
+            }
+        }
+    });
+    
+    if (minPossibleSets === Infinity) minPossibleSets = 0;
+    
+    const sellingPrice = parseFloat(setPriceInput?.value) || 0;
+    const expectedProfit = sellingPrice - totalCost;
+    const profitRate = totalCost > 0 ? ((expectedProfit / totalCost) * 100).toFixed(1) : 0;
+    
+    // 統計表示を更新
+    document.getElementById('components-count').textContent = `${componentsCount}点`;
+    document.getElementById('total-cost').textContent = `${totalCost.toFixed(2)}`;
+    document.getElementById('selling-price').textContent = `${sellingPrice.toFixed(2)}`;
+    document.getElementById('expected-profit').textContent = `${expectedProfit.toFixed(2)}`;
+    document.getElementById('profit-rate').textContent = `${profitRate}%`;
+    document.getElementById('possible-sets').textContent = `${minPossibleSets}セット`;
+}
+
+// 新規商品登録モーダル表示
+function showAddProductModal() {
+    const modal = document.getElementById('add-product-modal');
+    if (modal) {
+        resetAddProductForm();
+        modal.classList.add('inventory__modal--active');
+        console.log('新規商品登録モーダルを表示');
+    }
+}
+
+// 新規商品登録モーダル非表示
+function hideAddProductModal() {
+    const modal = document.getElementById('add-product-modal');
+    if (modal) {
+        modal.classList.remove('inventory__modal--active');
+        console.log('新規商品登録モーダルを非表示');
+    }
+}
+
+// 新規商品登録フォームリセット
+function resetAddProductForm() {
+    document.getElementById('new-product-name').value = '';
+    document.getElementById('new-product-sku').value = '';
+    document.getElementById('new-product-price').value = '';
+    document.getElementById('new-product-cost').value = '';
+    document.getElementById('new-product-stock').value = '';
+    document.getElementById('new-product-condition').value = 'new';
+    document.getElementById('new-product-category').value = '';
+    document.getElementById('new-product-supplier').value = '';
+    document.getElementById('new-product-description').value = '';
+    
+    // 商品タイプを有在庫にリセット
+    document.querySelectorAll('.inventory__product-type-option').forEach(option => {
+        option.classList.remove('inventory__product-type-option--active');
+    });
+    document.querySelector('[data-type="stock"]').classList.add('inventory__product-type-option--active');
+    document.querySelector('input[value="stock"]').checked = true;
+    
+    updateProductTypeUI('stock');
+    removeNewProductImage();
+}
+
+// 商品タイプUIの更新
+function updateProductTypeUI(type) {
+    const stockField = document.getElementById('stock-field');
+    const supplierField = document.getElementById('supplier-field');
+    const setCreationNotice = document.getElementById('set-creation-notice');
+    const saveProductBtnText = document.getElementById('save-product-btn-text');
+    
+    // 在庫フィールドの表示制御
+    if (type === 'dropship') {
+        stockField.style.display = 'none';
+        supplierField.style.display = 'block';
+    } else {
+        stockField.style.display = 'block';
+        supplierField.style.display = type === 'hybrid' ? 'block' : 'none';
+    }
+    
+    // セット品の場合の通知表示
+    if (type === 'set') {
+        setCreationNotice.style.display = 'block';
+        saveProductBtnText.textContent = '基本情報を保存して構成品設定へ';
+    } else {
+        setCreationNotice.style.display = 'none';
+        saveProductBtnText.textContent = '商品を保存';
+    }
+    
+    console.log('商品タイプUI更新:', type);
+}
+
+// 新規商品保存
+function saveNewProduct() {
+    const name = document.getElementById('new-product-name').value;
+    const sku = document.getElementById('new-product-sku').value;
+    const type = document.querySelector('input[name="product-type"]:checked').value;
+    
+    if (!name || !sku) {
+        showNotification('商品名とSKUは必須項目です', 'error');
+        return;
+    }
+    
+    const priceUSD = parseFloat(document.getElementById('new-product-price').value) || 0;
+    const costUSD = parseFloat(document.getElementById('new-product-cost').value) || 0;
+    const stock = type === 'dropship' ? '∞' : (parseInt(document.getElementById('new-product-stock').value) || 0);
+    const condition = document.getElementById('new-product-condition').value;
+    const category = document.getElementById('new-product-category').value;
+    const supplier = document.getElementById('new-product-supplier').value;
+    const description = document.getElementById('new-product-description').value;
+    
+    const newProduct = {
+        id: `product-${Date.now()}`,
+        name: name,
+        sku: sku,
+        type: type,
+        condition: condition,
+        priceUSD: priceUSD,
+        costUSD: costUSD,
+        stock: stock,
+        category: category || 'Other',
+        supplier: supplier,
+        description: description,
+        channels: type === 'dropship' ? ['mercari'] : ['shopify'],
+        image: null, // 実際の実装では画像データを保存
+        createdAt: new Date().toISOString()
+    };
+    
+    console.log('新規商品を保存:', newProduct);
+    
+    hideAddProductModal();
+    
+    if (type === 'set') {
+        // セット品の場合は構成品設定モーダルへ
+        setTimeout(() => {
+            showSetModal('create-empty');
+            // 基本情報を事前設定
+            document.getElementById('set-name').value = name;
+            document.getElementById('set-sku').value = sku;
+            document.getElementById('set-price').value = priceUSD;
+            document.getElementById('set-cost').value = costUSD;
+            document.getElementById('set-category').value = category;
+            document.getElementById('set-condition').value = condition;
+        }, 300);
+        
+        showNotification(`セット品「${name}」の基本情報を保存しました。構成品を設定してください。`, 'success');
+    } else {
+        showNotification(`商品「${name}」を登録しました`, 'success');
+    }
+}
+
+// 新規商品画像削除
+function removeNewProductImage() {
+    const uploadDiv = document.querySelector('#new-product-image').closest('.inventory__image-upload');
+    const preview = uploadDiv.querySelector('.inventory__image-preview');
+    
+    if (preview) {
+        preview.remove();
+    }
+    
+    const icon = document.getElementById('new-product-upload-icon');
+    const text = document.getElementById('new-product-upload-text');
+    const removeBtn = document.getElementById('new-product-image-remove');
+    
+    if (icon) icon.style.display = 'block';
+    if (text) text.style.display = 'block';
+    if (removeBtn) removeBtn.style.display = 'none';
+    
+    document.getElementById('new-product-image').value = '';
+}
+
+// セット品保存
+function saveSetProduct() {
+    const name = document.getElementById('set-name').value;
+    const sku = document.getElementById('set-sku').value;
+    const priceUSD = parseFloat(document.getElementById('set-price').value) || 0;
+    const category = document.getElementById('set-category').value;
+    const costUSD = parseFloat(document.getElementById('set-cost').value) || 0;
+    const condition = document.getElementById('set-condition').value;
+    
+    if (!name || !sku) {
+        showNotification('セット品名とSKUは必須項目です', 'error');
+        return;
+    }
+    
+    const componentForms = document.querySelectorAll('.inventory__component-form');
+    if (componentForms.length === 0) {
+        if (!confirm('構成品が設定されていませんが、セット品を作成しますか？\n（後から構成品を追加できます）')) {
+            return;
+        }
+    }
+    
+    // 構成品データ収集
+    const components = [];
+    componentForms.forEach((form, index) => {
+        const inputs = form.querySelectorAll('input');
+        const selects = form.querySelectorAll('select');
+        const textarea = form.querySelector('textarea');
+        
+        const component = {
+            id: `comp-${Date.now()}-${index}`,
+            name: inputs[0].value || `構成品 #${index + 1}`,
+            sku: inputs[1].value || `COMP-${Date.now()}-${index}`,
+            quantity: parseInt(inputs[2].value) || 1,
+            stock: parseInt(inputs[3].value) || 0,
+            costUSD: parseFloat(inputs[4].value) || 0,
+            priceUSD: parseFloat(inputs[5].value) || 0,
+            type: selects[0].value || 'stock',
+            condition: selects[1].value || 'new',
+            description: textarea.value || '',
+            image: null // 実際の実装では画像データを保存
+        };
+        components.push(component);
+    });
+    
+    const setProduct = {
+        id: `set-${Date.now()}`,
+        name: name,
+        sku: sku,
+        type: 'set',
+        condition: condition,
+        priceUSD: priceUSD,
+        costUSD: costUSD,
+        category: category || 'Bundle',
+        channels: ['shopify'],
+        components: components,
+        description: `${components.length}点構成のセット商品`,
+        createdAt: new Date().toISOString()
+    };
+    
+    console.log('セット品を保存:', setProduct);
+    
+    hideSetModal();
+    showNotification(`セット品「${name}」を作成しました（構成品: ${components.length}点）`, 'success');
+    
+    // 選択をクリア
+    selectedProducts = [];
+    document.querySelectorAll('.inventory__card--selected').forEach(card => {
+        card.classList.remove('inventory__card--selected');
+    });
+    document.querySelectorAll('.product-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    updateSelectionUI();
+}
+
+// セットメイン画像削除
+function removeSetMainImage() {
+    const uploadDiv = document.querySelector('#set-main-image').closest('.inventory__image-upload');
+    const preview = uploadDiv.querySelector('.inventory__image-preview');
+    
+    if (preview) {
+        preview.remove();
+    }
+    
+    const icon = document.getElementById('set-main-upload-icon');
+    const text = document.getElementById('set-main-upload-text');
+    const removeBtn = document.getElementById('set-main-image-remove');
+    
+    if (icon) icon.style.display = 'block';
+    if (text) text.style.display = 'block';
+    if (removeBtn) removeBtn.style.display = 'none';
+    
+    document.getElementById('set-main-image').value = '';
+}
+
+// 構成品画像削除
+function removeComponentImage(componentId) {
+    const componentForm = document.querySelector(`[data-component-id="${componentId}"]`);
+    const uploadDiv = componentForm.querySelector('.inventory__component-image-upload');
+    const preview = uploadDiv.querySelector('.inventory__component-image-preview');
+    
+    if (preview) {
+        preview.remove();
+    }
+    
+    const icon = uploadDiv.querySelector('.inventory__component-upload-icon');
+    const text = uploadDiv.querySelector('.inventory__component-upload-text');
+    const removeBtn = uploadDiv.querySelector('.inventory__component-image-remove');
+    
+    if (icon) icon.style.display = 'block';
+    if (text) text.style.display = 'block';
+    if (removeBtn) removeBtn.style.display = 'none';
+    
+    const fileInput = componentForm.querySelector(`#component-image-${componentId}`);
+    if (fileInput) fileInput.value = '';
+}
+
+// 構成品画像アップロード処理
+function handleComponentImageUpload(componentId, fileInput) {
+    const file = fileInput.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const componentForm = document.querySelector(`[data-component-id="${componentId}"]`);
+            const uploadDiv = componentForm.querySelector('.inventory__component-image-upload');
+            
+            // 既存のプレビューを削除
+            const existingPreview = uploadDiv.querySelector('.inventory__component-image-preview');
+            if (existingPreview) {
+                existingPreview.remove();
+            }
+            
+            // 新しいプレビューを追加
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.className = 'inventory__component-image-preview';
+            img.alt = 'プレビュー';
+            uploadDiv.appendChild(img);
+            
+            // アイコンとテキストを非表示
+            const icon = uploadDiv.querySelector('.inventory__component-upload-icon');
+            const text = uploadDiv.querySelector('.inventory__component-upload-text');
+            const removeBtn = uploadDiv.querySelector('.inventory__component-image-remove');
+            
+            if (icon) icon.style.display = 'none';
+            if (text) text.style.display = 'none';
+            if (removeBtn) removeBtn.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// 構成品タイプ更新
+function updateComponentType(componentId, type) {
+    const componentForm = document.querySelector(`[data-component-id="${componentId}"]`);
+    const badge = componentForm.querySelector(`#component-type-badge-${componentId}`);
+    
+    if (badge) {
+        badge.className = `inventory__component-type-badge inventory__component-type-badge--${type}`;
+        badge.textContent = type === 'stock' ? '有在庫' : type === 'dropship' ? '無在庫' : 'ハイブリッド';
+    }
+    
+    updateSetStatistics();
+}
+
+// 商品詳細表示
+function showProductDetail(productId) {
+    const product = sampleProducts.find(p => p.id === productId);
+    if (!product) {
+        showNotification('商品が見つかりません', 'error');
+        return;
+    }
+    
+    currentDetailProductId = productId;
+    
+    const overlay = document.getElementById('sidebar-overlay');
+    const sidebar = document.getElementById('product-sidebar');
+    
+    if (overlay && sidebar) {
+        overlay.classList.add('inventory__overlay--active');
+        sidebar.classList.add('inventory__sidebar--active');
+        console.log('商品詳細サイドバーを表示:', productId);
+    }
+}
+
+// 商品詳細非表示
+function hideProductDetail() {
+    const overlay = document.getElementById('sidebar-overlay');
+    const sidebar = document.getElementById('product-sidebar');
+    
+    if (overlay && sidebar) {
+        overlay.classList.remove('inventory__overlay--active');
+        sidebar.classList.remove('inventory__sidebar--active');
+        currentDetailProductId = null;
+        console.log('商品詳細サイドバーを非表示');
+    }
+}
+
+// 商品削除
+function deleteProduct(productId) {
+    if (confirm('この商品を削除しますか？')) {
+        console.log('商品を削除:', productId);
+        showNotification('商品を削除しました', 'success');
+    }
+}
+
+// CSV インポート
+function handleCSVImport(event) {
+    const file = event.target.files[0];
+    if (file) {
+        console.log('CSVファイルを読み込み:', file.name);
+        showNotification('CSVインポート機能は開発中です', 'info');
+    }
+}
+
+// ドラッグ&ドロップ設定
+function setupDragAndDrop() {
+    const importArea = document.getElementById('csv-import-area');
+    const csvImport = document.getElementById('csv-import');
+    
+    if (!importArea || !csvImport) return;
+    
+    importArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        importArea.classList.add('inventory__import--dragover');
+    });
+    
+    importArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        importArea.classList.remove('inventory__import--dragover');
+    });
+    
+    importArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        importArea.classList.remove('inventory__import--dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0 && files[0].name.endsWith('.csv')) {
+            csvImport.files = files;
+            handleCSVImport({ target: csvImport });
+        }
+    });
+}
+
+// データエクスポート
+function exportData() {
+    console.log('データをエクスポート');
+    showNotification('エクスポート機能は開発中です', 'info');
+}
+
+// 通貨切り替え
+function switchCurrency(currency) {
+    const usdBtn = document.getElementById('currency-usd');
+    const jpyBtn = document.getElementById('currency-jpy');
+    
+    if (currency === 'USD') {
+        usdBtn.classList.add('inventory__currency-btn--active');
+        jpyBtn.classList.remove('inventory__currency-btn--active');
+    } else {
+        jpyBtn.classList.add('inventory__currency-btn--active');
+        usdBtn.classList.remove('inventory__currency-btn--active');
+    }
+    
+    updatePriceChart(currency);
+    console.log('通貨を切り替え:', currency);
+}
+
+// 価格チャート初期化
+function initializePriceChart() {
+    const ctx = document.getElementById('price-chart').getContext('2d');
+    
+    const data = {
+        labels: ['$0-$25', '$25-$50', '$50-$100', '$100+'],
+        datasets: [{
+            data: [272, 298, 234, 342],
+            backgroundColor: [
+                '#3b82f6',
+                '#10b981',
+                '#f59e0b',
+                '#ef4444'
+            ],
+            borderWidth: 0
+        }]
+    };
+    
+    const config = {
+        type: 'doughnut',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    };
+    
+    priceChart = new Chart(ctx, config);
+}
+
+// 価格チャート更新
+function updatePriceChart(currency) {
+    if (!priceChart) return;
+    
+    if (currency === 'JPY') {
+        priceChart.data.labels = ['¥0-¥3,750', '¥3,750-¥7,500', '¥7,500-¥15,000', '¥15,000+'];
+        // 統計も円表示に更新
+        document.getElementById('total-amount').textContent = '¥15,407,500';
+        document.getElementById('average-price').textContent = '¥16,869';
+        document.getElementById('highest-price').textContent = '¥135,122';
+    } else {
+        priceChart.data.labels = ['$0-$25', '$25-$50', '$50-$100', '$100+'];
+        // 統計をドル表示に更新
+        document.getElementById('total-amount').textContent = '$102,500';
+        document.getElementById('average-price').textContent = '$112.3';
+        document.getElementById('highest-price').textContent = '$899';
+    }
+    
+    priceChart.update();
+}
+
+// 為替レート更新
+function updateExchangeRate() {
+    // 実際の実装では為替APIから取得
+    const rate = 150.25;
+    exchangeRate = rate;
+    document.getElementById('exchange-rate').textContent = `¥${rate}`;
+    console.log('為替レート更新:', rate);
+}
+
+// 検索機能
+function handleSearch(event) {
+    const query = event.target.value.toLowerCase();
+    console.log('検索クエリ:', query);
+    // 実際の検索ロジックを実装
+    showNotification(`"${query}"で検索中...`, 'info');
+}
+
+// フィルター適用
+function applyFilters() {
+    const typeFilter = document.getElementById('filter-type').value;
+    const channelFilter = document.getElementById('filter-channel').value;
+    const stockFilter = document.getElementById('filter-stock-status').value;
+    const priceFilter = document.getElementById('filter-price-range').value;
+    
+    console.log('フィルター適用:', {
+        type: typeFilter,
+        channel: channelFilter,
+        stock: stockFilter,
+        price: priceFilter
+    });
+    
+    showNotification('フィルターを適用しました', 'info');
+}
+
+// フィルターリセット
+function resetFilters() {
+    document.getElementById('filter-type').value = '';
+    document.getElementById('filter-channel').value = '';
+    document.getElementById('filter-stock-status').value = '';
+    document.getElementById('filter-price-range').value = '';
+    document.getElementById('search-input').value = '';
+    
+    console.log('フィルターをリセット');
+    showNotification('フィルターをリセットしました', 'info');
+}
+
+// 通知システム
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        border-radius: 6px;
+        color: white;
+        font-weight: 500;
+        z-index: 10000;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        max-width: 300px;
+    `;
+    
+    const colors = {
+        success: '#10b981',
+        error: '#ef4444',
+        warning: '#f59e0b',
+        info: '#3b82f6'
+    };
+    
+    notification.style.background = colors[type] || colors.info;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    // フェードイン
+    setTimeout(() => {
+        notification.style.opacity = '1';
+    }, 10);
+    
+    // 自動削除
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+    
+    console.log(`通知: ${type} - ${message}`);
+}
+
+console.log('棚卸しシステム JavaScript が完全に読み込まれました');
+</script>
+</body>
+</html>

@@ -1,0 +1,230 @@
+<!-- eBay出品情報編集タブ - 完全版 -->
+<div class="ilm-data-section">
+    <div class="ilm-section-header" style="background: linear-gradient(135deg, #0064d2, #003d82); color: white;">
+        <i class="fab fa-ebay"></i> eBay出品設定
+    </div>
+    
+    <div style="padding: 1rem;">
+        <!-- 必須項目警告 -->
+        <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 0.75rem; margin-bottom: 1rem;">
+            <h5 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; color: #856404;">
+                <i class="fas fa-exclamation-triangle"></i> eBay必須項目
+            </h5>
+            <div style="font-size: 0.8rem; color: #856404;">
+                ✓ タイトル (80文字以内) ✓ 価格 (USD) ✓ カテゴリ ✓ 商品状態 ✓ 画像 (1枚以上)
+            </div>
+        </div>
+
+        <!-- タイトル -->
+        <div class="form-row">
+            <label class="form-label">
+                タイトル <span style="color: var(--ilm-error);">*</span> 
+                <span style="font-size: 0.75rem; color: #6c757d;">(80文字以内)</span>
+            </label>
+            <textarea class="ilm-form-textarea" maxlength="80" id="ebay-title" rows="2" 
+                      oninput="IntegratedListingModal.updateCharCounter(this, 'ebay-title-counter')" 
+                      placeholder="eBay検索結果で表示されるタイトル"></textarea>
+            <div style="display: flex; justify-content: space-between; margin-top: 0.25rem;">
+                <div style="font-size: 0.75rem; color: #6c757d;">
+                    SEO最適化: 重要なキーワードを前方に配置してください
+                </div>
+                <div style="font-size: 0.75rem; color: #6c757d;" id="ebay-title-counter">0/80</div>
+            </div>
+        </div>
+
+        <!-- 価格・状態 -->
+        <div class="ilm-form-grid" style="margin-top: 1rem;">
+            <div class="form-row">
+                <label class="form-label">
+                    販売価格 (USD) <span style="color: var(--ilm-error);">*</span>
+                </label>
+                <input type="number" class="ilm-form-input" id="ebay-price" step="0.01" min="0.01" 
+                       placeholder="例: 29.99">
+                <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
+                    参考為替レート: 1 USD = <span id="exchange-rate">150</span>円
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <label class="form-label">
+                    商品状態 <span style="color: var(--ilm-error);">*</span>
+                </label>
+                <select class="ilm-form-select" id="ebay-condition">
+                    <option value="">選択してください</option>
+                    <option value="1000">New - 新品</option>
+                    <option value="1500">New other (See details) - 新品その他</option>
+                    <option value="2000">Manufacturer refurbished - メーカー整備済</option>
+                    <option value="2500">Seller refurbished - 出品者整備済</option>
+                    <option value="3000">Used - 中古</option>
+                    <option value="4000">Very Good - 非常に良い</option>
+                    <option value="5000">Good - 良い</option>
+                    <option value="6000">Acceptable - 可</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- カテゴリー -->
+        <div class="form-row" style="margin-top: 1rem;">
+            <label class="form-label">
+                eBayカテゴリー <span style="color: var(--ilm-error);">*</span>
+            </label>
+            <select class="ilm-form-select" id="ebay-category">
+                <option value="">カテゴリを選択...</option>
+                <optgroup label="Trading Card Games">
+                    <option value="11116">Trading Card Games (General)</option>
+                    <option value="183454">Pokémon Individual Cards</option>
+                    <option value="31395">Yu-Gi-Oh! Individual Cards</option>
+                    <option value="31390">Magic: The Gathering Cards</option>
+                </optgroup>
+                <optgroup label="Toys & Hobbies">
+                    <option value="2622">TV & Movie Character Toys</option>
+                    <option value="246">Action Figures</option>
+                    <option value="19068">Diecast & Toy Vehicles</option>
+                </optgroup>
+                <optgroup label="Collectibles">
+                    <option value="13777">Animation Art & Merchandise</option>
+                    <option value="898">Comics</option>
+                    <option value="13759">Japanese Anime Items</option>
+                </optgroup>
+            </select>
+            <div style="margin-top: 0.5rem;">
+                <button class="ilm-btn ilm-btn-primary" onclick="IntegratedListingModal.openCategoryTool()" 
+                        style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">
+                    <i class="fas fa-search"></i> AIカテゴリ判定ツール
+                </button>
+            </div>
+        </div>
+
+        <!-- Item Specifics -->
+        <div class="form-row" style="margin-top: 1rem;">
+            <label class="form-label">
+                Item Specifics (商品仕様)
+                <span style="font-size: 0.75rem; color: #6c757d; font-weight: normal;">
+                    - カテゴリ別必須項目
+                </span>
+            </label>
+            <textarea class="ilm-form-textarea" id="ebay-item-specifics" rows="3" 
+                      placeholder="Brand=Nintendo■Character=Pikachu■Condition=Used"></textarea>
+            <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
+                書式: Key=Value■Key=Value (■で区切る)
+            </div>
+        </div>
+
+        <!-- Best Offer設定 -->
+        <div class="ilm-data-section" style="margin-top: 1.5rem;">
+            <div class="ilm-section-header" style="background: #e3f2fd; color: #1976d2; border-left: 4px solid #1976d2;">
+                <i class="fas fa-handshake"></i> Best Offer（価格交渉）設定
+            </div>
+            <div style="padding: 1rem;">
+                <div class="ilm-form-grid">
+                    <div class="form-row">
+                        <label class="form-label">Best Offerを有効にする</label>
+                        <select class="ilm-form-select" id="ebay-best-offer" onchange="IntegratedListingModal.toggleOfferSettings()">
+                            <option value="disabled">無効</option>
+                            <option value="enabled">有効</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="offer-settings" style="display: none; margin-top: 1rem;">
+                    <div class="ilm-form-grid">
+                        <div class="form-row">
+                            <label class="form-label">最低受付価格 (USD)</label>
+                            <input type="number" class="ilm-form-input" id="ebay-min-offer" step="0.01" min="0.01" 
+                                   placeholder="この価格以下は自動却下">
+                            <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
+                                販売価格の70-80%推奨
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label class="form-label">自動承認価格 (USD)</label>
+                            <input type="number" class="ilm-form-input" id="ebay-auto-accept" step="0.01" min="0.01" 
+                                   placeholder="この価格以上は自動承認">
+                            <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
+                                販売価格の90-95%推奨
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Listing Duration -->
+        <div class="ilm-form-grid" style="margin-top: 1.5rem;">
+            <div class="form-row">
+                <label class="form-label">出品期間</label>
+                <select class="ilm-form-select" id="ebay-duration">
+                    <option value="GTC" selected>Good 'Til Cancelled (自動再出品)</option>
+                    <option value="Days_3">3日間</option>
+                    <option value="Days_5">5日間</option>
+                    <option value="Days_7">7日間</option>
+                    <option value="Days_10">10日間</option>
+                    <option value="Days_30">30日間</option>
+                </select>
+            </div>
+            
+            <div class="form-row">
+                <label class="form-label">在庫数</label>
+                <input type="number" class="ilm-form-input" id="ebay-quantity" value="1" min="1">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 追加機能セクション -->
+<div class="ilm-data-section" style="margin-top: 1rem;">
+    <div class="ilm-section-header" style="background: #f8f9fa; color: var(--ilm-text-primary);">
+        <i class="fas fa-plus-circle"></i> 追加設定（オプション）
+    </div>
+    <div style="padding: 1rem;">
+        <div class="form-row">
+            <label class="form-label">
+                <input type="checkbox" id="ebay-private-listing" style="margin-right: 0.5rem;">
+                Private Listing（購入者名非公開）
+            </label>
+        </div>
+        <div class="form-row">
+            <label class="form-label">
+                <input type="checkbox" id="ebay-charity-listing" style="margin-right: 0.5rem;">
+                Charity Listing（チャリティ出品）
+            </label>
+        </div>
+        
+        <!-- 💾 保存と出品ボタン -->
+        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #dee2e6;">
+            <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                <button class="ilm-btn ilm-btn-success" onclick="IntegratedListingModal.saveListingTab()" 
+                        style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-save"></i> 出品情報を保存
+                </button>
+                
+                <button class="ilm-btn" onclick="IntegratedListingModal.directListing()" 
+                        style="display: flex; align-items: center; gap: 0.5rem; background: #0064d2; color: white;">
+                    <i class="fas fa-upload"></i> 直接出品（承認なし）
+                </button>
+                
+                <button class="ilm-btn" onclick="IntegratedListingModal.goToApproval()" 
+                        style="display: flex; align-items: center; gap: 0.5rem; background: #28a745; color: white;">
+                    <i class="fas fa-check-circle"></i> 承認システムへ
+                </button>
+            </div>
+            
+            <!-- 承認システム推奨メッセージ -->
+            <div style="margin-top: 1rem; padding: 1rem; background: #e7f3ff; border: 1px solid #2196f3; border-radius: 6px;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; color: #1976d2; font-weight: 600; margin-bottom: 0.5rem;">
+                    <i class="fas fa-info-circle"></i>
+                    推奨ワークフロー
+                </div>
+                <div style="font-size: 0.85rem; color: #424242; line-height: 1.6;">
+                    <strong>「承認システムへ」ボタン推奨</strong><br>
+                    • 全データの最終確認が可能<br>
+                    • AI推奨スコアの確認<br>
+                    • 一括処理で効率化<br>
+                    • 出品履歴の完全な記録<br>
+                    <br>
+                    <span style="color: #f57c00;">⚠️ 直接出品は承認システムをスキップします</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

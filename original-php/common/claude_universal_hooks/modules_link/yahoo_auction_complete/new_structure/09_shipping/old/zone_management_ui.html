@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>配送会社別ゾーン管理システム</title>
+    <style>
+        :root {
+            --elogi-color: #FF6B6B;
+            --ems-color: #2EC4B6;
+            --cpass-color: #1E90FF;
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --radius-md: 0.375rem;
+            --radius-lg: 0.5rem;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+            color: white;
+            padding: 25px;
+            border-radius: var(--radius-lg);
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        
+        .zone-comparison {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .carrier-panel {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: 25px;
+            box-shadow: var(--shadow-md);
+            border-top: 4px solid;
+        }
+        
+        .carrier-panel.elogi { border-top-color: var(--elogi-color); }
+        .carrier-panel.ems { border-top-color: var(--ems-color); }
+        .carrier-panel.cpass { border-top-color: var(--cpass-color); }
+        
+        .carrier-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .carrier-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .elogi .carrier-icon { background: var(--elogi-color); }
+        .ems .carrier-icon { background: var(--ems-color); }
+        .cpass .carrier-icon { background: var(--cpass-color); }
+        
+        .carrier-title {
+            flex: 1;
+        }
+        
+        .carrier-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        
+        .carrier-system {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .zone-grid {
+            display: grid;
+            gap: 12px;
+        }
+        
+        .zone-item {
+            background: #f8fafc;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 15px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .zone-item:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .zone-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .zone-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+            min-width: 60px;
+            text-align: center;
+        }
+        
+        .zone-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .zone-description {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        
+        .zone-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .zone-countries {
+            background: white;
+            border-radius: var(--radius-md);
+            padding: 15px;
+            margin-top: 15px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .countries-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .country-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            background: #f1f5f9;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        
+        .country-flag {
+            font-size: 16px;
+        }
+        
+        .comparison-table {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: 25px;
+            box-shadow: var(--shadow-md);
+            margin-top: 30px;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        .comparison-grid {
+            display: table;
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .comparison-header {
+            display: table-row;
+            background: #f9fafb;
+        }
+        
+        .comparison-header > div {
+            display: table-cell;
+            padding: 15px;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border-color);
+            text-align: center;
+        }
+        
+        .comparison-row {
+            display: table-row;
+        }
+        
+        .comparison-row > div {
+            display: table-cell;
+            padding: 12px 15px;
+            border-bottom: 1px solid #f3f4f6;
+            text-align: center;
+            vertical-align: middle;
+        }
+        
+        .country-cell {
+            text-align: left !important;
+            font-weight: 600;
+        }
+        
+        .zone-cell {
+            position: relative;
+        }
+        
+        .zone-support {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+            min-width: 70px;
+        }
+        
+        .supported { background: #10b981; }
+        .not-supported { background: #ef4444; }
+        
+        .controls {
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: var(--radius-lg);
+            margin-bottom: 25px;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .control-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .control-label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--text-primary);
+        }
+        
+        .control-select {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+        }
+        
+        .stats-panel {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            box-shadow: var(--shadow-md);
+            margin-top: 25px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: var(--radius-md);
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ヘッダー -->
+        <div class="header">
+            <h1>🌍 配送会社別ゾーン管理システム</h1>
+            <p>各配送会社のゾーン体系を独立管理・可視化するシステム</p>
+            <p><strong>問題解決:</strong> eMoji・EMS・CPassの異なるゾーン体系を統一的に管理</p>
+        </div>
+
+        <!-- コントロールパネル -->
+        <div class="controls">
+            <div class="control-grid">
+                <div class="control-item">
+                    <label class="control-label">🔍 表示モード</label>
+                    <select class="control-select" id="viewMode">
+                        <option value="zone_overview">ゾーン概要比較</option>
+                        <option value="country_detail">国別詳細表示</option>
+                        <option value="carrier_focus">配送会社別フォーカス</option>
+                    </select>
+                </div>
+                
+                <div class="control-item">
+                    <label class="control-label">🌍 対象国</label>
+                    <select class="control-select" id="targetCountry">
+                        <option value="all">全ての国</option>
+                        <option value="US">🇺🇸 アメリカ</option>
+                        <option value="GB">🇬🇧 イギリス</option>
+                        <option value="DE">🇩🇪 ドイツ</option>
+                        <option value="SG">🇸🇬 シンガポール</option>
+                        <option value="CN">🇨🇳 中国</option>
+                    </select>
+                </div>
+                
+                <div class="control-item">
+                    <label class="control-label">📦 配送会社</label>
+                    <select class="control-select" id="carrierFilter">
+                        <option value="all">全ての配送会社</option>
+                        <option value="ELOGI">eMoji（eLogi）</option>
+                        <option value="JPPOST">日本郵便EMS</option>
+                        <option value="CPASS">CPass SpeedPAK</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- ゾーン比較パネル -->
+        <div class="zone-comparison">
+            <!-- eMoji（eLogi）パネル -->
+            <div class="carrier-panel elogi">
+                <div class="carrier-header">
+                    <div class="carrier-icon">eM</div>
+                    <div class="carrier-title">
+                        <div class="carrier-name">eMoji（eLogi統合）</div>
+                        <div class="carrier-system">サービスレベル別ゾーン体系</div>
+                    </div>
+                </div>
+                
+                <div class="zone-grid">
+                    <div class="zone-item">
+                        <div class="zone-header">
+                            <span class="zone-badge" style="background: #FF6B6B;">Zone 1</span>
+                            <span class="zone-name">最高速サービス</span>
+                        </div>
+                        <div class="zone-description">1-3日配送・主要都市・高価格</div>
+                        <div class="zone-stats">
+                            <span>📦 4カ国対応</span>
+                            <span>⚡ 1-3日</span>
+                            <span>💰 高価格帯</span>
+                        </div>
+                        <div class="zone-countries">
+                            <strong>対象国:</strong>
+                            <div class="countries-grid">
+                                <div class="country-item">
+                                    <span class="country-flag">🇺🇸</span>
+                                    <span>アメリカ</span>
+                                </div>
+                                <div class="country-item">
+                                    <span class="country-flag">🇸🇬</span>
+                                    <span>シンガポール</span>
+                                </div>
+                                <div class="country-item">
+                                    <span class="country-flag">🇭🇰</span>
+                                    <span>香港</span>
+                                </div>
+                                <div class="country-item">
+                                    <span class="country-flag">🇰🇷</span>
+                                    <span>韓国</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="zone-item">
+                        <div class="zone-header">
+                            <span class="zone-badge" style="background: #4ECDC4;">Zone 2</span>
+                            <span class="zone-name">高速サービス</span>
+                        </div>
+                        <div class="zone-description">2-4日配送・主要国・中価格</div>
+                        <div class="zone-stats">
+                            <span>📦 5カ国対応</span>
+                            <span>⚡ 2-4日</span>
+                            <span>💰 中価格帯</span>
+                        </div>
+                        <div class="zone-countries">
+                            <strong>対象国:</strong>
+                            <div class="countries-grid">
+                                <div class="country-item">
+                                    <span class="country-flag">🇬🇧</span>
+                                    <span>イギリス</span>
+                                </div>
+                                <div class="country-item">
+                                    <span class="country-flag">🇩🇪</span>
+                                    <span>ドイツ</span>
+                                </div>
+                                <div class="country-item">
+                                    <span class="country-flag">🇫🇷</span>
+                                    <span>フランス</span>
+                                </div>
+                                <div class="country-item">
+                                    <span class="country-flag">🇨🇦</span>
+                                    <span>カナダ</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="zone-item">
+                        <div class="zone-header">
+                            <span class="zone-badge" style="background: #45B7D1;">Zone 3</span>
+                            <span class="zone-name">標準サービス</span>
+                        </div>
+                        <div class="zone-description">3-6日配送・その他地域・標準価格</div>
+                        <div class="zone-stats">
+                            <span>📦 4カ国対応</span>
+                            <span>⚡ 3-6日</span>
+                            <span>💰 標準価格</span>
+                        </div>
+                        <div class="zone-countries">
+                            <strong>対象国:</strong>
+                            <div class="countries-grid">
+                                <div class="country-item">
+                                    <span class="country-flag">🇦🇺</span>
+                                    <span>オーストラリア</span>
+                                </div>
+                                <div class="country-item">
+                                    <span class="country-flag">🇧🇷</span>
+                                    <span>ブラジル</span>
+                                </div>
+                                <div class="country-item">
+                                    <span class="country-flag">🇮🇳</span>
+                                    <span>インド</span>
+                                </div>
+                                <div class="country-item">
+                                    <span class="country-flag">🇲🇽</span>
+                                    <span>メキシコ</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 日本郵便EMS パネル -->
+            <div class="carrier-panel ems">
+                <div class="carrier-header">
+                    <div class="carrier-icon">EMS</div>
+                    <div class="carrier-title">
+                        <div class="carrier-name">日本郵便EMS</div>
+                        <div class="carrier-system">地理的距離別ゾーン体系</div>
+                    </div>
+                </div>
+                
+                <div class="zone-grid">
+                    <div class="zone-item">
+                        <div class="zone-header">
+                            <span class="zone-badge" style="background: #FFE66D;">第1地帯</span>
+                            <span class="zone-name">近隣アジア</span>
+                        </div>
+                        <div class="zone-description">中国・韓国・台湾（最安料金）</div>
+                        <div class="zone-stats">
+                            <span>📦 3カ国対応</span>
+                            <span>⚡ 3-6日</span>
+                            <span>💰 最安価格</span>
+                        </div>
+                    </div>
+                    
+                    <div class="zone-item">
+                        <div class="zone-header">
+                            <span class="zone-badge" style="background: #FF9F1C;">第2地帯</span>
+                            <span class="zone-name">アジア</span>
+                        </div>
+                        <div class="zone-description">東南アジア等（第1地帯除く）</div>
+                        <div class="zone-stats">
+                            <span>📦 20カ国対応</span>
+                            <span>⚡ 3-6日</span>
+                            <span>💰 低価格</span>
+                        </div>
+                    </div>
+                    
+                    <div class="zone-item">
+                        <div class="zone-header">
+                            <span class="zone-badge" style="background: #2EC4B6;">第3地帯</span>
+                            <span class="zone-name">欧州・オセアニア</span>
+                        </div>
+                        <div class="zone-description">ヨーロッパ・オーストラリア等</div>
+                        <div class="zone-stats">
+                            <span>📦 65カ国対応</span>
+                            <span>⚡ 3-6日</span>
+                            <span>💰 中価格</span>
+                        </div>
+                    </div>
+                    
+                    <div class="zone-item">
+                        <div class="zone-header">
+                            <span class="zone-badge" style="background: #E71D36;">第4地帯</span>
+                            <span class="zone-name">アメリカ</span>
+                        </div>
+                        <div class="zone-description">アメリカ合衆国専用地帯</div>
+                        <div class="zone-stats">
+                            <span>📦 1カ国対応</span>
+                            <span>⚡ 3-6日</span>
+                            <span>💰 高価格</span>
+                        </div>
+                    </div>
+                    
+                    <div class="zone-item">
+                        <div class="zone-header">
+                            <span class="zone-badge" style="background: #541388;">第5地帯</span>
+                            <span class="zone-name">中南米・アフリカ</span>
+                        </div>
+                        <div class="zone-description">ブラジル・南アフリカ等</div>
+                        <div class="zone-stats">
+                            <span>📦 43カ国対応</span>
+                            <span>⚡ 3-6日</span>
+                            <span>💰 最高価格</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CPass SpeedPAK パネル -->
+            <div class="carrier-panel cpass">
+                <div class="carrier-header">
+                    <div class="carrier-icon">CP</div>
+                    <div class="carrier-title">
+                        <div class="carrier-name">CPass SpeedPAK</div>
+                        <div class="carrier-system">対応国限定ゾーン体系</div>
+                    </div>
+                </div>
+                
+                <div class="zone-grid">
+                    <div class="zone-item">
+                        <div class="zone-header">
+                            <span class="zone-badge" style="background: #1E90FF;">USA対応</span>
+                            <span class="zone-name">アメリカ向け</span>
+                        </div>
+                        <div class="zone-description">8-12日・エコノミー配送</div>
+                        <div class="zone-stats">
+                            <span>📦 1カ国限定</span>
+                            <span>⚡ 8-12日</span>
+                            <span>💰 エコノミー</span>
+                        </div>
+                    </div>
+                    
+                    <div class="zone-item">
+                        <div class="zone-header">
+                            <span class="zone-badge" style="background: #32CD32;">UK対応</span>
+                            <span class="zone-name">イギリス向け</span>
+                        </div>
+                        <div class="zone-description">7-10日・エコノミー配送</div>
+                        <div class="zone-stats">
+                            <span>📦 1カ国限定</span>
+                            <span>⚡ 7-10日</span>
+                            <span>💰 エコノミー</span>
+                        </div>
+                    </div>
+                    
+                    <div class="zone-item">
+                        <div class="zone-header">
+                            <span class="zone-badge" style="background: #FFD700;">DE対応</span>
+                            <span class="zone-name">ドイツ向け</span>
+                        </div>
+                        <div class="zone-description">7-11日・エコノミー配送</div>
+                        <div class="zone-stats">
+                            <span>📦 1カ国限定</span>
+                            <span>⚡ 7-11日</span>
+                            <span>💰 エコノミー</span>
+                        </div>
+                    </div>
+                    
+                    <div class="zone-item">
+                        <div class="zone-header">
+                            <span class="zone-badge" style="background: #FF69B4;">AU対応</span>
+                            <span class="zone-name">オーストラリア向け</span>
+                        </div>
+                        <div class="zone-description">6-12日・エコノミー配送</div>
+                        <div class="zone-stats">
+                            <span>📦 1カ国限定</span>
+                            <span>⚡ 6-12日</span>
+                            <span>💰 エコノミー</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 国別比較テーブル -->
+        <div class="comparison-table">
+            <h3>🌍 主要国の配送会社別ゾーン対応状況</h3>
+            <p>同一国でも配送会社によってゾーン分類が全く異なることを確認できます</p>
+            
+            <div class="table-container">
+                <div class="comparison-grid">
+                    <div class="comparison-header">
+                        <div>国名</div>
+                        <div>eMoji（eLogi）</div>
+                        <div>日本郵便EMS</div>
+                        <div>CPass SpeedPAK</div>
+                        <div>配送日数比較</div>
+                    </div>
+                    
+                    <div class="comparison-row">
+                        <div class="country-cell">🇺🇸 アメリカ</div>
+                        <div class="zone-cell">
+                            <span class="zone-support supported">Zone 1</span>
+                            <div style="font-size: 10px; margin-top: 2px;">1-3日・高価格</div>
+                        </div>
+                        <div class="zone-cell">
+                            <span class="zone-support" style="background: #E71D36;">第4地帯</span>
+                            <div style="font-size: 10px; margin-top: 2px;">3-6日・高価格</div>
+                        </div>
+                        <div class="zone-cell">
+                            <span class="zone-support" style="background: #1E90FF;">USA対応</span>
+                            <div style="font-size: 10px; margin-top: 2px;">8-12日・エコノミー</div>
+                        </div>
+                        <div class="zone-cell">
+                            <div style="font-size: 12px; font-weight: 600;">⚡ 最速: eMoji</div>
+                            <div style="font-size: 10px;">💰 最安: CPass</div>
+                        </div>
+                    </div>
+                    
+                    <div class="comparison-row">
+                        <div class="country-cell">🇬🇧 イギリス</div>
+                        <div class="zone-cell">
+                            <span class="zone-support" style="background: #4ECDC4;">Zone 2</span>
+                            <div style="font-size: 10px; margin-top: 2px;">2-4日・中価格</div>
+                        </div>
+                        <div class="zone-cell">
+                            <span class="zone-support" style="background: #2EC4B6;">第3地帯</span>
+                            <div style="font-size: 10px; margin-top: 2px;">3-6日・中価格</div>
+                        </div>
+                        <div class="zone-cell">
+                            <span class="zone-support" style="background: #32CD32;">UK対応</span>
+                            <div style="font-size: 10px; margin-top: 2px;">7-10日・エコノミー</div>
+                        </div>
+                        <div class="zone-cell">
+                            <div style="font-size: 12px; font-weight: 600;">⚡ 最速: eMoji</div>
+                            <div style="font-size: 10px;">💰 最安: CPass</div>
+                        </div>
+                    </div>
+                    
+                    <div class="comparison-row">
+                        <div class="country-cell">🇸🇬 シンガポール</div>
+                        <div class="zone-cell">
+                            <span class="zone-support supported">Zone 1</span>
+                            <div style="font-size: 10px; margin-top: 2px;">1-3日・高価格</div>
+                        </div>
+                        <div class="zone-cell">
+                            <span class="zone-support" style="background: #FF9F1C;">第2地帯</span>
+                            <div style="font-size: 10px; margin-top: 2px;">3-6日・低価格</div>
+                        </div>
+                        <div class="zone-cell">
+                            <span class="zone-support not-supported">対応外</span>
+                            <div style="font-size: 10px; margin-top: 2px;">利用不可</div>
+                        </div>
+                        <div class="zone-cell">
+                            <div style="font-size: 12px; font-weight: 600;">⚡ 最速: eMoji</div>
+                            <div style="font-size: 10px;">💰 最安: EMS</div>
+                        </div>
+                    </div>
+                    
+                    <div class="comparison-row">
+                        <div class="country-cell">🇨🇳 中国</div>
+                        <div class="zone-cell">
+                            <span class="zone-support not-supported">対応外</span>
+                            <div style="font-size: 10px; margin-top: 2px;">利用不可</div>
+                        </div>
+                        <div class="zone-cell">
+                            <span class="zone-support" style="background: #FFE66D;">第1地帯</span>
+                            <div style="font-size: 10px; margin-top: 2px;">3-6日・最安</div>
+                        </div>
+                        <div class="zone-cell">
+                            <span class="zone-support not-supported">対応外</span>
+                            <div style="font-size: 10px; margin-top: 2px;">利用不可</div>
+                        </div>
+                        <div class="zone-cell">
+                            <div style="font-size: 12px; font-weight: 600;">唯一: EMS</div>
+                            <div style="font-size: 10px;">💰 最安価格帯</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 統計パネル -->
+        <div class="stats-panel">
+            <h3>📊 ゾーン体系統計</h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value">3</div>
+                    <div class="stat-label">ゾーン体系</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">13</div>
+                    <div class="stat-label">総ゾーン数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">132</div>
+                    <div class="stat-label">EMS対応国</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">4</div>
+                    <div class="stat-label">CPass対応国</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">13</div>
+                    <div class="stat-label">eMoji対応国</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ページ初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('✅ 配送会社別ゾーン管理システム初期化完了');
+            
+            // コントロール変更イベント
+            document.getElementById('viewMode').addEventListener('change', updateView);
+            document.getElementById('targetCountry').addEventListener('change', updateView);
+            document.getElementById('carrierFilter').addEventListener('change', updateView);
+        });
+        
+        function updateView() {
+            const viewMode = document.getElementById('viewMode').value;
+            const targetCountry = document.getElementById('targetCountry').value;
+            const carrierFilter = document.getElementById('carrierFilter').value;
+            
+            console.log('ビュー更新:', { viewMode, targetCountry, carrierFilter });
+            
+            // 実際のDBからのデータ取得・表示更新はここで実装
+            // 現在はデモ表示のためスタティック
+        }
+    </script>
+</body>
+</html>

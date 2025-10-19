@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eBay DDP対応送料計算システム</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #0e4b99;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --info-color: #17a2b8;
+            --light-bg: #f8f9fa;
+            --border-color: #dee2e6;
+            --shadow: 0 2px 4px rgba(0,0,0,0.1);
+            --shadow-lg: 0 4px 8px rgba(0,0,0,0.15);
+            --radius: 8px;
+            --space: 1rem;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: var(--space);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+
+        .header {
+            background: var(--primary-color);
+            color: white;
+            padding: var(--space);
+            text-align: center;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: var(--light-bg);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: var(--space);
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .nav-tab.active {
+            background: white;
+            border-bottom: 3px solid var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+            padding: var(--space);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space);
+            margin-bottom: var(--space);
+        }
+
+        .form-section {
+            background: var(--light-bg);
+            padding: var(--space);
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+        }
+
+        .form-section h3 {
+            color: var(--primary-color);
+            margin-bottom: var(--space);
+            font-size: 1.1rem;
+        }
+
+        .form-group {
+            margin-bottom: calc(var(--space) * 0.75);
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            font-size: 0.9rem;
+        }
+
+        .inline-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning-color);
+            color: #333;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: var(--space);
+        }
+
+        .calculation-mode {
+            display: flex;
+            gap: var(--space);
+            margin-bottom: var(--space);
+            padding: var(--space);
+            background: var(--light-bg);
+            border-radius: var(--radius);
+        }
+
+        .mode-option {
+            flex: 1;
+            padding: var(--space);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .mode-option.active {
+            border-color: var(--primary-color);
+            background: white;
+            box-shadow: var(--shadow);
+        }
+
+        .results-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--space);
+            margin-top: var(--space);
+        }
+
+        .result-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: var(--space);
+            box-shadow: var(--shadow);
+        }
+
+        .result-header {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: var(--space);
+            font-size: 1.1rem;
+        }
+
+        .calculation-breakdown {
+            margin-top: var(--space);
+        }
+
+        .breakdown-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .breakdown-item:last-child {
+            border-bottom: none;
+            font-weight: 600;
+            background: var(--light-bg);
+            margin: 0.5rem -1rem -1rem;
+            padding: 0.75rem 1rem;
+        }
+
+        .country-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: var(--space);
+        }
+
+        .country-table th,
+        .country-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .country-table th {
+            background: var(--light-bg);
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .country-table tr:hover {
+            background: var(--light-bg);
+        }
+
+        .alert {
+            padding: var(--space);
+            border-radius: var(--radius);
+            margin-bottom: var(--space);
+            border-left: 4px solid;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            border-color: var(--info-color);
+            color: #0c5460;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border-color: var(--warning-color);
+            color: #856404;
+        }
+
+        .shipping-limit-warning {
+            background: #f8d7da;
+            border-color: var(--danger-color);
+            color: #721c24;
+        }
+
+        .exchange-rate-display {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: var(--space);
+            margin-bottom: var(--space);
+        }
+
+        .rate-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-tabs {
+                flex-direction: column;
+            }
+
+            .calculation-mode {
+                flex-direction: column;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-shipping-fast"></i> eBay DDP対応送料計算システム</h1>
+            <p>関税・VAT込み価格設定とDDU/DDP比較計算</p>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('calculator')">
+                <i class="fas fa-calculator"></i> 送料計算
+            </button>
+            <button class="nav-tab" onclick="switchTab('settings')">
+                <i class="fas fa-cog"></i> 設定管理
+            </button>
+            <button class="nav-tab" onclick="switchTab('limits')">
+                <i class="fas fa-exclamation-triangle"></i> 送料上限確認
+            </button>
+        </div>
+
+        <!-- 送料計算タブ -->
+        <div id="calculator" class="tab-content active">
+            <div class="calculation-mode">
+                <div class="mode-option active" onclick="setCalculationMode('ddu')" id="ddu-mode">
+                    <h3><i class="fas fa-truck"></i> DDU モード</h3>
+                    <p>関税・VAT別途（購入者負担）</p>
+                    <small>従来の販売方式</small>
+                </div>
+                <div class="mode-option" onclick="setCalculationMode('ddp')" id="ddp-mode">
+                    <h3><i class="fas fa-shield-alt"></i> DDP モード</h3>
+                    <p>関税・VAT込み価格</p>
+                    <small>推奨：購入ハードル軽減</small>
+                </div>
+                <div class="mode-option" onclick="setCalculationMode('compare')" id="compare-mode">
+                    <h3><i class="fas fa-balance-scale"></i> 比較モード</h3>
+                    <p>DDU vs DDP 比較</p>
+                    <small>最適戦略の検討</small>
+                </div>
+            </div>
+
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> 
+                <strong>DDP推奨理由：</strong> ヨーロッパでは関税・VAT事前込み価格により購入率が大幅向上。eBay GSP活用で簡単に実現可能。
+            </div>
+
+            <div class="form-grid">
+                <div class="form-section">
+                    <h3><i class="fas fa-box"></i> 商品情報</h3>
+                    
+                    <div class="form-group">
+                        <label>商品価格（USD）</label>
+                        <input type="number" id="productPrice" placeholder="135.00" value="135.00">
+                    </div>
+
+                    <div class="form-group">
+                        <label>商品重量（kg）</label>
+                        <input type="number" step="0.1" id="weight" placeholder="0.5" value="0.5">
+                    </div>
+
+                    <div class="form-group">
+                        <label>商品サイズ（cm）</label>
+                        <div class="inline-inputs">
+                            <input type="number" id="length" placeholder="長さ" value="25">
+                            <input type="number" id="width" placeholder="幅" value="20">
+                            <input type="number" id="height" placeholder="高さ" value="15">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>HSコード（関税計算用）</label>
+                        <select id="hsCode">
+                            <option value="8517.12">8517.12 - スマートフォン (0-4%)</option>
+                            <option value="9001.90">9001.90 - 光学機器 (2.5-7%)</option>
+                            <option value="8528.72">8528.72 - 液晶モニター (14%)</option>
+                            <option value="6203.42">6203.42 - 衣類・ズボン (12%)</option>
+                            <option value="9503.00">9503.00 - おもちゃ (4.7%)</option>
+                            <option value="8471.30">8471.30 - コンピューター (0%)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>原産国</label>
+                        <select id="originCountry">
+                            <option value="US">アメリカ (FTA適用可能性あり)</option>
+                            <option value="JP">日本</option>
+                            <option value="CN">中国</option>
+                            <option value="KR">韓国</option>
+                            <option value="DE">ドイツ</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3><i class="fas fa-globe"></i> 発送先情報</h3>
+                    
+                    <div class="form-group">
+                        <label>発送先国</label>
+                        <select id="destinationCountry">
+                            <option value="DE">ドイツ（VAT: 19%）</option>
+                            <option value="FR">フランス（VAT: 20%）</option>
+                            <option value="GB">イギリス（VAT: 20%）</option>
+                            <option value="IT">イタリア（VAT: 22%）</option>
+                            <option value="ES">スペイン（VAT: 21%）</option>
+                            <option value="CA">カナダ（GST: 5-15%）</option>
+                            <option value="AU">オーストラリア（GST: 10%）</option>
+                            <option value="US">アメリカ（州税: 0-10%）</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>配送方法</label>
+                        <select id="shippingMethod">
+                            <option value="standard">Standard (7-14日) - 安価</option>
+                            <option value="expedited">Expedited (3-7日) - 標準</option>
+                            <option value="express">Express (1-3日) - 高速</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>eBayサイト</label>
+                        <select id="ebaySite">
+                            <option value="US">eBay.com (US)</option>
+                            <option value="DE">eBay.de (Germany)</option>
+                            <option value="GB">eBay.co.uk (UK)</option>
+                            <option value="AU">eBay.com.au (Australia)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="exchange-rate-display">
+                <h3><i class="fas fa-exchange-alt"></i> 為替レート情報</h3>
+                <div class="rate-item">
+                    <span>USD/JPY:</span>
+                    <span id="usdJpyRate">148.50</span>
+                </div>
+                <div class="rate-item">
+                    <span>USD/EUR:</span>
+                    <span id="usdEurRate">0.92</span>
+                </div>
+                <div class="rate-item">
+                    <span>最終更新:</span>
+                    <span id="rateUpdateTime">2025-09-21 12:00:00</span>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="calculateShipping()">
+                    <i class="fas fa-calculator"></i> 送料計算実行
+                </button>
+                <button class="btn btn-success" onclick="optimizeForDDP()">
+                    <i class="fas fa-magic"></i> DDP最適化
+                </button>
+                <button class="btn btn-warning" onclick="checkEbayLimits()">
+                    <i class="fas fa-exclamation-triangle"></i> 送料上限チェック
+                </button>
+                <button class="btn btn-secondary" onclick="clearForm()">
+                    <i class="fas fa-eraser"></i> クリア
+                </button>
+            </div>
+
+            <div id="results" class="results-container" style="display: none;">
+                <!-- 計算結果がここに表示される -->
+            </div>
+        </div>
+
+        <!-- 設定管理タブ -->
+        <div id="settings" class="tab-content">
+            <div class="form-section">
+                <h3><i class="fas fa-cog"></i> 関税・VAT設定</h3>
+                
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    関税率は頻繁に変更されます。最新情報は各国税関サイトで確認してください。
+                </div>
+
+                <table class="country-table">
+                    <thead>
+                        <tr>
+                            <th>国</th>
+                            <th>VAT率</th>
+                            <th>関税率（HSコード別）</th>
+                            <th>免税限度額</th>
+                            <th>FTA適用</th>
+                        </tr>
+                    </thead>
+                    <tbody id="countrySettings">
+                        <tr>
+                            <td>🇩🇪 ドイツ</td>
+                            <td>19%</td>
+                            <td>0-17%</td>
+                            <td>€22</td>
+                            <td>US-EU FTA</td>
+                        </tr>
+                        <tr>
+                            <td>🇫🇷 フランス</td>
+                            <td>20%</td>
+                            <td>0-17%</td>
+                            <td>€22</td>
+                            <td>US-EU FTA</td>
+                        </tr>
+                        <tr>
+                            <td>🇬🇧 イギリス</td>
+                            <td>20%</td>
+                            <td>0-25%</td>
+                            <td>£15</td>
+                            <td>なし</td>
+                        </tr>
+                        <tr>
+                            <td>🇨🇦 カナダ</td>
+                            <td>5-15%</td>
+                            <td>0-25%</td>
+                            <td>CAD $20</td>
+                            <td>USMCA</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 送料上限確認タブ -->
+        <div id="limits" class="tab-content">
+            <div class="form-section">
+                <h3><i class="fas fa-exclamation-triangle"></i> eBay送料上限設定</h3>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    eBayでは送料に上限があるため、DDP価格設定時は商品価格での調整が必要です。
+                </div>
+
+                <table class="country-table">
+                    <thead>
+                        <tr>
+                            <th>eBayサイト</th>
+                            <th>送料上限（Standard）</th>
+                            <th>送料上限（Express）</th>
+                            <th>制限詳細</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>eBay.com (US)</td>
+                            <td>$50</td>
+                            <td>$100</td>
+                            <td>カテゴリー別制限あり</td>
+                        </tr>
+                        <tr>
+                            <td>eBay.de (DE)</td>
+                            <td>€50</td>
+                            <td>€100</td>
+                            <td>EU域内は€30</td>
+                        </tr>
+                        <tr>
+                            <td>eBay.co.uk (UK)</td>
+                            <td>£40</td>
+                            <td>£80</td>
+                            <td>Brexit後の制限</td>
+                        </tr>
+                        <tr>
+                            <td>eBay.com.au (AU)</td>
+                            <td>AUD $70</td>
+                            <td>AUD $150</td>
+                            <td>重量制限併用</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="alert shipping-limit-warning" id="limitWarning" style="display: none;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>送料上限超過警告：</strong> 計算された送料がeBayの上限を超えています。商品価格での調整を検討してください。
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // グローバル変数
+        let currentMode = 'ddu';
+        let exchangeRates = {
+            'USD/JPY': 148.50,
+            'USD/EUR': 0.92,
+            'USD/GBP': 0.79,
+            'USD/CAD': 1.35,
+            'USD/AUD': 1.48
+        };
+
+        // 関税・VAT設定
+        const taxSettings = {
+            'DE': { vat: 0.19, dutyRange: [0, 0.17], threshold: 22 },
+            'FR': { vat: 0.20, dutyRange: [0, 0.17], threshold: 22 },
+            'GB': { vat: 0.20, dutyRange: [0, 0.25], threshold: 15 },
+            'IT': { vat: 0.22, dutyRange: [0, 0.17], threshold: 22 },
+            'ES': { vat: 0.21, dutyRange: [0, 0.17], threshold: 22 },
+            'CA': { vat: 0.13, dutyRange: [0, 0.25], threshold: 20 },
+            'AU': { vat: 0.10, dutyRange: [0, 0.20], threshold: 1000 },
+            'US': { vat: 0.08, dutyRange: [0, 0.15], threshold: 800 }
+        };
+
+        // HSコード別関税率
+        const hsCodeRates = {
+            '8517.12': { DE: 0, FR: 0, GB: 0, US: 0, CA: 0, AU: 0 },
+            '9001.90': { DE: 0.025, FR: 0.025, GB: 0.025, US: 0.025, CA: 0.025, AU: 0.05 },
+            '8528.72': { DE: 0.14, FR: 0.14, GB: 0.14, US: 0.05, CA: 0.06, AU: 0.05 },
+            '6203.42': { DE: 0.12, FR: 0.12, GB: 0.12, US: 0.167, CA: 0.18, AU: 0.05 },
+            '9503.00': { DE: 0.047, FR: 0.047, GB: 0.047, US: 0, CA: 0, AU: 0.05 },
+            '8471.30': { DE: 0, FR: 0, GB: 0, US: 0, CA: 0, AU: 0 }
+        };
+
+        // eBay送料上限
+        const shippingLimits = {
+            'US': { standard: 50, express: 100 },
+            'DE': { standard: 50, express: 100 },
+            'GB': { standard: 40, express: 80 },
+            'AU': { standard: 70, express: 150 }
+        };
+
+        // タブ切り替え
+        function switchTab(tabName) {
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        // 計算モード切り替え
+        function setCalculationMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-option').forEach(option => option.classList.remove('active'));
+            document.getElementById(mode + '-mode').classList.add('active');
+        }
+
+        // 送料計算メイン関数
+        function calculateShipping() {
+            const productPrice = parseFloat(document.getElementById('productPrice').value) || 0;
+            const weight = parseFloat(document.getElementById('weight').value) || 0;
+            const length = parseFloat(document.getElementById('length').value) || 0;
+            const width = parseFloat(document.getElementById('width').value) || 0;
+            const height = parseFloat(document.getElementById('height').value) || 0;
+            const hsCode = document.getElementById('hsCode').value;
+            const originCountry = document.getElementById('originCountry').value;
+            const destCountry = document.getElementById('destinationCountry').value;
+            const shippingMethod = document.getElementById('shippingMethod').value;
+            const ebaySite = document.getElementById('ebaySite').value;
+
+            // 基本送料計算
+            const basicShipping = calculateBasicShipping(weight, length, width, height, shippingMethod);
+            
+            // 関税・VAT計算
+            const dutyRate = hsCodeRates[hsCode][destCountry] || 0;
+            const vatRate = taxSettings[destCountry].vat;
+            
+            const results = document.getElementById('results');
+            results.style.display = 'block';
+            
+            if (currentMode === 'ddu') {
+                results.innerHTML = generateDDUResults(productPrice, basicShipping, dutyRate, vatRate, destCountry);
+            } else if (currentMode === 'ddp') {
+                results.innerHTML = generateDDPResults(productPrice, basicShipping, dutyRate, vatRate, destCountry, ebaySite);
+            } else if (currentMode === 'compare') {
+                results.innerHTML = generateComparisonResults(productPrice, basicShipping, dutyRate, vatRate, destCountry, ebaySite);
+            }
+        }
+
+        // 基本送料計算
+        function calculateBasicShipping(weight, length, width, height, method) {
+            const volume = (length * width * height) / 1000; // リットル
+            const volumeWeight = volume * 0.2; // 容積重量係数
+            const chargeableWeight = Math.max(weight, volumeWeight);
+            
+            const baseRates = {
+                'standard': 15,
+                'expedited': 25,
+                'express': 45
+            };
+            
+            return baseRates[method] + (chargeableWeight * 8);
+        }
+
+        // DDU結果生成
+        function generateDDUResults(productPrice, shipping, dutyRate, vatRate, destCountry) {
+            const duty = productPrice * dutyRate;
+            const vatBase = productPrice + shipping + duty;
+            const vat = vatBase * vatRate;
+            const buyerTotal = productPrice + shipping + duty + vat;
+            
+            return `
+                <div class="result-card">
+                    <div class="result-header">DDU計算結果（関税・VAT別途）</div>
+                    <div class="calculation-breakdown">
+                        <div class="breakdown-item">
+                            <span>商品価格：</span>
+                            <span>$${productPrice.toFixed(2)}</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>送料：</span>
+                            <span>$${shipping.toFixed(2)}</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>購入者支払額：</span>
+                            <span>$${(productPrice + shipping).toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="result-card">
+                    <div class="result-header">購入者追加負担（到着時支払い）</div>
+                    <div class="calculation-breakdown">
+                        <div class="breakdown-item">
+                            <span>関税 (${(dutyRate * 100).toFixed(1)}%)：</span>
+                            <span>$${duty.toFixed(2)}</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>VAT (${(vatRate * 100).toFixed(1)}%)：</span>
+                            <span>$${vat.toFixed(2)}</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>購入者最終負担額：</span>
+                            <span>$${buyerTotal.toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // DDP結果生成
+        function generateDDPResults(productPrice, shipping, dutyRate, vatRate, destCountry, ebaySite) {
+            const duty = productPrice * dutyRate;
+            const vatBase = productPrice + shipping + duty;
+            const vat = vatBase * vatRate;
+            const totalTaxes = duty + vat;
+            
+            // DDP価格設定
+            const ddpProductPrice = productPrice + totalTaxes;
+            const maxShipping = shippingLimits[ebaySite].standard;
+            
+            let adjustedShipping = shipping;
+            let priceAdjustment = 0;
+            
+            if (shipping > maxShipping) {
+                priceAdjustment = shipping - maxShipping;
+                adjustedShipping = maxShipping;
+                ddpProductPrice += priceAdjustment;
+            }
+            
+            return `
+                <div class="result-card">
+                    <div class="result-header">DDP価格設定（関税・VAT込み）</div>
+                    <div class="calculation-breakdown">
+                        <div class="breakdown-item">
+                            <span>基本商品価格：</span>
+                            <span>$${productPrice.toFixed(2)}</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>関税込み：</span>
+                            <span>+$${duty.toFixed(2)}</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>VAT込み：</span>
+                            <span>+$${vat.toFixed(2)}</span>
+                        </div>
+                        ${priceAdjustment > 0 ? `
+                        <div class="breakdown-item">
+                            <span>送料上限調整：</span>
+                            <span>+$${priceAdjustment.toFixed(2)}</span>
+                        </div>
+                        ` : ''}
+                        <div class="breakdown-item">
+                            <span>DDP商品価格：</span>
+                            <span>$${(ddpProductPrice + priceAdjustment).toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="result-card">
+                    <div class="result-header">eBay出品設定</div>
+                    <div class="calculation-breakdown">
+                        <div class="breakdown-item">
+                            <span>出品価格：</span>
+                            <span>$${(ddpProductPrice + priceAdjustment).toFixed(2)}</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>送料設定：</span>
+                            <span>$${adjustedShipping.toFixed(2)}</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>購入者支払額：</span>
+                            <span>$${(ddpProductPrice + priceAdjustment + adjustedShipping).toFixed(2)}</span>
+                        </div>
+                    </div>
+                    ${adjustedShipping >= maxShipping ? `
+                    <div class="alert shipping-limit-warning" style="margin-top: 1rem;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        送料上限（$${maxShipping}）に達しています
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        // 比較結果生成
+        function generateComparisonResults(productPrice, shipping, dutyRate, vatRate, destCountry, ebaySite) {
+            // DDU計算
+            const dduDuty = productPrice * dutyRate;
+            const dduVatBase = productPrice + shipping + dduDuty;
+            const dduVat = dduVatBase * vatRate;
+            const dduBuyerTotal = productPrice + shipping + dduDuty + dduVat;
+            
+            // DDP計算
+            const ddpDuty = productPrice * dutyRate;
+            const ddpVatBase = productPrice + shipping + ddpDuty;
+            const ddpVat = ddpVatBase * vatRate;
+            const ddpTotalTaxes = ddpDuty + ddpVat;
+            const ddpProductPrice = productPrice + ddpTotalTaxes;
+            const maxShipping = shippingLimits[ebaySite].standard;
+            
+            let ddpAdjustedShipping = shipping;
+            let ddpPriceAdjustment = 0;
+            
+            if (shipping > maxShipping) {
+                ddpPriceAdjustment = shipping - maxShipping;
+                ddpAdjustedShipping = maxShipping;
+            }
+            
+            const ddpFinalPrice = ddpProductPrice + ddpPriceAdjustment;
+            const ddpBuyerTotal = ddpFinalPrice + ddpAdjustedShipping;
+            
+            return `
+                <div class="result-card">
+                    <div class="result-header">DDU vs DDP 比較</div>
+                    <table class="country-table">
+                        <thead>
+                            <tr>
+                                <th>項目</th>
+                                <th>DDU</th>
+                                <th>DDP</th>
+                                <th>差額</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>出品価格</td>
+                                <td>$${productPrice.toFixed(2)}</td>
+                                <td>$${ddpFinalPrice.toFixed(2)}</td>
+                                <td>+$${(ddpFinalPrice - productPrice).toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <td>送料</td>
+                                <td>$${shipping.toFixed(2)}</td>
+                                <td>$${ddpAdjustedShipping.toFixed(2)}</td>
+                                <td>${(ddpAdjustedShipping - shipping).toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <td>購入者支払額</td>
+                                <td>$${(productPrice + shipping).toFixed(2)}</td>
+                                <td>$${ddpBuyerTotal.toFixed(2)}</td>
+                                <td>+$${(ddpBuyerTotal - productPrice - shipping).toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <td>追加費用（到着時）</td>
+                                <td>$${(dduDuty + dduVat).toFixed(2)}</td>
+                                <td>$0.00</td>
+                                <td>-$${(dduDuty + dduVat).toFixed(2)}</td>
+                            </tr>
+                            <tr style="background: #f8f9fa; font-weight: bold;">
+                                <td>最終負担額</td>
+                                <td>$${dduBuyerTotal.toFixed(2)}</td>
+                                <td>$${ddpBuyerTotal.toFixed(2)}</td>
+                                <td>${(ddpBuyerTotal - dduBuyerTotal).toFixed(2)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="result-card">
+                    <div class="result-header">推奨戦略</div>
+                    <div style="padding: 1rem 0;">
+                        ${ddpBuyerTotal <= dduBuyerTotal * 1.05 ? `
+                        <div class="alert alert-info">
+                            <i class="fas fa-thumbs-up"></i>
+                            <strong>DDP推奨：</strong> 購入者の負担差が小さく、購入ハードルを大幅に軽減できます。
+                        </div>
+                        ` : `
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>要検討：</strong> DDP価格が高くなっています。価格競争力を考慮して選択してください。
+                        </div>
+                        `}
+                    </div>
+                </div>
+            `;
+        }
+
+        // DDP最適化
+        function optimizeForDDP() {
+            setCalculationMode('ddp');
+            calculateShipping();
+            
+            // 追加の最適化提案を表示
+            const results = document.getElementById('results');
+            results.innerHTML += `
+                <div class="result-card full-width">
+                    <div class="result-header">DDP最適化提案</div>
+                    <div class="alert alert-info">
+                        <h4>価格設定戦略：</h4>
+                        <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+                            <li>最も高い関税率の国（例：EU）を基準にDDP価格を設定</li>
+                            <li>国別送料で関税の差分を吸収し、最終支払額を均一化</li>
+                            <li>eBay GSPを活用してDDP手続きを自動化</li>
+                            <li>「関税・VAT込み」を商品タイトルに明記して差別化</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 送料上限チェック
+        function checkEbayLimits() {
+            const ebaySite = document.getElementById('ebaySite').value;
+            const shippingMethod = document.getElementById('shippingMethod').value;
+            const weight = parseFloat(document.getElementById('weight').value) || 0;
+            const length = parseFloat(document.getElementById('length').value) || 0;
+            const width = parseFloat(document.getElementById('width').value) || 0;
+            const height = parseFloat(document.getElementById('height').value) || 0;
+            
+            const calculatedShipping = calculateBasicShipping(weight, length, width, height, shippingMethod);
+            const limit = shippingLimits[ebaySite][shippingMethod === 'express' ? 'express' : 'standard'];
+            
+            const warningDiv = document.getElementById('limitWarning');
+            if (calculatedShipping > limit) {
+                warningDiv.style.display = 'block';
+                warningDiv.innerHTML = `
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>送料上限超過警告：</strong> 
+                    計算送料 $${calculatedShipping.toFixed(2)} が eBay${ebaySite} の上限 $${limit} を超過。
+                    超過分 $${(calculatedShipping - limit).toFixed(2)} を商品価格に組み込んでください。
+                `;
+            } else {
+                warningDiv.style.display = 'none';
+            }
+            
+            // リミット確認タブに切り替え
+            switchTab('limits');
+        }
+
+        // フォームクリア
+        function clearForm() {
+            document.getElementById('productPrice').value = '';
+            document.getElementById('weight').value = '';
+            document.getElementById('length').value = '';
+            document.getElementById('width').value = '';
+            document.getElementById('height').value = '';
+            document.getElementById('results').style.display = 'none';
+        }
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 為替レート更新
+            updateExchangeRates();
+        });
+
+        // 為替レート更新
+        function updateExchangeRates() {
+            // 実際の実装では外部APIから取得
+            document.getElementById('rateUpdateTime').textContent = new Date().toLocaleString('ja-JP');
+        }
+    </script>
+</body>
+</html>

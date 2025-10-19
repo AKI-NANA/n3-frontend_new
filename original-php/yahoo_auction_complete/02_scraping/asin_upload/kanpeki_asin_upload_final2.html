@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="index, follow">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    
+    <!-- SEOメタタグ -->
+    <title>完璧ASIN管理 - CSV・URL・直接入力対応 - Emverze SaaS</title>
+    <meta name="description" content="Amazon ASIN商品の一括登録・管理システム。CSV、URL、直接入力で効率的な商品登録を実現。">
+    <meta name="keywords" content="ASIN,Amazon,商品登録,CSV,一括登録,在庫管理">
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="完璧ASIN管理 - Emverze SaaS">
+    <meta property="og:description" content="Amazon ASIN商品の効率的な一括登録・管理システム">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta property="og:image" content="{{ url_for('static', filename='images/og-image.png', _external=True) }}">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/apple-touch-icon.png') }}">
+    
+    <!-- CSS読み込み(階層対応) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Emverze統一CSS(main.css) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    
+    <!-- ページ固有CSS -->
+    <style>
+        /* ASIN管理専用スタイル(main.css準拠) */
+        .asin-upload-container {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--neumorphism);
+            padding: var(--space-8);
+            margin-bottom: var(--space-6);
+        }
+        
+        .upload-method-tabs {
+            display: flex;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-1);
+            margin-bottom: var(--space-6);
+            box-shadow: var(--shadow-inset-sm);
+        }
+        
+        .upload-tab {
+            flex: 1;
+            padding: var(--space-3) var(--space-4);
+            border: none;
+            background: transparent;
+            border-radius: var(--radius-md);
+            font-weight: var(--font-medium);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition-normal);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+        }
+        
+        .upload-tab:hover {
+            color: var(--text-primary);
+            background: var(--bg-hover);
+        }
+        
+        .upload-tab.active {
+            background: var(--accent-blue);
+            color: var(--text-white);
+            box-shadow: var(--neumorphism-sm);
+        }
+        
+        .upload-content {
+            display: none;
+        }
+        
+        .upload-content.active {
+            display: block;
+        }
+        
+        .file-drop-zone {
+            border: 2px dashed var(--shadow-dark);
+            border-radius: var(--radius-lg);
+            padding: var(--space-8);
+            text-align: center;
+            background: var(--bg-tertiary);
+            transition: var(--transition-normal);
+            cursor: pointer;
+            margin-bottom: var(--space-4);
+        }
+        
+        .file-drop-zone:hover,
+        .file-drop-zone.dragover {
+            border-color: var(--accent-blue);
+            background: var(--info-bg);
+            box-shadow: var(--neumorphism-sm);
+        }
+        
+        .drop-icon {
+            font-size: var(--text-5xl);
+            color: var(--accent-blue);
+            margin-bottom: var(--space-4);
+        }
+        
+        .asin-preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: var(--space-4);
+            margin-top: var(--space-6);
+        }
+        
+        .asin-preview-card {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-4);
+            box-shadow: var(--neumorphism-sm);
+            border-left: 4px solid var(--accent-blue);
+        }
+        
+        .asin-code {
+            font-family: var(--font-family-mono);
+            font-weight: var(--font-semibold);
+            color: var(--accent-blue);
+            font-size: var(--text-sm);
+        }
+        
+        .processing-progress {
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-6);
+            margin-top: var(--space-6);
+            display: none;
+        }
+        
+        .processing-progress.active {
+            display: block;
+        }
+        
+        .progress-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-2) 0;
+            border-bottom: 1px solid var(--shadow-dark);
+        }
+        
+        .progress-item:last-child {
+            border-bottom: none;
+        }
+        
+        .progress-status {
+            width: 20px;
+            height: 20px;
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--text-xs);
+            color: var(--text-white);
+        }
+        
+        .progress-status.success { background: var(--success-color); }
+        .progress-status.error { background: var(--error-color); }
+        .progress-status.processing { 
+            background: var(--warning-color);
+            animation: pulse 1.5s infinite;
+        }
+        
+        .results-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: var(--space-4);
+            margin-top: var(--space-6);
+        }
+        
+        .result-stat {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-4);
+            text-align: center;
+            box-shadow: var(--neumorphism-sm);
+        }
+        
+        .result-number {
+            font-size: var(--text-2xl);
+            font-weight: var(--font-bold);
+            margin-bottom: var(--space-1);
+        }
+        
+        .result-number.success { color: var(--success-color); }
+        .result-number.error { color: var(--error-color); }
+        .result-number.warning { color: var(--warning-color); }
+        .result-number.info { color: var(--info-color); }
+        
+        .result-label {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            font-weight: var(--font-medium);
+        }
+    </style>
+<script>
+// CAIDS error_handling Hook
+
+// CAIDS エラー処理Hook - 完全実装
+window.CAIDS_ERROR_HANDLER = {
+    isActive: true,
+    errorCount: 0,
+    errorHistory: [],
+    
+    initialize: function() {
+        this.setupGlobalErrorHandler();
+        this.setupUnhandledPromiseRejection();
+        this.setupNetworkErrorHandler();
+        console.log('⚠️ CAIDS エラーハンドリングシステム完全初期化');
+    },
+    
+    setupGlobalErrorHandler: function() {
+        window.addEventListener('error', (event) => {
+            this.handleError({
+                type: 'JavaScript Error',
+                message: event.message,
+                filename: event.filename,
+                lineno: event.lineno,
+                colno: event.colno,
+                stack: event.error?.stack
+            });
+        });
+    },
+    
+    setupUnhandledPromiseRejection: function() {
+        window.addEventListener('unhandledrejection', (event) => {
+            this.handleError({
+                type: 'Unhandled Promise Rejection',
+                message: event.reason?.message || String(event.reason),
+                stack: event.reason?.stack
+            });
+        });
+    },
+    
+    setupNetworkErrorHandler: function() {
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            try {
+                const response = await originalFetch.apply(this, args);
+                if (!response.ok) {
+                    window.CAIDS_ERROR_HANDLER.handleError({
+                        type: 'Network Error',
+                        message: `HTTP ${response.status}: ${response.statusText}`,
+                        url: args[0]
+                    });
+                }
+                return response;
+            } catch (error) {
+                window.CAIDS_ERROR_HANDLER.handleError({
+                    type: 'Network Fetch Error',
+                    message: error.message,
+                    url: args[0]
+                });
+                throw error;
+            }
+        };
+    },
+    
+    handleError: function(errorInfo) {
+        this.errorCount++;
+        this.errorHistory.push({...errorInfo, timestamp: new Date().toISOString()});
+        
+        console.error('🚨 CAIDS Error Handler:', errorInfo);
+        this.showErrorNotification(errorInfo);
+        this.reportError(errorInfo);
+    },
+    
+    showErrorNotification: function(errorInfo) {
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = `
+            position: fixed; top: 10px; right: 10px; z-index: 999999;
+            background: linear-gradient(135deg, #ff4444, #cc0000);
+            color: white; padding: 15px 20px; border-radius: 8px;
+            max-width: 350px; box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            font-size: 13px; font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            border: 2px solid #ff6666; animation: caids-error-shake 0.5s ease-in-out;
+        `;
+        errorDiv.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 18px;">🚨</span>
+                <div>
+                    <strong>エラーが発生しました</strong><br>
+                    <small style="opacity: 0.9;">${errorInfo.type}: ${errorInfo.message}</small>
+                </div>
+            </div>
+        `;
+        
+        // CSS Animation
+        if (!document.getElementById('caids-error-styles')) {
+            const style = document.createElement('style');
+            style.id = 'caids-error-styles';
+            style.textContent = `
+                @keyframes caids-error-shake {
+                    0%, 100% { transform: translateX(0); }
+                    25% { transform: translateX(-5px); }
+                    75% { transform: translateX(5px); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(errorDiv);
+        setTimeout(() => errorDiv.remove(), 7000);
+    },
+    
+    reportError: function(errorInfo) {
+        // エラーレポート生成・送信（将来の拡張用）
+        const report = {
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent,
+            url: window.location.href,
+            errorCount: this.errorCount,
+            sessionId: this.getSessionId(),
+            ...errorInfo
+        };
+        
+        console.log('📋 CAIDS Error Report:', report);
+        localStorage.setItem('caids_last_error', JSON.stringify(report));
+    },
+    
+    getSessionId: function() {
+        let sessionId = sessionStorage.getItem('caids_session_id');
+        if (!sessionId) {
+            sessionId = 'caids_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            sessionStorage.setItem('caids_session_id', sessionId);
+        }
+        return sessionId;
+    },
+    
+    getErrorStats: function() {
+        return {
+            totalErrors: this.errorCount,
+            recentErrors: this.errorHistory.slice(-10),
+            sessionId: this.getSessionId()
+        };
+    }
+};
+
+window.CAIDS_ERROR_HANDLER.initialize();
+
+</script>
+<script>
+// CAIDS user_feedback Hook
+// CAIDS user_feedback Hook - 基本実装
+console.log('✅ user_feedback Hook loaded');
+</script>
+<script>
+// CAIDS character_limit Hook
+// CAIDS character_limit Hook - 基本実装
+console.log('✅ character_limit Hook loaded');
+</script>
+<script>
+// CAIDS development_control Hook
+// CAIDS development_control Hook - 基本実装
+console.log('✅ development_control Hook loaded');
+</script>
+<script>
+// CAIDS natural_explanation Hook
+// CAIDS natural_explanation Hook - 基本実装
+console.log('✅ natural_explanation Hook loaded');
+</script>
+<script>
+// CAIDS character_monitoring Hook
+// CAIDS character_monitoring Hook - 基本実装
+console.log('✅ character_monitoring Hook loaded');
+</script>
+<script>
+// CAIDS emergency_accumulation Hook
+// CAIDS emergency_accumulation Hook - 基本実装
+console.log('✅ emergency_accumulation Hook loaded');
+</script>
+<script>
+// CAIDS pre_analysis_enforcement Hook
+// CAIDS pre_analysis_enforcement Hook - 基本実装
+console.log('✅ pre_analysis_enforcement Hook loaded');
+</script>
+<script>
+// CAIDS user_approval_required Hook
+// CAIDS user_approval_required Hook - 基本実装
+console.log('✅ user_approval_required Hook loaded');
+</script>
+<script>
+// CAIDS timeout_management Hook
+// CAIDS timeout_management Hook - 基本実装
+console.log('✅ timeout_management Hook loaded');
+</script>
+</head>
+
+<body>
+    <!-- コンテナ(main.css準拠) -->
+    <div class="container">
+        <!-- ヘッダー(全ページ共通) -->
+        <header class="header" role="banner">
+            <div class="header-content">
+                <div class="header-left">
+                    <button class="mobile-menu-toggle" aria-label="メニューを開く">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 class="header-title">
+                        <a href="{{ url_for('dashboard.index') if url_for else '/' }}">Emverze</a>
+                    </h1>
+                </div>
+
+                <div class="header-center">
+                    <div class="search-box">
+                        <input type="search" placeholder="商品を検索..." aria-label="商品検索">
+                        <button type="submit" aria-label="検索実行">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="header-right">
+                    <div class="notification-badge" data-count="3">
+                        <button aria-label="通知">
+                            <i class="fas fa-bell"></i>
+                        </button>
+                    </div>
+                    <div class="user-menu" role="button" tabindex="0" aria-label="ユーザーメニュー">
+                        <img src="{{ url_for('static', filename='images/avatars/default.png') }}" alt="ユーザーアバター" class="user-avatar">
+                        <span class="user-name">{{ user.name if user else 'ゲスト' }}</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- サイドバー(全ページ共通) -->
+        <aside class="sidebar" role="navigation" aria-label="メインナビゲーション">
+            <div class="logo">
+                <h2>Emverze</h2>
+                <span class="version">SaaS v2.0</span>
+            </div>
+
+            <nav class="nav-menu">
+                <ul role="menubar">
+                    <li class="nav-item" role="none">
+                        <a href="{{ url_for('dashboard.index') if url_for else '/' }}" class="nav-link" role="menuitem">
+                            <i class="fas fa-chart-line" aria-hidden="true"></i>
+                            <span>ダッシュボード</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" role="none">
+                        <a href="{{ url_for('inventory.list') if url_for else '/inventory' }}" class="nav-link" role="menuitem">
+                            <i class="fas fa-boxes" aria-hidden="true"></i>
+                            <span>在庫管理</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" role="none">
+                        <a href="{{ url_for('products.list') if url_for else '/products' }}" class="nav-link active" role="menuitem" aria-current="page">
+                            <i class="fas fa-box" aria-hidden="true"></i>
+                            <span>商品管理</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" role="none">
+                        <a href="{{ url_for('listings.list') if url_for else '/listings' }}" class="nav-link" role="menuitem">
+                            <i class="fas fa-store" aria-hidden="true"></i>
+                            <span>出品管理</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" role="none">
+                        <a href="{{ url_for('analytics.dashboard') if url_for else '/analytics' }}" class="nav-link" role="menuitem">
+                            <i class="fas fa-chart-bar" aria-hidden="true"></i>
+                            <span>分析</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" role="none">
+                        <a href="{{ url_for('settings.general') if url_for else '/settings' }}" class="nav-link" role="menuitem">
+                            <i class="fas fa-cog" aria-hidden="true"></i>
+                            <span>設定</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="system-status">
+                    <div class="status-indicator online"></div>
+                    <span>システム正常</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- メインコンテンツエリア -->
+        <main class="main" role="main">
+            <div class="main-content">
+                <!-- ページヘッダー -->
+                <div class="page-header">
+                    <div class="page-header-left">
+                        <h1 class="page-title">完璧ASIN管理</h1>
+                        <p class="page-subtitle">Amazon商品の一括登録・管理システム</p>
+                    </div>
+                    <div class="page-header-right">
+                        <button class="btn secondary" onclick="showUploadHistory()">
+                            <i class="fas fa-history"></i>
+                            履歴
+                        </button>
+                        <button class="btn primary" onclick="exportResults()">
+                            <i class="fas fa-download"></i>
+                            結果出力
+                        </button>
+                    </div>
+                </div>
+
+                <!-- パンくずナビ -->
+                <nav aria-label="パンくずナビ" class="breadcrumb">
+                    <ol>
+                        <li>
+                            <a href="{{ url_for('dashboard.index') if url_for else '/' }}">
+                                <i class="fas fa-home" aria-hidden="true"></i>
+                                ホーム
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('products.list') if url_for else '/products' }}">商品管理</a>
+                        </li>
+                        <li>
+                            <span aria-current="page">ASIN管理</span>
+                        </li>
+                    </ol>
+                </nav>
+
+                <!-- メインコンテンツ -->
+                <div class="content-area">
+                    <!-- ASIN統合アップロードコンテナ -->
+                    <div class="asin-upload-container">
+                        <!-- アップロード方式選択タブ -->
+                        <div class="upload-method-tabs" role="tablist">
+                            <button class="upload-tab active" role="tab" aria-selected="true" onclick="switchUploadMethod('csv')">
+                                <i class="fas fa-file-csv"></i>
+                                CSVファイル
+                            </button>
+                            <button class="upload-tab" role="tab" aria-selected="false" onclick="switchUploadMethod('url')">
+                                <i class="fas fa-link"></i>
+                                URL取り込み
+                            </button>
+                            <button class="upload-tab" role="tab" aria-selected="false" onclick="switchUploadMethod('direct')">
+                                <i class="fas fa-keyboard"></i>
+                                直接入力
+                            </button>
+                        </div>
+
+                        <!-- CSVアップロード -->
+                        <div id="csv-upload" class="upload-content active" role="tabpanel">
+                            <h3 class="section-title">CSVファイルアップロード</h3>
+                            
+                            <div class="file-drop-zone" id="csvDropZone" onclick="document.getElementById('csvFileInput').click()">
+                                <div class="drop-icon">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                </div>
+                                <p class="text-lg font-semibold mb-2">CSVファイルをドラッグ&ドロップ</p>
+                                <p class="text-sm text-secondary">または、クリックしてファイルを選択</p>
+                                <input type="file" id="csvFileInput" accept=".csv,.txt" style="display: none;" onchange="handleCsvFile(event)">
+                            </div>
+
+                            <!-- CSV処理オプション -->
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">エンコーディング</label>
+                                    <select class="form-select" id="csvEncoding">
+                                        <option value="auto">自動検出</option>
+                                        <option value="utf-8">UTF-8</option>
+                                        <option value="shift_jis">Shift_JIS</option>
+                                        <option value="euc-jp">EUC-JP</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">区切り文字</label>
+                                    <select class="form-select" id="csvDelimiter">
+                                        <option value=",">カンマ (,)</option>
+                                        <option value="\t">タブ</option>
+                                        <option value=";">セミコロン (;)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">ASIN列名</label>
+                                    <input type="text" class="form-input" id="asinColumn" value="ASIN" placeholder="ASIN列の名前">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-checkbox">
+                                    <input type="checkbox" id="csvSkipHeader" checked>
+                                    <span class="checkmark">ヘッダー行をスキップ</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- URL取り込み -->
+                        <div id="url-upload" class="upload-content" role="tabpanel">
+                            <h3 class="section-title">Amazon URL取り込み</h3>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Amazon商品URL</label>
+                                <textarea class="form-textarea" id="urlList" rows="10" 
+                                    placeholder="Amazon商品URLを1行に1つずつ入力してください&#10;例:&#10;https://www.amazon.co.jp/dp/B01234567X&#10;https://www.amazon.com/dp/B09876543Z"></textarea>
+                                <div class="field-help">
+                                    最大100URLまで一括処理可能
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-checkbox">
+                                        <input type="checkbox" id="removeTracking" checked>
+                                        <span class="checkmark">トラッキングパラメータ除去</span>
+                                    </label>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-checkbox">
+                                        <input type="checkbox" id="validateUrls" checked>
+                                        <span class="checkmark">URL形式検証</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 直接入力 -->
+                        <div id="direct-upload" class="upload-content" role="tabpanel">
+                            <h3 class="section-title">ASIN直接入力</h3>
+                            
+                            <div class="form-group">
+                                <label class="form-label">ASINリスト</label>
+                                <textarea class="form-textarea" id="asinDirectList" rows="15" 
+                                    placeholder="ASINコードを1行に1つずつ入力してください&#10;例:&#10;B01234567X&#10;B09876543Z&#10;B05555555A"></textarea>
+                                <div class="field-help">
+                                    最大1000ASINまで一括処理可能。ASINは10文字の英数字です。
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-checkbox">
+                                        <input type="checkbox" id="validateAsins" checked>
+                                        <span class="checkmark">ASIN形式検証</span>
+                                    </label>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-checkbox">
+                                        <input type="checkbox" id="removeDuplicates" checked>
+                                        <span class="checkmark">重複除去</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 共通処理オプション -->
+                        <div class="card mt-6">
+                            <div class="card-header">
+                                <h4 class="card-title">処理オプション</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-checkbox">
+                                            <input type="checkbox" id="fetchDetails" checked>
+                                            <span class="checkmark">商品詳細自動取得</span>
+                                        </label>
+                                        <div class="field-help">Amazon APIから商品名・価格・画像等を取得</div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-checkbox">
+                                            <input type="checkbox" id="autoCategory">
+                                            <span class="checkmark">カテゴリ自動分類</span>
+                                        </label>
+                                        <div class="field-help">商品情報からカテゴリを自動分類</div>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-checkbox">
+                                            <input type="checkbox" id="duplicateCheck" checked>
+                                            <span class="checkmark">重複チェック</span>
+                                        </label>
+                                        <div class="field-help">既存商品との重複をチェック</div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-checkbox">
+                                            <input type="checkbox" id="createInventory" checked>
+                                            <span class="checkmark">在庫レコード自動作成</span>
+                                        </label>
+                                        <div class="field-help">商品登録と同時に在庫管理レコードを作成</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 実行ボタン -->
+                        <div class="btn-group mt-6">
+                            <button class="btn large primary" onclick="startProcessing()">
+                                <i class="fas fa-play"></i>
+                                処理開始
+                            </button>
+                            <button class="btn large secondary" onclick="resetForm()">
+                                <i class="fas fa-undo"></i>
+                                リセット
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 処理進捗表示 -->
+                    <div class="processing-progress" id="processingProgress">
+                        <h3 class="section-title">処理進捗</h3>
+                        
+                        <div class="progress mb-4">
+                            <div class="progress-bar" id="overallProgress" style="width: 0%"></div>
+                        </div>
+
+                        <div id="progressList">
+                            <!-- 動的に生成される進捗アイテム -->
+                        </div>
+                    </div>
+
+                    <!-- 処理結果表示 -->
+                    <div class="card" id="resultsCard" style="display: none;">
+                        <div class="card-header">
+                            <h3 class="card-title">処理結果</h3>
+                            <button class="btn secondary small" onclick="exportResults()">
+                                <i class="fas fa-download"></i>
+                                CSV出力
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <!-- 処理結果サマリー -->
+                            <div class="results-summary">
+                                <div class="result-stat">
+                                    <div class="result-number success" id="successCount">0</div>
+                                    <div class="result-label">成功</div>
+                                </div>
+                                <div class="result-stat">
+                                    <div class="result-number error" id="errorCount">0</div>
+                                    <div class="result-label">エラー</div>
+                                </div>
+                                <div class="result-stat">
+                                    <div class="result-number warning" id="duplicateCount">0</div>
+                                    <div class="result-label">重複</div>
+                                </div>
+                                <div class="result-stat">
+                                    <div class="result-number info" id="totalCount">0</div>
+                                    <div class="result-label">合計</div>
+                                </div>
+                            </div>
+
+                            <!-- 詳細結果テーブル -->
+                            <div class="table-container mt-6">
+                                <table class="table" id="resultsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>ステータス</th>
+                                            <th>ASIN</th>
+                                            <th>商品名</th>
+                                            <th>価格</th>
+                                            <th>カテゴリ</th>
+                                            <th>メッセージ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- 動的に生成される結果行 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- トースト通知コンテナ -->
+    <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="false"></div>
+
+    <!-- ローディングオーバーレイ -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading-content">
+            <div class="spinner" aria-hidden="true"></div>
+            <div class="loading-message">処理中...</div>
+        </div>
+    </div>
+
+    <!-- JavaScript読み込み -->
+    <script src="{{ url_for('static', filename='js/emverze_unified_js.js') }}"></script>
+    
+    <!-- ASIN管理専用JavaScript -->
+    <script>
+        // アップロード方式切り替え
+        function switchUploadMethod(method) {
+            // タブの状態更新
+            document.querySelectorAll('.upload-tab').forEach(tab => {
+                tab.classList.remove('active');
+                tab.setAttribute('aria-selected', 'false');
+            });
+            
+            document.querySelectorAll('.upload-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // アクティブタブ設定
+            event.target.classList.add('active');
+            event.target.setAttribute('aria-selected', 'true');
+            document.getElementById(`${method}-upload`).classList.add('active');
+        }
+
+        // CSVファイル処理
+        function handleCsvFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const csvData = e.target.result;
+                previewCsvData(csvData);
+            };
+            reader.readAsText(file, document.getElementById('csvEncoding').value || 'utf-8');
+        }
+
+        // CSV データプレビュー
+        function previewCsvData(csvData) {
+            // CSVパース（簡易版）
+            const lines = csvData.split('\n').filter(line => line.trim());
+            const delimiter = document.getElementById('csvDelimiter').value;
+            const asinColumn = document.getElementById('asinColumn').value;
+            const skipHeader = document.getElementById('csvSkipHeader').checked;
+            
+            let startIndex = skipHeader ? 1 : 0;
+            let asins = [];
+            
+            for (let i = startIndex; i < Math.min(lines.length, 10); i++) {
+                const columns = lines[i].split(delimiter);
+                if (columns[0]) {
+                    asins.push(columns[0].trim());
+                }
+            }
+            
+            showToast('info', 'プレビュー', `${asins.length}件のASINを検出しました`);
+        }
+
+        // ドラッグ&ドロップ処理
+        document.getElementById('csvDropZone').addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('dragover');
+        });
+
+        document.getElementById('csvDropZone').addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+        });
+
+        document.getElementById('csvDropZone').addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById('csvFileInput').files = files;
+                handleCsvFile({target: {files: files}});
+            }
+        });
+
+        // 処理開始
+        async function startProcessing() {
+            const activeMethod = document.querySelector('.upload-content.active').id;
+            let data = {};
+
+            // アクティブな方式に応じてデータ収集
+            switch(activeMethod) {
+                case 'csv-upload':
+                    data = await collectCsvData();
+                    break;
+                case 'url-upload':
+                    data = collectUrlData();
+                    break;
+                case 'direct-upload':
+                    data = collectDirectData();
+                    break;
+            }
+
+            if (!data.items || data.items.length === 0) {
+                showToast('error', 'エラー', '処理対象のデータがありません');
+                return;
+            }
+
+            // 処理開始
+            showLoading('ASIN処理中...');
+            document.getElementById('processingProgress').classList.add('active');
+            
+            try {
+                const response = await apiRequest('/kanpeki-asin/process', {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+
+                if (response.success) {
+                    showResults(response);
+                    showToast('success', '完了', `${response.success_count}件の処理が完了しました`);
+                } else {
+                    throw new Error(response.message || '処理に失敗しました');
+                }
+            } catch (error) {
+                showToast('error', 'エラー', error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // CSV データ収集
+        async function collectCsvData() {
+            const fileInput = document.getElementById('csvFileInput');
+            if (!fileInput.files[0]) {
+                return {items: []};
+            }
+
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const csvData = e.target.result;
+                    const options = {
+                        encoding: document.getElementById('csvEncoding').value,
+                        delimiter: document.getElementById('csvDelimiter').value,
+                        asin_column: document.getElementById('asinColumn').value,
+                        skip_header: document.getElementById('csvSkipHeader').checked
+                    };
+                    
+                    resolve({
+                        method: 'csv',
+                        data: csvData,
+                        options: options,
+                        processing_options: getProcessingOptions()
+                    });
+                };
+                reader.readAsText(fileInput.files[0]);
+            });
+        }
+
+        // URL データ収集
+        function collectUrlData() {
+            const urlText = document.getElementById('urlList').value.trim();
+            const urls = urlText.split('\n').filter(url => url.trim());
+            
+            return {
+                method: 'url',
+                items: urls,
+                options: {
+                    remove_tracking: document.getElementById('removeTracking').checked,
+                    validate_urls: document.getElementById('validateUrls').checked
+                },
+                processing_options: getProcessingOptions()
+            };
+        }
+
+        // 直接入力データ収集
+        function collectDirectData() {
+            const asinText = document.getElementById('asinDirectList').value.trim();
+            const asins = asinText.split('\n').filter(asin => asin.trim());
+            
+            return {
+                method: 'direct',
+                items: asins,
+                options: {
+                    validate_asins: document.getElementById('validateAsins').checked,
+                    remove_duplicates: document.getElementById('removeDuplicates').checked
+                },
+                processing_options: getProcessingOptions()
+            };
+        }
+
+        // 共通処理オプション取得
+        function getProcessingOptions() {
+            return {
+                fetch_details: document.getElementById('fetchDetails').checked,
+                auto_category: document.getElementById('autoCategory').checked,
+                duplicate_check: document.getElementById('duplicateCheck').checked,
+                create_inventory: document.getElementById('createInventory').checked
+            };
+        }
+
+        // 結果表示
+        function showResults(response) {
+            document.getElementById('resultsCard').style.display = 'block';
+            
+            // サマリー更新
+            document.getElementById('successCount').textContent = response.success_count;
+            document.getElementById('errorCount').textContent = response.error_count;
+            document.getElementById('duplicateCount').textContent = response.duplicate_count;
+            document.getElementById('totalCount').textContent = response.processed_count;
+            
+            // テーブル更新
+            const tbody = document.querySelector('#resultsTable tbody');
+            tbody.innerHTML = '';
+            
+            response.results.forEach(result => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><span class="badge ${getStatusClass(result.status)}">${getStatusText(result.status)}</span></td>
+                    <td><code class="asin-code">${result.asin}</code></td>
+                    <td>${result.product_name || '-'}</td>
+                    <td>${result.price || '-'}</td>
+                    <td>${result.category || '-'}</td>
+                    <td>${result.error_message || '-'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // ステータスクラス取得
+        function getStatusClass(status) {
+            const statusMap = {
+                'success': 'success',
+                'error': 'danger',
+                'duplicate': 'warning',
+                'invalid': 'secondary'
+            };
+            return statusMap[status] || 'secondary';
+        }
+
+        // ステータステキスト取得
+        function getStatusText(status) {
+            const statusMap = {
+                'success': '成功',
+                'error': 'エラー',
+                'duplicate': '重複',
+                'invalid': '無効'
+            };
+            return statusMap[status] || '不明';
+        }
+
+        // フォームリセット
+        function resetForm() {
+            document.querySelectorAll('input, textarea, select').forEach(element => {
+                if (element.type === 'checkbox') {
+                    element.checked = element.hasAttribute('checked');
+                } else if (element.type === 'file') {
+                    element.value = '';
+                } else {
+                    element.value = element.defaultValue || '';
+                }
+            });
+            
+            document.getElementById('processingProgress').classList.remove('active');
+            document.getElementById('resultsCard').style.display = 'none';
+            
+            showToast('info', 'リセット', 'フォームをリセットしました');
+        }
+
+        // 結果エクスポート
+        function exportResults() {
+            showToast('info', 'エクスポート', 'CSV出力機能を準備中です');
+        }
+
+        // アップロード履歴表示
+        function showUploadHistory() {
+            showToast('info', '履歴', 'アップロード履歴機能を準備中です');
+        }
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('完璧ASIN管理システム初期化完了');
+        });
+    </script>
+</body>
+</html>

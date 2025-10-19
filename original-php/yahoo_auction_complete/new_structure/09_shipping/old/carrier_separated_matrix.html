@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>配送会社別独立マトリックス - 矛盾解決版</title>
+    <style>
+        :root {
+            --elogi-primary: #FF6B6B;
+            --ems-primary: #2EC4B6;
+            --cpass-primary: #1E90FF;
+            --bg-light: #f8fafc;
+            --bg-white: #ffffff;
+            --text-dark: #1e293b;
+            --text-gray: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --radius: 8px;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-light);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+            color: white;
+            padding: 30px;
+            border-radius: var(--radius);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .problem-explanation {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .solution-explanation {
+            background: #d1fae5;
+            border: 1px solid #10b981;
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .carrier-tabs {
+            display: flex;
+            background: var(--bg-white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        
+        .tab-button {
+            flex: 1;
+            padding: 20px;
+            border: none;
+            background: #f1f5f9;
+            color: var(--text-gray);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .tab-button.active {
+            background: var(--bg-white);
+            color: var(--text-dark);
+        }
+        
+        .tab-button.elogi.active {
+            border-bottom: 4px solid var(--elogi-primary);
+            color: var(--elogi-primary);
+        }
+        
+        .tab-button.ems.active {
+            border-bottom: 4px solid var(--ems-primary);
+            color: var(--ems-primary);
+        }
+        
+        .tab-button.cpass.active {
+            border-bottom: 4px solid var(--cpass-primary);
+            color: var(--cpass-primary);
+        }
+        
+        .tab-button:hover {
+            background: var(--bg-white);
+        }
+        
+        .matrix-container {
+            background: var(--bg-white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        
+        .matrix-header {
+            padding: 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .matrix-header.elogi {
+            background: linear-gradient(135deg, var(--elogi-primary), #ff5252);
+            color: white;
+        }
+        
+        .matrix-header.ems {
+            background: linear-gradient(135deg, var(--ems-primary), #26a69a);
+            color: white;
+        }
+        
+        .matrix-header.cpass {
+            background: linear-gradient(135deg, var(--cpass-primary), #2196f3);
+            color: white;
+        }
+        
+        .carrier-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .carrier-info h2 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .zone-info {
+            background: rgba(255,255,255,0.15);
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-left: auto;
+        }
+        
+        .zone-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.9);
+            color: var(--text-dark);
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .country-selector {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            background: #f8fafc;
+        }
+        
+        .country-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+        
+        .country-btn {
+            padding: 10px 15px;
+            border: 1px solid var(--border);
+            background: var(--bg-white);
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        
+        .country-btn:hover {
+            background: #f1f5f9;
+            border-color: #3b82f6;
+        }
+        
+        .country-btn.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+        
+        .matrix-table-container {
+            padding: 25px;
+        }
+        
+        .matrix-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-white);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .matrix-table th {
+            background: #f8fafc;
+            padding: 15px 12px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-dark);
+            border-bottom: 2px solid var(--border);
+        }
+        
+        .matrix-table td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .weight-cell {
+            font-weight: 600;
+            background: #f8fafc;
+            text-align: left;
+            padding-left: 15px;
+        }
+        
+        .price-cell {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+        
+        .price-cell.estimated {
+            color: var(--text-gray);
+            font-style: italic;
+        }
+        
+        .price-breakdown {
+            font-size: 11px;
+            color: var(--text-gray);
+            margin-top: 2px;
+        }
+        
+        .zone-explanation {
+            background: #f8fafc;
+            padding: 20px;
+            border-top: 1px solid var(--border);
+        }
+        
+        .zone-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .zone-detail-card {
+            background: var(--bg-white);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid;
+        }
+        
+        .zone-detail-card.elogi {
+            border-left-color: var(--elogi-primary);
+        }
+        
+        .zone-detail-card.ems {
+            border-left-color: var(--ems-primary);
+        }
+        
+        .zone-detail-card.cpass {
+            border-left-color: var(--cpass-primary);
+        }
+        
+        .comparison-summary {
+            background: var(--bg-white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 25px;
+            margin-top: 30px;
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .comparison-card {
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            padding: 15px;
+            background: #f8fafc;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .no-support {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-gray);
+            background: #f8fafc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 配送会社別独立マトリックス</h1>
+            <p>各社のゾーン体系を正しく分離表示 - 矛盾解決版</p>
+        </div>
+
+        <!-- 問題説明 -->
+        <div class="problem-explanation">
+            <h3>❌ 従来の問題（矛盾するマトリックス）</h3>
+            <p><strong>混在表示の問題:</strong> 異なるゾーン体系の料金を同じ表に表示することで、ユーザーが料金の根拠を理解できず、配送会社比較が困難になっていました。</p>
+            <ul style="margin-top: 10px; margin-left: 20px;">
+                <li>eMoji: Zone1基準（サービスレベル制）</li>
+                <li>EMS: 第4地帯基準（地理的区分制）</li>
+                <li>CPass: USA対応基準（国別限定制）</li>
+            </ul>
+        </div>
+
+        <!-- 解決策説明 -->
+        <div class="solution-explanation">
+            <h3>✅ 解決策（配送会社別独立表示）</h3>
+            <p><strong>タブ分離方式:</strong> 各配送会社のマトリックスを独立したタブで表示し、それぞれのゾーン体系と料金根拠を明確に示します。</p>
+        </div>
+
+        <!-- 国選択 -->
+        <div style="background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow);">
+            <h3>🌍 配送先選択</h3>
+            <div class="country-grid" style="margin-top: 15px;">
+                <button class="country-btn active" data-country="US">🇺🇸 アメリカ</button>
+                <button class="country-btn" data-country="GB">🇬🇧 イギリス</button>
+                <button class="country-btn" data-country="DE">🇩🇪 ドイツ</button>
+                <button class="country-btn" data-country="SG">🇸🇬 シンガポール</button>
+                <button class="country-btn" data-country="CN">🇨🇳 中国</button>
+                <button class="country-btn" data-country="AU">🇦🇺 オーストラリア</button>
+            </div>
+        </div>
+
+        <!-- 配送会社タブ -->
+        <div class="carrier-tabs">
+            <button class="tab-button elogi active" data-tab="elogi">
+                <div>📦 eMoji（eLogi）</div>
+                <small>サービスレベル別ゾーン</small>
+            </button>
+            <button class="tab-button ems" data-tab="ems">
+                <div>📮 日本郵便 EMS</div>
+                <small>地理的距離別ゾーン</small>
+            </button>
+            <button class="tab-button cpass" data-tab="cpass">
+                <div>✈️ CPass SpeedPAK</div>
+                <small>対応国限定ゾーン</small>
+            </button>
+        </div>
+
+        <!-- eMoji マトリックス -->
+        <div id="elogi-matrix" class="matrix-container tab-content active">
+            <div class="matrix-header elogi">
+                <div class="carrier-icon">eM</div>
+                <div class="carrier-info">
+                    <h2>eMoji（eLogi統合）</h2>
+                    <p>サービスレベル別ゾーン体系</p>
+                </div>
+                <div class="zone-info">
+                    <div class="zone-badge" id="elogi-zone">Zone 1</div>
+                    <div style="font-size: 12px;" id="elogi-zone-desc">最高速サービス（1-3日）</div>
+                </div>
+            </div>
+            
+            <div class="matrix-table-container">
+                <table class="matrix-table">
+                    <thead>
+                        <tr>
+                            <th>重量</th>
+                            <th>DHL Express</th>
+                            <th>FedEx Priority</th>
+                            <th>UPS Express</th>
+                        </tr>
+                    </thead>
+                    <tbody id="elogi-table-body">
+                        <tr>
+                            <td class="weight-cell">0.5kg</td>
+                            <td class="price-cell">¥4,200<div class="price-breakdown">Zone1基準</div></td>
+                            <td class="price-cell">¥4,000<div class="price-breakdown">Zone1基準</div></td>
+                            <td class="price-cell">¥4,100<div class="price-breakdown">Zone1基準</div></td>
+                        </tr>
+                        <tr>
+                            <td class="weight-cell">1.0kg</td>
+                            <td class="price-cell">¥6,500<div class="price-breakdown">Zone1基準</div></td>
+                            <td class="price-cell">¥6,200<div class="price-breakdown">Zone1基準</div></td>
+                            <td class="price-cell">¥6,300<div class="price-breakdown">Zone1基準</div></td>
+                        </tr>
+                        <tr>
+                            <td class="weight-cell">1.5kg</td>
+                            <td class="price-cell">¥8,800<div class="price-breakdown">Zone1基準</div></td>
+                            <td class="price-cell">¥8,400<div class="price-breakdown">Zone1基準</div></td>
+                            <td class="price-cell">¥8,600<div class="price-breakdown">Zone1基準</div></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="zone-explanation">
+                <h4>📍 eMojiゾーン体系説明</h4>
+                <div class="zone-details">
+                    <div class="zone-detail-card elogi">
+                        <strong>Zone 1</strong><br>
+                        最高速サービス（1-3日）<br>
+                        <small>アメリカ、シンガポール、香港、韓国</small>
+                    </div>
+                    <div class="zone-detail-card elogi">
+                        <strong>Zone 2</strong><br>
+                        高速サービス（2-4日）<br>
+                        <small>イギリス、ドイツ、フランス、カナダ</small>
+                    </div>
+                    <div class="zone-detail-card elogi">
+                        <strong>Zone 3</strong><br>
+                        標準サービス（3-6日）<br>
+                        <small>オーストラリア、ブラジル、インド</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- EMS マトリックス -->
+        <div id="ems-matrix" class="matrix-container tab-content">
+            <div class="matrix-header ems">
+                <div class="carrier-icon">EMS</div>
+                <div class="carrier-info">
+                    <h2>日本郵便 EMS</h2>
+                    <p>地理的距離別ゾーン体系</p>
+                </div>
+                <div class="zone-info">
+                    <div class="zone-badge" id="ems-zone">第4地帯</div>
+                    <div style="font-size: 12px;" id="ems-zone-desc">アメリカ専用地帯（3-6日）</div>
+                </div>
+            </div>
+            
+            <div class="matrix-table-container">
+                <table class="matrix-table">
+                    <thead>
+                        <tr>
+                            <th>重量</th>
+                            <th>EMS</th>
+                            <th>配送日数</th>
+                            <th>保険</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ems-table-body">
+                        <tr>
+                            <td class="weight-cell">0.5kg</td>
+                            <td class="price-cell">¥3,900<div class="price-breakdown">第4地帯基準</div></td>
+                            <td>3-6日</td>
+                            <td>あり</td>
+                        </tr>
+                        <tr>
+                            <td class="weight-cell">1.0kg</td>
+                            <td class="price-cell">¥5,300<div class="price-breakdown">第4地帯基準</div></td>
+                            <td>3-6日</td>
+                            <td>あり</td>
+                        </tr>
+                        <tr>
+                            <td class="weight-cell">1.5kg</td>
+                            <td class="price-cell">¥6,700<div class="price-breakdown">第4地帯基準</div></td>
+                            <td>3-6日</td>
+                            <td>あり</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="zone-explanation">
+                <h4>📍 EMS地帯体系説明</h4>
+                <div class="zone-details">
+                    <div class="zone-detail-card ems">
+                        <strong>第1地帯</strong><br>
+                        近隣アジア（3-6日）<br>
+                        <small>中国、韓国、台湾</small>
+                    </div>
+                    <div class="zone-detail-card ems">
+                        <strong>第2地帯</strong><br>
+                        アジア（3-6日）<br>
+                        <small>シンガポール、香港、タイ等</small>
+                    </div>
+                    <div class="zone-detail-card ems">
+                        <strong>第3地帯</strong><br>
+                        欧州・オセアニア（3-6日）<br>
+                        <small>イギリス、ドイツ、オーストラリア等</small>
+                    </div>
+                    <div class="zone-detail-card ems">
+                        <strong>第4地帯</strong><br>
+                        アメリカ（3-6日）<br>
+                        <small>アメリカ合衆国専用</small>
+                    </div>
+                    <div class="zone-detail-card ems">
+                        <strong>第5地帯</strong><br>
+                        中南米・アフリカ（3-6日）<br>
+                        <small>ブラジル、南アフリカ等</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CPass マトリックス -->
+        <div id="cpass-matrix" class="matrix-container tab-content">
+            <div class="matrix-header cpass">
+                <div class="carrier-icon">CP</div>
+                <div class="carrier-info">
+                    <h2>CPass SpeedPAK</h2>
+                    <p>対応国限定ゾーン体系</p>
+                </div>
+                <div class="zone-info">
+                    <div class="zone-badge" id="cpass-zone">USA対応</div>
+                    <div style="font-size: 12px;" id="cpass-zone-desc">アメリカ向けエコノミー（8-12日）</div>
+                </div>
+            </div>
+            
+            <div class="matrix-table-container" id="cpass-content">
+                <table class="matrix-table">
+                    <thead>
+                        <tr>
+                            <th>重量</th>
+                            <th>SpeedPAK Economy</th>
+                            <th>配送日数</th>
+                            <th>追跡</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cpass-table-body">
+                        <tr>
+                            <td class="weight-cell">0.5kg</td>
+                            <td class="price-cell">¥2,060<div class="price-breakdown">USA対応基準</div></td>
+                            <td>8-12日</td>
+                            <td>あり</td>
+                        </tr>
+                        <tr>
+                            <td class="weight-cell">1.0kg</td>
+                            <td class="price-cell">¥3,020<div class="price-breakdown">USA対応基準</div></td>
+                            <td>8-12日</td>
+                            <td>あり</td>
+                        </tr>
+                        <tr>
+                            <td class="weight-cell">1.5kg</td>
+                            <td class="price-cell">¥4,200<div class="price-breakdown">USA対応基準</div></td>
+                            <td>8-12日</td>
+                            <td>あり</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="zone-explanation">
+                <h4>📍 CPass対応国体系説明</h4>
+                <div class="zone-details">
+                    <div class="zone-detail-card cpass">
+                        <strong>USA対応</strong><br>
+                        アメリカ向け（8-12日）<br>
+                        <small>アメリカ合衆国のみ</small>
+                    </div>
+                    <div class="zone-detail-card cpass">
+                        <strong>UK対応</strong><br>
+                        イギリス向け（7-10日）<br>
+                        <small>イギリスのみ</small>
+                    </div>
+                    <div class="zone-detail-card cpass">
+                        <strong>DE対応</strong><br>
+                        ドイツ向け（7-11日）<br>
+                        <small>ドイツのみ</small>
+                    </div>
+                    <div class="zone-detail-card cpass">
+                        <strong>AU対応</strong><br>
+                        オーストラリア向け（6-12日）<br>
+                        <small>オーストラリアのみ</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 比較サマリー -->
+        <div class="comparison-summary">
+            <h3>📊 選択した国での配送会社比較</h3>
+            <div class="comparison-grid" id="comparison-grid">
+                <!-- JavaScript で動的生成 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // データ定義
+        const carrierData = {
+            'US': {
+                elogi: { zone: 'Zone 1', desc: '最高速サービス（1-3日）', supported: true },
+                ems: { zone: '第4地帯', desc: 'アメリカ専用地帯（3-6日）', supported: true },
+                cpass: { zone: 'USA対応', desc: 'アメリカ向けエコノミー（8-12日）', supported: true }
+            },
+            'GB': {
+                elogi: { zone: 'Zone 2', desc: '高速サービス（2-4日）', supported: true },
+                ems: { zone: '第3地帯', desc: 'ヨーロッパ地帯（3-6日）', supported: true },
+                cpass: { zone: 'UK対応', desc: 'イギリス向けエコノミー（7-10日）', supported: true }
+            },
+            'SG': {
+                elogi: { zone: 'Zone 1', desc: '最高速サービス（1-3日）', supported: true },
+                ems: { zone: '第2地帯', desc: 'アジア地帯（3-6日）', supported: true },
+                cpass: { zone: '対応外', desc: '配送サービス未提供', supported: false }
+            },
+            'CN': {
+                elogi: { zone: '対応外', desc: '配送サービス未提供', supported: false },
+                ems: { zone: '第1地帯', desc: '近隣アジア地帯（3-6日）', supported: true },
+                cpass: { zone: '対応外', desc: '配送サービス未提供', supported: false }
+            }
+        };
+
+        let currentCountry = 'US';
+        let currentCarrier = 'elogi';
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDisplay();
+            
+            // タブ切り替え
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const tab = this.dataset.tab;
+                    switchCarrier(tab);
+                });
+            });
+            
+            // 国選択
+            document.querySelectorAll('.country-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const country = this.dataset.country;
+                    switchCountry(country);
+                });
+            });
+        });
+
+        function switchCarrier(carrier) {
+            currentCarrier = carrier;
+            
+            // タブボタンの状態更新
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`[data-tab="${carrier}"]`).classList.add('active');
+            
+            // コンテンツの表示切り替え
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(`${carrier}-matrix`).classList.add('active');
+            
+            updateDisplay();
+        }
+
+        function switchCountry(country) {
+            currentCountry = country;
+            
+            // 国ボタンの状態更新
+            document.querySelectorAll('.country-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`[data-country="${country}"]`).classList.add('active');
+            
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            const data = carrierData[currentCountry];
+            if (!data) return;
+
+            // 各キャリアのゾーン情報更新
+            updateCarrierZone('elogi', data.elogi);
+            updateCarrierZone('ems', data.ems);
+            updateCarrierZone('cpass', data.cpass);
+            
+            // 比較サマリー更新
+            updateComparisonSummary();
+        }
+
+        function updateCarrierZone(carrier, zoneData) {
+            const zoneElement = document.getElementById(`${carrier}-zone`);
+            const descElement = document.getElementById(`${carrier}-zone-desc`);
+            
+            if (zoneElement) zoneElement.textContent = zoneData.zone;
+            if (descElement) descElement.textContent = zoneData.desc;
+            
+            // CPassの対応外表示
+            if (carrier === 'cpass' && !zoneData.supported) {
+                const content = document.getElementById('cpass-content');
+                content.innerHTML = `
+                    <div class="no-support">
+                        <h3>🚫 配送対応外</h3>
+                        <p>CPass SpeedPAKは${getCountryName(currentCountry)}への配送に対応していません</p>
+                        <p><small>対応国: アメリカ、イギリス、ドイツ、オーストラリアのみ</small></p>
+                    </div>
+                `;
+            }
+        }
+
+        function updateComparisonSummary() {
+            const data = carrierData[currentCountry];
+            const grid = document.getElementById('comparison-grid');
+            
+            let html = '';
+            
+            Object.entries(data).forEach(([carrier, info]) => {
+                const carrierName = {
+                    'elogi': 'eMoji（eLogi）',
+                    'ems': '日本郵便 EMS', 
+                    'cpass': 'CPass SpeedPAK'
+                }[carrier];
+                
+                const supportClass = info.supported ? 'supported' : 'not-supported';
+                const supportText = info.supported ? '対応' : '対応外';
+                
+                html += `
+                    <div class="comparison-card">
+                        <h4>${carrierName}</h4>
+                        <div style="margin: 10px 0;">
+                            <span class="zone-badge">${info.zone}</span>
+                        </div>
+                        <p style="font-size: 14px; color: #64748b;">${info.desc}</p>
+                        <div style="margin-top: 10px; text-align: center;">
+                            <span class="${supportClass}" style="padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: 600;">
+                                ${supportText}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            grid.innerHTML = html;
+        }
+
+        function getCountryName(code) {
+            const names = {
+                'US': 'アメリカ',
+                'GB': 'イギリス',
+                'DE': 'ドイツ',
+                'SG': 'シンガポール',
+                'CN': '中国',
+                'AU': 'オーストラリア'
+            };
+            return names[code] || code;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,736 @@
+import React, { useState, useEffect } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area } from 'recharts';
+import { AlertTriangle, TrendingUp, Package, DollarSign, ShoppingCart, Globe, RefreshCw, Bell, Settings, Filter } from 'lucide-react';
+
+const MultiMarketplaceDashboard = () => {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [alerts, setAlerts] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // モックデータ - 実際のAPIから取得する予定のデータ構造
+  const marketplaceData = [
+    { name: 'Amazon US', sales: 2450000, orders: 1250, inventory: 8500, profit: 15.2, status: 'healthy', color: '#FF9900' },
+    { name: 'eBay US', sales: 1890000, orders: 980, inventory: 6200, profit: 18.7, status: 'healthy', color: '#E53238' },
+    { name: 'Shopee SG', sales: 1650000, orders: 2100, inventory: 4800, profit: 12.8, status: 'warning', color: '#EE4D2D' },
+    { name: 'Shopify', sales: 980000, orders: 450, inventory: 3200, profit: 22.1, status: 'healthy', color: '#7AB55C' },
+    { name: 'Coupang KR', sales: 750000, orders: 680, inventory: 2100, profit: 14.5, status: 'critical', color: '#5A67D8' }
+  ];
+
+  const salesTrendData = [
+    { date: '9/17', Amazon: 245000, eBay: 189000, Shopee: 165000, Shopify: 98000, Coupang: 75000 },
+    { date: '9/18', Amazon: 260000, eBay: 195000, Shopee: 158000, Shopify: 102000, Coupang: 72000 },
+    { date: '9/19', Amazon: 235000, eBay: 180000, Shopee: 172000, Shopify: 95000, Coupang: 78000 },
+    { date: '9/20', Amazon: 280000, eBay: 205000, Shopee: 168000, Shopify: 108000, Coupang: 82000 },
+    { date: '9/21', Amazon: 290000, eBay: 210000, Shopee: 175000, Shopify: 115000, Coupang: 85000 },
+    { date: '9/22', Amazon: 275000, eBay: 198000, Shopee: 182000, Shopify: 112000, Coupang: 88000 },
+    { date: '9/23', Amazon: 310000, eBay: 220000, Shopee: 190000, Shopify: 125000, Coupang: 92000 }
+  ];
+
+  const countryData = [
+    { country: 'アメリカ', sales: 4340000, orders: 2230, percentage: 43.2 },
+    { country: 'シンガポール', sales: 1650000, orders: 2100, percentage: 16.4 },
+    { country: '韓国', sales: 750000, orders: 680, percentage: 7.5 },
+    { country: 'その他', sales: 3280000, orders: 1340, percentage: 32.9 }
+  ];
+
+  const alertData = [
+    { id: 1, type: 'critical', marketplace: 'Coupang KR', message: '在庫切れ商品が15件発生', timestamp: '2分前', severity: 'high' },
+    { id: 2, type: 'warning', marketplace: 'Shopee SG', message: 'チャット応答率が85%を下回りました', timestamp: '15分前', severity: 'medium' },
+    { id: 3, type: 'info', marketplace: 'Amazon US', message: 'FBA在庫補充完了', timestamp: '1時間前', severity: 'low' },
+    { id: 4, type: 'warning', marketplace: 'eBay US', message: 'セラー評価に新しいネガティブフィードバック', timestamp: '2時間前', severity: 'medium' }
+  ];
+
+  // リアルタイム更新のシミュレーション
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLastUpdate(new Date());
+      // 実際のAPIからデータを取得する処理
+    }, 30000); // 30秒間隔
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleRefresh = () => {
+    setIsLoading(true);
+    // API再取得処理
+    setTimeout(() => {
+      setLastUpdate(new Date());
+      setIsLoading(false);
+    }, 2000);
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'healthy': return 'text-green-600 bg-green-100';
+      case 'warning': return 'text-yellow-600 bg-yellow-100';
+      case 'critical': return 'text-red-600 bg-red-100';
+      default: return 'text-gray-600 bg-gray-100';
+    }
+  };
+
+  const getAlertIcon = (type) => {
+    switch (type) {
+      case 'critical': return <AlertTriangle className="text-red-500" size={20} />;
+      case 'warning': return <AlertTriangle className="text-yellow-500" size={20} />;
+      default: return <Bell className="text-blue-500" size={20} />;
+    }
+  };
+
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY' }).format(value);
+  };
+
+  const totalSales = marketplaceData.reduce((sum, marketplace) => sum + marketplace.sales, 0);
+  const totalOrders = marketplaceData.reduce((sum, marketplace) => sum + marketplace.orders, 0);
+  const totalInventory = marketplaceData.reduce((sum, marketplace) => sum + marketplace.inventory, 0);
+  const avgProfit = marketplaceData.reduce((sum, marketplace) => sum + marketplace.profit, 0) / marketplaceData.length;
+
+  return (
+    <div style={{ 
+      minHeight: '100vh', 
+      backgroundColor: '#F9FAFB',
+      fontFamily: 'system-ui, -apple-system, sans-serif'
+    }}>
+      {/* ヘッダー */}
+      <header style={{
+        backgroundColor: 'white',
+        borderBottom: '1px solid #E5E7EB',
+        boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)'
+      }}>
+        <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1rem' }}>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            padding: '1.5rem 0' 
+          }}>
+            <div>
+              <h1 style={{ 
+                fontSize: '1.875rem', 
+                fontWeight: '700', 
+                color: '#111827',
+                margin: '0 0 0.5rem 0'
+              }}>
+                多販路EC統合ダッシュボード
+              </h1>
+              <p style={{ 
+                margin: 0,
+                fontSize: '0.875rem', 
+                color: '#6B7280',
+                display: 'flex',
+                alignItems: 'center'
+              }}>
+                最終更新: {lastUpdate.toLocaleString('ja-JP')}
+                <span style={{ 
+                  marginLeft: '0.5rem', 
+                  display: 'inline-flex', 
+                  alignItems: 'center' 
+                }}>
+                  <div style={{
+                    width: '8px',
+                    height: '8px',
+                    backgroundColor: '#34D399',
+                    borderRadius: '50%',
+                    marginRight: '4px',
+                    animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                  }}></div>
+                  リアルタイム更新中
+                </span>
+              </p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <button 
+                onClick={handleRefresh}
+                disabled={isLoading}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '0.5rem 1rem',
+                  border: 'none',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  borderRadius: '0.375rem',
+                  color: 'white',
+                  backgroundColor: isLoading ? '#9CA3AF' : '#2563EB',
+                  cursor: isLoading ? 'not-allowed' : 'pointer'
+                }}
+              >
+                <RefreshCw 
+                  size={16} 
+                  style={{ 
+                    marginRight: '0.5rem',
+                    animation: isLoading ? 'spin 1s linear infinite' : 'none'
+                  }} 
+                />
+                更新
+              </button>
+              <button style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '0.5rem 1rem',
+                border: '1px solid #D1D5DB',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                borderRadius: '0.375rem',
+                color: '#374151',
+                backgroundColor: 'white',
+                cursor: 'pointer'
+              }}>
+                <Settings size={16} style={{ marginRight: '0.5rem' }} />
+                設定
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '2rem 1rem' }}>
+        {/* アラートセクション */}
+        {alertData.length > 0 && (
+          <div style={{ marginBottom: '2rem' }}>
+            <h2 style={{ 
+              fontSize: '1.125rem', 
+              fontWeight: '600', 
+              color: '#111827', 
+              marginBottom: '1rem',
+              display: 'flex',
+              alignItems: 'center'
+            }}>
+              <Bell size={20} style={{ marginRight: '0.5rem', color: '#EF4444' }} />
+              アラート ({alertData.filter(a => a.severity === 'high').length}件の重要アラート)
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {alertData.slice(0, 3).map((alert) => (
+                <div key={alert.id} style={{
+                  backgroundColor: 'white',
+                  borderRadius: '0.5rem',
+                  boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+                  padding: '1rem',
+                  borderLeft: '4px solid #F87171'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                    <div style={{ marginRight: '0.75rem' }}>
+                      {getAlertIcon(alert.type)}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between' 
+                      }}>
+                        <p style={{ 
+                          fontSize: '0.875rem', 
+                          fontWeight: '500', 
+                          color: '#111827',
+                          margin: 0
+                        }}>
+                          {alert.marketplace}
+                        </p>
+                        <span style={{ 
+                          fontSize: '0.75rem', 
+                          color: '#6B7280' 
+                        }}>
+                          {alert.timestamp}
+                        </span>
+                      </div>
+                      <p style={{ 
+                        marginTop: '0.25rem', 
+                        fontSize: '0.875rem', 
+                        color: '#6B7280',
+                        margin: '0.25rem 0 0 0'
+                      }}>
+                        {alert.message}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* サマリーKPIカード */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+          gap: '1.5rem', 
+          marginBottom: '2rem' 
+        }}>
+          {[
+            {
+              title: '総売上（今月）',
+              value: formatCurrency(totalSales),
+              change: '12.3%',
+              icon: DollarSign,
+              iconColor: '#059669',
+              changeColor: '#059669'
+            },
+            {
+              title: '総注文数',
+              value: totalOrders.toLocaleString(),
+              change: '8.7%',
+              icon: ShoppingCart,
+              iconColor: '#2563EB',
+              changeColor: '#059669'
+            },
+            {
+              title: '総在庫数',
+              value: totalInventory.toLocaleString(),
+              change: '15件切れ',
+              icon: Package,
+              iconColor: '#7C3AED',
+              changeColor: '#DC2626'
+            },
+            {
+              title: '平均利益率',
+              value: `${avgProfit.toFixed(1)}%`,
+              change: '2.1%',
+              icon: Globe,
+              iconColor: '#4F46E5',
+              changeColor: '#059669'
+            }
+          ].map((kpi, index) => (
+            <div key={index} style={{
+              backgroundColor: 'white',
+              borderRadius: '0.5rem',
+              boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+              overflow: 'hidden'
+            }}>
+              <div style={{ padding: '1.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <div style={{ marginRight: '1.25rem' }}>
+                    <kpi.icon size={24} style={{ color: kpi.iconColor }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <dt style={{ 
+                      fontSize: '0.875rem', 
+                      fontWeight: '500', 
+                      color: '#6B7280',
+                      margin: '0 0 0.25rem 0'
+                    }}>
+                      {kpi.title}
+                    </dt>
+                    <dd style={{ 
+                      display: 'flex', 
+                      alignItems: 'baseline',
+                      margin: 0
+                    }}>
+                      <div style={{ 
+                        fontSize: '1.5rem', 
+                        fontWeight: '600', 
+                        color: '#111827' 
+                      }}>
+                        {kpi.value}
+                      </div>
+                      <div style={{ 
+                        marginLeft: '0.5rem', 
+                        display: 'flex', 
+                        alignItems: 'baseline', 
+                        fontSize: '0.875rem', 
+                        fontWeight: '600', 
+                        color: kpi.changeColor 
+                      }}>
+                        <TrendingUp size={16} style={{ marginRight: '0.25rem' }} />
+                        {kpi.change}
+                      </div>
+                    </dd>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* メインコンテンツエリア */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: '2fr 1fr', 
+          gap: '2rem' 
+        }}>
+          {/* 左カラム */}
+          <div>
+            {/* モール別パフォーマンス */}
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '0.5rem',
+              boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+              padding: '1.5rem',
+              marginBottom: '2rem'
+            }}>
+              <h3 style={{ 
+                fontSize: '1.125rem', 
+                fontWeight: '500', 
+                color: '#111827', 
+                marginBottom: '1rem' 
+              }}>
+                モール別パフォーマンス
+              </h3>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ 
+                  width: '100%', 
+                  borderCollapse: 'collapse',
+                  fontSize: '0.875rem'
+                }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#F9FAFB' }}>
+                      {['モール', '売上', '注文数', '在庫', '利益率', '状態'].map((header) => (
+                        <th key={header} style={{ 
+                          padding: '0.75rem 1.5rem', 
+                          textAlign: 'left', 
+                          fontSize: '0.75rem', 
+                          fontWeight: '500', 
+                          color: '#6B7280', 
+                          textTransform: 'uppercase',
+                          borderBottom: '1px solid #E5E7EB'
+                        }}>
+                          {header}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {marketplaceData.map((marketplace, index) => (
+                      <tr key={index} style={{ 
+                        backgroundColor: 'white',
+                        borderBottom: '1px solid #E5E7EB'
+                      }}>
+                        <td style={{ 
+                          padding: '1rem 1.5rem', 
+                          whiteSpace: 'nowrap' 
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <div style={{
+                              width: '12px',
+                              height: '12px',
+                              borderRadius: '50%',
+                              backgroundColor: marketplace.color,
+                              marginRight: '0.75rem'
+                            }}></div>
+                            <div style={{ 
+                              fontSize: '0.875rem', 
+                              fontWeight: '500', 
+                              color: '#111827' 
+                            }}>
+                              {marketplace.name}
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ 
+                          padding: '1rem 1.5rem', 
+                          fontSize: '0.875rem', 
+                          color: '#111827' 
+                        }}>
+                          {formatCurrency(marketplace.sales)}
+                        </td>
+                        <td style={{ 
+                          padding: '1rem 1.5rem', 
+                          fontSize: '0.875rem', 
+                          color: '#111827' 
+                        }}>
+                          {marketplace.orders.toLocaleString()}
+                        </td>
+                        <td style={{ 
+                          padding: '1rem 1.5rem', 
+                          fontSize: '0.875rem', 
+                          color: '#111827' 
+                        }}>
+                          {marketplace.inventory.toLocaleString()}
+                        </td>
+                        <td style={{ 
+                          padding: '1rem 1.5rem', 
+                          fontSize: '0.875rem', 
+                          color: '#111827' 
+                        }}>
+                          {marketplace.profit}%
+                        </td>
+                        <td style={{ padding: '1rem 1.5rem' }}>
+                          <span style={{
+                            display: 'inline-flex',
+                            padding: '0.125rem 0.5rem',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            borderRadius: '9999px',
+                            backgroundColor: marketplace.status === 'healthy' ? '#DCFCE7' : 
+                                           marketplace.status === 'warning' ? '#FEF3C7' : '#FEE2E2',
+                            color: marketplace.status === 'healthy' ? '#166534' : 
+                                   marketplace.status === 'warning' ? '#92400E' : '#991B1B'
+                          }}>
+                            {marketplace.status === 'healthy' ? '正常' : 
+                             marketplace.status === 'warning' ? '注意' : '緊急'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* 売上トレンドグラフ */}
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '0.5rem',
+              boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+              padding: '1.5rem'
+            }}>
+              <h3 style={{ 
+                fontSize: '1.125rem', 
+                fontWeight: '500', 
+                color: '#111827', 
+                marginBottom: '1rem' 
+              }}>
+                7日間売上トレンド
+              </h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={salesTrendData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis tickFormatter={(value) => `¥${(value / 1000)}K`} />
+                  <Tooltip formatter={(value) => [formatCurrency(value), '']} />
+                  <Legend />
+                  <Area type="monotone" dataKey="Amazon" stackId="1" stroke="#FF9900" fill="#FF9900" fillOpacity={0.8} />
+                  <Area type="monotone" dataKey="eBay" stackId="1" stroke="#E53238" fill="#E53238" fillOpacity={0.8} />
+                  <Area type="monotone" dataKey="Shopee" stackId="1" stroke="#EE4D2D" fill="#EE4D2D" fillOpacity={0.8} />
+                  <Area type="monotone" dataKey="Shopify" stackId="1" stroke="#7AB55C" fill="#7AB55C" fillOpacity={0.8} />
+                  <Area type="monotone" dataKey="Coupang" stackId="1" stroke="#5A67D8" fill="#5A67D8" fillOpacity={0.8} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* 右カラム */}
+          <div>
+            {/* 国別売上分析 */}
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '0.5rem',
+              boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+              padding: '1.5rem',
+              marginBottom: '2rem'
+            }}>
+              <h3 style={{ 
+                fontSize: '1.125rem', 
+                fontWeight: '500', 
+                color: '#111827', 
+                marginBottom: '1rem' 
+              }}>
+                国別売上分析
+              </h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={countryData}
+                    dataKey="sales"
+                    nameKey="country"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    fill="#8884d8"
+                    label={(entry) => `${entry.country}: ${entry.percentage}%`}
+                  >
+                    {countryData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={['#FF9900', '#E53238', '#EE4D2D', '#7AB55C'][index]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => formatCurrency(value)} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* 最近のアクティビティ */}
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '0.5rem',
+              boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+              padding: '1.5rem'
+            }}>
+              <h3 style={{ 
+                fontSize: '1.125rem', 
+                fontWeight: '500', 
+                color: '#111827', 
+                marginBottom: '1rem' 
+              }}>
+                最近のアクティビティ
+              </h3>
+              <div>
+                {[
+                  {
+                    icon: ShoppingCart,
+                    color: '#10B981',
+                    title: '新規注文 - Amazon US',
+                    description: '高額商品の大口注文',
+                    detail: '¥450,000 (3件)',
+                    time: '2分前'
+                  },
+                  {
+                    icon: AlertTriangle,
+                    color: '#F59E0B',
+                    title: '在庫アラート - Coupang KR',
+                    description: '人気商品の在庫が残り5個',
+                    detail: '',
+                    time: '15分前'
+                  },
+                  {
+                    icon: TrendingUp,
+                    color: '#3B82F6',
+                    title: '売上目標達成 - eBay US',
+                    description: '月次売上目標の110%達成',
+                    detail: '',
+                    time: '1時間前'
+                  }
+                ].map((activity, index) => (
+                  <div key={index} style={{ 
+                    position: 'relative', 
+                    paddingBottom: index < 2 ? '2rem' : '0' 
+                  }}>
+                    {index < 2 && (
+                      <div style={{
+                        position: 'absolute',
+                        left: '16px',
+                        top: '32px',
+                        width: '2px',
+                        height: '100%',
+                        backgroundColor: '#E5E7EB'
+                      }}></div>
+                    )}
+                    <div style={{ 
+                      position: 'relative', 
+                      display: 'flex', 
+                      gap: '0.75rem' 
+                    }}>
+                      <div style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        backgroundColor: activity.color,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '8px solid white'
+                      }}>
+                        <activity.icon size={16} color="white" />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div>
+                          <p style={{ 
+                            fontSize: '0.875rem', 
+                            color: '#6B7280',
+                            margin: 0
+                          }}>
+                            {activity.title}
+                          </p>
+                          <p style={{ 
+                            marginTop: '0.125rem', 
+                            fontSize: '0.875rem', 
+                            color: '#111827',
+                            margin: '0.125rem 0 0 0'
+                          }}>
+                            {activity.description}
+                          </p>
+                        </div>
+                        {activity.detail && (
+                          <div style={{ 
+                            marginTop: '0.5rem', 
+                            fontSize: '0.875rem', 
+                            color: '#374151' 
+                          }}>
+                            <p style={{ margin: 0 }}>{activity.detail}</p>
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ 
+                        flexShrink: 0, 
+                        fontSize: '0.875rem', 
+                        color: '#6B7280' 
+                      }}>
+                        {activity.time}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* クイックアクションボタン */}
+        <div style={{
+          marginTop: '2rem',
+          backgroundColor: 'white',
+          borderRadius: '0.5rem',
+          boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+          padding: '1.5rem'
+        }}>
+          <h3 style={{ 
+            fontSize: '1.125rem', 
+            fontWeight: '500', 
+            color: '#111827', 
+            marginBottom: '1rem' 
+          }}>
+            クイックアクション
+          </h3>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+            gap: '1rem' 
+          }}>
+            {[
+              { icon: Package, text: '在庫管理' },
+              { icon: ShoppingCart, text: '注文処理' },
+              { icon: DollarSign, text: '売上レポート' },
+              { icon: Settings, text: 'システム設定' }
+            ].map((action, index) => (
+              <button key={index} style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0.5rem 1rem',
+                border: '1px solid #D1D5DB',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                borderRadius: '0.375rem',
+                color: '#374151',
+                backgroundColor: 'white',
+                cursor: 'pointer'
+              }}>
+                <action.icon size={16} style={{ marginRight: '0.5rem' }} />
+                {action.text}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: .5;
+          }
+        }
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        
+        @media (max-width: 768px) {
+          div[style*="gridTemplateColumns: '2fr 1fr'"] {
+            grid-template-columns: 1fr !important;
+          }
+          div[style*="gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))'"] {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default MultiMarketplaceDashboard;

@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ポケモンカード コンテンツ自動生成システム</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card-hover:hover { transform: translateY(-2px); transition: all 0.3s ease; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- ヘッダー -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-magic text-2xl"></i>
+                    <h1 class="text-2xl font-bold">ポケモンカード コンテンツ自動生成システム</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm">最終更新: 2025/09/20 19:45</span>
+                    <button class="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg">
+                        <i class="fas fa-cog mr-2"></i>設定
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ナビゲーション -->
+    <nav class="bg-white shadow-sm border-b">
+        <div class="container mx-auto px-6">
+            <div class="flex space-x-8">
+                <button class="tab-button py-4 px-2 border-b-2 border-blue-500 text-blue-600 font-medium" onclick="showTab('dashboard')">
+                    <i class="fas fa-chart-line mr-2"></i>ダッシュボード
+                </button>
+                <button class="tab-button py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700" onclick="showTab('cards')">
+                    <i class="fas fa-search mr-2"></i>カード詳細分析
+                </button>
+                <button class="tab-button py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700" onclick="showTab('content')">
+                    <i class="fas fa-robot mr-2"></i>AI コンテンツ生成
+                </button>
+                <button class="tab-button py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700" onclick="showTab('sources')">
+                    <i class="fas fa-database mr-2"></i>収集管理
+                </button>
+                <button class="tab-button py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700" onclick="showTab('publishing')">
+                    <i class="fas fa-upload mr-2"></i>自動投稿
+                </button>
+                <button class="tab-button py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700" onclick="showTab('analytics')">
+                    <i class="fas fa-chart-bar mr-2"></i>分析
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- メインコンテンツ -->
+    <main class="container mx-auto px-6 py-8">
+        <!-- ダッシュボードタブ -->
+        <div id="dashboard" class="tab-content active">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-8">システム概要ダッシュボード</h2>
+            
+            <!-- KPI カード -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-lg shadow card-hover">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-blue-100 text-blue-500">
+                            <i class="fas fa-eye text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">総記事投稿数</p>
+                            <p class="text-2xl font-semibold text-gray-900">1,247</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow card-hover">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-green-100 text-green-500">
+                            <i class="fas fa-chart-line text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">月間PV</p>
+                            <p class="text-2xl font-semibold text-gray-900">156,890</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow card-hover">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-yellow-100 text-yellow-500">
+                            <i class="fas fa-dollar-sign text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">月間収益</p>
+                            <p class="text-2xl font-semibold text-gray-900">¥89,234</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow card-hover">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-red-100 text-red-500">
+                            <i class="fas fa-tasks text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">承認待ち</p>
+                            <p class="text-2xl font-semibold text-gray-900">12</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- システム状態 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">自動収集状況</h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">ポケモンカード価格データ</span>
+                            <span class="text-green-600"><i class="fas fa-check-circle mr-1"></i>正常</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">YouTube コンテンツ収集</span>
+                            <span class="text-green-600"><i class="fas fa-check-circle mr-1"></i>正常</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">ブログ記事収集</span>
+                            <span class="text-yellow-600"><i class="fas fa-exclamation-triangle mr-1"></i>一部エラー</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">画像自動取得</span>
+                            <span class="text-green-600"><i class="fas fa-check-circle mr-1"></i>正常</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">今日の活動</h3>
+                    <div class="space-y-3">
+                        <div class="text-sm">
+                            <span class="font-medium">09:30</span> - 日本語ブログ記事 3件自動投稿
+                        </div>
+                        <div class="text-sm">
+                            <span class="font-medium">12:00</span> - YouTube動画 1本投稿完了
+                        </div>
+                        <div class="text-sm">
+                            <span class="font-medium">15:45</span> - 中国語記事 2件翻訳投稿
+                        </div>
+                        <div class="text-sm">
+                            <span class="font-medium">18:20</span> - SNS投稿 12件実行
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- カード詳細分析タブ -->
+        <div id="cards" class="tab-content">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-2xl font-semibold text-gray-900">カード詳細分析システム</h2>
+                <div class="flex space-x-3">
+                    <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg" onclick="bulkDataCollection()">
+                        <i class="fas fa-download mr-2"></i>一括データ取得
+                    </button>
+                    <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg" onclick="autoImageDownload()">
+                        <i class="fas fa-images mr-2"></i>画像自動取得
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 検索・フィルター -->
+            <div class="bg-white p-6 rounded-lg shadow mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">カード名</label>
+                        <input type="text" placeholder="例: ピカチュウ" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">シリーズ</label>
+                        <select class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                            <option>全シリーズ</option>
+                            <option>ベースセット</option>
+                            <option>プロモーション</option>
+                            <option>最新弾</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">レアリティ</label>
+                        <select class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                            <option>全レアリティ</option>
+                            <option>RR</option>
+                            <option>RRR</option>
+                            <option>UR</option>
+                            <option>SR</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">価格帯</label>
+                        <select class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                            <option>全価格帯</option>
+                            <option>~1,000円</option>
+                            <option>1,000~10,000円</option>
+                            <option>10,000円~</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex space-x-3">
+                    <button class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg" onclick="searchCards()">
+                        <i class="fas fa-search mr-2"></i>検索
+                    </button>
+                    <button class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg" onclick="resetFilters()">
+                        <i class="fas fa-undo mr-2"></i>リセット
+                    </button>
+                </div>
+            </div>
+
+            <!-- カード一覧 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-white rounded-lg shadow card-hover">
+                    <div class="p-4">
+                        <div class="flex items-center space-x-4 mb-4">
+                            <img src="https://via.placeholder.com/80x120/4F46E5/FFFFFF?text=ピカチュウ" alt="ピカチュウ" class="rounded-lg">
+                            <div>
+                                <h3 class="font-semibold text-lg">ピカチュウ VMAX</h3>
+                                <p class="text-sm text-gray-600">ベースセット - RRR</p>
+                                <p class="text-lg font-bold text-blue-600">¥12,800</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-sm mb-4">
+                            <div class="text-center">
+                                <p class="text-gray-500">24h</p>
+                                <p class="text-green-600 font-medium">+5.2%</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-gray-500">7d</p>
+                                <p class="text-red-600 font-medium">-2.1%</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-gray-500">30d</p>
+                                <p class="text-green-600 font-medium">+15.8%</p>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded text-sm" onclick="analyzeCard('pikachu_vmax')">
+                                詳細分析
+                            </button>
+                            <button class="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-3 rounded text-sm" onclick="generateContent('pikachu_vmax')">
+                                記事生成
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 他のカードも同様に表示 -->
+                <div class="bg-white rounded-lg shadow card-hover">
+                    <div class="p-4">
+                        <div class="flex items-center space-x-4 mb-4">
+                            <img src="https://via.placeholder.com/80x120/EF4444/FFFFFF?text=リザードン" alt="リザードン" class="rounded-lg">
+                            <div>
+                                <h3 class="font-semibold text-lg">リザードン V</h3>
+                                <p class="text-sm text-gray-600">プロモーション - SR</p>
+                                <p class="text-lg font-bold text-blue-600">¥8,500</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-sm mb-4">
+                            <div class="text-center">
+                                <p class="text-gray-500">24h</p>
+                                <p class="text-red-600 font-medium">-1.5%</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-gray-500">7d</p>
+                                <p class="text-green-600 font-medium">+3.7%</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-gray-500">30d</p>
+                                <p class="text-green-600 font-medium">+8.2%</p>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded text-sm" onclick="analyzeCard('charizard_v')">
+                                詳細分析
+                            </button>
+                            <button class="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-3 rounded text-sm" onclick="generateContent('charizard_v')">
+                                記事生成
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI コンテンツ生成タブ -->
+        <div id="content" class="tab-content">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-8">AI コンテンツ生成システム</h2>
+            
+            <!-- 生成モード選択 -->
+            <div class="bg-white p-6 rounded-lg shadow mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">生成モード選択</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="border border-gray-300 rounded-lg p-4 cursor-pointer hover:border-blue-500" onclick="selectMode('auto')">
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-magic text-blue-500 mr-2"></i>
+                            <h4 class="font-medium">完全自動モード</h4>
+                        </div>
+                        <p class="text-sm text-gray-600">APIを使用した完全自動生成</p>
+                        <p class="text-xs text-gray-500 mt-1">月額: $50-200</p>
+                    </div>
+                    
+                    <div class="border border-gray-300 rounded-lg p-4 cursor-pointer hover:border-green-500" onclick="selectMode('manual')">
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-hands text-green-500 mr-2"></i>
+                            <h4 class="font-medium">手動支援モード</h4>
+                        </div>
+                        <p class="text-sm text-gray-600">ChatGPT Webを使用</p>
+                        <p class="text-xs text-gray-500 mt-1">月額: $20</p>
+                    </div>
+                    
+                    <div class="border border-gray-300 rounded-lg p-4 cursor-pointer hover:border-purple-500" onclick="selectMode('hybrid')">
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-balance-scale text-purple-500 mr-2"></i>
+                            <h4 class="font-medium">ハイブリッドモード</h4>
+                        </div>
+                        <p class="text-sm text-gray-600">重要分析はAPI、その他は手動</p>
+                        <p class="text-xs text-gray-500 mt-1">月額: $30-80</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 手動支援ツール -->
+            <div class="bg-white p-6 rounded-lg shadow mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">手動支援ツール</h3>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-medium text-gray-900 mb-3">データ整形エリア</h4>
+                        <textarea 
+                            id="rawData" 
+                            placeholder="ここに価格データや分析したい情報を入力してください..."
+                            class="w-full h-32 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                        ></textarea>
+                        <div class="flex space-x-3 mt-3">
+                            <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm" onclick="formatForChatGPT()">
+                                <i class="fas fa-magic mr-1"></i>ChatGPT用に整形
+                            </button>
+                            <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm" onclick="openAIInterface()">
+                                <i class="fas fa-external-link-alt mr-1"></i>AI画面を開く
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-gray-900 mb-3">生成プロンプト</h4>
+                        <div class="bg-gray-50 p-4 rounded-lg text-sm">
+                            <p class="mb-2"><strong>日本語ブログ記事用プロンプト:</strong></p>
+                            <p class="text-gray-700 mb-4">「上記のデータを基に、SEO最適化された3000文字のポケモンカード相場分析記事を作成してください。ターゲット：投資初心者〜中級者、キーワード：「ポケカ 相場」「投資」「価格予測」を自然に含める...」</p>
+                            
+                            <p class="mb-2"><strong>YouTube台本用プロンプト:</strong></p>
+                            <p class="text-gray-700">「上記のデータを基に、10分程度のYouTube動画台本を作成してください。構成：導入30秒、メイン解説8分、まとめ90秒...」</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- コンテンツ種別選択 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-white p-6 rounded-lg shadow card-hover">
+                    <div class="text-center">
+                        <i class="fas fa-blog text-blue-500 text-3xl mb-4"></i>
+                        <h3 class="font-semibold text-lg mb-2">ブログ記事</h3>
+                        <p class="text-sm text-gray-600 mb-4">日英中西 4言語対応</p>
+                        <button class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg" onclick="generateBlogContent()">
+                            記事生成
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow card-hover">
+                    <div class="text-center">
+                        <i class="fab fa-youtube text-red-500 text-3xl mb-4"></i>
+                        <h3 class="font-semibold text-lg mb-2">YouTube動画</h3>
+                        <p class="text-sm text-gray-600 mb-4">台本＋自動動画生成</p>
+                        <button class="w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg" onclick="generateYouTubeContent()">
+                            動画生成
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow card-hover">
+                    <div class="text-center">
+                        <i class="fas fa-share-alt text-green-500 text-3xl mb-4"></i>
+                        <h3 class="font-semibold text-lg mb-2">SNS投稿</h3>
+                        <p class="text-sm text-gray-600 mb-4">Twitter/Instagram/TikTok</p>
+                        <button class="w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg" onclick="generateSNSContent()">
+                            SNS生成
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow card-hover">
+                    <div class="text-center">
+                        <i class="fas fa-globe text-purple-500 text-3xl mb-4"></i>
+                        <h3 class="font-semibold text-lg mb-2">全プラットフォーム</h3>
+                        <p class="text-sm text-gray-600 mb-4">一括生成・投稿</p>
+                        <button class="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 rounded-lg" onclick="generateAllContent()">
+                            一括生成
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 収集管理タブ -->
+        <div id="sources" class="tab-content">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-2xl font-semibold text-gray-900">コンテンツ収集管理システム</h2>
+                <div class="flex space-x-3">
+                    <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg" onclick="addNewSource()">
+                        <i class="fas fa-plus mr-2"></i>新規ソース追加
+                    </button>
+                    <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg" onclick="bulkCollectContent()">
+                        <i class="fas fa-download mr-2"></i>一括収集実行
+                    </button>
+                </div>
+            </div>
+
+            <!-- 収集ソース管理 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <!-- YouTube収集源 -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">YouTube収集源</h3>
+                        <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">12チャンネル</span>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="border rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center">
+                                    <i class="fab fa-youtube text-red-500 mr-2"></i>
+                                    <span class="font-medium">ポケカチャンネル A</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-green-600 text-sm">✓ アクティブ</span>
+                                    <button class="text-blue-600 hover:text-blue-800" onclick="editSource('youtube', 1)">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="text-sm text-gray-600">最終収集: 2時間前 | 新着動画: 3本</p>
+                            <div class="flex space-x-2 mt-2">
+                                <button class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded" onclick="collectFromSource('youtube', 1)">
+                                    即座に収集
+                                </button>
+                                <button class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded" onclick="analyzeSource('youtube', 1)">
+                                    台本に活用
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="border rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center">
+                                    <i class="fab fa-youtube text-red-500 mr-2"></i>
+                                    <span class="font-medium">ポケカ投資チャンネル</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-green-600 text-sm">✓ アクティブ</span>
+                                    <button class="text-blue-600 hover:text-blue-800" onclick="editSource('youtube', 2)">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="text-sm text-gray-600">最終収集: 6時間前 | 新着動画: 1本</p>
+                            <div class="flex space-x-2 mt-2">
+                                <button class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded" onclick="collectFromSource('youtube', 2)">
+                                    即座に収集
+                                </button>
+                                <button class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded" onclick="analyzeSource('youtube', 2)">
+                                    台本に活用
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- ブログ収集源 -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">ブログ収集源</h3>
+                        <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">8サイト</span>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="border rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center">
+                                    <i class="fas fa-globe text-blue-500 mr-2"></i>
+                                    <span class="font-medium">pokeca-chart.com</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-green-600 text-sm">✓ アクティブ</span>
+                                    <button class="text-blue-600 hover:text-blue-800" onclick="editSource('blog', 1)">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="text-sm text-gray-600">最終収集: 1時間前 | 新着記事: 2件</p>
+                            <div class="flex space-x-2 mt-2">
+                                <button class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded" onclick="collectFromSource('blog', 1)">
+                                    即座に収集
+                                </button>
+                                <button class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded" onclick="analyzeSource('blog', 1)">
+                                    記事生成に活用
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 収集コンテンツ一覧 -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="p-6 border-b">
+                    <h3 class="text-lg font-semibold text-gray-900">収集済みコンテンツ一覧</h3>
+                    <div class="flex space-x-4 mt-4">
+                        <select class="border border-gray-300 rounded-lg px-3 py-2">
+                            <option>全ソース</option>
+                            <option>YouTube</option>
+                            <option>ブログ</option>
+                        </select>
+                        <select class="border border-gray-300 rounded-lg px-3 py-2">
+                            <option>全期間</option>
+                            <option>今日</option>
+                            <option>1週間</option>
+                            <option>1ヶ月</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-4 border rounded-lg">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-3 mb-2">
+                                    <span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">YouTube</span>
+                                    <span class="text-sm text-gray-500">2024-09-20 18:30</span>
+                                </div>
+                                <h4 class="font-semibold text-gray-900">【ポケカ相場】ピカチュウVMAX最新価格分析！今が買い時？</h4>
+                                <p class="text-sm text-gray-600 mt-1">チャンネル名：ポケカ投資TV | 再生回数：12,543回</p>
+                            </div>
+                            <div class="flex flex-col space-y-2 ml-4">
+                                <button class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm" onclick="useForScript(1)">
+                                    台本に活用
+                                </button>
+                                <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm" onclick="analyzeContent(1)">
+                                    内容分析
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-4 border rounded-lg">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-3 mb-2">
+                                    <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">ブログ</span>
+                                    <span class="text-sm text-gray-500">2024-09-20 15:45</span>
+                                </div>
+                                <h4 class="font-semibold text-gray-900">ポケモンカード市場動向レポート：9月第3週</h4>
+                                <p class="text-sm text-gray-600 mt-1">出典：pokeca-chart.com | PV：8,912</p>
+                            </div>
+                            <div class="flex flex-col space-y-2 ml-4">
+                                <button class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm" onclick="useForArticle(2)">
+                                    記事生成
+                                </button>
+                                <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm" onclick="analyzeContent(2)">
+                                    内容分析
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 自動投稿タブ -->
+        <div id="publishing" class="tab-content">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-8">自動投稿管理システム</h2>
+            
+            <!-- 投稿プラットフォーム設定 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">投稿プラットフォーム設定</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-3 border rounded-lg">
+                            <div class="flex items-center">
+                                <i class="fab fa-wordpress text-blue-500 mr-3 text-xl"></i>
+                                <div>
+                                    <span class="font-medium">WordPress (日本語)</span>
+                                    <p class="text-sm text-gray-500">pokemoncard-japan.com</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-green-600 text-sm">✓ 接続中</span>
+                                <button class="text-blue-600 hover:text-blue-800" onclick="configPlatform('wp_jp')">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-3 border rounded-lg">
+                            <div class="flex items-center">
+                                <i class="fab fa-wordpress text-blue-500 mr-3 text-xl"></i>
+                                <div>
+                                    <span class="font-medium">WordPress (中国語)</span>
+                                    <p class="text-sm text-gray-500">pokemoncard-china.com</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-green-600 text-sm">✓ 接続中</span>
+                                <button class="text-blue-600 hover:text-blue-800" onclick="configPlatform('wp_cn')">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-3 border rounded-lg">
+                            <div class="flex items-center">
+                                <i class="fab fa-youtube text-red-500 mr-3 text-xl"></i>
+                                <div>
+                                    <span class="font-medium">YouTube</span>
+                                    <p class="text-sm text-gray-500">ポケカ投資チャンネル</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-green-600 text-sm">✓ 接続中</span>
+                                <button class="text-blue-600 hover:text-blue-800" onclick="configPlatform('youtube')">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-3 border rounded-lg">
+                            <div class="flex items-center">
+                                <i class="fab fa-twitter text-blue-400 mr-3 text-xl"></i>
+                                <div>
+                                    <span class="font-medium">Twitter/X</span>
+                                    <p class="text-sm text-gray-500">@pokemoncard_news</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-yellow-600 text-sm">⚠ 要設定</span>
+                                <button class="text-blue-600 hover:text-blue-800" onclick="configPlatform('twitter')">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 投稿スケジュール -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">自動投稿スケジュール</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">日本語ブログ</label>
+                            <div class="flex items-center space-x-2">
+                                <select class="border border-gray-300 rounded-lg px-3 py-2">
+                                    <option>毎日</option>
+                                    <option>平日のみ</option>
+                                    <option>週3回</option>
+                                </select>
+                                <input type="time" value="09:00" class="border border-gray-300 rounded-lg px-3 py-2">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">中国語ブログ</label>
+                            <div class="flex items-center space-x-2">
+                                <select class="border border-gray-300 rounded-lg px-3 py-2">
+                                    <option>毎日</option>
+                                    <option>平日のみ</option>
+                                    <option>週3回</option>
+                                </select>
+                                <input type="time" value="14:00" class="border border-gray-300 rounded-lg px-3 py-2">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">YouTube動画</label>
+                            <div class="flex items-center space-x-2">
+                                <select class="border border-gray-300 rounded-lg px-3 py-2">
+                                    <option>週2回</option>
+                                    <option>週1回</option>
+                                    <option>毎日</option>
+                                </select>
+                                <input type="time" value="18:00" class="border border-gray-300 rounded-lg px-3 py-2">
+                            </div>
+                        </div>
+                        
+                        <div class="pt-4">
+                            <button class="w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg" onclick="updateSchedule()">
+                                スケジュール更新
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 予約投稿一覧 -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="p-6 border-b">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-gray-900">予約投稿一覧</h3>
+                        <div class="flex space-x-3">
+                            <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg" onclick="addScheduledPost()">
+                                <i class="fas fa-plus mr-2"></i>予約投稿追加
+                            </button>
+                            <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg" onclick="bulkSchedule()">
+                                <i class="fas fa-calendar mr-2"></i>一括スケジュール
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-4 border rounded-lg">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-3 mb-2">
+                                    <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">公開済み</span>
+                                    <span class="text-sm text-gray-500">2024-09-20 09:00</span>
+                                </div>
+                                <h4 class="font-semibold text-gray-900">ピカチュウVMAX価格分析：9月相場レポート</h4>
+                                <p class="text-sm text-gray-600 mt-1">投稿先: 日本語ブログ | PV: 2,156</p>
+                                <div class="flex items-center space-x-4 text-xs text-gray-500 mt-2">
+                                    <span>自動生成: AI</span>
+                                    <span>画像: 3枚自動挿入</span>
+                                    <span>SEO最適化: 完了</span>
+                                </div>
+                            </div>
+                            <div class="flex flex-col space-y-2 ml-4">
+                                <button class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm" onclick="viewPost(1)">
+                                    投稿確認
+                                </button>
+                                <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm" onclick="analyzePerformance(1)">
+                                    成果分析
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-4 border rounded-lg">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-3 mb-2">
+                                    <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">予約済み</span>
+                                    <span class="text-sm text-gray-500">2024-09-21 09:00</span>
+                                </div>
+                                <h4 class="font-semibold text-gray-900">リザードンV 相場予測：今後の投資戦略</h4>
+                                <p class="text-sm text-gray-600 mt-1">投稿先: 日本語ブログ | ステータス: 生成完了</p>
+                                <div class="flex items-center space-x-4 text-xs text-gray-500 mt-2">
+                                    <span>自動生成: AI</span>
+                                    <span>承認状況: 承認済み</span>
+                                    <span>画像: 準備完了</span>
+                                </div>
+                            </div>
+                            <div class="flex flex-col space-y-2 ml-4">
+                                <button class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm" onclick="previewPost(2)">
+                                    プレビュー
+                                </button>
+                                <button class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm" onclick="editPost(2)">
+                                    編集
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-4 border rounded-lg">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-3 mb-2">
+                                    <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">翻訳中</span>
+                                    <span class="text-sm text-gray-500">2024-09-22 10:00</span>
+                                </div>
+                                <h4 class="font-semibold text-gray-900">皮卡丘促销卡价格分析：2024年9月市场报告</h4>
+                                <p class="text-sm text-gray-600 mt-1">皮卡丘促销卡在本周的价格变动显示...</p>
+                                <div class="flex items-center space-x-4 text-xs text-gray-500 mt-2">
+                                    <span>投稿先: 中国語ブログ</span>
+                                    <span>ステータス: 自動翻訳処理中</span>
+                                    <span>進捗: 60%</span>
+                                </div>
+                            </div>
+                            <div class="flex flex-col space-y-2 ml-4">
+                                <button class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm" onclick="checkTranslationProgress(3)">
+                                    進捗確認
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 分析タブ -->
+        <div id="analytics" class="tab-content">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-8">パフォーマンス分析</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">月間収益推移</h3>
+                    <div class="h-64">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">プラットフォーム別パフォーマンス</h3>
+                    <div class="h-64">
+                        <canvas id="platformChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // タブ切り替え機能
+        function showTab(tabName) {
+            // 全てのタブコンテンツを非表示
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 全てのタブボタンを非アクティブ化
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('border-blue-500', 'text-blue-600');
+                button.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            // 選択されたタブを表示
+            document.getElementById(tabName).classList.add('active');
+            
+            // 選択されたタブボタンをアクティブ化
+            event.target.classList.remove('border-transparent', 'text-gray-500');
+            event.target.classList.add('border-blue-500', 'text-blue-600');
+        }
+
+        // カード検索・分析機能
+        function searchCards() {
+            alert('カード検索を実行しています...\n\n検索条件:\n- カード名: ピカチュウ\n- シリーズ: 全シリーズ\n- レアリティ: 全レアリティ\n- 価格帯: 全価格帯');
+        }
+
+        function resetFilters() {
+            alert('フィルターをリセットしました');
+        }
+
+        function analyzeCard(cardId) {
+            alert(`${cardId} の詳細分析を開始します...\n\n分析項目:\n- 価格履歴分析\n- 市場トレンド予測\n- 投資推奨度評価\n- 競合カード比較`);
+        }
+
+        function generateContent(cardId) {
+            alert(`${cardId} のコンテンツ生成を開始します...\n\n生成予定:\n- 分析記事 (日英中西)\n- YouTube台本\n- SNS投稿文`);
+        }
+
+        // データ収集機能
+        function bulkDataCollection() {
+            alert('一括データ取得を開始します...\n\n取得対象:\n- 全登録カードの最新価格\n- 取引履歴データ\n- 市場動向情報\n\n予想時間: 15-20分');
+        }
+
+        function autoImageDownload() {
+            alert('画像自動取得を開始します...\n\n取得対象:\n- 公式カード画像\n- プロモーション画像\n- 商品パッケージ画像\n\n著作権に配慮した取得を実行します');
+        }
+
+        // AI コンテンツ生成機能
+        function selectMode(mode) {
+            const modes = {
+                'auto': '完全自動モード',
+                'manual': '手動支援モード', 
+                'hybrid': 'ハイブリッドモード'
+            };
+            alert(`${modes[mode]} を選択しました。\n\nこのモードでコンテンツ生成を開始します。`);
+        }
+
+        function formatForChatGPT() {
+            const rawData = document.getElementById('rawData').value;
+            if (!rawData.trim()) {
+                alert('データを入力してください');
+                return;
+            }
+            
+            alert('データをChatGPT用に整形しました！\n\n整形内容:\n- 不要な文字の除去\n- プロンプト最適化\n- データ構造化\n\nクリップボードにコピーされました');
+        }
+
+        function openAIInterface() {
+            alert('AI Web画面を新しいタブで開きます...\n\n対象サービス:\n- ChatGPT\n- Claude\n- Perplexity\n\nデータは既にクリップボードにあります！');
+        }
+
+        function generateBlogContent() {
+            alert('ブログ記事生成を開始します...\n\n生成対象:\n- 日本語記事 (SEO最適化)\n- 英語記事 (海外向け)\n- 中国語記事 (中国市場向け)\n- スペイン語記事 (南米向け)\n\n予想時間: 10-15分');
+        }
+
+        function generateYouTubeContent() {
+            alert('YouTube動画生成を開始します...\n\n生成プロセス:\n1. 台本生成 (10分構成)\n2. AI音声合成\n3. 画像・動画素材取得\n4. 自動編集\n5. サムネイル作成\n\n予想時間: 30-45分');
+        }
+
+        function generateSNSContent() {
+            alert('SNS投稿生成を開始します...\n\n生成対象:\n- Twitter投稿 (280文字最適化)\n- Instagram投稿 (ハッシュタグ込み)\n- TikTok投稿 (ショート動画対応)\n\n予想時間: 5-10分');
+        }
+
+        function generateAllContent() {
+            alert('全プラットフォーム向けコンテンツ生成を開始...\n\n生成対象:\n- ブログ記事 x4言語\n- YouTube台本 x2チャンネル\n- SNS投稿 x各プラットフォーム\n\n予想時間: 20-30分\n完了後、各プラットフォームに自動投稿されます！');
+        }
+
+        // 収集管理機能
+        function addNewSource() {
+            alert('新規ソース追加画面を開きます...\n\n追加可能ソース:\n- YouTubeチャンネル\n- ブログ・ニュースサイト\n- SNSアカウント\n- 価格比較サイト');
+        }
+
+        function bulkCollectContent() {
+            alert('一括コンテンツ収集を開始します...\n\n収集対象:\n- 全登録YouTubeチャンネルの新着動画\n- 全登録ブログサイトの新着記事\n- トレンドキーワード分析\n\n予想時間: 10-15分');
+        }
+
+        function editSource(type, id) {
+            alert(`${type} ソース (ID: ${id}) の設定を編集します`);
+        }
+
+        function collectFromSource(type, id) {
+            alert(`${type} ソース (ID: ${id}) から即座にコンテンツを収集します`);
+        }
+
+        function analyzeSource(type, id) {
+            alert(`${type} ソース (ID: ${id}) のコンテンツを分析し、台本・記事生成に活用します`);
+        }
+
+        function useForScript(contentId) {
+            alert(`コンテンツ (ID: ${contentId}) を台本生成に活用します`);
+        }
+
+        function useForArticle(contentId) {
+            alert(`コンテンツ (ID: ${contentId}) を記事生成に活用します`);
+        }
+
+        function analyzeContent(contentId) {
+            alert(`コンテンツ (ID: ${contentId}) の詳細分析を実行します`);
+        }
+
+        // 自動投稿機能
+        function configPlatform(platform) {
+            const platforms = {
+                'wp_jp': '日本語WordPress',
+                'wp_cn': '中国語WordPress',
+                'youtube': 'YouTube',
+                'twitter': 'Twitter/X'
+            };
+            alert(`${platforms[platform]} の設定画面を開きます...\n\n設定項目:\n- API接続情報\n- 投稿フォーマット\n- 自動化設定`);
+        }
+
+        function updateSchedule() {
+            alert('投稿スケジュールを更新しました！\n\n新しいスケジュール:\n- 日本語ブログ: 毎日 09:00\n- 中国語ブログ: 毎日 14:00\n- YouTube動画: 週2回 18:00');
+        }
+
+        function addScheduledPost() {
+            alert('予約投稿追加画面を開きます...\n\n設定項目:\n- 投稿先プラットフォーム\n- 公開日時\n- コンテンツタイプ\n- 自動生成設定');
+        }
+
+        function bulkSchedule() {
+            alert('一括スケジュール設定を開始します...\n\n設定内容:\n- 1週間分の投稿を自動スケジュール\n- プラットフォーム別最適時間に配信\n- コンテンツタイプの自動振り分け');
+        }
+
+        function viewPost(postId) {
+            alert(`投稿 (ID: ${postId}) を確認します`);
+            window.open('#', '_blank');
+        }
+
+        function analyzePerformance(postId) {
+            alert(`投稿 (ID: ${postId}) のパフォーマンス分析:\n\n- PV数: 2,156\n- 滞在時間: 3分28秒\n- 離脱率: 45%\n- コンバージョン率: 2.1%`);
+        }
+
+        function previewPost(postId) {
+            alert(`投稿 (ID: ${postId}) のプレビューを表示します`);
+        }
+
+        function editPost(postId) {
+            alert(`投稿 (ID: ${postId}) の編集画面を開きます`);
+        }
+
+        function checkTranslationProgress(postId) {
+            alert(`翻訳進捗 (ID: ${postId}):\n\n進捗: 60%\n- 基本翻訳: 完了\n- 専門用語調整: 進行中\n- SEO最適化: 待機中\n\n完了予定: 約15分後`);
+        }
+
+        // 初期化時にチャートを描画
+        document.addEventListener('DOMContentLoaded', function() {
+            // 収益チャート
+            const revenueCtx = document.getElementById('revenueChart');
+            if (revenueCtx) {
+                new Chart(revenueCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月'],
+                        datasets: [{
+                            label: '月間収益 (¥)',
+                            data: [45000, 52000, 48000, 61000, 55000, 67000, 72000, 68000, 89234],
+                            borderColor: '#3B82F6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '¥' + value.toLocaleString();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // プラットフォーム別パフォーマンスチャート
+            const platformCtx = document.getElementById('platformChart');
+            if (platformCtx) {
+                new Chart(platformCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['日本語ブログ', 'YouTube', '中国語ブログ', 'SNS'],
+                        datasets: [{
+                            data: [45, 25, 20, 10],
+                            backgroundColor: [
+                                '#3B82F6',
+                                '#EF4444', 
+                                '#10B981',
+                                '#8B5CF6'
+                            ],
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

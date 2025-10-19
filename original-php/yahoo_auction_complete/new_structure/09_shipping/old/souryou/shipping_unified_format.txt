@@ -1,0 +1,57 @@
+# 送料計算システム統一CSVフォーマット
+# FedEx・DHL・日本郵便の料金体系を分析して設計
+# ファイル名例: fedex_rates.csv, dhl_rates.csv, jppost_rates.csv
+
+# カラム定義
+carrier_code,service_type,origin_country,dest_zone,weight_min_g,weight_max_g,length_max_cm,width_max_cm,height_max_cm,base_rate_usd,fuel_surcharge_rate,delivery_days_min,delivery_days_max,tracking_available,insurance_available,last_updated
+
+# サンプルデータ - FedEx International Economy
+fedex_intl_economy,economy,JP,zone1,0,500,60,60,60,24.50,0.15,3,5,1,1,2024-12-15
+fedex_intl_economy,economy,JP,zone1,501,1000,60,60,60,28.75,0.15,3,5,1,1,2024-12-15
+fedex_intl_economy,economy,JP,zone1,1001,2000,60,60,60,35.20,0.15,3,5,1,1,2024-12-15
+
+# サンプルデータ - FedEx International Priority
+fedex_intl_priority,priority,JP,zone1,0,500,60,60,60,42.80,0.15,1,3,1,1,2024-12-15
+fedex_intl_priority,priority,JP,zone1,501,1000,60,60,60,48.90,0.15,1,3,1,1,2024-12-15
+
+# サンプルデータ - DHL Express Worldwide
+dhl_express,express,JP,zone1,0,500,61,46,46,38.60,0.12,1,3,1,1,2024-12-15
+dhl_express,express,JP,zone1,501,1000,61,46,46,44.20,0.12,1,3,1,1,2024-12-15
+dhl_express,express,JP,zone2,0,500,61,46,46,42.30,0.12,2,4,1,1,2024-12-15
+
+# サンプルデータ - 日本郵便 EMS
+jppost_ems,ems,JP,zone1,0,500,150,150,150,28.50,0.00,3,6,1,1,2024-12-15
+jppost_ems,ems,JP,zone1,501,1000,150,150,150,35.20,0.00,3,6,1,1,2024-12-15
+jppost_ems,ems,JP,zone2,0,500,150,150,150,31.80,0.00,3,7,1,1,2024-12-15
+
+# サンプルデータ - 日本郵便 小型包装物
+jppost_small,small_packet,JP,zone1,0,500,60,60,60,12.80,0.00,7,14,0,0,2024-12-15
+jppost_small,small_packet,JP,zone1,501,1000,60,60,60,15.60,0.00,7,14,0,0,2024-12-15
+
+# サンプルデータ - 日本郵便 書留
+jppost_registered,registered,JP,zone1,0,500,90,90,90,24.70,0.00,5,10,1,1,2024-12-15
+jppost_registered,registered,JP,zone1,501,1000,90,90,90,29.40,0.00,5,10,1,1,2024-12-15
+
+# Zone定義
+# zone1: アメリカ本土48州
+# zone2: カナダ
+# zone3: 中南米
+# zone4: ヨーロッパ
+# zone5a: 日本・韓国・シンガポール
+# zone5b: 中国・台湾・香港
+# zone6: オセアニア
+# zone7: 中東・アフリカ
+
+# カラム説明
+# carrier_code: 配送会社サービスコード（fedex_intl_economy, dhl_express, jppost_ems等）
+# service_type: サービス種別（economy, priority, express, ems, small_packet, registered）
+# origin_country: 発送国（JP固定）
+# dest_zone: 配送先ゾーン（zone1-zone7）
+# weight_min_g/weight_max_g: 重量範囲（グラム）
+# length_max_cm/width_max_cm/height_max_cm: 最大寸法制限（センチメートル）
+# base_rate_usd: 基本料金（USD）
+# fuel_surcharge_rate: 燃油サーチャージ率（0.15 = 15%）
+# delivery_days_min/max: 配送日数範囲
+# tracking_available: 追跡可能（1=可能, 0=不可）
+# insurance_available: 保険対応（1=対応, 0=非対応）
+# last_updated: 最終更新日（YYYY-MM-DD）

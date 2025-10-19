@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DDP/DDU統合利益計算システム</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 既存のCSSスタイルに追加 */
+        .dual-pricing-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .pricing-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .pricing-card.ddp {
+            border-color: #4CAF50;
+        }
+
+        .pricing-card.ddu {
+            border-color: #2196F3;
+        }
+
+        .pricing-card.recommended {
+            border-color: #FF9800;
+            background: linear-gradient(135deg, #fff3e0 0%, #ffffff 100%);
+        }
+
+        .pricing-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .pricing-type {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .market-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .market-badge.us {
+            background: #1976d2;
+            color: white;
+        }
+
+        .market-badge.international {
+            background: #388e3c;
+            color: white;
+        }
+
+        .price-display {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #2e7d32;
+            text-align: center;
+            margin: 1rem 0;
+        }
+
+        .price-breakdown {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .breakdown-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 0.5rem 0;
+            padding: 0.25rem 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .breakdown-item:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            background: white;
+            margin: 0.5rem -1rem -1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .comparison-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .metric-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #1976d2;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+
+        .strategy-recommendations {
+            background: linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%);
+            border: 1px solid #2196f3;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .recommendation-item {
+            display: flex;
+            align-items: flex-start;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .recommendation-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+
+        .recommendation-icon.high {
+            background: #f44336;
+            color: white;
+        }
+
+        .recommendation-icon.medium {
+            background: #ff9800;
+            color: white;
+        }
+
+        .recommendation-icon.low {
+            background: #4caf50;
+            color: white;
+        }
+
+        .recommendation-content h4 {
+            margin: 0 0 0.5rem 0;
+            color: #333;
+        }
+
+        .recommendation-content p {
+            margin: 0 0 0.5rem 0;
+            color: #666;
+        }
+
+        .recommendation-action {
+            font-weight: 600;
+            color: #1976d2;
+        }
+
+        .coupon-strategy {
+            background: #fff9c4;
+            border: 1px solid #f57c00;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .listing-strategy {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .listing-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .listing-card h3 {
+            margin: 0 0 1rem 0;
+            color: #333;
+        }
+
+        .ebay-settings {
+            background: #f5f5f5;
+            border-radius: 6px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .settings-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin: 2rem 0;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: #1976d2;
+            color: white;
+        }
+
+        .btn-success {
+            background: #388e3c;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #f57c00;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .calculation-history {
+            margin: 2rem 0;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .history-table th,
+        .history-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .history-table th {
+            background: #f5f5f5;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .history-table tr:hover {
+            background: #f9f9f9;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-badge.excellent {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+
+        .status-badge.good {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+
+        .status-badge.fair {
+            background: #ffecb3;
+            color: #f57c00;
+        }
+
+        .status-badge.poor {
+            background: #ffcdd2;
+            color: #c62828;
+        }
+
+        @media (max-width: 768px) {
+            .dual-pricing-container,
+            .comparison-metrics,
+            .listing-strategy {
+                grid-template-columns: 1fr;
+            }
+
+            .price-display {
+                font-size: 2rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-calculator"></i> DDP/DDU統合利益計算システム</h1>
+            <p>アメリカ向けDDP価格とその他国向けDDU価格の同時計算・最適化</p>
+        </div>
+
+        <!-- 計算フォーム -->
+        <div class="form-section">
+            <h3><i class="fas fa-box"></i> 商品情報入力</h3>
+            <form id="dualCalculationForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>商品ID</label>
+                        <input type="text" id="itemId" placeholder="YAHOO_12345" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Yahoo価格（円）</label>
+                        <input type="number" id="priceJpy" placeholder="15000" required>
+                    </div>
+                    <div class="form-group">
+                        <label>国内送料（円）</label>
+                        <input type="number" id="shippingJpy" placeholder="800" required>
+                    </div>
+                    <div class="form-group">
+                        <label>eBayカテゴリー</label>
+                        <select id="categoryId">
+                            <option value="293">Consumer Electronics</option>
+                            <option value="11450">Clothing, Shoes & Accessories</option>
+                            <option value="58058">Collectibles</option>
+                            <option value="267">Books</option>
+                            <option value="550">Art</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>原産国</label>
+                        <select id="originCountry">
+                            <option value="JP">日本</option>
+                            <option value="US">アメリカ</option>
+                            <option value="CN">中国</option>
+                            <option value="KR">韓国</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>商品重量（kg）</label>
+                        <input type="number" step="0.1" id="weightKg" placeholder="0.5" required>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-calculator"></i> DDP/DDU計算実行
+                    </button>
+                    <button type="button" class="btn btn-warning" onclick="loadSampleData()">
+                        <i class="fas fa-file-import"></i> サンプルデータ
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 計算結果表示エリア -->
+        <div id="calculationResults" style="display: none;">
+            <!-- DDP/DDU価格比較 -->
+            <div class="dual-pricing-container">
+                <div class="pricing-card ddu" id="dduCard">
+                    <div class="pricing-header">
+                        <span class="pricing-type">DDU価格</span>
+                        <span class="market-badge international">国際市場</span>
+                    </div>
+                    <div class="price-display" id="dduPrice">$0.00</div>
+                    <div class="price-breakdown" id="dduBreakdown">
+                        <!-- 内訳が動的に生成される -->
+                    </div>
+                    <p><i class="fas fa-info-circle"></i> 関税・VATは購入者負担</p>
+                </div>
+
+                <div class="pricing-card ddp" id="ddpCard">
+                    <div class="pricing-header">
+                        <span class="pricing-type">DDP価格</span>
+                        <span class="market-badge us">アメリカ市場</span>
+                    </div>
+                    <div class="price-display" id="ddpPrice">$0.00</div>
+                    <div class="price-breakdown" id="ddpBreakdown">
+                        <!-- 内訳が動的に生成される -->
+                    </div>
+                    <p><i class="fas fa-shield-alt"></i> 関税・VAT込み価格</p>
+                </div>
+            </div>
+
+            <!-- 比較指標 -->
+            <div class="comparison-metrics">
+                <div class="metric-card">
+                    <div class="metric-value" id="priceDifference">0%</div>
+                    <div class="metric-label">価格差</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="competitivenessScore">0</div>
+                    <div class="metric-label">競争力スコア</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="taxBurden">$0</div>
+                    <div class="metric-label">税負担額</div>
+                </div>
+            </div>
+
+            <!-- 戦略的推奨事項 -->
+            <div class="strategy-recommendations">
+                <h3><i class="fas fa-lightbulb"></i> 戦略的推奨事項</h3>
+                <div id="recommendationsList">
+                    <!-- 推奨事項が動的に生成される -->
+                </div>
+            </div>
+
+            <!-- クーポン戦略 -->
+            <div id="couponStrategy" class="coupon-strategy" style="display: none;">
+                <h4><i class="fas fa-ticket-alt"></i> クーポン戦略提案</h4>
+                <div id="couponDetails">
+                    <!-- クーポン戦略詳細 -->
+                </div>
+            </div>
+
+            <!-- 出品戦略 -->
+            <div class="listing-strategy">
+                <div class="listing-card">
+                    <h3><i class="fas fa-flag-usa"></i> アメリカ向け出品設定</h3>
+                    <div class="ebay-settings" id="usSettings">
+                        <!-- アメリカ向け設定 -->
+                    </div>
+                </div>
+                <div class="listing-card">
+                    <h3><i class="fas fa-globe"></i> 国際向け出品設定</h3>
+                    <div class="ebay-settings" id="intlSettings">
+                        <!-- 国際向け設定 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- アクションボタン -->
+            <div class="action-buttons">
+                <button class="btn btn-success" onclick="saveStrategy()">
+                    <i class="fas fa-save"></i> 戦略を保存
+                </button>
+                <button class="btn btn-primary" onclick="createEbayListings()">
+                    <i class="fas fa-plus"></i> eBay出品作成
+                </button>
+                <button class="btn btn-warning" onclick="exportToCSV()">
+                    <i class="fas fa-download"></i> CSV出力
+                </button>
+            </div>
+        </div>
+
+        <!-- 計算履歴 -->
+        <div class="calculation-history">
+            <h3><i class="fas fa-history"></i> 計算履歴</h3>
+            <table class="history-table" id="historyTable">
+                <thead>
+                    <tr>
+                        <th>商品ID</th>
+                        <th>DDU価格</th>
+                        <th>DDP価格</th>
+                        <th>価格差</th>
+                        <th>競争力</th>
+                        <th>クーポン推奨</th>
+                        <th>計算日時</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="historyBody">
+                    <!-- 履歴データが動的に生成される -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // グローバル変数
+        let currentCalculation = null;
+        let calculationHistory = [];
+
+        // メイン計算関数
+        async function calculateDualPricing() {
+            const formData = {
+                item_id: document.getElementById('itemId').value,
+                price_jpy: parseFloat(document.getElementById('priceJpy').value),
+                shipping_jpy: parseFloat(document.getElementById('shippingJpy').value),
+                category_id: parseInt(document.getElementById('categoryId').value),
+                origin_country: document.getElementById('originCountry').value,
+                weight_kg: parseFloat(document.getElementById('weightKg').value)
+            };
+
+            try {
+                showLoading(true);
+                
+                const response = await fetch('api/calculate_dual_pricing.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams(formData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    currentCalculation = result.data;
+                    displayCalculationResults(result.data);
+                    addToHistory(result.data);
+                } else {
+                    alert('計算エラー: ' + result.error);
+                }
+            } catch (error) {
+                alert('APIエラー: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // 結果表示
+        function displayCalculationResults(data) {
+            const resultsDiv = document.getElementById('calculationResults');
+            resultsDiv.style.display = 'block';
+
+            // DDU価格表示
+            document.getElementById('dduPrice').textContent = 
+                '$' + data.calculation_data.ddu_result.recommended_price_usd;
+            
+            displayPriceBreakdown('dduBreakdown', data.calculation_data.ddu_result);
+
+            // DDP価格表示
+            document.getElementById('ddpPrice').textContent = 
+                '$' + data.calculation_data.ddp_result.recommended_price_usd;
+            
+            displayPriceBreakdown('ddpBreakdown', data.calculation_data.ddp_result);
+
+            // 比較指標
+            const analysis = data.calculation_data.price_analysis;
+            document.getElementById('priceDifference').textContent = 
+                analysis.percentage_difference.toFixed(1) + '%';
+            document.getElementById('competitivenessScore').textContent = 
+                analysis.competitiveness_score;
+            document.getElementById('taxBurden').textContent = 
+                '$' + (data.calculation_data.ddp_result.taxes_and_duties.total_taxes_usd || 0);
+
+            // 推奨事項表示
+            displayRecommendations(data.recommendations);
+
+            // クーポン戦略
+            displayCouponStrategy(analysis.coupon_strategy);
+
+            // 出品設定
+            displayListingSettings(data.ebay_settings);
+
+            // 推奨カードをハイライト
+            highlightRecommendedOption(analysis);
+        }
+
+        // 価格内訳表示
+        function displayPriceBreakdown(elementId, priceData) {
+            const element = document.getElementById(elementId);
+            const metrics = priceData.profit_metrics;
+            
+            element.innerHTML = `
+                <div class="breakdown-item">
+                    <span>利益:</span>
+                    <span>$${metrics.profit_usd}</span>
+                </div>
+                <div class="breakdown-item">
+                    <span>利益率:</span>
+                    <span>${metrics.profit_margin_percent}%</span>
+                </div>
+                <div class="breakdown-item">
+                    <span>ROI:</span>
+                    <span>${metrics.roi_percent}%</span>
+                </div>
+                ${priceData.taxes_and_duties.included_in_price ? `
+                <div class="breakdown-item">
+                    <span>関税:</span>
+                    <span>${priceData.taxes_and_duties.import_duty_usd}</span>
+                </div>
+                <div class="breakdown-item">
+                    <span>税金:</span>
+                    <span>${priceData.taxes_and_duties.sales_tax_usd}</span>
+                </div>
+                ` : ''}
+                <div class="breakdown-item">
+                    <span>最終価格:</span>
+                    <span>${priceData.recommended_price_usd}</span>
+                </div>
+            `;
+        }
+
+        // 推奨事項表示
+        function displayRecommendations(recommendations) {
+            const container = document.getElementById('recommendationsList');
+            container.innerHTML = '';
+
+            recommendations.forEach(rec => {
+                const recElement = document.createElement('div');
+                recElement.className = 'recommendation-item';
+                recElement.innerHTML = `
+                    <div class="recommendation-icon ${rec.priority}">
+                        <i class="fas ${getRecommendationIcon(rec.type)}"></i>
+                    </div>
+                    <div class="recommendation-content">
+                        <h4>${rec.title}</h4>
+                        <p>${rec.message}</p>
+                        <div class="recommendation-action">${rec.action}</div>
+                    </div>
+                `;
+                container.appendChild(recElement);
+            });
+        }
+
+        // クーポン戦略表示
+        function displayCouponStrategy(couponStrategy) {
+            const container = document.getElementById('couponStrategy');
+            const details = document.getElementById('couponDetails');
+
+            if (couponStrategy.recommended) {
+                container.style.display = 'block';
+                details.innerHTML = `
+                    <p><strong>推奨クーポン:</strong> ${couponStrategy.type === 'percentage_discount' ? 
+                        couponStrategy.discount_rate + '%割引' : '固定額割引'}</p>
+                    <p><strong>対象国:</strong> ${couponStrategy.target_countries ? 
+                        couponStrategy.target_countries.join(', ') : 'DDU市場全般'}</p>
+                    <p><strong>理由:</strong> ${couponStrategy.reason}</p>
+                    ${couponStrategy.note ? `<p><strong>注意:</strong> ${couponStrategy.note}</p>` : ''}
+                `;
+            } else {
+                container.style.display = 'none';
+            }
+        }
+
+        // 出品設定表示
+        function displayListingSettings(ebaySettings) {
+            // アメリカ向け設定
+            const usSettings = document.getElementById('usSettings');
+            const usListing = ebaySettings.us_ddp_listing;
+            usSettings.innerHTML = `
+                <div class="settings-item">
+                    <span>出品価格:</span>
+                    <span>${usListing.price}</span>
+                </div>
+                <div class="settings-item">
+                    <span>送料:</span>
+                    <span>${usListing.shipping_cost}</span>
+                </div>
+                <div class="settings-item">
+                    <span>配送タイプ:</span>
+                    <span>${usListing.shipping_type}</span>
+                </div>
+                <div class="settings-item">
+                    <span>返品ポリシー:</span>
+                    <span>${usListing.return_policy.return_period}</span>
+                </div>
+                <div class="settings-item">
+                    <span>配送除外:</span>
+                    <span>${usListing.shipping_exclusions.join(', ')}</span>
+                </div>
+            `;
+
+            // 国際向け設定
+            const intlSettings = document.getElementById('intlSettings');
+            const intlListing = ebaySettings.international_ddu_listing;
+            intlSettings.innerHTML = `
+                <div class="settings-item">
+                    <span>出品価格:</span>
+                    <span>${intlListing.price}</span>
+                </div>
+                <div class="settings-item">
+                    <span>送料タイプ:</span>
+                    <span>${intlListing.shipping_type}</span>
+                </div>
+                <div class="settings-item">
+                    <span>GSP:</span>
+                    <span>${intlListing.global_shipping ? '有効' : '無効'}</span>
+                </div>
+                <div class="settings-item">
+                    <span>配送除外:</span>
+                    <span>${intlListing.shipping_exclusions.join(', ')}</span>
+                </div>
+            `;
+        }
+
+        // 推奨オプションハイライト
+        function highlightRecommendedOption(analysis) {
+            const dduCard = document.getElementById('dduCard');
+            const ddpCard = document.getElementById('ddpCard');
+            
+            // リセット
+            dduCard.classList.remove('recommended');
+            ddpCard.classList.remove('recommended');
+
+            // 競争力に基づいて推奨を決定
+            if (analysis.competitiveness_impact === 'EXCELLENT' || analysis.competitiveness_impact === 'GOOD') {
+                ddpCard.classList.add('recommended');
+            } else if (analysis.percentage_difference > 15) {
+                dduCard.classList.add('recommended');
+            }
+        }
+
+        // フォーム送信イベント
+        document.getElementById('dualCalculationForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            calculateDualPricing();
+        });
+
+        // サンプルデータ読み込み
+        function loadSampleData() {
+            document.getElementById('itemId').value = 'YAHOO_12345';
+            document.getElementById('priceJpy').value = '15000';
+            document.getElementById('shippingJpy').value = '800';
+            document.getElementById('categoryId').value = '293';
+            document.getElementById('originCountry').value = 'JP';
+            document.getElementById('weightKg').value = '0.5';
+        }
+
+        // 戦略保存
+        async function saveStrategy() {
+            if (!currentCalculation) {
+                alert('先に計算を実行してください。');
+                return;
+            }
+
+            try {
+                const strategies = [
+                    {
+                        market_type: 'US_DDP',
+                        listing_price_usd: currentCalculation.calculation_data.ddp_result.recommended_price_usd,
+                        shipping_price_usd: currentCalculation.calculation_data.ddp_result.shipping_cost_usd,
+                        ebay_settings: currentCalculation.ebay_settings.us_ddp_listing
+                    },
+                    {
+                        market_type: 'INTERNATIONAL_DDU',
+                        listing_price_usd: currentCalculation.calculation_data.ddu_result.recommended_price_usd,
+                        shipping_price_usd: 0,
+                        ebay_settings: currentCalculation.ebay_settings.international_ddu_listing
+                    }
+                ];
+
+                const response = await fetch('api/calculate_dual_pricing.php?action=save_strategy', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        calculation_id: currentCalculation.calculation_id,
+                        strategies: JSON.stringify(strategies)
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('戦略が正常に保存されました。');
+                } else {
+                    alert('保存エラー: ' + result.error);
+                }
+            } catch (error) {
+                alert('APIエラー: ' + error.message);
+            }
+        }
+
+        // eBay出品作成
+        async function createEbayListings() {
+            if (!currentCalculation) {
+                alert('先に計算を実行してください。');
+                return;
+            }
+
+            if (confirm('eBayに2つの出品（アメリカ向けDDP、国際向けDDU）を作成しますか？')) {
+                try {
+                    showLoading(true);
+                    
+                    // 実際のeBay API連携はここで実装
+                    const response = await fetch('api/create_ebay_listings.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            calculation_id: currentCalculation.calculation_id,
+                            ebay_settings: currentCalculation.ebay_settings
+                        })
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        alert(`出品が完了しました。\nアメリカ向け: ${result.us_listing_id}\n国際向け: ${result.intl_listing_id}`);
+                    } else {
+                        alert('出品エラー: ' + result.error);
+                    }
+                } catch (error) {
+                    alert('APIエラー: ' + error.message);
+                } finally {
+                    showLoading(false);
+                }
+            }
+        }
+
+        // CSV出力
+        function exportToCSV() {
+            if (!currentCalculation) {
+                alert('先に計算を実行してください。');
+                return;
+            }
+
+            const data = currentCalculation.calculation_data;
+            const csvContent = generateCSVContent(data);
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `ddp_ddu_calculation_${data.item_data.id}_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // CSV内容生成
+        function generateCSVContent(data) {
+            const headers = [
+                '商品ID', 'DDU価格（USD）', 'DDP価格（USD）', '価格差（USD）', '価格差（%）',
+                'DDU利益率（%）', 'DDP利益率（%）', 'DDU ROI（%）', 'DDP ROI（%）',
+                '税負担額（USD）', '競争力スコア', 'クーポン推奨'
+            ];
+
+            const row = [
+                data.item_data.id,
+                data.ddu_result.recommended_price_usd,
+                data.ddp_result.recommended_price_usd,
+                data.price_analysis.price_difference_usd,
+                data.price_analysis.percentage_difference,
+                data.ddu_result.profit_metrics.profit_margin_percent,
+                data.ddp_result.profit_metrics.profit_margin_percent,
+                data.ddu_result.profit_metrics.roi_percent,
+                data.ddp_result.profit_metrics.roi_percent,
+                data.ddp_result.taxes_and_duties.total_taxes_usd || 0,
+                data.price_analysis.competitiveness_score,
+                data.price_analysis.coupon_strategy.recommended ? 'Yes' : 'No'
+            ];
+
+            return headers.join(',') + '\n' + row.join(',');
+        }
+
+        // 計算履歴の読み込みと表示
+        async function loadCalculationHistory() {
+            try {
+                const response = await fetch('api/calculate_dual_pricing.php?action=get_history&limit=10');
+                const result = await response.json();
+
+                if (result.success) {
+                    displayHistory(result.data.history);
+                }
+            } catch (error) {
+                console.error('履歴読み込みエラー:', error);
+            }
+        }
+
+        // 履歴表示
+        function displayHistory(history) {
+            const tbody = document.getElementById('historyBody');
+            tbody.innerHTML = '';
+
+            history.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.item_id}</td>
+                    <td>${item.ddu_price_usd}</td>
+                    <td>${item.ddp_price_usd}</td>
+                    <td>${item.price_difference_percent}%</td>
+                    <td>
+                        <span class="status-badge ${getCompetitivenessClass(item.competitiveness_score)}">
+                            ${getCompetitivenessText(item.competitiveness_score)}
+                        </span>
+                    </td>
+                    <td>${item.coupon_recommended ? 'Yes' : 'No'}</td>
+                    <td>${new Date(item.created_at).toLocaleDateString('ja-JP')}</td>
+                    <td>
+                        <button class="btn btn-sm" onclick="viewCalculationDetail(${item.id})">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // 履歴に追加
+        function addToHistory(calculation) {
+            calculationHistory.unshift(calculation);
+            if (calculationHistory.length > 50) {
+                calculationHistory = calculationHistory.slice(0, 50);
+            }
+        }
+
+        // ユーティリティ関数
+        function getRecommendationIcon(type) {
+            const icons = {
+                'pricing': 'fa-dollar-sign',
+                'coupon': 'fa-ticket-alt',
+                'expansion': 'fa-expand-arrows-alt',
+                'strategy': 'fa-chess'
+            };
+            return icons[type] || 'fa-lightbulb';
+        }
+
+        function getCompetitivenessClass(score) {
+            if (score >= 80) return 'excellent';
+            if (score >= 60) return 'good';
+            if (score >= 40) return 'fair';
+            return 'poor';
+        }
+
+        function getCompetitivenessText(score) {
+            if (score >= 80) return '優秀';
+            if (score >= 60) return '良好';
+            if (score >= 40) return '普通';
+            return '要改善';
+        }
+
+        function showLoading(show) {
+            // ローディング表示の実装
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            if (loadingOverlay) {
+                loadingOverlay.style.display = show ? 'flex' : 'none';
+            }
+        }
+
+        function viewCalculationDetail(calculationId) {
+            // 詳細表示の実装
+            window.open(`calculation_detail.php?id=${calculationId}`, '_blank');
+        }
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCalculationHistory();
+            loadSampleData(); // デモ用
+        });
+
+        // 自動更新（5分間隔）
+        setInterval(loadCalculationHistory, 300000);
+    </script>
+
+    <!-- ローディングオーバーレイ -->
+    <div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 2rem; border-radius: 8px; text-align: center;">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p style="margin-top: 1rem;">計算中...</p>
+        </div>
+    </div>
+</body>
+</html>
+                

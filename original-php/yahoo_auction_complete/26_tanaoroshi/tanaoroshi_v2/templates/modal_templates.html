@@ -1,0 +1,175 @@
+<!-- 商品詳細モーダル用テンプレート -->
+<div id="product-detail-modal" class="n3-modal n3-modal--large" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="n3-modal__container">
+        <div class="n3-modal__header">
+            <h2 class="n3-modal__title">
+                <i class="fas fa-box"></i> 商品詳細情報
+            </h2>
+            <button class="n3-modal__close" onclick="N3Modal.close('product-detail-modal')">
+                <span class="n3-sr-only">閉じる</span>
+                &times;
+            </button>
+        </div>
+        <div class="n3-modal__body">
+            <div id="product-detail-content">
+                <!-- 動的コンテンツがここに挿入される -->
+            </div>
+        </div>
+        <div class="n3-modal__footer">
+            <button class="n3-btn n3-btn--secondary" onclick="N3Modal.close('product-detail-modal')">
+                閉じる
+            </button>
+            <button class="n3-btn n3-btn--primary" onclick="editProduct()">
+                <i class="fas fa-edit"></i> 編集
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- テストモーダル -->
+<div id="test-modal" class="n3-modal n3-modal--medium" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="n3-modal__container">
+        <div class="n3-modal__header">
+            <h2 class="n3-modal__title">
+                <i class="fas fa-microscope"></i> システムテスト
+            </h2>
+            <button class="n3-modal__close" onclick="N3Modal.close('test-modal')">
+                <span class="n3-sr-only">閉じる</span>
+                &times;
+            </button>
+        </div>
+        <div class="n3-modal__body">
+            <div id="test-modal-content">
+                <!-- テストコンテンツがここに挿入される -->
+            </div>
+        </div>
+        <div class="n3-modal__footer">
+            <button class="n3-btn n3-btn--secondary" onclick="N3Modal.close('test-modal')">
+                閉じる
+            </button>
+            <button class="n3-btn n3-btn--primary" onclick="refreshModalData()">
+                <i class="fas fa-sync"></i> データ更新
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+.n3-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    display: none;
+}
+
+.n3-modal[aria-hidden="false"] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.n3-modal__container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.n3-modal--medium .n3-modal__container {
+    width: 90%;
+    max-width: 600px;
+}
+
+.n3-modal--large .n3-modal__container {
+    width: 90%;
+    max-width: 900px;
+}
+
+.n3-modal__header {
+    padding: 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8f9fa;
+}
+
+.n3-modal__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.n3-modal__close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #6b7280;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.n3-modal__close:hover {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.n3-modal__body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.n3-modal__footer {
+    padding: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    background: #f8f9fa;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+}
+
+.n3-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+@media (max-width: 768px) {
+    .n3-modal__container {
+        width: 95%;
+        margin: 1rem;
+    }
+    
+    .n3-modal__footer {
+        flex-direction: column-reverse;
+    }
+    
+    .n3-modal__footer .n3-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+</style>

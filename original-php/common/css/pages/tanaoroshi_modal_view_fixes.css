@@ -1,0 +1,426 @@
+/* ===== 【緊急修正】モーダル中央配置・閉じる機能・ビュー切り替え完全修正 ===== */
+
+/* ===== 【追加】CSS変数定義（緊急対応） ===== */
+:root {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f1f5f9;
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+    --border-light: #f1f5f9;
+    --radius-lg: 0.75rem;
+    --radius-md: 0.5rem;
+    --radius-sm: 0.25rem;
+    --space-xs: 0.5rem;
+    --space-sm: 0.75rem;
+    --space-md: 1rem;
+    --space-lg: 1.5rem;
+    --color-primary: #3b82f6;
+    --color-success: #059669;
+    --color-warning: #dc6803;
+    --color-info: #0e7490;
+    --color-purple: #7c3aed;
+    --color-ebay: #0064d2;
+}
+
+/* ===== 【修正1】モーダル中央配置の完全実装 - 絶対確実版 ===== */
+.modal {
+    display: none !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background-color: rgba(0, 0, 0, 0.7) !important;
+    z-index: 50000 !important;
+    
+    /* 【重要】全中央配置プロパティ強制適用 */
+    justify-content: center !important;
+    align-items: center !important;
+    place-items: center !important;
+    place-content: center !important;
+    align-content: center !important;
+    justify-items: center !important;
+    
+    /* 【重要】スクロール対応 */
+    overflow-y: auto !important;
+    padding: 20px !important;
+    box-sizing: border-box !important;
+}
+
+/* 【重要】モーダル表示状態 */
+.modal[style*="display: flex"],
+.modal.modal--active {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+.modal-content {
+    background: var(--bg-secondary) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3) !important;
+    width: 90% !important;
+    max-width: 600px !important;
+    max-height: calc(100vh - 40px) !important;
+    overflow-y: auto !important;
+    
+    /* 【重要】中央配置確保 */
+    margin: auto !important;
+    position: relative !important;
+    z-index: 50010 !important;
+    
+    /* 【重要】レスポンシブ対応 */
+    min-height: auto !important;
+    transform: none !important;
+    
+    /* 【追加】中央配置強化 */
+    justify-self: center !important;
+    align-self: center !important;
+    flex-shrink: 0 !important;
+}
+
+.modal-content--large {
+    max-width: 800px !important;
+    width: 95% !important;
+}
+
+/* ===== 【修正2】モーダル閉じるボタンの完全実装 ===== */
+.modal-close {
+    background: none !important;
+    border: none !important;
+    font-size: 1.5rem !important;
+    color: var(--text-muted) !important;
+    cursor: pointer !important;
+    padding: 5px !important;
+    width: 30px !important;
+    height: 30px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 50% !important;
+    transition: all 0.2s ease !important;
+    z-index: 50030 !important;
+    position: relative !important;
+    
+    /* 【重要】クリック領域拡大 */
+    min-width: 30px !important;
+    min-height: 30px !important;
+}
+
+.modal-close:hover {
+    background: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+    transform: scale(1.1) !important;
+}
+
+.modal-close:active {
+    transform: scale(0.95) !important;
+}
+
+/* ===== 【修正3】ビュー切り替えの完全実装 ===== */
+
+/* カードビュー */
+.inventory__grid {
+    display: grid !important;
+    grid-template-columns: repeat(8, 1fr) !important;
+    gap: 0.75rem !important;
+    padding: var(--space-md) !important;
+    background: var(--bg-primary) !important;
+    min-height: calc(100vh - 400px) !important;
+    width: 100% !important;
+    overflow: visible !important;
+    z-index: 1 !important;
+    position: relative !important;
+}
+
+/* 【重要】カードビュー表示時のテーブル非表示 */
+.inventory__grid:not([style*="display: none"]) ~ .inventory__table {
+    display: none !important;
+}
+
+/* Excelビュー・テーブル */
+.inventory__table {
+    background: var(--bg-secondary) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-lg) !important;
+    overflow: hidden !important;
+    margin-bottom: var(--space-md) !important;
+    z-index: 50 !important;
+    position: relative !important;
+    width: 100% !important;
+    
+    /* 【重要】初期状態は非表示 */
+    display: none !important;
+}
+
+/* 【重要】Excelビュー表示時の状態 */
+.inventory__table[style*="display: block"],
+.inventory__table.table--active {
+    display: block !important;
+}
+
+/* 【重要】Excelビュー表示時のカード非表示 - N3準拠排他制御 */
+.inventory__table[style*="display: block"] ~ .inventory__grid,
+.inventory__table.table--active ~ .inventory__grid,
+.inventory__table.view--active ~ .inventory__grid {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+/* 【追加】カードビュー表示時のExcel非表示 */
+.inventory__grid.view--active ~ .inventory__table,
+.inventory__grid[style*="display: grid"] ~ .inventory__table {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+.inventory__table-container {
+    overflow-x: auto !important;
+    max-height: 600px !important;
+    overflow-y: auto !important;
+    z-index: 50 !important;
+    width: 100% !important;
+}
+
+.inventory__excel-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 0.75rem !important;
+    z-index: 50 !important;
+    min-width: 800px !important;
+}
+
+.inventory__excel-table th,
+.inventory__excel-table td {
+    padding: var(--space-xs) !important;
+    text-align: left !important;
+    border-bottom: 1px solid var(--border-light) !important;
+    border-right: 1px solid var(--border-light) !important;
+    vertical-align: middle !important;
+    white-space: nowrap !important;
+}
+
+.inventory__excel-table th {
+    background: var(--bg-tertiary) !important;
+    font-weight: 600 !important;
+    color: var(--text-primary) !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 60 !important;
+}
+
+.inventory__excel-table tbody tr:hover {
+    background: var(--bg-tertiary) !important;
+    z-index: 55 !important;
+}
+
+/* ===== 【修正4】ビューボタンの状態管理 ===== */
+.inventory__view-btn {
+    padding: var(--space-xs) var(--space-md) !important;
+    border: none !important;
+    background: transparent !important;
+    color: var(--text-secondary) !important;
+    cursor: pointer !important;
+    font-size: 0.875rem !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--space-xs) !important;
+    transition: all 0.2s ease !important;
+    z-index: 1000 !important;
+    position: relative !important;
+    
+    /* 【重要】クリック領域確保 */
+    min-height: 40px !important;
+    min-width: 120px !important;
+}
+
+.inventory__view-btn:hover {
+    background: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+    z-index: 1100 !important;
+}
+
+.inventory__view-btn--active {
+    background: var(--color-primary) !important;
+    color: white !important;
+    z-index: 1200 !important;
+}
+
+/* ===== 【修正5】モーダル背景クリック対応 ===== */
+.modal::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background: transparent !important;
+    z-index: 50000 !important;
+}
+
+/* ===== 【修正6】フォーム要素のz-index調整 ===== */
+.form-input,
+.form-select {
+    z-index: 50020 !important;
+    position: relative !important;
+}
+
+.form-input:focus,
+.form-select:focus {
+    z-index: 50030 !important;
+}
+
+/* ===== 【修正7】モバイル対応強化 ===== */
+@media (max-width: 768px) {
+    .modal {
+        padding: 10px !important;
+    }
+    
+    .modal-content {
+        width: 95% !important;
+        max-height: calc(100vh - 20px) !important;
+        margin: auto !important;
+    }
+    
+    .modal-content--large {
+        width: 98% !important;
+        max-width: none !important;
+    }
+    
+    .inventory__excel-table {
+        font-size: 0.625rem !important;
+        min-width: 600px !important;
+    }
+    
+    .inventory__excel-table th,
+    .inventory__excel-table td {
+        padding: 0.25rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal {
+        padding: 5px !important;
+    }
+    
+    .modal-content {
+        width: 98% !important;
+        max-height: calc(100vh - 10px) !important;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+        padding: var(--space-sm) !important;
+    }
+}
+
+/* ===== 【修正8】デバッグ用スタイル（開発時のみ） ===== */
+.debug-modal {
+    border: 3px solid #ff0000 !important;
+    background: rgba(255, 0, 0, 0.1) !important;
+}
+
+.debug-modal .modal-content {
+    border: 2px solid #00ff00 !important;
+}
+
+.debug-view-toggle {
+    border: 2px solid #0000ff !important;
+    background: rgba(0, 0, 255, 0.1) !important;
+}
+
+/* ===== 【修正9】アニメーション改善 ===== */
+@keyframes modalShow {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes modalHide {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+}
+
+.modal[style*="display: flex"] .modal-content {
+    animation: modalShow 0.3s ease-out !important;
+}
+
+.modal-content {
+    transform-origin: center center !important;
+}
+
+/* ===== 【修正10】テーブル内容の初期データ表示 ===== */
+.table-image-placeholder {
+    width: 40px !important;
+    height: 40px !important;
+    background: var(--bg-tertiary) !important;
+    border-radius: var(--radius-sm) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 1.2rem !important;
+    color: var(--text-muted) !important;
+}
+
+.table-badge {
+    padding: 0.125rem 0.375rem !important;
+    border-radius: 0.25rem !important;
+    font-size: 0.625rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    color: white !important;
+}
+
+.table-badge--stock { background: var(--color-success) !important; }
+.table-badge--dropship { background: var(--color-purple) !important; }
+.table-badge--set { background: var(--color-warning) !important; }
+.table-badge--hybrid { background: var(--color-info) !important; }
+
+.btn-small {
+    padding: 0.25rem 0.5rem !important;
+    border: none !important;
+    border-radius: var(--radius-sm) !important;
+    font-size: 0.625rem !important;
+    cursor: pointer !important;
+    margin-right: 0.25rem !important;
+    transition: all 0.2s ease !important;
+    z-index: 100 !important;
+    position: relative !important;
+}
+
+.btn-small--edit {
+    background: var(--color-info) !important;
+    color: white !important;
+}
+
+.btn-small--delete {
+    background: #ef4444 !important;
+    color: white !important;
+}
+
+.btn-small:hover {
+    opacity: 0.8 !important;
+    transform: translateY(-1px) !important;
+    z-index: 150 !important;
+}

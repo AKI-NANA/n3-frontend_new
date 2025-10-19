@@ -1,0 +1,72 @@
+
+🗂️ Emverze 完璧ASINアップロードシステム - 保存版構成ガイド
+
+---
+
+## ✅ 構成フォルダ一覧（VPS / ローカル共通）
+
+```
+emverze_asin_upload/
+├── main.py                          # FastAPIエントリポイント
+├── api/
+│   └── asin_upload_api.py          # ASIN・URL・CSV・一括処理API
+├── routes/
+│   └── asin_upload_routes.py       # HTMLルーティング＋Template表示
+├── schemas/
+│   └── asin_upload_schemas.py      # リクエスト/レスポンス用スキーマ
+├── services/
+│   ├── asin_upload_service.py      # アップロード全般のビジネスロジック
+│   ├── csv_shori_service.py        # CSV専用処理ロジック
+│   └── asin_validation_service.py  # 入力検証（ASIN/URL/Keyword）
+├── websockets/
+│   └── websocket_asin_progress.py  # 進捗WebSocket通知マネージャ
+├── tasks/
+│   └── celery_app_config.py        # 非同期タスク用Celery設定
+├── static/
+│   ├── js/
+│   │   └── kanpeki_asin_upload.js  # フロント連動JS（完全版）
+│   └── css/
+│       └── kanpeki_style.css       # 共通CSS
+├── templates/
+│   └── kanpeki_asin_upload.html    # メインUI（タブ切替）
+└── requirements.txt                # 依存ライブラリ一覧
+```
+
+---
+
+## ✅ ファイルの役割と説明
+
+| ファイル名 | 概要 |
+|------------|------|
+| `main.py` | アプリの起動元。FastAPI appと全ルーターの読み込みを担当 |
+| `asin_upload_api.py` | `/asin-upload` 配下のAPI全てを提供（ASIN、URL、Bulk、CSV、結果取得など） |
+| `asin_upload_routes.py` | HTML表示用ルート。`/upload`などで `kanpeki_asin_upload.html` を表示 |
+| `asin_upload_schemas.py` | 全エンドポイントの `Pydantic` リクエスト/レスポンス定義 |
+| `asin_upload_service.py` | ビジネスロジック本体。商品データ抽出や非同期処理を含む |
+| `csv_shori_service.py` | CSV専用のファイル読み込み・抽出・バリデーション |
+| `asin_validation_service.py` | ASIN/URL/キーワードの正規性確認 |
+| `websocket_asin_progress.py` | WebSocketで処理進捗を配信する管理者 |
+| `celery_app_config.py` | Redis + Celeryによる非同期構成用設定 |
+| `kanpeki_asin_upload.js` | HTMLから呼び出される主要JavaScript。進捗・API・フォーム制御 |
+| `kanpeki_style.css` | Bootstrap互換＋Emverze独自トーンの共通CSS |
+| `kanpeki_asin_upload.html` | タブ切替でCSV・URL・一括貼付に対応する統合UI |
+
+---
+
+## 🧪 テスト方法（VPSでの動作確認）
+
+1. **Uvicorn起動**:
+```bash
+uvicorn main:app --reload
+```
+
+2. **ブラウザで表示確認**:
+```
+http://localhost:8000/upload
+```
+
+3. **CSVアップロード → 結果表示 → ダウンロード確認**
+
+4. **WebSocket経由の進捗確認**（`Console`に表示確認）
+
+5. **API単体テスト**（curl/PostmanでもOK）

@@ -1,0 +1,58 @@
+02_scraping/
+├── processor.php                    # 【既存】メインエントリーポイント
+├── 
+├── api/                            # API群
+│   ├── scraping.php               # 【既存】スクレイピング機能
+│   └── inventory_monitor.php      # 【新規】在庫監視API
+│
+├── includes/                      # クラス群
+│   ├── YahooScraper.php          # 【既存】Yahoo解析エンジン
+│   ├── InventoryEngine.php       # 【新規】在庫監視エンジン
+│   ├── PriceMonitor.php          # 【新規】価格変動検知
+│   ├── UrlValidator.php          # 【新規】URL生存確認
+│   └── InventoryLogger.php       # 【新規】在庫専用ログ
+│
+├── scripts/                      # バッチ処理
+│   ├── scraping_batch.php        # 【既存】スクレイピング一括処理
+│   ├── inventory_cron.php        # 【新規】在庫定期監視
+│   └── inventory_report.php      # 【新規】日次レポート生成
+│
+├── config/                       # 設定ファイル
+│   ├── scraping.php             # 【既存】スクレイピング設定
+│   └── inventory.php            # 【新規】在庫管理設定
+│
+└── logs/                        # ログファイル
+    ├── scraping/                # 【既存】スクレイピングログ
+    └── inventory/               # 【新規】在庫管理ログ
+        ├── monitoring.log       # 監視実行ログ
+        ├── price_changes.log    # 価格変動ログ
+        └── errors.log          # エラーログ
+
+========================================
+新規追加ファイル詳細
+========================================
+
+【最優先実装】
+1. includes/InventoryEngine.php     - 在庫監視コアエンジン
+2. api/inventory_monitor.php        - 在庫管理API
+3. scripts/inventory_cron.php       - 定期実行スクリプト
+4. config/inventory.php             - 設定ファイル
+
+【第二優先】
+5. includes/PriceMonitor.php        - 価格変動検知
+6. includes/UrlValidator.php        - URL生存確認
+7. includes/InventoryLogger.php     - ログ管理
+8. scripts/inventory_report.php     - レポート生成
+
+========================================
+既存ファイル活用方針
+========================================
+
+✅ YahooScraper.php
+   → URL解析、HTML取得、価格抽出機能を在庫監視で活用
+
+✅ processor.php  
+   → 在庫監視の手動実行エントリーポイントとして拡張
+
+✅ 既存DB接続・ログ機能
+   → 在庫管理でも共通利用

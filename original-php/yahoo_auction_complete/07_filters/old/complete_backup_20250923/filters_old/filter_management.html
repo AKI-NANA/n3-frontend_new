@@ -1,0 +1,2635 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>フィルタールール管理システム | NAGANO-3</title>
+
+  <!-- 外部ライブラリ -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+
+  <style>
+    /* ===== NAGANO-3共通変数（common.css準拠・既存システム統合想定） ===== */
+    :root {
+      /* ライトモード */
+      --bg-primary: #f8fafc;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #f1f5f9;
+      --bg-hover: #e2e8f0;
+      --bg-active: #cbd5e1;
+      
+      --text-primary: #1e293b;
+      --text-secondary: #475569;
+      --text-tertiary: #64748b;
+      --text-muted: #94a3b8;
+      --text-white: #ffffff;
+      
+      --border-color: #e2e8f0;
+      --border-light: #f1f5f9;
+      --border-dark: #cbd5e1;
+      
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      
+      /* フィルター専用色 */
+      --filter-primary: #dc2626;
+      --filter-primary-rgb: 220, 38, 38;
+      --filter-secondary: #f59e0b;
+      --filter-success: #10b981;
+      --filter-warning: #f59e0b;
+      --filter-danger: #dc2626;
+      --filter-info: #06b6d4;
+      
+      /* アクセントカラー */
+      --accent-blue: #06b6d4;
+      --accent-purple: #8b5cf6;
+      --accent-green: #10b981;
+      --accent-yellow: #f59e0b;
+      --accent-red: #ef4444;
+      --accent-orange: #f97316;
+      
+      /* スペーシング */
+      --space-1: 0.25rem;
+      --space-2: 0.5rem;
+      --space-3: 0.75rem;
+      --space-4: 1rem;
+      --space-5: 1.25rem;
+      --space-6: 1.5rem;
+      --space-8: 2rem;
+      
+      /* ボーダーラジアス */
+      --radius-sm: 0.375rem;
+      --radius-md: 0.5rem;
+      --radius-lg: 0.75rem;
+      --radius-xl: 1rem;
+      --radius-2xl: 1.25rem;
+      
+      /* トランジション */
+      --transition-fast: all 0.15s ease;
+      --transition-normal: all 0.3s ease;
+    }
+
+    /* テーマ切り替え対応 */
+    [data-theme="dark"] {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-tertiary: #334155;
+      --bg-hover: #475569;
+      --bg-active: #64748b;
+      
+      --text-primary: #f8fafc;
+      --text-secondary: #e2e8f0;
+      --text-tertiary: #cbd5e1;
+      --text-muted: #94a3b8;
+      
+      --border-color: #475569;
+      --border-light: #64748b;
+      --border-dark: #334155;
+      
+      --filter-primary: #f87171;
+      --filter-primary-rgb: 248, 113, 113;
+    }
+
+    [data-theme="gentle"] {
+      --bg-primary: #faf9f7;
+      --bg-secondary: #f5f3f0;
+      --bg-tertiary: #f0ede8;
+      --bg-hover: #ebe6df;
+      --bg-active: #e5dfd6;
+      
+      --text-primary: #2d2a26;
+      --text-secondary: #4a4037;
+      --text-tertiary: #6b5d4f;
+      --text-muted: #8a7d70;
+      
+      --border-color: #e8e1d8;
+      --border-light: #ede7de;
+      --border-dark: #ddd4c8;
+      
+      --filter-primary: #a56455;
+      --filter-primary-rgb: 165, 100, 85;
+    }
+
+    /* Excel風データグリッド基盤CSS */
+    .excel-grid {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-md);
+      margin-bottom: var(--space-6);
+    }
+    
+    .excel-toolbar {
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border-color);
+      padding: var(--space-2) var(--space-3);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-3);
+      min-height: 40px;
+      flex-wrap: wrap;
+    }
+    
+    .excel-toolbar__left,
+    .excel-toolbar__right {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+    }
+    
+    .excel-toolbar__search {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    
+    .excel-toolbar__search-input {
+      padding: var(--space-1) var(--space-2) var(--space-1) var(--space-6);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      background: var(--bg-secondary);
+      font-size: 0.8rem;
+      width: 200px;
+      height: 28px;
+    }
+    
+    .excel-toolbar__search-icon {
+      position: absolute;
+      left: var(--space-2);
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+    
+    .excel-btn {
+      padding: var(--space-1) var(--space-2);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      white-space: nowrap;
+    }
+    
+    .excel-btn:hover {
+      background: var(--bg-hover);
+      border-color: var(--filter-primary);
+    }
+    
+    .excel-btn--primary {
+      background: var(--filter-primary);
+      border-color: var(--filter-primary);
+      color: var(--text-white);
+    }
+    
+    .excel-btn--primary:hover {
+      background: var(--filter-secondary);
+      border-color: var(--filter-secondary);
+    }
+    
+    .excel-btn--success {
+      background: var(--filter-success);
+      border-color: var(--filter-success);
+      color: var(--text-white);
+    }
+    
+    .excel-btn--warning {
+      background: var(--filter-warning);
+      border-color: var(--filter-warning);
+      color: var(--text-white);
+    }
+    
+    .excel-btn--small {
+      padding: 2px var(--space-1);
+      font-size: 0.7rem;
+      height: 24px;
+    }
+    
+    .excel-table-wrapper {
+      overflow: auto;
+      max-height: 600px;
+      border-top: 1px solid var(--border-color);
+    }
+    
+    .excel-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--bg-secondary);
+      font-size: 0.75rem;
+      line-height: 1.2;
+      table-layout: fixed;
+    }
+    
+    .excel-table th {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      padding: var(--space-1) var(--space-2);
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 0.7rem;
+      height: 28px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      user-select: none;
+      cursor: pointer;
+    }
+    
+    .excel-table th:hover {
+      background: var(--bg-hover);
+    }
+    
+    .excel-table td {
+      border: 1px solid var(--border-light);
+      padding: 1px 2px;
+      height: 22px;
+      vertical-align: middle;
+      position: relative;
+    }
+    
+    .excel-table tr:hover {
+      background: rgba(var(--filter-primary-rgb), 0.02);
+    }
+    
+    .excel-table tr:nth-child(even) {
+      background: rgba(0, 0, 0, 0.01);
+    }
+    
+    .excel-table tr:nth-child(even):hover {
+      background: rgba(var(--filter-primary-rgb), 0.03);
+    }
+    
+    .excel-cell {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: transparent;
+      font-size: 0.75rem;
+      padding: 2px 4px;
+      outline: none;
+      font-family: inherit;
+      color: var(--text-primary);
+    }
+    
+    .excel-cell:focus {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--filter-primary);
+      border-radius: 2px;
+    }
+    
+    .excel-select {
+      width: 100%;
+      height: 20px;
+      border: none;
+      background: transparent;
+      font-size: 0.75rem;
+      outline: none;
+      cursor: pointer;
+    }
+    
+    .excel-select:focus {
+      background: var(--bg-tertiary);
+    }
+    
+    .excel-checkbox {
+      width: 14px;
+      height: 14px;
+      cursor: pointer;
+    }
+    
+    .excel-pagination {
+      background: var(--bg-tertiary);
+      border-top: 1px solid var(--border-color);
+      padding: var(--space-2) var(--space-3);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      min-height: 32px;
+    }
+    
+    .excel-pagination__info {
+      color: var(--text-secondary);
+    }
+    
+    .excel-pagination__controls {
+      display: flex;
+      gap: var(--space-1);
+    }
+
+    /* ベーススタイル */
+    body {
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      margin: 0;
+      padding: 0;
+      transition: var(--transition-normal);
+    }
+
+    .filter__main-container {
+      padding: var(--space-6);
+      max-width: 1800px;
+      margin: 0 auto;
+      background: var(--bg-primary);
+      min-height: 100vh;
+    }
+
+    .filter__page-header {
+      background: linear-gradient(135deg, var(--filter-primary), var(--filter-secondary));
+      border-radius: var(--radius-2xl);
+      padding: var(--space-6);
+      margin-bottom: var(--space-6);
+      color: var(--text-white);
+      box-shadow: var(--shadow-lg);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .filter__page-header::before {
+      content: '';
+      position: absolute;
+      top: -30%;
+      right: -10%;
+      width: 200px;
+      height: 200px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      transform: rotate(45deg);
+    }
+
+    .filter__header-content {
+      position: relative;
+      z-index: 2;
+    }
+
+    .filter__page-title {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: var(--space-2);
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .filter__title-icon {
+      width: 50px;
+      height: 50px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      backdrop-filter: blur(10px);
+    }
+
+    .filter__page-subtitle {
+      font-size: 1rem;
+      opacity: 0.9;
+      margin: 0;
+      font-weight: 400;
+    }
+
+    /* 統計ダッシュボード */
+    .filter__dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+    }
+
+    .filter__stat-card {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-xl);
+      padding: var(--space-4);
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--border-light);
+      transition: var(--transition-normal);
+    }
+
+    .filter__stat-card:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .filter__stat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-3);
+    }
+
+    .filter__stat-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .filter__stat-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+
+    .filter__stat-icon--danger {
+      background: rgba(220, 38, 38, 0.1);
+      color: var(--filter-danger);
+    }
+
+    .filter__stat-icon--warning {
+      background: rgba(245, 158, 11, 0.1);
+      color: var(--filter-warning);
+    }
+
+    .filter__stat-icon--success {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--filter-success);
+    }
+
+    .filter__stat-icon--info {
+      background: rgba(6, 182, 212, 0.1);
+      color: var(--filter-info);
+    }
+
+    .filter__stat-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: var(--space-1);
+    }
+
+    .filter__stat-description {
+      font-size: 0.75rem;
+      color: var(--text-tertiary);
+    }
+
+    /* タブシステム */
+    .filter__tabs {
+      display: flex;
+      background: var(--bg-secondary);
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      border: 1px solid var(--border-color);
+      border-bottom: none;
+      overflow-x: auto;
+      margin-bottom: 0;
+    }
+
+    .filter__tab-button {
+      padding: var(--space-3) var(--space-4);
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition-normal);
+      white-space: nowrap;
+      border-bottom: 3px solid transparent;
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .filter__tab-button:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .filter__tab-button--active {
+      color: var(--filter-primary);
+      border-bottom-color: var(--filter-primary);
+      background: var(--bg-tertiary);
+    }
+
+    .filter__tab-content {
+      display: none;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+      box-shadow: var(--shadow-md);
+    }
+
+    .filter__tab-content--active {
+      display: block;
+    }
+
+    /* AI学習セクション */
+    .filter__ai-section {
+      padding: var(--space-6);
+    }
+
+    .filter__ai-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--accent-purple);
+      margin-bottom: var(--space-4);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .filter__form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: var(--space-4);
+      margin-bottom: var(--space-4);
+    }
+
+    .filter__form-group {
+      margin-bottom: var(--space-3);
+    }
+
+    .filter__form-label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: var(--space-2);
+    }
+
+    .filter__form-input,
+    .filter__form-select,
+    .filter__form-textarea {
+      width: 100%;
+      padding: var(--space-3);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 0.875rem;
+      transition: var(--transition-normal);
+      box-sizing: border-box;
+    }
+
+    .filter__form-input:focus,
+    .filter__form-select:focus,
+    .filter__form-textarea:focus {
+      outline: none;
+      border-color: var(--filter-primary);
+      box-shadow: 0 0 0 3px rgba(var(--filter-primary-rgb), 0.1);
+    }
+
+    .filter__form-textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+
+    /* モール別適用設定 */
+    .filter__mall-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: var(--space-4);
+    }
+
+    .filter__mall-card {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      transition: var(--transition-normal);
+    }
+
+    .filter__mall-card:hover {
+      border-color: var(--filter-primary);
+    }
+
+    .filter__mall-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-3);
+    }
+
+    .filter__mall-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-md);
+      background: var(--filter-info);
+      color: var(--text-white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+
+    .filter__mall-name {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .filter__rule-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .filter__rule-checkbox {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    /* CSV管理セクション */
+    .filter__csv-section {
+      padding: var(--space-6);
+    }
+
+    .filter__upload-area {
+      border: 2px dashed var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition-normal);
+      background: var(--bg-tertiary);
+      margin-bottom: var(--space-4);
+    }
+
+    .filter__upload-area:hover,
+    .filter__upload-area--dragover {
+      border-color: var(--filter-primary);
+      background: rgba(var(--filter-primary-rgb), 0.05);
+    }
+
+    .filter__upload-icon {
+      font-size: 2.5rem;
+      color: var(--text-muted);
+      margin-bottom: var(--space-3);
+    }
+
+    .filter__upload-text {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-2);
+      font-weight: 500;
+    }
+
+    .filter__upload-subtext {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .filter__hidden-input {
+      display: none;
+    }
+
+    /* 結果表示セクション */
+    .filter__results-section {
+      padding: var(--space-6);
+    }
+
+    .filter__results-header {
+      display: flex;
+      justify-content: between;
+      align-items: center;
+      margin-bottom: var(--space-4);
+      gap: var(--space-4);
+    }
+
+    .filter__results-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 0;
+    }
+
+    .filter__results-summary {
+      display: flex;
+      gap: var(--space-4);
+      margin-bottom: var(--space-4);
+    }
+
+    .filter__summary-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: var(--space-3);
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      min-width: 80px;
+    }
+
+    .filter__summary-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .filter__summary-value--blocked {
+      color: var(--filter-danger);
+    }
+
+    .filter__summary-value--passed {
+      color: var(--filter-success);
+    }
+
+    .filter__summary-value--total {
+      color: var(--filter-info);
+    }
+
+    .filter__summary-label {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: var(--space-1);
+    }
+
+    /* ブロック結果専用スタイル */
+    .blocked-item__name {
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 0.8rem;
+      line-height: 1.2;
+    }
+
+    .blocked-item__sku {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* モールバッジ */
+    .mall-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: white;
+      text-align: center;
+    }
+
+    .mall-badge--amazon { background: var(--accent-orange); }
+    .mall-badge--shopify { background: var(--accent-green); }
+    .mall-badge--ebay { background: var(--accent-blue); }
+    .mall-badge--rakuten { background: var(--accent-red); }
+    .mall-badge--yahoo { background: var(--accent-purple); }
+    .mall-badge--mercari { background: var(--accent-red); }
+
+    /* 判定方法バッジ */
+    .method-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: white;
+    }
+
+    .method-badge--ai { background: var(--accent-purple); }
+    .method-badge--text { background: var(--filter-warning); }
+
+    /* ルールバッジ */
+    .rule-badge {
+      display: block;
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      font-size: 0.65rem;
+      font-weight: 500;
+      color: white;
+      margin-bottom: 2px;
+    }
+
+    .rule-badge--ai { background: rgba(139, 92, 246, 0.8); }
+    .rule-badge--text { background: rgba(245, 158, 11, 0.8); }
+
+    /* ブロック理由 */
+    .block-reason__main {
+      font-weight: 600;
+      color: var(--filter-danger);
+      font-size: 0.75rem;
+      line-height: 1.2;
+    }
+
+    .block-reason__detail {
+      font-size: 0.65rem;
+      color: var(--text-secondary);
+      margin-top: 2px;
+      line-height: 1.3;
+    }
+
+    /* 検出キーワードタグ */
+    .detected-keywords {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2px;
+    }
+
+    .keyword-tag {
+      display: inline-block;
+      padding: 1px 4px;
+      background: rgba(220, 38, 38, 0.1);
+      color: var(--filter-danger);
+      border-radius: var(--radius-sm);
+      font-size: 0.65rem;
+      font-weight: 500;
+      border: 1px solid rgba(220, 38, 38, 0.2);
+    }
+
+    .keyword-tag--exact {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .keyword-tag--partial {
+      background: rgba(245, 158, 11, 0.1);
+      color: var(--filter-warning);
+      border-color: rgba(245, 158, 11, 0.2);
+    }
+
+    .keyword-tag--danger {
+      background: rgba(220, 38, 38, 0.2);
+      color: var(--filter-danger);
+      border-color: rgba(220, 38, 38, 0.4);
+      font-weight: 600;
+    }
+
+    /* 優先度バッジ */
+    .priority-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: white;
+      text-align: center;
+    }
+
+    .priority-badge--low { background: var(--text-muted); }
+    .priority-badge--medium { background: var(--filter-info); }
+    .priority-badge--high { background: var(--filter-warning); }
+    .priority-badge--critical { background: var(--filter-danger); }
+
+    /* ブロック日時 */
+    .block-datetime {
+      text-align: center;
+      font-size: 0.7rem;
+    }
+
+    .block-time {
+      color: var(--text-muted);
+      font-size: 0.65rem;
+      margin-top: 1px;
+    }
+
+    /* レスポンシブ対応 */
+    @media (max-width: 1200px) {
+      .filter__form-grid,
+      .filter__mall-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      }
+    }
+
+    @media (max-width: 768px) {
+      .filter__main-container {
+        padding: var(--space-4);
+      }
+
+      .filter__page-header {
+        padding: var(--space-4);
+      }
+
+      .filter__page-title {
+        font-size: 1.5rem;
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .filter__dashboard {
+        grid-template-columns: 1fr;
+        gap: var(--space-3);
+      }
+
+      .excel-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-2);
+      }
+
+      .excel-toolbar__search-input {
+        width: 100%;
+      }
+
+      .excel-table-wrapper {
+        max-height: 400px;
+      }
+
+      .filter__form-grid,
+      .filter__mall-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .filter__results-summary {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+    }
+  </style>
+<script>
+// CAIDS error_handling Hook
+
+// CAIDS エラー処理Hook - 完全実装
+window.CAIDS_ERROR_HANDLER = {
+    isActive: true,
+    errorCount: 0,
+    errorHistory: [],
+    
+    initialize: function() {
+        this.setupGlobalErrorHandler();
+        this.setupUnhandledPromiseRejection();
+        this.setupNetworkErrorHandler();
+        console.log('⚠️ CAIDS エラーハンドリングシステム完全初期化');
+    },
+    
+    setupGlobalErrorHandler: function() {
+        window.addEventListener('error', (event) => {
+            this.handleError({
+                type: 'JavaScript Error',
+                message: event.message,
+                filename: event.filename,
+                lineno: event.lineno,
+                colno: event.colno,
+                stack: event.error?.stack
+            });
+        });
+    },
+    
+    setupUnhandledPromiseRejection: function() {
+        window.addEventListener('unhandledrejection', (event) => {
+            this.handleError({
+                type: 'Unhandled Promise Rejection',
+                message: event.reason?.message || String(event.reason),
+                stack: event.reason?.stack
+            });
+        });
+    },
+    
+    setupNetworkErrorHandler: function() {
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            try {
+                const response = await originalFetch.apply(this, args);
+                if (!response.ok) {
+                    window.CAIDS_ERROR_HANDLER.handleError({
+                        type: 'Network Error',
+                        message: `HTTP ${response.status}: ${response.statusText}`,
+                        url: args[0]
+                    });
+                }
+                return response;
+            } catch (error) {
+                window.CAIDS_ERROR_HANDLER.handleError({
+                    type: 'Network Fetch Error',
+                    message: error.message,
+                    url: args[0]
+                });
+                throw error;
+            }
+        };
+    },
+    
+    handleError: function(errorInfo) {
+        this.errorCount++;
+        this.errorHistory.push({...errorInfo, timestamp: new Date().toISOString()});
+        
+        console.error('🚨 CAIDS Error Handler:', errorInfo);
+        this.showErrorNotification(errorInfo);
+        this.reportError(errorInfo);
+    },
+    
+    showErrorNotification: function(errorInfo) {
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = `
+            position: fixed; top: 10px; right: 10px; z-index: 999999;
+            background: linear-gradient(135deg, #ff4444, #cc0000);
+            color: white; padding: 15px 20px; border-radius: 8px;
+            max-width: 350px; box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            font-size: 13px; font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            border: 2px solid #ff6666; animation: caids-error-shake 0.5s ease-in-out;
+        `;
+        errorDiv.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 18px;">🚨</span>
+                <div>
+                    <strong>エラーが発生しました</strong><br>
+                    <small style="opacity: 0.9;">${errorInfo.type}: ${errorInfo.message}</small>
+                </div>
+            </div>
+        `;
+        
+        // CSS Animation
+        if (!document.getElementById('caids-error-styles')) {
+            const style = document.createElement('style');
+            style.id = 'caids-error-styles';
+            style.textContent = `
+                @keyframes caids-error-shake {
+                    0%, 100% { transform: translateX(0); }
+                    25% { transform: translateX(-5px); }
+                    75% { transform: translateX(5px); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(errorDiv);
+        setTimeout(() => errorDiv.remove(), 7000);
+    },
+    
+    reportError: function(errorInfo) {
+        // エラーレポート生成・送信（将来の拡張用）
+        const report = {
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent,
+            url: window.location.href,
+            errorCount: this.errorCount,
+            sessionId: this.getSessionId(),
+            ...errorInfo
+        };
+        
+        console.log('📋 CAIDS Error Report:', report);
+        localStorage.setItem('caids_last_error', JSON.stringify(report));
+    },
+    
+    getSessionId: function() {
+        let sessionId = sessionStorage.getItem('caids_session_id');
+        if (!sessionId) {
+            sessionId = 'caids_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            sessionStorage.setItem('caids_session_id', sessionId);
+        }
+        return sessionId;
+    },
+    
+    getErrorStats: function() {
+        return {
+            totalErrors: this.errorCount,
+            recentErrors: this.errorHistory.slice(-10),
+            sessionId: this.getSessionId()
+        };
+    }
+};
+
+window.CAIDS_ERROR_HANDLER.initialize();
+
+</script>
+<script>
+// CAIDS user_feedback Hook
+// CAIDS user_feedback Hook - 基本実装
+console.log('✅ user_feedback Hook loaded');
+</script>
+<script>
+// CAIDS character_limit Hook
+// CAIDS character_limit Hook - 基本実装
+console.log('✅ character_limit Hook loaded');
+</script>
+<script>
+// CAIDS development_control Hook
+// CAIDS development_control Hook - 基本実装
+console.log('✅ development_control Hook loaded');
+</script>
+<script>
+// CAIDS natural_explanation Hook
+// CAIDS natural_explanation Hook - 基本実装
+console.log('✅ natural_explanation Hook loaded');
+</script>
+<script>
+// CAIDS character_monitoring Hook
+// CAIDS character_monitoring Hook - 基本実装
+console.log('✅ character_monitoring Hook loaded');
+</script>
+<script>
+// CAIDS emergency_accumulation Hook
+// CAIDS emergency_accumulation Hook - 基本実装
+console.log('✅ emergency_accumulation Hook loaded');
+</script>
+<script>
+// CAIDS pre_analysis_enforcement Hook
+// CAIDS pre_analysis_enforcement Hook - 基本実装
+console.log('✅ pre_analysis_enforcement Hook loaded');
+</script>
+<script>
+// CAIDS user_approval_required Hook
+// CAIDS user_approval_required Hook - 基本実装
+console.log('✅ user_approval_required Hook loaded');
+</script>
+<script>
+// CAIDS timeout_management Hook
+// CAIDS timeout_management Hook - 基本実装
+console.log('✅ timeout_management Hook loaded');
+</script>
+</head>
+<body data-system-ready="false">
+  <!-- メインコンテナ -->
+  <main class="filter__main-container">
+    <!-- ページヘッダー -->
+    <header class="filter__page-header">
+      <div class="filter__header-content">
+        <h1 class="filter__page-title">
+          <div class="filter__title-icon">
+            <i class="fas fa-shield-alt"></i>
+          </div>
+          フィルタールール管理システム
+        </h1>
+        <p class="filter__page-subtitle">
+          Ollama DeepSeek + テキストマッチによる輸出・モール別禁止品フィルタリング
+        </p>
+      </div>
+    </header>
+
+    <!-- 統計ダッシュボード -->
+    <section class="filter__dashboard">
+      <div class="filter__stat-card">
+        <div class="filter__stat-header">
+          <h3 class="filter__stat-title">AIルール数</h3>
+          <div class="filter__stat-icon filter__stat-icon--info">
+            <i class="fas fa-brain"></i>
+          </div>
+        </div>
+        <div class="filter__stat-value">15</div>
+        <div class="filter__stat-description">学習済みAIルール</div>
+      </div>
+
+      <div class="filter__stat-card">
+        <div class="filter__stat-header">
+          <h3 class="filter__stat-title">テキストルール数</h3>
+          <div class="filter__stat-icon filter__stat-icon--warning">
+            <i class="fas fa-list"></i>
+          </div>
+        </div>
+        <div class="filter__stat-value">2,847</div>
+        <div class="filter__stat-description">登録済みキーワード</div>
+      </div>
+
+      <div class="filter__stat-card">
+        <div class="filter__stat-header">
+          <h3 class="filter__stat-title">今日のブロック数</h3>
+          <div class="filter__stat-icon filter__stat-icon--danger">
+            <i class="fas fa-ban"></i>
+          </div>
+        </div>
+        <div class="filter__stat-value">156</div>
+        <div class="filter__stat-description">AI: 89件, テキスト: 67件</div>
+      </div>
+
+      <div class="filter__stat-card">
+        <div class="filter__stat-header">
+          <h3 class="filter__stat-title">精度</h3>
+          <div class="filter__stat-icon filter__stat-icon--success">
+            <i class="fas fa-bullseye"></i>
+          </div>
+        </div>
+        <div class="filter__stat-value">97.8%</div>
+        <div class="filter__stat-description">誤検出率: 2.2%</div>
+      </div>
+    </section>
+
+    <!-- タブシステム -->
+    <nav class="filter__tabs">
+      <button class="filter__tab-button filter__tab-button--active" data-tab="ai-rules">
+        <i class="fas fa-brain"></i>
+        AIルール学習
+      </button>
+      <button class="filter__tab-button" data-tab="text-rules">
+        <i class="fas fa-list"></i>
+        テキストルール管理
+      </button>
+      <button class="filter__tab-button" data-tab="mall-settings">
+        <i class="fas fa-store"></i>
+        モール別適用設定
+      </button>
+      <button class="filter__tab-button" data-tab="csv-management">
+        <i class="fas fa-file-csv"></i>
+        CSV一括管理
+      </button>
+      <button class="filter__tab-button" data-tab="blocked-results">
+        <i class="fas fa-ban"></i>
+        ブロック結果
+      </button>
+      <button class="filter__tab-button" data-tab="ai-control-deck">
+        <i class="fas fa-robot"></i>
+        AI制御デッキ
+      </button>
+      <button class="filter__tab-button" data-tab="learning-data">
+        <i class="fas fa-database"></i>
+        学習データ管理
+      </button>
+    </nav>
+
+    <!-- AIルール学習タブ -->
+    <div class="filter__tab-content filter__tab-content--active" id="ai-rules-tab">
+      <div class="filter__ai-section">
+        <h2 class="filter__ai-title">
+          <i class="fas fa-brain"></i>
+          AI学習ルール管理（Ollama DeepSeek）
+        </h2>
+        
+        <div class="filter__form-grid">
+          <div class="filter__form-group">
+            <label class="filter__form-label" for="aiRuleName">ルール名</label>
+            <input type="text" id="aiRuleName" class="filter__form-input" 
+                   placeholder="例: 輸出禁止電子機器判定" />
+          </div>
+          
+          <div class="filter__form-group">
+            <label class="filter__form-label" for="aiRuleCategory">カテゴリ</label>
+            <select id="aiRuleCategory" class="filter__form-select">
+              <option value="">カテゴリを選択</option>
+              <option value="export-ban">輸出禁止品</option>
+              <option value="dangerous">危険物</option>
+              <option value="health">健康・医療</option>
+              <option value="copyright">著作権・偽造</option>
+              <option value="custom">カスタム</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="filter__form-group">
+          <label class="filter__form-label" for="aiRuleText">AI学習テキスト</label>
+          <textarea id="aiRuleText" class="filter__form-textarea" 
+                    placeholder="AIに学習させる判定ルールを自然言語で入力してください。
+
+例:
+「リチウム電池を含む電子機器は国際輸送において危険物に分類されるため輸出禁止とする。バッテリー、充電器、モバイル機器、電動工具などが該当する。重量が100Wh以上のリチウムイオン電池は特に厳格に制限する。」
+
+「健康食品やサプリメントで医薬品に近い効果を謳うものは薬事法違反の可能性があるため出品を禁止する。特に治療効果、診断、予防効果を明記した商品説明は注意が必要。」"></textarea>
+        </div>
+        
+        <div style="display: flex; gap: var(--space-3); margin-top: var(--space-4);">
+          <button class="excel-btn excel-btn--primary" onclick="saveAIRule()">
+            <i class="fas fa-save"></i>
+            AIルール保存
+          </button>
+          <button class="excel-btn" onclick="testAIRule()">
+            <i class="fas fa-flask"></i>
+            テスト実行
+          </button>
+        </div>
+
+        <!-- 登録済みAIルール一覧 -->
+        <div class="excel-grid" style="margin-top: var(--space-6);">
+          <div class="excel-toolbar">
+            <div class="excel-toolbar__left">
+              <span style="font-weight: 600;">登録済みAIルール (15件)</span>
+            </div>
+            <div class="excel-toolbar__right">
+              <div class="excel-toolbar__search">
+                <i class="fas fa-search excel-toolbar__search-icon"></i>
+                <input type="text" class="excel-toolbar__search-input" placeholder="ルール検索..." onkeyup="searchAIRules(this.value)" />
+              </div>
+            </div>
+          </div>
+
+          <div class="excel-table-wrapper">
+            <table class="excel-table">
+              <thead>
+                <tr>
+                  <th style="width: 40px;">
+                    <input type="checkbox" class="excel-checkbox" onclick="toggleAllAIRules(this.checked)" />
+                  </th>
+                  <th style="width: 200px;">ルール名</th>
+                  <th style="width: 120px;">カテゴリ</th>
+                  <th style="width: 300px;">学習テキスト概要</th>
+                  <th style="width: 80px;">状態</th>
+                  <th style="width: 80px;">精度</th>
+                  <th style="width: 100px;">更新日</th>
+                  <th style="width: 120px;">学習状況</th>
+                  <th style="width: 80px;">操作</th>
+                </tr>
+              </thead>
+              <tbody id="aiRulesTableBody">
+                <tr>
+                  <td><input type="checkbox" class="excel-checkbox" /></td>
+                  <td><input type="text" class="excel-cell" value="輸出禁止電子機器判定" onchange="updateAIRule(this)" /></td>
+                  <td><input type="text" class="excel-cell" value="輸出禁止品" onchange="updateAIRule(this)" /></td>
+                  <td><input type="text" class="excel-cell" value="リチウム電池含有電子機器の輸送制限判定..." onchange="updateAIRule(this)" /></td>
+                  <td>
+                    <select class="excel-select" onchange="updateAIRuleStatus(this)">
+                      <option value="active" selected>有効</option>
+                      <option value="inactive">無効</option>
+                    </select>
+                  </td>
+                  <td style="text-align: center; color: var(--filter-success); font-weight: 600;">98.5%</td>
+                  <td style="font-size: 0.65rem; color: var(--text-muted);">2024/07/08</td>
+                  <td>
+                    <div style="font-size: 0.65rem;">
+                      <div style="width: 100%; height: 8px; background: var(--bg-tertiary); border-radius: 4px; margin-bottom: 2px;">
+                        <div style="width: 78%; height: 100%; background: var(--filter-success); border-radius: 4px;"></div>
+                      </div>
+                      <span style="color: var(--text-secondary);">156/200件</span>
+                    </div>
+                  </td>
+                  <td>
+                    <button class="excel-btn excel-btn--small" onclick="editAIRule(this)">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox" class="excel-checkbox" /></td>
+                  <td><input type="text" class="excel-cell" value="健康食品薬事法判定" onchange="updateAIRule(this)" /></td>
+                  <td><input type="text" class="excel-cell" value="健康・医療" onchange="updateAIRule(this)" /></td>
+                  <td><input type="text" class="excel-cell" value="医薬品的効果を謳う健康食品の規制判定..." onchange="updateAIRule(this)" /></td>
+                  <td>
+                    <select class="excel-select" onchange="updateAIRuleStatus(this)">
+                      <option value="active" selected>有効</option>
+                      <option value="inactive">無効</option>
+                    </select>
+                  </td>
+                  <td style="text-align: center; color: var(--filter-success); font-weight: 600;">96.2%</td>
+                  <td style="font-size: 0.65rem; color: var(--text-muted);">2024/07/07</td>
+                  <td>
+                    <div style="font-size: 0.65rem;">
+                      <div style="width: 100%; height: 8px; background: var(--bg-tertiary); border-radius: 4px; margin-bottom: 2px;">
+                        <div style="width: 63%; height: 100%; background: var(--filter-warning); border-radius: 4px;"></div>
+                      </div>
+                      <span style="color: var(--text-secondary);">89/140件</span>
+                    </div>
+                  </td>
+                  <td>
+                    <button class="excel-btn excel-btn--small" onclick="editAIRule(this)">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- テキストルール管理タブ -->
+    <div class="filter__tab-content" id="text-rules-tab">
+      <div class="filter__ai-section">
+        <h2 class="filter__ai-title">
+          <i class="fas fa-list"></i>
+          テキストマッチルール管理
+        </h2>
+        
+        <!-- 新規ルール追加フォーム -->
+        <div class="filter__form-grid">
+          <div class="filter__form-group">
+            <label class="filter__form-label" for="textRuleKeyword">キーワード</label>
+            <input type="text" id="textRuleKeyword" class="filter__form-input" 
+                   placeholder="例: battery, lithium, 偽造品" />
+          </div>
+          
+          <div class="filter__form-group">
+            <label class="filter__form-label" for="textRuleType">マッチ種別</label>
+            <select id="textRuleType" class="filter__form-select">
+              <option value="exact">完全一致</option>
+              <option value="partial" selected>部分一致</option>
+              <option value="regex">正規表現</option>
+            </select>
+          </div>
+          
+          <div class="filter__form-group">
+            <label class="filter__form-label" for="textRulePriority">優先度</label>
+            <select id="textRulePriority" class="filter__form-select">
+              <option value="low">低</option>
+              <option value="medium" selected>中</option>
+              <option value="high">高</option>
+              <option value="critical">緊急</option>
+            </select>
+          </div>
+          
+          <div class="filter__form-group">
+            <label class="filter__form-label" for="textRuleReason">ブロック理由</label>
+            <input type="text" id="textRuleReason" class="filter__form-input" 
+                   placeholder="例: リチウム電池規制により輸出禁止" />
+          </div>
+        </div>
+        
+        <div style="margin-bottom: var(--space-4);">
+          <button class="excel-btn excel-btn--primary" onclick="addTextRule()">
+            <i class="fas fa-plus"></i>
+            テキストルール追加
+          </button>
+        </div>
+
+        <!-- テキストルール一覧グリッド -->
+        <div class="excel-grid">
+          <div class="excel-toolbar">
+            <div class="excel-toolbar__left">
+              <button class="excel-btn excel-btn--primary" onclick="addNewTextRule()">
+                <i class="fas fa-plus"></i>
+                新規追加
+              </button>
+              <button class="excel-btn" onclick="deleteSelectedTextRules()">
+                <i class="fas fa-trash"></i>
+                選択削除
+              </button>
+              <button class="excel-btn" onclick="toggleSelectedTextRules()">
+                <i class="fas fa-toggle-on"></i>
+                有効/無効切替
+              </button>
+            </div>
+            
+            <div class="excel-toolbar__right">
+              <div class="excel-toolbar__search">
+                <i class="fas fa-search excel-toolbar__search-icon"></i>
+                <input type="text" class="excel-toolbar__search-input" 
+                       placeholder="キーワード検索..." onkeyup="searchTextRules(this.value)" />
+              </div>
+              <button class="excel-btn" onclick="exportTextRules()">
+                <i class="fas fa-download"></i>
+                エクスポート
+              </button>
+            </div>
+          </div>
+
+          <div class="excel-table-wrapper">
+            <table class="excel-table">
+              <thead>
+                <tr>
+                  <th style="width: 40px;">
+                    <input type="checkbox" class="excel-checkbox" onclick="toggleAllTextRules(this.checked)" />
+                  </th>
+                  <th style="width: 180px;">キーワード</th>
+                  <th style="width: 100px;">マッチ種別</th>
+                  <th style="width: 80px;">優先度</th>
+                  <th style="width: 220px;">ブロック理由</th>
+                  <th style="width: 80px;">状態</th>
+                  <th style="width: 80px;">検出数</th>
+                  <th style="width: 100px;">登録日</th>
+                  <th style="width: 60px;">操作</th>
+                </tr>
+              </thead>
+              <tbody id="textRulesTableBody">
+                <tr data-status="active">
+                  <td><input type="checkbox" class="excel-checkbox" /></td>
+                  <td><input type="text" class="excel-cell" value="battery" onchange="updateTextRule(this)" /></td>
+                  <td>
+                    <select class="excel-select" onchange="updateTextRule(this)">
+                      <option value="exact">完全一致</option>
+                      <option value="partial" selected>部分一致</option>
+                      <option value="regex">正規表現</option>
+                    </select>
+                  </td>
+                  <td>
+                    <select class="excel-select" onchange="updateTextRule(this)">
+                      <option value="low">低</option>
+                      <option value="medium">中</option>
+                      <option value="high" selected>高</option>
+                      <option value="critical">緊急</option>
+                    </select>
+                  </td>
+                  <td><input type="text" class="excel-cell" value="リチウム電池規制により輸出禁止" onchange="updateTextRule(this)" /></td>
+                  <td>
+                    <select class="excel-select" onchange="updateTextRuleStatus(this)">
+                      <option value="active" selected>有効</option>
+                      <option value="inactive">無効</option>
+                    </select>
+                  </td>
+                  <td style="text-align: center; font-weight: 600; color: var(--filter-danger);">234</td>
+                  <td style="font-size: 0.65rem; color: var(--text-muted);">2024/07/08</td>
+                  <td>
+                    <button class="excel-btn excel-btn--small" onclick="deleteTextRule(this)" title="削除">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+                
+                <tr data-status="active">
+                  <td><input type="checkbox" class="excel-checkbox" /></td>
+                  <td><input type="text" class="excel-cell" value="replica" onchange="updateTextRule(this)" /></td>
+                  <td>
+                    <select class="excel-select" onchange="updateTextRule(this)">
+                      <option value="exact" selected>完全一致</option>
+                      <option value="partial">部分一致</option>
+                      <option value="regex">正規表現</option>
+                    </select>
+                  </td>
+                  <td>
+                    <select class="excel-select" onchange="updateTextRule(this)">
+                      <option value="low">低</option>
+                      <option value="medium">中</option>
+                      <option value="high">高</option>
+                      <option value="critical" selected>緊急</option>
+                    </select>
+                  </td>
+                  <td><input type="text" class="excel-cell" value="偽造品・レプリカ商品の出品禁止" onchange="updateTextRule(this)" /></td>
+                  <td>
+                    <select class="excel-select" onchange="updateTextRuleStatus(this)">
+                      <option value="active" selected>有効</option>
+                      <option value="inactive">無効</option>
+                    </select>
+                  </td>
+                  <td style="text-align: center; font-weight: 600; color: var(--filter-danger);">89</td>
+                  <td style="font-size: 0.65rem; color: var(--text-muted);">2024/07/07</td>
+                  <td>
+                    <button class="excel-btn excel-btn--small" onclick="deleteTextRule(this)" title="削除">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="excel-pagination">
+            <div class="excel-pagination__info">
+              テキストルール: 2件表示 / 全2,847件
+            </div>
+            <div class="excel-pagination__controls">
+              <button class="excel-btn excel-btn--small" onclick="previousPage()" disabled>
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              <button class="excel-btn excel-btn--small" style="background: var(--filter-primary); color: white;">1</button>
+              <button class="excel-btn excel-btn--small" onclick="goToPage(2)">2</button>
+              <button class="excel-btn excel-btn--small" onclick="nextPage()">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- モール別適用設定タブ -->
+    <div class="filter__tab-content" id="mall-settings-tab">
+      <div class="filter__ai-section">
+        <h2 class="filter__ai-title">
+          <i class="fas fa-store"></i>
+          モール別ルール適用設定
+        </h2>
+        
+        <div class="filter__mall-grid">
+          <!-- Shopify -->
+          <div class="filter__mall-card">
+            <div class="filter__mall-header">
+              <div class="filter__mall-icon" style="background: var(--accent-green);">SH</div>
+              <div class="filter__mall-name">Shopify</div>
+              <div style="margin-left: auto;">
+                <span class="excel-btn excel-btn--small" style="background: var(--filter-success); color: white;">
+                  8/12 有効
+                </span>
+              </div>
+            </div>
+            <div class="filter__rule-list">
+              <div style="border-bottom: 1px solid var(--border-light); padding-bottom: var(--space-2); margin-bottom: var(--space-2);">
+                <strong style="font-size: 0.75rem; color: var(--accent-purple);">AIルール</strong>
+              </div>
+              <label class="filter__rule-checkbox">
+                <input type="checkbox" checked onchange="updateMallRuleSetting('shopify', 'ai-export-electronics', this.checked)" /> 
+                輸出禁止電子機器判定
+              </label>
+              <label class="filter__rule-checkbox">
+                <input type="checkbox" checked onchange="updateMallRuleSetting('shopify', 'ai-health-law', this.checked)" /> 
+                健康食品薬事法判定
+              </label>
+              
+              <div style="border-bottom: 1px solid var(--border-light); padding-bottom: var(--space-2); margin-bottom: var(--space-2); margin-top: var(--space-3);">
+                <strong style="font-size: 0.75rem; color: var(--filter-warning);">テキストルール</strong>
+              </div>
+              <label class="filter__rule-checkbox">
+                <input type="checkbox" checked onchange="updateMallRuleSetting('shopify', 'text-battery', this.checked)" /> 
+                battery (部分一致)
+              </label>
+              <label class="filter__rule-checkbox">
+                <input type="checkbox" checked onchange="updateMallRuleSetting('shopify', 'text-replica', this.checked)" /> 
+                replica (完全一致)
+              </label>
+            </div>
+          </div>
+
+          <!-- Amazon -->
+          <div class="filter__mall-card">
+            <div class="filter__mall-header">
+              <div class="filter__mall-icon" style="background: var(--accent-orange);">AM</div>
+              <div class="filter__mall-name">Amazon</div>
+              <div style="margin-left: auto;">
+                <span class="excel-btn excel-btn--small" style="background: var(--filter-warning); color: white;">
+                  6/12 有効
+                </span>
+              </div>
+            </div>
+            <div class="filter__rule-list">
+              <div style="border-bottom: 1px solid var(--border-light); padding-bottom: var(--space-2); margin-bottom: var(--space-2);">
+                <strong style="font-size: 0.75rem; color: var(--accent-purple);">AIルール</strong>
+              </div>
+              <label class="filter__rule-checkbox">
+                <input type="checkbox" checked onchange="updateMallRuleSetting('amazon', 'ai-export-electronics', this.checked)" /> 
+                輸出禁止電子機器判定
+              </label>
+              <label class="filter__rule-checkbox">
+                <input type="checkbox" checked onchange="updateMallRuleSetting('amazon', 'ai-health-law', this.checked)" /> 
+                健康食品薬事法判定
+              </label>
+              
+              <div style="border-bottom: 1px solid var(--border-light); padding-bottom: var(--space-2); margin-bottom: var(--space-2); margin-top: var(--space-3);">
+                <strong style="font-size: 0.75rem; color: var(--filter-warning);">テキストルール</strong>
+              </div>
+              <label class="filter__rule-checkbox">
+                <input type="checkbox" checked onchange="updateMallRuleSetting('amazon', 'text-battery', this.checked)" /> 
+                battery (部分一致)
+              </label>
+              <label class="filter__rule-checkbox">
+                <input type="checkbox" onchange="updateMallRuleSetting('amazon', 'text-replica', this.checked)" /> 
+                replica (完全一致)
+              </label>
+            </div>
+          </div>
+
+          <!-- eBay -->
+          <div class="filter__mall-card">
+            <div class="filter__mall-header">
+              <div class="filter__mall-icon" style="background: var(--accent-blue);">EB</div>
+              <div class="filter__mall-name">eBay</div>
+              <div style="margin-left: auto;">
+                <span class="excel-btn excel-btn--small" style="background: var(--filter-success); color: white;">
+                  7/12 有効
+                </span>
+              </div>
+            </div>
+            <div class="filter__rule-list">
+              <div style="border-bottom: 1px solid var(--border-light); padding-bottom: var(--space-2); margin-bottom: var(--space-2);">
+                <strong style="font-size: 0.75rem; color: var(--accent-purple);">AIルール</strong>
+              </div>
+              <label class="filter__rule-checkbox">
+                <input type="checkbox" checked onchange="updateMallRuleSetting('ebay', 'ai-export-electronics', this.checked)" /> 
+                輸出禁止電子機器判定
+              </label>
+              <label class="filter__rule-checkbox">
+                <input type="checkbox" onchange="updateMallRuleSetting('ebay', 'ai-health-law', this.checked)" /> 
+                健康食品薬事法判定
+              </label>
+            </div>
+          </div>
+        </div>
+        
+        <div style="margin-top: var(--space-6); text-align: center;">
+          <button class="excel-btn excel-btn--success" style="padding: var(--space-3) var(--space-6);" onclick="saveMallSettings()">
+            <i class="fas fa-save"></i>
+            モール別設定を保存
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CSV一括管理タブ -->
+    <div class="filter__tab-content" id="csv-management-tab">
+      <div class="filter__csv-section">
+        <h2 class="filter__ai-title">
+          <i class="fas fa-file-csv"></i>
+          CSV一括管理
+        </h2>
+        
+        <div class="filter__upload-area" id="csvUploadArea" onclick="document.getElementById('csvFileInput').click()">
+          <input type="file" id="csvFileInput" class="filter__hidden-input" accept=".csv,.xlsx" onchange="handleFileUpload(this)" />
+          <div class="filter__upload-icon">
+            <i class="fas fa-cloud-upload-alt"></i>
+          </div>
+          <div class="filter__upload-text">CSVファイルをドラッグ&ドロップ</div>
+          <div class="filter__upload-subtext">または クリックして選択 (.csv, .xlsx対応)</div>
+        </div>
+        
+        <div style="display: flex; gap: var(--space-3); justify-content: center; margin-bottom: var(--space-6);">
+          <button class="excel-btn excel-btn--primary" onclick="downloadTemplate()">
+            <i class="fas fa-download"></i>
+            テンプレートダウンロード
+          </button>
+          <button class="excel-btn excel-btn--success" onclick="uploadCSV()">
+            <i class="fas fa-upload"></i>
+            CSVアップロード
+          </button>
+          <button class="excel-btn" onclick="exportAllData()">
+            <i class="fas fa-download"></i>
+            全データエクスポート
+          </button>
+        </div>
+
+        <!-- CSV形式説明 -->
+        <div style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: var(--space-4); margin-bottom: var(--space-4);">
+          <h3 style="font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-3);">
+            <i class="fas fa-info-circle"></i>
+            CSV形式
+          </h3>
+          <div style="font-family: 'Courier New', monospace; font-size: 0.8rem; background: var(--bg-secondary); padding: var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+rule_type,keyword,match_type,priority,reason,status<br/>
+text,battery,partial,high,リチウム電池規制により輸出禁止,active<br/>
+text,replica,exact,critical,偽造品・レプリカ商品の出品禁止,active<br/>
+ai,輸出禁止電子機器,learning,high,AI学習による電子機器判定,active
+          </div>
+
+          <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: var(--space-2); margin-bottom: 0;">
+            rule_type: text(テキストマッチ) / ai(AI学習) | match_type: exact(完全一致) / partial(部分一致) / regex(正規表現) / learning(AI学習)
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ブロック結果タブ -->
+    <div class="filter__tab-content" id="blocked-results-tab">
+      <div class="filter__results-section">
+        <div class="filter__results-header">
+          <h2 class="filter__results-title">
+            <i class="fas fa-ban"></i>
+            ブロック結果
+          </h2>
+        </div>
+
+        <!-- 結果サマリー -->
+        <div class="filter__results-summary">
+          <div class="filter__summary-item">
+            <div class="filter__summary-value filter__summary-value--total">45,678</div>
+            <div class="filter__summary-label">総処理数</div>
+          </div>
+          <div class="filter__summary-item">
+            <div class="filter__summary-value filter__summary-value--blocked">2,156</div>
+            <div class="filter__summary-label">ブロック数</div>
+          </div>
+          <div class="filter__summary-item">
+            <div class="filter__summary-value filter__summary-value--passed">43,522</div>
+            <div class="filter__summary-label">通過数</div>
+          </div>
+          <div class="filter__summary-item">
+            <div class="filter__summary-value filter__summary-value--blocked">1,247</div>
+            <div class="filter__summary-label">AI判定</div>
+          </div>
+          <div class="filter__summary-item">
+            <div class="filter__summary-value filter__summary-value--blocked">909</div>
+            <div class="filter__summary-label">テキスト判定</div>
+          </div>
+        </div>
+
+        <!-- ブロック結果グリッド -->
+        <div class="excel-grid">
+          <div class="excel-toolbar">
+            <div class="excel-toolbar__left">
+              <button class="excel-btn excel-btn--primary" onclick="refreshBlockedResults()">
+                <i class="fas fa-sync-alt"></i>
+                更新
+              </button>
+              <button class="excel-btn" onclick="deleteSelectedBlocked()">
+                <i class="fas fa-trash"></i>
+                選択削除
+              </button>
+              
+              <select class="excel-btn" style="padding: var(--space-1) var(--space-2);" onchange="filterByMall(this.value)">
+                <option value="">全モール</option>
+                <option value="shopify">Shopify</option>
+                <option value="amazon">Amazon</option>
+                <option value="ebay">eBay</option>
+              </select>
+              
+              <select class="excel-btn" style="padding: var(--space-1) var(--space-2);" onchange="filterByMethod(this.value)">
+                <option value="">全判定方法</option>
+                <option value="ai">AI判定</option>
+                <option value="text">テキスト判定</option>
+              </select>
+            </div>
+            
+            <div class="excel-toolbar__right">
+              <div class="excel-toolbar__search">
+                <i class="fas fa-search excel-toolbar__search-icon"></i>
+                <input type="text" class="excel-toolbar__search-input" 
+                       placeholder="商品名・理由で検索..." onkeyup="searchBlockedResults(this.value)" />
+              </div>
+              <button class="excel-btn" onclick="exportBlockedResults()">
+                <i class="fas fa-download"></i>
+                エクスポート
+              </button>
+            </div>
+          </div>
+
+          <div class="excel-table-wrapper">
+            <table class="excel-table">
+              <thead>
+                <tr>
+                  <th style="width: 40px;">
+                    <input type="checkbox" class="excel-checkbox" onclick="toggleAllBlocked(this.checked)" />
+                  </th>
+                  <th style="width: 250px;">商品名</th>
+                  <th style="width: 80px;">対象モール</th>
+                  <th style="width: 80px;">判定方法</th>
+                  <th style="width: 150px;">適用ルール</th>
+                  <th style="width: 200px;">ブロック理由詳細</th>
+                  <th style="width: 120px;">検出キーワード</th>
+                  <th style="width: 80px;">優先度</th>
+                  <th style="width: 120px;">ブロック日時</th>
+                  <th style="width: 60px;">操作</th>
+                </tr>
+              </thead>
+              <tbody id="blockedResultsTableBody">
+                
+                <!-- AI判定ブロック例 -->
+                <tr data-mall="amazon" data-method="ai" data-date="2024-07-08">
+                  <td><input type="checkbox" class="excel-checkbox" /></td>
+                  <td>
+                    <div class="blocked-item">
+                      <div class="blocked-item__name">ポータブルバッテリー 大容量モバイル充電器</div>
+                      <div class="blocked-item__sku">SKU: AMZ-BAT-2024-001</div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="mall-badge mall-badge--amazon">Amazon</span>
+                  </td>
+                  <td>
+                    <span class="method-badge method-badge--ai">AI判定</span>
+                  </td>
+                  <td>
+                    <span class="rule-badge rule-badge--ai">輸出禁止電子機器判定</span>
+                  </td>
+                  <td>
+                    <div class="block-reason">
+                      <div class="block-reason__main">リチウム電池規制により輸出禁止</div>
+                      <div class="block-reason__detail">100Wh超過リチウムイオン電池検出。国際輸送規制抵触。</div>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="detected-keywords">
+                      <span class="keyword-tag">lithium battery</span>
+                      <span class="keyword-tag">100Wh</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="priority-badge priority-badge--high">高</span>
+                  </td>
+                  <td>
+                    <div class="block-datetime">
+                      <div>2024/07/08</div>
+                      <div class="block-time">14:23:15</div>
+                    </div>
+                  </td>
+                  <td>
+                    <div style="display: flex; gap: 2px;">
+                      <button class="excel-btn excel-btn--small excel-btn--success" onclick="confirmCorrectBlock(this)" title="判定正解">
+                        <i class="fas fa-check"></i>
+                      </button>
+                      <button class="excel-btn excel-btn--small excel-btn--warning" onclick="reportWrongBlock(this)" title="誤判定">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                
+                <!-- テキスト判定ブロック例 -->
+                <tr data-mall="shopify" data-method="text" data-date="2024-07-08">
+                  <td><input type="checkbox" class="excel-checkbox" /></td>
+                  <td>
+                    <div class="blocked-item">
+                      <div class="blocked-item__name">Designer Replica Watch Luxury Style</div>
+                      <div class="blocked-item__sku">SKU: SHP-WAT-2024-089</div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="mall-badge mall-badge--shopify">Shopify</span>
+                  </td>
+                  <td>
+                    <span class="method-badge method-badge--text">テキスト</span>
+                  </td>
+                  <td>
+                    <span class="rule-badge rule-badge--text">replica (完全一致)</span>
+                  </td>
+                  <td>
+                    <div class="block-reason">
+                      <div class="block-reason__main">偽造品・レプリカ商品の出品禁止</div>
+                      <div class="block-reason__detail">商品名に「replica」キーワード検出。知的財産権侵害の可能性。</div>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="detected-keywords">
+                      <span class="keyword-tag keyword-tag--exact">replica</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="priority-badge priority-badge--critical">緊急</span>
+                  </td>
+                  <td>
+                    <div class="block-datetime">
+                      <div>2024/07/08</div>
+                      <div class="block-time">13:45:32</div>
+                    </div>
+                  </td>
+                  <td>
+                    <div style="display: flex; gap: 2px;">
+                      <button class="excel-btn excel-btn--small excel-btn--success" onclick="confirmCorrectBlock(this)" title="判定正解">
+                        <i class="fas fa-check"></i>
+                      </button>
+                      <button class="excel-btn excel-btn--small excel-btn--warning" onclick="reportWrongBlock(this)" title="誤判定">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                
+              </tbody>
+            </table>
+          </div>
+
+          <div class="excel-pagination">
+            <div class="excel-pagination__info">
+              ブロック結果: 1-25 / 2,156件表示
+            </div>
+            <div class="excel-pagination__controls">
+              <button class="excel-btn excel-btn--small" onclick="previousBlockedPage()" disabled>
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              <button class="excel-btn excel-btn--small" style="background: var(--filter-primary); color: white;">1</button>
+              <button class="excel-btn excel-btn--small" onclick="goToBlockedPage(2)">2</button>
+              <button class="excel-btn excel-btn--small" onclick="goToBlockedPage(3)">3</button>
+              <button class="excel-btn excel-btn--small" onclick="nextBlockedPage()">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI制御デッキタブ（フィルター専用） -->
+    <div class="filter__tab-content" id="ai-control-deck-tab">
+      <div class="filter__ai-section">
+        <h2 class="filter__ai-title">
+          <i class="fas fa-robot"></i>
+          フィルターAI制御デッキ（Ollama DeepSeek）
+        </h2>
+
+        <!-- フィルターAI制御サマリー -->
+        <div class="filter__dashboard">
+          <div class="filter__stat-card">
+            <div class="filter__stat-header">
+              <h3 class="filter__stat-title">AIフィルター</h3>
+              <div class="filter__stat-icon filter__stat-icon--info">
+                <i class="fas fa-shield-alt"></i>
+              </div>
+            </div>
+            <div class="filter__stat-value">1</div>
+            <div class="filter__stat-description">DeepSeek稼働中</div>
+          </div>
+          
+          <div class="filter__stat-card">
+            <div class="filter__stat-header">
+              <h3 class="filter__stat-title">今日の実行</h3>
+              <div class="filter__stat-icon filter__stat-icon--success">
+                <i class="fas fa-play-circle"></i>
+              </div>
+            </div>
+            <div class="filter__stat-value">1,247</div>
+            <div class="filter__stat-description">フィルター判定実行数</div>
+          </div>
+
+          <div class="filter__stat-card">
+            <div class="filter__stat-header">
+              <h3 class="filter__stat-title">成功率</h3>
+              <div class="filter__stat-icon filter__stat-icon--success">
+                <i class="fas fa-check-circle"></i>
+              </div>
+            </div>
+            <div class="filter__stat-value">97.8%</div>
+            <div class="filter__stat-description">AI判定精度</div>
+          </div>
+
+          <div class="filter__stat-card">
+            <div class="filter__stat-header">
+              <h3 class="filter__stat-title">システム負荷</h3>
+              <div class="filter__stat-icon filter__stat-icon--warning">
+                <i class="fas fa-server"></i>
+              </div>
+            </div>
+            <div class="filter__stat-value">23%</div>
+            <div class="filter__stat-description">CPU・メモリ使用率</div>
+          </div>
+        </div>
+
+        <!-- フィルターAI制御グリッド -->
+        <div class="excel-grid">
+          <div class="excel-toolbar">
+            <div class="excel-toolbar__left">
+              <button class="excel-btn excel-btn--primary" onclick="emergencyStopFilterAI()">
+                <i class="fas fa-stop"></i>
+                緊急停止
+              </button>
+              <button class="excel-btn excel-btn--warning" onclick="pauseFilterAI()">
+                <i class="fas fa-pause"></i>
+                一時停止
+              </button>
+              <button class="excel-btn excel-btn--success" onclick="restartFilterAI()">
+                <i class="fas fa-play"></i>
+                再開
+              </button>
+              <button class="excel-btn" onclick="testFilterAI()">
+                <i class="fas fa-vial"></i>
+                テスト実行
+              </button>
+            </div>
+            
+            <div class="excel-toolbar__right">
+              <button class="excel-btn" onclick="refreshFilterAIStatus()">
+                <i class="fas fa-sync-alt"></i>
+                状態更新
+              </button>
+            </div>
+          </div>
+
+          <div class="excel-table-wrapper">
+            <table class="excel-table">
+              <thead>
+                <tr>
+                  <th style="width: 200px;">機能名</th>
+                  <th style="width: 100px;">状態</th>
+                  <th style="width: 120px;">モデル</th>
+                  <th style="width: 80px;">実行数</th>
+                  <th style="width: 80px;">成功率</th>
+                  <th style="width: 100px;">応答時間</th>
+                  <th style="width: 120px;">最終実行</th>
+                  <th style="width: 100px;">操作</th>
+                </tr>
+              </thead>
+              <tbody id="filterAIModulesTableBody">
+                
+                <!-- DeepSeekフィルター判定エンジン -->
+                <tr>
+                  <td>
+                    <div style="font-weight: 600; font-size: 0.8rem;">DeepSeek判定エンジン</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted);">商品出品前の禁止品自動検出</div>
+                  </td>
+                  <td>
+                    <span style="padding: 2px 6px; background: var(--filter-success); color: white; border-radius: var(--radius-sm); font-size: 0.65rem; font-weight: 600;">稼働中</span>
+                  </td>
+                  <td>
+                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                      <span style="padding: 1px 4px; background: var(--accent-purple); color: white; border-radius: var(--radius-sm); font-size: 0.6rem;">DeepSeek-V3</span>
+                      <span style="padding: 1px 4px; background: var(--text-muted); color: white; border-radius: var(--radius-sm); font-size: 0.6rem;">Ollama</span>
+                    </div>
+                  </td>
+                  <td style="text-align: center; font-weight: 600;">1,247</td>
+                  <td style="text-align: center; font-weight: 600; color: var(--filter-success);">97.8%</td>
+                  <td style="text-align: center; font-weight: 600;">1.2s</td>
+                  <td>
+                    <div style="font-size: 0.7rem; text-align: center;">
+                      <div>2024/07/08</div>
+                      <div style="color: var(--text-muted);">14:23:15</div>
+                    </div>
+                  </td>
+                  <td>
+                    <div style="display: flex; gap: 2px;">
+                      <button class="excel-btn excel-btn--small" onclick="configureFilterAI()" title="設定">
+                        <i class="fas fa-cog"></i>
+                      </button>
+                      <button class="excel-btn excel-btn--small" onclick="viewFilterAILogs()" title="ログ">
+                        <i class="fas fa-list-alt"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                
+                <!-- テキストマッチエンジン -->
+                <tr>
+                  <td>
+                    <div style="font-weight: 600; font-size: 0.8rem;">テキストマッチエンジン</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted);">キーワードベースの高速フィルタリング</div>
+                  </td>
+                  <td>
+                    <span style="padding: 2px 6px; background: var(--filter-success); color: white; border-radius: var(--radius-sm); font-size: 0.65rem; font-weight: 600;">稼働中</span>
+                  </td>
+                  <td>
+                    <span style="padding: 2px 6px; background: var(--text-muted); color: white; border-radius: var(--radius-sm); font-size: 0.65rem;">内蔵エンジン</span>
+                  </td>
+                  <td style="text-align: center; font-weight: 600;">2,834</td>
+                  <td style="text-align: center; font-weight: 600; color: var(--filter-success);">99.1%</td>
+                  <td style="text-align: center; font-weight: 600;">0.05s</td>
+                  <td>
+                    <div style="font-size: 0.7rem; text-align: center;">
+                      <div>2024/07/08</div>
+                      <div style="color: var(--text-muted);">14:23:12</div>
+                    </div>
+                  </td>
+                  <td>
+                    <div style="display: flex; gap: 2px;">
+                      <button class="excel-btn excel-btn--small" onclick="configureTextFilter()" title="設定">
+                        <i class="fas fa-cog"></i>
+                      </button>
+                      <button class="excel-btn excel-btn--small" onclick="viewTextFilterLogs()" title="ログ">
+                        <i class="fas fa-list-alt"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                
+                <!-- 学習データ収集エンジン -->
+                <tr>
+                  <td>
+                    <div style="font-weight: 600; font-size: 0.8rem;">学習データ収集エンジン</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted);">フィードバックデータの自動蓄積</div>
+                  </td>
+                  <td>
+                    <span style="padding: 2px 6px; background: var(--filter-success); color: white; border-radius: var(--radius-sm); font-size: 0.65rem; font-weight: 600;">稼働中</span>
+                  </td>
+                  <td>
+                    <span style="padding: 2px 6px; background: var(--text-muted); color: white; border-radius: var(--radius-sm); font-size: 0.65rem;">内蔵エンジン</span>
+                  </td>
+                  <td style="text-align: center; font-weight: 600;">189</td>
+                  <td style="text-align: center; font-weight: 600; color: var(--filter-success);">100%</td>
+                  <td style="text-align: center; font-weight: 600;">0.01s</td>
+                  <td>
+                    <div style="font-size: 0.7rem; text-align: center;">
+                      <div>2024/07/08</div>
+                      <div style="color: var(--text-muted);">14:20:33</div>
+                    </div>
+                  </td>
+                  <td>
+                    <div style="display: flex; gap: 2px;">
+                      <button class="excel-btn excel-btn--small" onclick="configureLearningCollector()" title="設定">
+                        <i class="fas fa-cog"></i>
+                      </button>
+                      <button class="excel-btn excel-btn--small" onclick="viewLearningLogs()" title="ログ">
+                        <i class="fas fa-list-alt"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                
+              </tbody>
+            </table>
+          </div>
+
+          <div class="excel-pagination">
+            <div class="excel-pagination__info">
+              フィルターAI制御モジュール: 3件表示
+            </div>
+          </div>
+        </div>
+
+        <!-- AI設定パネル -->
+        <div style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: var(--space-4); margin-top: var(--space-4);">
+          <h3 style="font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-3);">
+            <i class="fas fa-cog"></i>
+            フィルターAI設定（Ollama DeepSeek）
+          </h3>
+          
+          <div class="filter__form-grid">
+            <div class="filter__form-group">
+              <label class="filter__form-label">DeepSeekモデル</label>
+              <select class="filter__form-select" id="deepseekModel">
+                <option value="deepseek-v3" selected>DeepSeek-V3</option>
+                <option value="deepseek-coder">DeepSeek-Coder</option>
+                <option value="deepseek-math">DeepSeek-Math</option>
+              </select>
+            </div>
+            
+            <div class="filter__form-group">
+              <label class="filter__form-label">判定精度レベル</label>
+              <select class="filter__form-select">
+                <option value="high" selected>高精度（処理時間長）</option>
+                <option value="medium">標準精度（バランス）</option>
+                <option value="fast">高速処理（軽量）</option>
+              </select>
+            </div>
+            
+            <div class="filter__form-group">
+              <label class="filter__form-label">最大応答時間</label>
+              <input type="number" class="filter__form-input" value="30" min="5" max="120" />
+              <small style="color: var(--text-muted);">秒</small>
+            </div>
+            
+            <div class="filter__form-group">
+              <label class="filter__form-label">同時実行数</label>
+              <input type="number" class="filter__form-input" value="4" min="1" max="16" />
+              <small style="color: var(--text-muted);">並列処理数</small>
+            </div>
+          </div>
+          
+          <div style="margin-top: var(--space-4);">
+            <button class="excel-btn excel-btn--primary" onclick="saveFilterAISettings()">
+              <i class="fas fa-save"></i>
+              設定保存
+            </button>
+            <button class="excel-btn" onclick="resetFilterAISettings()">
+              <i class="fas fa-undo"></i>
+              デフォルトに戻す
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 学習データ管理タブ -->
+    <div class="filter__tab-content" id="learning-data-tab">
+      <div class="filter__ai-section">
+        <h2 class="filter__ai-title">
+          <i class="fas fa-database"></i>
+          学習データ管理
+        </h2>
+        
+        <!-- 学習データ統計ダッシュボード -->
+        <div class="filter__dashboard">
+          <div class="filter__stat-card">
+            <div class="filter__stat-header">
+              <h3 class="filter__stat-title">蓄積データ数</h3>
+              <div class="filter__stat-icon filter__stat-icon--info">
+                <i class="fas fa-database"></i>
+              </div>
+            </div>
+            <div class="filter__stat-value">2,847</div>
+            <div class="filter__stat-description">学習に使用可能</div>
+          </div>
+
+          <div class="filter__stat-card">
+            <div class="filter__stat-header">
+              <h3 class="filter__stat-title">学習精度</h3>
+              <div class="filter__stat-icon filter__stat-icon--success">
+                <i class="fas fa-chart-line"></i>
+              </div>
+            </div>
+            <div class="filter__stat-value">94.2%</div>
+            <div class="filter__stat-description">前週比: +2.3%</div>
+          </div>
+
+          <div class="filter__stat-card">
+            <div class="filter__stat-header">
+              <h3 class="filter__stat-title">フィードバック数</h3>
+              <div class="filter__stat-icon filter__stat-icon--warning">
+                <i class="fas fa-comments"></i>
+              </div>
+            </div>
+            <div class="filter__stat-value">189</div>
+            <div class="filter__stat-description">今週の修正件数</div>
+          </div>
+
+          <div class="filter__stat-card">
+            <div class="filter__stat-header">
+              <h3 class="filter__stat-title">学習ステータス</h3>
+              <div class="filter__stat-icon filter__stat-icon--success">
+                <i class="fas fa-brain"></i>
+              </div>
+            </div>
+            <div class="filter__stat-value">
+              <span style="width: 8px; height: 8px; background: var(--filter-success); border-radius: 50%; display: inline-block; margin-right: 6px;"></span>
+              学習中
+            </div>
+            <div class="filter__stat-description">進捗: 67/100件処理済み</div>
+          </div>
+        </div>
+
+        <!-- 学習データ一覧 -->
+        <div class="excel-grid">
+          <div class="excel-toolbar">
+            <div class="excel-toolbar__left">
+              <button class="excel-btn excel-btn--primary" onclick="startLearningProcess()">
+                <i class="fas fa-play"></i>
+                学習開始
+              </button>
+              <button class="excel-btn" onclick="exportLearningData()">
+                <i class="fas fa-download"></i>
+                データエクスポート
+              </button>
+              
+              <select class="excel-btn" style="padding: var(--space-1) var(--space-2);" onchange="filterLearningData(this.value)">
+                <option value="all">全データ</option>
+                <option value="correct">正解データ</option>
+                <option value="incorrect">誤判定データ</option>
+                <option value="pending">未確認</option>
+              </select>
+            </div>
+            
+            <div class="excel-toolbar__right">
+              <div class="excel-toolbar__search">
+                <i class="fas fa-search excel-toolbar__search-icon"></i>
+                <input type="text" class="excel-toolbar__search-input" 
+                       placeholder="商品名で検索..." onkeyup="searchLearningData(this.value)" />
+              </div>
+            </div>
+          </div>
+
+          <div class="excel-table-wrapper">
+            <table class="excel-table">
+              <thead>
+                <tr>
+                  <th style="width: 40px;">
+                    <input type="checkbox" class="excel-checkbox" onclick="toggleAllLearningData(this.checked)" />
+                  </th>
+                  <th style="width: 200px;">商品名</th>
+                  <th style="width: 80px;">AI判定</th>
+                  <th style="width: 80px;">人間評価</th>
+                  <th style="width: 100px;">学習反映</th>
+                  <th style="width: 80px;">信頼度</th>
+                  <th style="width: 120px;">日時</th>
+                  <th style="width: 80px;">操作</th>
+                </tr>
+              </thead>
+              <tbody id="learningDataTableBody">
+                <tr>
+                  <td><input type="checkbox" class="excel-checkbox" /></td>
+                  <td>
+                    <div style="font-weight: 600; font-size: 0.8rem;">Bluetooth イヤホン</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted);">SKU: EMV-2024-1001</div>
+                  </td>
+                  <td>
+                    <span style="padding: 2px 6px; background: var(--accent-purple); color: white; border-radius: var(--radius-sm); font-size: 0.65rem;">ブロック</span>
+                  </td>
+                  <td>
+                    <span style="padding: 2px 6px; background: var(--filter-success); color: white; border-radius: var(--radius-sm); font-size: 0.65rem;">正解</span>
+                  </td>
+                  <td>
+                    <span style="padding: 2px 6px; background: var(--filter-info); color: white; border-radius: var(--radius-sm); font-size: 0.65rem;">学習済み</span>
+                  </td>
+                  <td style="text-align: center; font-weight: 600; color: var(--filter-success);">87%</td>
+                  <td style="font-size: 0.7rem; color: var(--text-muted);">2024/07/08 14:23</td>
+                  <td>
+                    <button class="excel-btn excel-btn--small" onclick="viewLearningDetails(this)">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                  </td>
+                </tr>
+                
+                <tr>
+                  <td><input type="checkbox" class="excel-checkbox" /></td>
+                  <td>
+                    <div style="font-weight: 600; font-size: 0.8rem;">Designer Replica Watch</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted);">SKU: EMV-2024-0999</div>
+                  </td>
+                  <td>
+                    <span style="padding: 2px 6px; background: var(--filter-warning); color: white; border-radius: var(--radius-sm); font-size: 0.65rem;">通過</span>
+                  </td>
+                  <td>
+                    <span style="padding: 2px 6px; background: var(--filter-danger); color: white; border-radius: var(--radius-sm); font-size: 0.65rem;">誤判定</span>
+                  </td>
+                  <td>
+                    <span style="padding: 2px 6px; background: var(--filter-warning); color: white; border-radius: var(--radius-sm); font-size: 0.65rem;">学習中</span>
+                  </td>
+                  <td style="text-align: center; font-weight: 600; color: var(--filter-warning);">34%</td>
+                  <td style="font-size: 0.7rem; color: var(--text-muted);">2024/07/08 13:45</td>
+                  <td>
+                    <button class="excel-btn excel-btn--small" onclick="viewLearningDetails(this)">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="excel-pagination">
+            <div class="excel-pagination__info">
+              学習データ: 1-25 / 2,847件表示
+            </div>
+            <div class="excel-pagination__controls">
+              <button class="excel-btn excel-btn--small" onclick="previousLearningPage()" disabled>
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              <button class="excel-btn excel-btn--small" style="background: var(--filter-primary); color: white;">1</button>
+              <button class="excel-btn excel-btn--small" onclick="goToLearningPage(2)">2</button>
+              <button class="excel-btn excel-btn--small" onclick="nextLearningPage()">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 操作ガイド -->
+        <div style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--space-3); margin-top: var(--space-4);">
+          <p style="margin: 0; font-size: 0.8rem; color: var(--text-secondary);">
+            <i class="fas fa-info-circle" style="color: var(--filter-info);"></i>
+            <strong>学習データガイド:</strong> 
+            フィードバックされたデータを蓄積・管理。学習開始でAI精度向上。
+            誤判定データは自動的に学習に反映され、システム全体の精度を向上させます。
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // ===== タブシステム（修正版） =====
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('🎯 フィルタールール管理システム 初期化開始');
+      
+      const tabButtons = document.querySelectorAll('.filter__tab-button');
+      const tabContents = document.querySelectorAll('.filter__tab-content');
+      
+      if (tabButtons.length === 0) {
+        console.warn('⚠️ タブボタンが見つかりません');
+        return;
+      }
+      
+      if (tabContents.length === 0) {
+        console.warn('⚠️ タブコンテンツが見つかりません');
+        return;
+      }
+      
+      console.log(`📋 タブボタン数: ${tabButtons.length}`);
+      console.log(`📋 タブコンテンツ数: ${tabContents.length}`);
+
+      // タブボタンにイベントリスナー追加
+      tabButtons.forEach((button, index) => {
+        button.addEventListener('click', function(e) {
+          e.preventDefault();
+          
+          const targetTab = this.getAttribute('data-tab');
+          console.log(`🔄 タブ切り替え要求: ${targetTab}`);
+          
+          // 全タブボタンの active クラスを削除
+          tabButtons.forEach(btn => {
+            btn.classList.remove('filter__tab-button--active');
+          });
+          
+          // クリックされたタブボタンに active クラスを追加
+          this.classList.add('filter__tab-button--active');
+          
+          // 全タブコンテンツを非表示
+          tabContents.forEach(content => {
+            content.classList.remove('filter__tab-content--active');
+            content.style.display = 'none';
+          });
+          
+          // 対象タブコンテンツを表示
+          const targetContent = document.getElementById(targetTab + '-tab');
+          if (targetContent) {
+            targetContent.classList.add('filter__tab-content--active');
+            targetContent.style.display = 'block';
+            console.log(`✅ タブ表示成功: ${targetTab}`);
+          } else {
+            console.error(`❌ タブコンテンツが見つかりません: ${targetTab}-tab`);
+          }
+        });
+        
+        // デバッグ用：各タブボタンの情報をログ出力
+        const dataTab = button.getAttribute('data-tab');
+        console.log(`📋 タブボタン${index + 1}: data-tab="${dataTab}"`);
+      });
+
+      // デバッグ用：各タブコンテンツの情報をログ出力
+      tabContents.forEach((content, index) => {
+        console.log(`📋 タブコンテンツ${index + 1}: id="${content.id}"`);
+      });
+
+      // 初期表示：最初のタブを有効化
+      if (tabButtons.length > 0 && tabContents.length > 0) {
+        const firstButton = tabButtons[0];
+        const firstContent = tabContents[0];
+        
+        firstButton.classList.add('filter__tab-button--active');
+        firstContent.classList.add('filter__tab-content--active');
+        firstContent.style.display = 'block';
+        
+        console.log(`✅ 初期タブ表示: ${firstContent.id}`);
+      }
+
+      console.log('✅ フィルタータブシステム初期化完了');
+    });
+
+    // ===== プレースホルダ関数群 =====
+    function saveAIRule() {
+      const ruleName = document.getElementById('aiRuleName')?.value;
+      const category = document.getElementById('aiRuleCategory')?.value;
+      const ruleText = document.getElementById('aiRuleText')?.value;
+      
+      if (!ruleName || !ruleText) {
+        alert('ルール名とAI学習テキストは必須です。');
+        return;
+      }
+      
+      console.log('AIルール保存:', { ruleName, category, ruleText });
+      alert('AIルールを保存しました。（実装予定）');
+    }
+
+    function testAIRule() {
+      console.log('AIルールテスト実行');
+      alert('AIルールのテストを実行します。（実装予定）');
+    }
+
+    function addTextRule() {
+      const keyword = document.getElementById('textRuleKeyword')?.value;
+      const type = document.getElementById('textRuleType')?.value;
+      const priority = document.getElementById('textRulePriority')?.value;
+      const reason = document.getElementById('textRuleReason')?.value;
+      
+      if (!keyword || !reason) {
+        alert('キーワードとブロック理由は必須です。');
+        return;
+      }
+      
+      console.log('テキストルール追加:', { keyword, type, priority, reason });
+      alert('テキストルールを追加しました。（実装予定）');
+    }
+
+    function startLearningProcess() {
+      console.log('学習プロセス開始');
+      alert('AI学習プロセスを開始します。（実装予定）');
+    }
+
+    // ===== その他のプレースホルダ関数 =====
+    function searchAIRules(query) { console.log('AIルール検索:', query); }
+    function toggleAllAIRules(checked) { 
+      const checkboxes = document.querySelectorAll('#aiRulesTableBody input[type="checkbox"]');
+      checkboxes.forEach(cb => cb.checked = checked);
+    }
+    function updateAIRule(element) { console.log('AIルール更新:', element.value); }
+    function updateAIRuleStatus(element) { console.log('AIルール状態更新:', element.value); }
+    function editAIRule(element) { alert('AIルール編集モーダルを表示します。（実装予定）'); }
+    
+    function addNewTextRule() { console.log('新規テキストルール追加'); }
+    function deleteSelectedTextRules() { console.log('選択テキストルール削除'); }
+    function toggleSelectedTextRules() { console.log('選択テキストルール有効/無効切替'); }
+    function searchTextRules(query) { console.log('テキストルール検索:', query); }
+    function exportTextRules() { alert('テキストルールをエクスポートします。（実装予定）'); }
+    function toggleAllTextRules(checked) {
+      const checkboxes = document.querySelectorAll('#textRulesTableBody input[type="checkbox"]');
+      checkboxes.forEach(cb => cb.checked = checked);
+    }
+    function updateTextRule(element) { console.log('テキストルール更新:', element.value); }
+    function updateTextRuleStatus(element) { console.log('テキストルール状態更新:', element.value); }
+    function deleteTextRule(element) {
+      if (confirm('このテキストルールを削除しますか？')) {
+        element.closest('tr').remove();
+      }
+    }
+    
+    function updateMallRuleSetting(mall, rule, checked) { console.log('モール設定更新:', { mall, rule, checked }); }
+    function saveMallSettings() { alert('モール別設定を保存しました。（実装予定）'); }
+    
+    function downloadTemplate() { alert('CSVテンプレートをダウンロードします。（実装予定）'); }
+    function uploadCSV() { alert('CSVデータをアップロードします。（実装予定）'); }
+    function exportAllData() { alert('全データをエクスポートします。（実装予定）'); }
+    function handleFileUpload(input) {
+      const file = input.files[0];
+      if (file) {
+        alert(`ファイル "${file.name}" をアップロードします。（実装予定）`);
+      }
+    }
+    
+    function refreshBlockedResults() { alert('ブロック結果を更新します。（実装予定）'); }
+    function deleteSelectedBlocked() { console.log('選択ブロック結果削除'); }
+    function filterByMall(mall) { console.log('モールフィルター:', mall); }
+    function filterByMethod(method) { console.log('判定方法フィルター:', method); }
+    function searchBlockedResults(query) { console.log('ブロック結果検索:', query); }
+    function exportBlockedResults() { alert('ブロック結果をエクスポートします。（実装予定）'); }
+    function toggleAllBlocked(checked) {
+      const checkboxes = document.querySelectorAll('#blockedResultsTableBody input[type="checkbox"]');
+      checkboxes.forEach(cb => cb.checked = checked);
+    }
+    function confirmCorrectBlock(element) { alert('判定が正解として記録されました。（実装予定）'); }
+    function reportWrongBlock(element) { alert('誤判定として報告されました。（実装予定）'); }
+    
+    function emergencyStopFilterAI() {
+      if (confirm('フィルターAIを緊急停止しますか？')) {
+        alert('フィルターAIを緊急停止しました。（実装予定）');
+      }
+    }
+    function pauseFilterAI() { alert('フィルターAIを一時停止しました。（実装予定）'); }
+    function restartFilterAI() { alert('フィルターAIを再開しました。（実装予定）'); }
+    function testFilterAI() { alert('フィルターAIのテストを実行します。（実装予定）'); }
+    function refreshFilterAIStatus() { alert('フィルターAIの状態を更新しました。（実装予定）'); }
+    function configureFilterAI() { alert('フィルターAI設定画面を表示します。（実装予定）'); }
+    function viewFilterAILogs() { alert('フィルターAIログを表示します。（実装予定）'); }
+    function configureTextFilter() { alert('テキストフィルター設定画面を表示します。（実装予定）'); }
+    function viewTextFilterLogs() { alert('テキストフィルターログを表示します。（実装予定）'); }
+    function configureLearningCollector() { alert('学習データ収集エンジン設定画面を表示します。（実装予定）'); }
+    function viewLearningLogs() { alert('学習ログを表示します。（実装予定）'); }
+    function saveFilterAISettings() { alert('フィルターAI設定を保存しました。（実装予定）'); }
+    function resetFilterAISettings() {
+      if (confirm('フィルターAI設定をデフォルトに戻しますか？')) {
+        alert('フィルターAI設定をデフォルトに戻しました。（実装予定）');
+      }
+    }
+    
+    function exportLearningData() { alert('学習データをエクスポートします。（実装予定）'); }
+    function filterLearningData(filter) { console.log('学習データフィルター:', filter); }
+    function searchLearningData(query) { console.log('学習データ検索:', query); }
+    function toggleAllLearningData(checked) {
+      const checkboxes = document.querySelectorAll('#learningDataTableBody input[type="checkbox"]');
+      checkboxes.forEach(cb => cb.checked = checked);
+    }
+    function viewLearningDetails(element) { alert('学習データ詳細を表示します。（実装予定）'); }
+    
+    // ページネーション
+    function previousPage() { console.log('前のページ'); }
+    function nextPage() { console.log('次のページ'); }
+    function goToPage(page) { console.log('ページ移動:', page); }
+    function previousBlockedPage() { console.log('ブロック結果前のページ'); }
+    function nextBlockedPage() { console.log('ブロック結果次のページ'); }
+    function goToBlockedPage(page) { console.log('ブロック結果ページ移動:', page); }
+    function previousLearningPage() { console.log('学習データ前のページ'); }
+    function nextLearningPage() { console.log('学習データ次のページ'); }
+    function goToLearningPage(page) { console.log('学習データページ移動:', page); }
+
+    console.log('🎯 フィルタールール管理システム JavaScript読み込み完了');
+  </script>
+</body>
+</html>

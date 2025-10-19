@@ -1,0 +1,484 @@
+<!-- 🎨 HTMLテンプレート管理タブ - 新規追加 -->
+<!-- 既存タブに追加する新しいタブコンテンツ -->
+
+<div id="html-templates" class="tab-content fade-in">
+    <div class="html-template-management">
+        <!-- セクションヘッダー -->
+        <div class="section-header">
+            <div class="section-title">
+                <i class="fas fa-code"></i>
+                HTMLテンプレート管理
+            </div>
+            <div class="section-actions">
+                <button class="btn btn--primary" onclick="saveCurrentTemplate()">
+                    <i class="fas fa-save"></i> 保存
+                </button>
+                <button class="btn btn--secondary" onclick="exportTemplate()">
+                    <i class="fas fa-download"></i> エクスポート
+                </button>
+                <button class="btn btn--success" onclick="importTemplate()">
+                    <i class="fas fa-upload"></i> インポート
+                </button>
+            </div>
+        </div>
+
+        <!-- テンプレート選択エリア -->
+        <div class="template-selector">
+            <h3>テンプレート選択</h3>
+            <div class="template-cards">
+                <div class="template-card active" data-template="premium">
+                    <div class="template-preview">
+                        <div style="padding: 10px; font-size: 12px; line-height: 1.4;">
+                            <div style="font-weight: bold; margin-bottom: 5px;">{{TITLE}}</div>
+                            <div style="background: #f0f0f0; height: 30px; margin-bottom: 5px;"></div>
+                            <div style="font-size: 10px; color: #666;">{{DESCRIPTION}}</div>
+                        </div>
+                    </div>
+                    <h4>プレミアムテンプレート</h4>
+                    <p>高級商品向け・画像大・詳細情報</p>
+                </div>
+                
+                <div class="template-card" data-template="standard">
+                    <div class="template-preview">
+                        <div style="padding: 10px; font-size: 12px; line-height: 1.4;">
+                            <div style="font-weight: bold; margin-bottom: 5px;">{{TITLE}}</div>
+                            <div style="display: flex; gap: 5px;">
+                                <div style="background: #f0f0f0; width: 40px; height: 30px;"></div>
+                                <div style="flex: 1; font-size: 10px;">{{DESCRIPTION}}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <h4>スタンダードテンプレート</h4>
+                    <p>一般商品向け・バランス重視</p>
+                </div>
+                
+                <div class="template-card" data-template="minimal">
+                    <div class="template-preview">
+                        <div style="padding: 10px; font-size: 12px; line-height: 1.4;">
+                            <div style="font-weight: bold; margin-bottom: 3px;">{{TITLE}}</div>
+                            <div style="font-size: 10px; color: #666;">{{PRICE}}</div>
+                            <div style="background: #f0f0f0; height: 20px; margin: 3px 0;"></div>
+                        </div>
+                    </div>
+                    <h4>ミニマルテンプレート</h4>
+                    <p>シンプル・高速読み込み</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- HTML編集エリア -->
+        <div class="html-editor-section">
+            <div class="editor-container">
+                <div class="editor-toolbar">
+                    <button onclick="insertVariable('{{TITLE}}')">
+                        <i class="fas fa-tag"></i> タイトル
+                    </button>
+                    <button onclick="insertVariable('{{BRAND}}')">
+                        <i class="fas fa-certificate"></i> ブランド
+                    </button>
+                    <button onclick="insertVariable('{{PRICE}}')">
+                        <i class="fas fa-dollar-sign"></i> 価格
+                    </button>
+                    <button onclick="insertVariable('{{CONDITION}}')">
+                        <i class="fas fa-star"></i> 状態
+                    </button>
+                    <button onclick="insertVariable('{{DESCRIPTION}}')">
+                        <i class="fas fa-align-left"></i> 説明
+                    </button>
+                    <button onclick="insertVariable('{{IMAGES}}')">
+                        <i class="fas fa-images"></i> 画像
+                    </button>
+                    <button onclick="insertVariable('{{SPECIFICATIONS}}')">
+                        <i class="fas fa-list"></i> スペック
+                    </button>
+                    <button onclick="insertVariable('{{SHIPPING_INFO}}')">
+                        <i class="fas fa-truck"></i> 配送
+                    </button>
+                    <button onclick="insertVariable('{{RETURN_POLICY}}')">
+                        <i class="fas fa-undo"></i> 返品
+                    </button>
+                    <button onclick="insertVariable('{{SELLER_INFO}}')">
+                        <i class="fas fa-user"></i> 販売者
+                    </button>
+                </div>
+                <textarea id="htmlEditor" class="html-editor" placeholder="HTMLテンプレートを入力してください...
+
+利用可能な変数:
+{{TITLE}} - 商品タイトル
+{{BRAND}} - ブランド名
+{{PRICE}} - 価格
+{{CONDITION}} - 商品状態
+{{DESCRIPTION}} - 商品説明
+{{IMAGES}} - 画像一覧
+{{SPECIFICATIONS}} - スペック表
+{{SHIPPING_INFO}} - 配送情報
+{{RETURN_POLICY}} - 返品ポリシー
+{{SELLER_INFO}} - 販売者情報
+
+例:
+<div class='product-listing'>
+    <h1>{{TITLE}}</h1>
+    <div class='price'>{{PRICE}}</div>
+    <div class='images'>{{IMAGES}}</div>
+    <div class='description'>{{DESCRIPTION}}</div>
+</div>"></textarea>
+            </div>
+
+            <!-- プレビューエリア -->
+            <div class="preview-section">
+                <div class="preview-controls">
+                    <button onclick="updatePreview()">
+                        <i class="fas fa-sync"></i> プレビュー更新
+                    </button>
+                    <select id="previewDevice" onchange="changePreviewDevice(this.value)">
+                        <option value="desktop">デスクトップ</option>
+                        <option value="mobile">モバイル</option>
+                        <option value="tablet">タブレット</option>
+                    </select>
+                </div>
+                <iframe id="previewFrame" class="html-preview"></iframe>
+            </div>
+        </div>
+
+        <!-- テンプレート管理 -->
+        <div class="template-management">
+            <div class="section-header">
+                <h3>テンプレート管理</h3>
+                <button class="btn btn--primary" onclick="showNewTemplateModal()">
+                    <i class="fas fa-plus"></i> 新規作成
+                </button>
+            </div>
+            
+            <div class="template-list">
+                <div class="template-item">
+                    <div class="template-info">
+                        <h4>プレミアムテンプレート</h4>
+                        <p>高級商品向け・詳細情報表示</p>
+                        <small>作成日: 2025-09-11 | 使用回数: 127回</small>
+                    </div>
+                    <div class="template-actions">
+                        <button class="btn btn--sm btn--secondary" onclick="editTemplate('premium')">
+                            <i class="fas fa-edit"></i> 編集
+                        </button>
+                        <button class="btn btn--sm btn--warning" onclick="duplicateTemplate('premium')">
+                            <i class="fas fa-copy"></i> 複製
+                        </button>
+                        <button class="btn btn--sm btn--danger" onclick="deleteTemplate('premium')">
+                            <i class="fas fa-trash"></i> 削除
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="template-item">
+                    <div class="template-info">
+                        <h4>スタンダードテンプレート</h4>
+                        <p>一般商品向け・バランス重視</p>
+                        <small>作成日: 2025-09-11 | 使用回数: 89回</small>
+                    </div>
+                    <div class="template-actions">
+                        <button class="btn btn--sm btn--secondary" onclick="editTemplate('standard')">
+                            <i class="fas fa-edit"></i> 編集
+                        </button>
+                        <button class="btn btn--sm btn--warning" onclick="duplicateTemplate('standard')">
+                            <i class="fas fa-copy"></i> 複製
+                        </button>
+                        <button class="btn btn--sm btn--danger" onclick="deleteTemplate('standard')">
+                            <i class="fas fa-trash"></i> 削除
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="template-item">
+                    <div class="template-info">
+                        <h4>ミニマルテンプレート</h4>
+                        <p>シンプル・高速読み込み</p>
+                        <small>作成日: 2025-09-11 | 使用回数: 45回</small>
+                    </div>
+                    <div class="template-actions">
+                        <button class="btn btn--sm btn--secondary" onclick="editTemplate('minimal')">
+                            <i class="fas fa-edit"></i> 編集
+                        </button>
+                        <button class="btn btn--sm btn--warning" onclick="duplicateTemplate('minimal')">
+                            <i class="fas fa-copy"></i> 複製
+                        </button>
+                        <button class="btn btn--sm btn--danger" onclick="deleteTemplate('minimal')">
+                            <i class="fas fa-trash"></i> 削除
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 統計情報 -->
+        <div class="template-stats">
+            <div class="section-header">
+                <h3>テンプレート統計</h3>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">3</div>
+                    <div class="stat-label">総テンプレート数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">261</div>
+                    <div class="stat-label">総使用回数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">premium</div>
+                    <div class="stat-label">最多使用</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">2.3分</div>
+                    <div class="stat-label">平均編集時間</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 新規テンプレート作成モーダル -->
+<div id="newTemplateModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">
+                <i class="fas fa-plus-circle"></i>
+                新規テンプレート作成
+            </h2>
+            <button class="modal-close" onclick="closeNewTemplateModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="modal-body">
+            <div class="form-section">
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-tag"></i>
+                        テンプレート名 <span class="required-mark">*</span>
+                    </label>
+                    <input type="text" class="form-input" id="newTemplateName" placeholder="例: カスタムプレミアム" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-align-left"></i>
+                        説明
+                    </label>
+                    <input type="text" class="form-input" id="newTemplateDescription" placeholder="例: 高級ブランド商品向けの詳細テンプレート">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-copy"></i>
+                        ベーステンプレート
+                    </label>
+                    <select class="form-select" id="baseTemplate">
+                        <option value="">空のテンプレートから開始</option>
+                        <option value="premium">プレミアムテンプレートをコピー</option>
+                        <option value="standard">スタンダードテンプレートをコピー</option>
+                        <option value="minimal">ミニマルテンプレートをコピー</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-palette"></i>
+                        カテゴリ
+                    </label>
+                    <select class="form-select" id="templateCategory">
+                        <option value="general">一般商品</option>
+                        <option value="luxury">高級品</option>
+                        <option value="electronics">電子機器</option>
+                        <option value="fashion">ファッション</option>
+                        <option value="collectible">コレクタブル</option>
+                        <option value="custom">カスタム</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <div class="modal-footer-left">
+                <div class="notification notification--info">
+                    <i class="fas fa-info-circle"></i>
+                    <span>作成後、HTMLエディタで詳細を編集できます</span>
+                </div>
+            </div>
+            <div class="modal-footer-right">
+                <button class="btn btn--secondary" onclick="closeNewTemplateModal()">
+                    キャンセル
+                </button>
+                <button class="btn btn--success" onclick="createNewTemplate()">
+                    <i class="fas fa-plus"></i>
+                    テンプレート作成
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// テンプレート管理関数
+function showNewTemplateModal() {
+    const modal = document.getElementById('newTemplateModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeNewTemplateModal() {
+    const modal = document.getElementById('newTemplateModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
+
+function createNewTemplate() {
+    const name = document.getElementById('newTemplateName').value;
+    const description = document.getElementById('newTemplateDescription').value;
+    const baseTemplate = document.getElementById('baseTemplate').value;
+    const category = document.getElementById('templateCategory').value;
+    
+    if (!name) {
+        alert('テンプレート名を入力してください。');
+        return;
+    }
+    
+    // 新規テンプレート作成処理
+    const templateId = 'custom_' + Date.now();
+    
+    if (window.htmlTemplateManager) {
+        let htmlContent = '';
+        
+        if (baseTemplate) {
+            const baseTemplateData = window.htmlTemplateManager.templates.get(baseTemplate);
+            htmlContent = baseTemplateData ? baseTemplateData.html : '';
+        }
+        
+        window.htmlTemplateManager.saveTemplate(templateId, name, description, htmlContent);
+        window.htmlTemplateManager.selectTemplate(templateId);
+    }
+    
+    closeNewTemplateModal();
+    
+    // フォームリセット
+    document.getElementById('newTemplateName').value = '';
+    document.getElementById('newTemplateDescription').value = '';
+    document.getElementById('baseTemplate').value = '';
+    document.getElementById('templateCategory').value = 'general';
+}
+
+function editTemplate(templateId) {
+    if (window.htmlTemplateManager) {
+        window.htmlTemplateManager.selectTemplate(templateId);
+    }
+    console.log('テンプレート編集:', templateId);
+}
+
+function duplicateTemplate(templateId) {
+    if (window.htmlTemplateManager) {
+        const template = window.htmlTemplateManager.templates.get(templateId);
+        if (template) {
+            const newId = templateId + '_copy_' + Date.now();
+            const newName = template.name + ' (コピー)';
+            window.htmlTemplateManager.saveTemplate(newId, newName, template.description, template.html);
+            console.log('テンプレート複製完了:', newId);
+        }
+    }
+}
+
+function deleteTemplate(templateId) {
+    if (window.htmlTemplateManager) {
+        window.htmlTemplateManager.deleteTemplate(templateId);
+    }
+}
+
+function saveCurrentTemplate() {
+    const htmlEditor = document.getElementById('htmlEditor');
+    if (!htmlEditor || !window.htmlTemplateManager) return;
+    
+    if (window.htmlTemplateManager.currentTemplate) {
+        const template = window.htmlTemplateManager.templates.get(window.htmlTemplateManager.currentTemplate);
+        if (template) {
+            window.htmlTemplateManager.saveTemplate(
+                window.htmlTemplateManager.currentTemplate,
+                template.name,
+                template.description,
+                htmlEditor.value
+            );
+        }
+    } else {
+        alert('保存するテンプレートを選択してください。');
+    }
+}
+
+function exportTemplate() {
+    if (!window.htmlTemplateManager || !window.htmlTemplateManager.currentTemplate) {
+        alert('エクスポートするテンプレートを選択してください。');
+        return;
+    }
+    
+    const template = window.htmlTemplateManager.templates.get(window.htmlTemplateManager.currentTemplate);
+    if (template) {
+        const exportData = {
+            name: template.name,
+            description: template.description,
+            html: template.html,
+            exported_at: new Date().toISOString()
+        };
+        
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `template_${window.htmlTemplateManager.currentTemplate}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        URL.revokeObjectURL(url);
+        console.log('テンプレートエクスポート完了');
+    }
+}
+
+function importTemplate() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            try {
+                const templateData = JSON.parse(event.target.result);
+                const templateId = 'imported_' + Date.now();
+                
+                if (window.htmlTemplateManager) {
+                    window.htmlTemplateManager.saveTemplate(
+                        templateId,
+                        templateData.name + ' (インポート)',
+                        templateData.description,
+                        templateData.html
+                    );
+                    console.log('テンプレートインポート完了:', templateId);
+                }
+            } catch (error) {
+                alert('テンプレートファイルの読み込みに失敗しました。');
+                console.error('インポートエラー:', error);
+            }
+        };
+        reader.readAsText(file);
+    };
+    
+    input.click();
+}
+
+console.log('✅ HTMLテンプレート管理タブ初期化完了');
+</script>

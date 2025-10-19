@@ -1,0 +1,209 @@
+<!-- Amazon日本 出品情報編集タブ - 完全版 -->
+<div class="ilm-data-section">
+    <div class="ilm-section-header" style="background: linear-gradient(135deg, #232f3e, #ff9900); color: white;">
+        <i class="fab fa-amazon"></i> Amazon日本出品設定
+    </div>
+    
+    <div style="padding: 1rem;">
+        <!-- Amazon必須項目警告 -->
+        <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 0.75rem; margin-bottom: 1rem;">
+            <h5 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; color: #856404;">
+                <i class="fas fa-exclamation-triangle"></i> Amazon日本必須項目
+            </h5>
+            <div style="font-size: 0.8rem; color: #856404;">
+                ✓ 商品名 ✓ 商品コード(JAN/EAN/UPC/ISBN) ✓ 価格 ✓ 商品状態 ✓ 在庫数 ✓ 商品画像(1枚以上)
+            </div>
+        </div>
+
+        <!-- 商品名 -->
+        <div class="form-row">
+            <label class="form-label">
+                商品名 <span style="color: var(--ilm-error);">*</span>
+                <span style="font-size: 0.75rem; color: #6c757d;">(全角50文字以内推奨)</span>
+            </label>
+            <textarea class="ilm-form-textarea" maxlength="200" id="amazon-jp-title" rows="2" 
+                      oninput="IntegratedListingModal.updateCharCounter(this, 'amazon-jp-title-counter')" 
+                      placeholder="商品タイトルを入力してください"></textarea>
+            <div style="display: flex; justify-content: space-between; margin-top: 0.25rem;">
+                <div style="font-size: 0.75rem; color: #6c757d;">
+                    メーカー名、ブランド名、商品名、型番などを含めてください
+                </div>
+                <div style="font-size: 0.75rem; color: #6c757d;" id="amazon-jp-title-counter">0/200</div>
+            </div>
+        </div>
+
+        <!-- 商品コード -->
+        <div class="ilm-form-grid" style="margin-top: 1rem;">
+            <div class="form-row">
+                <label class="form-label">
+                    商品コードタイプ <span style="color: var(--ilm-error);">*</span>
+                </label>
+                <select class="ilm-form-select" id="amazon-jp-code-type">
+                    <option value="">選択してください</option>
+                    <option value="JAN">JAN (Japanese Article Number)</option>
+                    <option value="EAN">EAN (European Article Number)</option>
+                    <option value="UPC">UPC (Universal Product Code)</option>
+                    <option value="ISBN">ISBN (International Standard Book Number)</option>
+                    <option value="ASIN">ASIN (Amazon Standard Identification)</option>
+                </select>
+            </div>
+            
+            <div class="form-row">
+                <label class="form-label">
+                    商品コード <span style="color: var(--ilm-error);">*</span>
+                </label>
+                <input type="text" class="ilm-form-input" id="amazon-jp-code" placeholder="4901234567890">
+                <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
+                    ハイフンなしで入力してください
+                </div>
+            </div>
+        </div>
+
+        <!-- 価格・在庫 -->
+        <div class="ilm-form-grid" style="margin-top: 1rem;">
+            <div class="form-row">
+                <label class="form-label">
+                    販売価格 (円) <span style="color: var(--ilm-error);">*</span>
+                </label>
+                <input type="number" class="ilm-form-input" id="amazon-jp-price" min="1" placeholder="例: 2980">
+                <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
+                    税込価格を入力してください
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <label class="form-label">
+                    在庫数 <span style="color: var(--ilm-error);">*</span>
+                </label>
+                <input type="number" class="ilm-form-input" id="amazon-jp-quantity" value="1" min="0">
+                <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
+                    0で在庫切れ表示
+                </div>
+            </div>
+        </div>
+
+        <!-- 商品状態 -->
+        <div class="form-row" style="margin-top: 1rem;">
+            <label class="form-label">
+                商品状態 <span style="color: var(--ilm-error);">*</span>
+            </label>
+            <select class="ilm-form-select" id="amazon-jp-condition">
+                <option value="">選択してください</option>
+                <option value="New">新品</option>
+                <option value="UsedLikeNew">中古 - ほぼ新品</option>
+                <option value="UsedVeryGood">中古 - 非常に良い</option>
+                <option value="UsedGood">中古 - 良い</option>
+                <option value="UsedAcceptable">中古 - 可</option>
+                <option value="Refurbished">再生品</option>
+                <option value="CollectibleLikeNew">コレクター商品 - ほぼ新品</option>
+                <option value="CollectibleVeryGood">コレクター商品 - 非常に良い</option>
+                <option value="CollectibleGood">コレクター商品 - 良い</option>
+                <option value="CollectibleAcceptable">コレクター商品 - 可</option>
+            </select>
+        </div>
+
+        <!-- 商品説明 -->
+        <div class="form-row" style="margin-top: 1rem;">
+            <label class="form-label">
+                商品説明
+                <span style="font-size: 0.75rem; color: #6c757d; font-weight: normal;">
+                    (2000文字以内)
+                </span>
+            </label>
+            <textarea class="ilm-form-textarea" id="amazon-jp-description" rows="5" maxlength="2000"
+                      placeholder="商品の詳細な説明を入力してください"></textarea>
+            <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
+                商品の特徴、仕様、注意事項などを記載してください
+            </div>
+        </div>
+
+        <!-- カテゴリー -->
+        <div class="form-row" style="margin-top: 1rem;">
+            <label class="form-label">
+                Amazonカテゴリー <span style="color: var(--ilm-error);">*</span>
+            </label>
+            <select class="ilm-form-select" id="amazon-jp-category">
+                <option value="">カテゴリを選択...</option>
+                <optgroup label="ホビー">
+                    <option value="hobby_tcg">トレーディングカード</option>
+                    <option value="hobby_figures">フィギュア・コレクタードール</option>
+                    <option value="hobby_model">プラモデル・模型</option>
+                </optgroup>
+                <optgroup label="おもちゃ">
+                    <option value="toy_character">キャラクターグッズ</option>
+                    <option value="toy_puzzle">パズル</option>
+                    <option value="toy_vehicles">ミニカー・乗り物</option>
+                </optgroup>
+                <optgroup label="本・雑誌・コミック">
+                    <option value="book_manga">コミック</option>
+                    <option value="book_magazine">雑誌</option>
+                    <option value="book_artbook">画集・イラスト集</option>
+                </optgroup>
+            </select>
+        </div>
+
+        <!-- ブランド・メーカー -->
+        <div class="ilm-form-grid" style="margin-top: 1rem;">
+            <div class="form-row">
+                <label class="form-label">ブランド名</label>
+                <input type="text" class="ilm-form-input" id="amazon-jp-brand" placeholder="例: ポケモン">
+            </div>
+            
+            <div class="form-row">
+                <label class="form-label">メーカー名</label>
+                <input type="text" class="ilm-form-input" id="amazon-jp-manufacturer" placeholder="例: 株式会社ポケモン">
+            </div>
+        </div>
+
+        <!-- SKU -->
+        <div class="form-row" style="margin-top: 1rem;">
+            <label class="form-label">
+                出品者SKU <span style="color: var(--ilm-error);">*</span>
+            </label>
+            <input type="text" class="ilm-form-input" id="amazon-jp-sku" readonly style="background: #f8f9fa;">
+            <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
+                SKUは自動生成されます（形式: AMZJP-商品ID-タイムスタンプ）
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 出品管理オプション -->
+<div class="ilm-data-section" style="margin-top: 1rem;">
+    <div class="ilm-section-header" style="background: #f8f9fa; color: var(--ilm-text-primary);">
+        <i class="fas fa-cog"></i> 出品管理オプション
+    </div>
+    <div style="padding: 1rem;">
+        <div class="ilm-form-grid">
+            <div class="form-row">
+                <label class="form-label">出品タイプ</label>
+                <select class="ilm-form-select" id="amazon-jp-listing-type">
+                    <option value="individual" selected>個人出品（小口）</option>
+                    <option value="professional">大口出品</option>
+                </select>
+            </div>
+            
+            <div class="form-row">
+                <label class="form-label">フルフィルメント</label>
+                <select class="ilm-form-select" id="amazon-jp-fulfillment">
+                    <option value="MFN" selected>自己配送 (MFN)</option>
+                    <option value="FBA">Amazonフルフィルメント (FBA)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row" style="margin-top: 1rem;">
+            <label class="form-label">
+                <input type="checkbox" id="amazon-jp-gift-wrap" style="margin-right: 0.5rem;">
+                ギフトラッピング対応
+            </label>
+        </div>
+        
+        <div class="form-row">
+            <label class="form-label">
+                <input type="checkbox" id="amazon-jp-gift-message" style="margin-right: 0.5rem;">
+                ギフトメッセージ対応
+            </label>
+        </div>
+    </div>
+</div>

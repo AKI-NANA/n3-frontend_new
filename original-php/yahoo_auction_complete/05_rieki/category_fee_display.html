@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>カテゴリー手数料管理システム</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f8fafc;
+            color: #1e293b;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .section {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        .section h3 {
+            color: #1e293b;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section h3 i {
+            color: #3b82f6;
+        }
+
+        .category-selector {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .category-list {
+            border: 2px solid #e2e8f0;
+            border-radius: 0.5rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .category-item {
+            padding: 1rem;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .category-item:hover {
+            background: #f8fafc;
+        }
+
+        .category-item.selected {
+            background: #dbeafe;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .category-info {
+            flex: 1;
+        }
+
+        .category-name {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 0.25rem;
+        }
+
+        .category-id {
+            font-size: 0.875rem;
+            color: #64748b;
+            font-family: monospace;
+        }
+
+        .category-fee {
+            text-align: right;
+            font-weight: 700;
+        }
+
+        .fee-high { color: #dc2626; }
+        .fee-medium { color: #f59e0b; }
+        .fee-low { color: #059669; }
+
+        .fee-details {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+        }
+
+        .fee-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .fee-item {
+            background: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+
+        .fee-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .fee-label {
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+
+        .calculation-preview {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 2px solid #0ea5e9;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .preview-title {
+            font-weight: 600;
+            color: #0c4a6e;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .preview-calculation {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .preview-item {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+
+        .preview-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #0c4a6e;
+        }
+
+        .preview-label {
+            font-size: 0.75rem;
+            color: #475569;
+            margin-top: 0.25rem;
+        }
+
+        .data-source-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+
+        .source-option {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .source-option:hover {
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
+        }
+
+        .source-option.recommended {
+            border-color: #059669;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        }
+
+        .source-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .source-title {
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .source-description {
+            font-size: 0.875rem;
+            color: #64748b;
+            line-height: 1.5;
+        }
+
+        .pros-cons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .pros, .cons {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+        }
+
+        .pros {
+            border-left: 4px solid #059669;
+        }
+
+        .cons {
+            border-left: 4px solid #dc2626;
+        }
+
+        .pros h4 {
+            color: #059669;
+            margin-bottom: 1rem;
+        }
+
+        .cons h4 {
+            color: #dc2626;
+            margin-bottom: 1rem;
+        }
+
+        .pros ul, .cons ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .pros li, .cons li {
+            padding: 0.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .pros li::before {
+            content: "✅";
+        }
+
+        .cons li::before {
+            content: "❌";
+        }
+
+        .implementation-code {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            overflow-x: auto;
+            margin-top: 1rem;
+        }
+
+        .code-comment {
+            color: #94a3b8;
+        }
+
+        .code-keyword {
+            color: #60a5fa;
+        }
+
+        .code-string {
+            color: #34d399;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-tags"></i> eBayカテゴリー手数料管理システム</h1>
+            <p>カテゴリー別手数料の表示・管理・連携方法</p>
+        </div>
+
+        <!-- カテゴリー手数料表示セクション -->
+        <div class="section">
+            <h3><i class="fas fa-calculator"></i> カテゴリー別手数料表示</h3>
+            
+            <div class="category-selector">
+                <div class="category-list">
+                    <div class="category-item selected" onclick="selectCategory(293, 'Consumer Electronics', 10.00, 0.35)">
+                        <div class="category-info">
+                            <div class="category-name">Consumer Electronics</div>
+                            <div class="category-id">ID: 293</div>
+                        </div>
+                        <div class="category-fee fee-medium">10.0%</div>
+                    </div>
+                    
+                    <div class="category-item" onclick="selectCategory(11450, 'Clothing, Shoes & Accessories', 12.90, 0.30)">
+                        <div class="category-info">
+                            <div class="category-name">Clothing, Shoes & Accessories</div>
+                            <div class="category-id">ID: 11450</div>
+                        </div>
+                        <div class="category-fee fee-high">12.9%</div>
+                    </div>
+                    
+                    <div class="category-item" onclick="selectCategory(58058, 'Collectibles', 9.15, 0.35)">
+                        <div class="category-info">
+                            <div class="category-name">Collectibles</div>
+                            <div class="category-id">ID: 58058</div>
+                        </div>
+                        <div class="category-fee fee-low">9.15%</div>
+                    </div>
+                    
+                    <div class="category-item" onclick="selectCategory(267, 'Books', 15.00, 0.30)">
+                        <div class="category-info">
+                            <div class="category-name">Books</div>
+                            <div class="category-id">ID: 267</div>
+                        </div>
+                        <div class="category-fee fee-high">15.0%</div>
+                    </div>
+                    
+                    <div class="category-item" onclick="selectCategory(550, 'Art', 12.90, 0.35)">
+                        <div class="category-info">
+                            <div class="category-name">Art</div>
+                            <div class="category-id">ID: 550</div>
+                        </div>
+                        <div class="category-fee fee-high">12.9%</div>
+                    </div>
+                </div>
+
+                <div class="fee-details">
+                    <h4 id="selectedCategoryName">Consumer Electronics (ID: 293)</h4>
+                    
+                    <div class="fee-breakdown">
+                        <div class="fee-item">
+                            <div class="fee-value fee-medium" id="finalValueFee">10.0%</div>
+                            <div class="fee-label">Final Value Fee</div>
+                        </div>
+                        <div class="fee-item">
+                            <div class="fee-value" id="insertionFee">$0.35</div>
+                            <div class="fee-label">Insertion Fee</div>
+                        </div>
+                        <div class="fee-item">
+                            <div class="fee-value" id="storeFee">9.15%</div>
+                            <div class="fee-label">Store Fee (参考)</div>
+                        </div>
+                    </div>
+
+                    <div class="calculation-preview">
+                        <div class="preview-title">
+                            <i class="fas fa-chart-line"></i> 計算プレビュー（$100販売時）
+                        </div>
+                        <div class="preview-calculation">
+                            <div class="preview-item">
+                                <div class="preview-value" id="previewFinalFee">$10.00</div>
+                                <div class="preview-label">Final Value Fee</div>
+                            </div>
+                            <div class="preview-item">
+                                <div class="preview-value" id="previewInsertionFee">$0.35</div>
+                                <div class="preview-label">Insertion Fee</div>
+                            </div>
+                            <div class="preview-item">
+                                <div class="preview-value" id="previewTotalFee">$10.35</div>
+                                <div class="preview-label">合計手数料</div>
+                            </div>
+                            <div class="preview-item">
+                                <div class="preview-value" id="previewNet">$89.65</div>
+                                <div class="preview-label">受取金額</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- データ取得方法の選択 -->
+        <div class="section">
+            <h3><i class="fas fa-database"></i> カテゴリー手数料データの取得方法</h3>
+            
+            <div class="data-source-options">
+                <div class="source-option recommended" onclick="selectDataSource('category_tool')">
+                    <div class="source-icon" style="color: #059669;"><i class="fas fa-link"></i></div>
+                    <div class="source-title">カテゴリー取得ツール連携</div>
+                    <div class="source-description">
+                        既存のカテゴリー取得ツールから手数料情報も一緒に取得し、データベースに自動保存
+                    </div>
+                </div>
+
+                <div class="source-option" onclick="selectDataSource('manual_db')">
+                    <div class="source-icon" style="color: #3b82f6;"><i class="fas fa-database"></i></div>
+                    <div class="source-title">手動データベース管理</div>
+                    <div class="source-description">
+                        利益計算システム内で独立してカテゴリー手数料を管理・更新
+                    </div>
+                </div>
+
+                <div class="source-option" onclick="selectDataSource('api_direct')">
+                    <div class="source-icon" style="color: #f59e0b;"><i class="fas fa-cloud"></i></div>
+                    <div class="source-title">eBay API直接取得</div>
+                    <div class="source-description">
+                        eBay APIから直接最新の手数料情報を取得（要API制限考慮）
+                    </div>
+                </div>
+            </div>
+
+            <div id="sourceDetails" class="pros-cons" style="display: none;">
+                <!-- 選択された方法の詳細が表示される -->
+            </div>
+        </div>
+
+        <!-- 実装コード例 -->
+        <div class="section">
+            <h3><i class="fas fa-code"></i> 実装コード例</h3>
+            
+            <div id="implementationCode">
+                <h4>推奨方法：カテゴリー取得ツール連携</h4>
+                <div class="implementation-code">
+<span class="code-comment">-- カテゴリー取得ツールのテーブル構造を拡張</span>
+<span class="code-keyword">ALTER TABLE</span> ebay_categories <span class="code-keyword">ADD COLUMN</span> final_value_fee <span class="code-keyword">DECIMAL</span>(5,2);
+<span class="code-keyword">ALTER TABLE</span> ebay_categories <span class="code-keyword">ADD COLUMN</span> insertion_fee <span class="code-keyword">DECIMAL</span>(5,2);
+<span class="code-keyword">ALTER TABLE</span> ebay_categories <span class="code-keyword">ADD COLUMN</span> store_fee <span class="code-keyword">DECIMAL</span>(5,2);
+
+<span class="code-comment">-- 利益計算システムからの取得</span>
+<span class="code-keyword">SELECT</span> category_name, final_value_fee, insertion_fee 
+<span class="code-keyword">FROM</span> ebay_categories 
+<span class="code-keyword">WHERE</span> category_id = <span class="code-string">?</span>;
+                </div>
+
+                <h4>PHP実装例（利益計算システム）</h4>
+                <div class="implementation-code">
+<span class="code-keyword">function</span> getCategoryFees($categoryId) {
+    <span class="code-keyword">try</span> {
+        $pdo = getDatabaseConnection();
+        $stmt = $pdo->prepare(<span class="code-string">"
+            SELECT category_name, final_value_fee, insertion_fee, store_fee
+            FROM ebay_categories 
+            WHERE category_id = ? AND active = TRUE
+        "</span>);
+        $stmt->execute([$categoryId]);
+        $fees = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        <span class="code-keyword">if</span> ($fees) {
+            <span class="code-keyword">return</span> [
+                <span class="code-string">'category_name'</span> => $fees[<span class="code-string">'category_name'</span>],
+                <span class="code-string">'final_value_fee'</span> => $fees[<span class="code-string">'final_value_fee'</span>],
+                <span class="code-string">'insertion_fee'</span> => $fees[<span class="code-string">'insertion_fee'</span>],
+                <span class="code-string">'store_fee'</span> => $fees[<span class="code-string">'store_fee'</span>]
+            ];
+        }
+        
+        <span class="code-comment">// デフォルト手数料を返す</span>
+        <span class="code-keyword">return</span> [
+            <span class="code-string">'category_name'</span> => <span class="code-string">'Unknown Category'</span>,
+            <span class="code-string">'final_value_fee'</span> => 10.00,
+            <span class="code-string">'insertion_fee'</span> => 0.35,
+            <span class="code-string">'store_fee'</span> => 9.15
+        ];
+        
+    } <span class="code-keyword">catch</span> (Exception $e) {
+        error_log(<span class="code-string">'カテゴリー手数料取得エラー: '</span> . $e->getMessage());
+        <span class="code-keyword">return</span> <span class="code-keyword">null</span>;
+    }
+}
+                </div>
+            </div>
+
+            <button class="btn" onclick="copyCode()">
+                <i class="fas fa-copy"></i> コードをコピー
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let selectedDataSource = 'category_tool';
+
+        function selectCategory(id, name, finalFee, insertionFee) {
+            // カテゴリー選択状態の更新
+            document.querySelectorAll('.category-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+
+            // 詳細表示の更新
+            document.getElementById('selectedCategoryName').textContent = `${name} (ID: ${id})`;
+            document.getElementById('finalValueFee').textContent = `${finalFee}%`;
+            document.getElementById('insertionFee').textContent = `$${insertionFee}`;
+            document.getElementById('storeFee').textContent = `${(finalFee - 0.85).toFixed(2)}%`;
+
+            // プレビュー計算の更新
+            const samplePrice = 100;
+            const finalFeeAmount = samplePrice * (finalFee / 100);
+            const totalFee = finalFeeAmount + insertionFee;
+            const netAmount = samplePrice - totalFee;
+
+            document.getElementById('previewFinalFee').textContent = `$${finalFeeAmount.toFixed(2)}`;
+            document.getElementById('previewInsertionFee').textContent = `$${insertionFee.toFixed(2)}`;
+            document.getElementById('previewTotalFee').textContent = `$${totalFee.toFixed(2)}`;
+            document.getElementById('previewNet').textContent = `$${netAmount.toFixed(2)}`;
+
+            // 手数料レベルに応じた色分け
+            const feeElement = document.getElementById('finalValueFee');
+            feeElement.className = 'fee-value';
+            if (finalFee >= 12) {
+                feeElement.classList.add('fee-high');
+            } else if (finalFee >= 10) {
+                feeElement.classList.add('fee-medium');
+            } else {
+                feeElement.classList.add('fee-low');
+            }
+        }
+
+        function selectDataSource(source) {
+            selectedDataSource = source;
+            
+            // 選択状態の更新
+            document.querySelectorAll('.source-option').forEach(option => {
+                option.style.borderColor = '#e2e8f0';
+                option.style.background = 'white';
+            });
+            event.currentTarget.style.borderColor = '#3b82f6';
+            event.currentTarget.style.background = 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)';
+
+            // 詳細表示
+            showSourceDetails(source);
+        }
+
+        function showSourceDetails(source) {
+            const detailsContainer = document.getElementById('sourceDetails');
+            detailsContainer.style.display = 'grid';
+
+            const details = {
+                'category_tool': {
+                    pros: [
+                        'データの一元管理',
+                        '手動更新不要',
+                        '既存システムとの整合性',
+                        'カテゴリー情報と手数料の同期'
+                    ],
+                    cons: [
+                        'カテゴリー取得ツールに依存',
+                        '手数料変更時の対応が必要',
+                        '連携部分の実装が必要'
+                    ]
+                },
+                'manual_db': {
+                    pros: [
+                        '独立したシステム',
+                        '柔軟な手数料管理',
+                        '即座の更新可能',
+                        'カスタム手数料設定可能'
+                    ],
+                    cons: [
+                        '手動更新が必要',
+                        'eBayの手数料変更に追従困難',
+                        'データの重複管理',
+                        '保守コストが高い'
+                    ]
+                },
+                'api_direct': {
+                    pros: [
+                        '常に最新の手数料',
+                        'eBay公式データ',
+                        '自動更新',
+                        '正確性が高い'
+                    ],
+                    cons: [
+                        'API制限の制約',
+                        'ネットワーク依存',
+                        '複雑な実装',
+                        'レスポンス速度の問題'
+                    ]
+                }
+            };
+
+            const selected = details[source];
+            detailsContainer.innerHTML = `
+                <div class="pros">
+                    <h4><i class="fas fa-check-circle"></i> メリット</h4>
+                    <ul>
+                        ${selected.pros.map(pro => `<li>${pro}</li>`).join('')}
+                    </ul>
+                </div>
+                <div class="cons">
+                    <h4><i class="fas fa-exclamation-triangle"></i> 注意点</h4>
+                    <ul>
+                        ${selected.cons.map(con => `<li>${con}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+
+        function copyCode() {
+            const code = document.querySelector('.implementation-code').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                alert('📋 コードをクリップボードにコピーしました！');
+            });
+        }
+
+        // 初期選択
+        document.addEventListener('DOMContentLoaded', function() {
+            showSourceDetails('category_tool');
+        });
+    </script>
+</body>
+</html>

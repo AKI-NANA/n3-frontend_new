@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eBay完全ガイド付きダッシュボード - 初心者対応版</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ===== eBay完全準拠スタイル ===== */
+        :root {
+            --ebay-blue: #0064d2;
+            --ebay-blue-dark: #0053ba;
+            --ebay-red: #e53e3e;
+            --ebay-yellow: #f5af02;
+            --ebay-green: #00a650;
+            --ebay-gray: #707070;
+            --ebay-light-gray: #f7f7f7;
+            --ebay-border: #e5e5e5;
+            --ebay-white: #ffffff;
+            --ebay-text: #191919;
+            --ebay-text-light: #707070;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: "Helvetica Neue", Arial, sans-serif;
+            background: var(--ebay-light-gray);
+            color: var(--ebay-text);
+            line-height: 1.4;
+            font-size: 14px;
+        }
+
+        /* ===== ヘッダー ===== */
+        .ebay-header {
+            background: var(--ebay-white);
+            border-bottom: 1px solid var(--ebay-border);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-content {
+            max-width: 1300px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 16px;
+        }
+
+        .ebay-logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--ebay-blue);
+            text-decoration: none;
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 32px;
+            align-items: center;
+        }
+
+        .nav-item {
+            color: var(--ebay-text);
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 0;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover { color: var(--ebay-blue); }
+        .nav-item.active {
+            color: var(--ebay-blue);
+            border-bottom-color: var(--ebay-blue);
+            font-weight: 600;
+        }
+
+        /* ===== メインコンテナ ===== */
+        .main-container {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        /* ===== タブシステム ===== */
+        .tab-system {
+            background: var(--ebay-white);
+            border: 1px solid var(--ebay-border);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .tab-headers {
+            display: flex;
+            border-bottom: 1px solid var(--ebay-border);
+            background: #f8f9fa;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .tab-header {
+            flex: 1;
+            padding: 12px 16px;
+            text-align: center;
+            cursor: pointer;
+            border-right: 1px solid var(--ebay-border);
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+
+        .tab-header:last-child { border-right: none; }
+        .tab-header:hover { background: #e9ecef; }
+        .tab-header.active {
+            background: var(--ebay-blue);
+            color: var(--ebay-white);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+        }
+
+        .tab-content.active { display: block; }
+
+        /* ===== 緊急アラート ===== */
+        .urgent-alert {
+            background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+            border: 2px solid var(--ebay-red);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { border-color: var(--ebay-red); }
+            50% { border-color: #ff5722; }
+        }
+
+        .alert-icon {
+            color: var(--ebay-red);
+            font-size: 24px;
+        }
+
+        .alert-content h3 {
+            color: var(--ebay-red);
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        /* ===== スマートリンクカード ===== */
+        .smart-link-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+        }
+
+        .smart-link-card {
+            background: var(--ebay-white);
+            border: 1px solid var(--ebay-border);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .smart-link-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .link-header {
+            background: var(--ebay-blue);
+            color: var(--ebay-white);
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .link-title {
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .priority-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .priority-badge.urgent {
+            background: var(--ebay-red);
+            color: white;
+        }
+
+        .priority-badge.high {
+            background: var(--ebay-yellow);
+            color: var(--ebay-text);
+        }
+
+        .priority-badge.medium {
+            background: var(--ebay-green);
+            color: white;
+        }
+
+        .link-content {
+            padding: 16px;
+        }
+
+        .link-description {
+            margin-bottom: 16px;
+        }
+
+        .link-description p {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .link-description strong {
+            color: var(--ebay-blue);
+        }
+
+        .operation-guide {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+        }
+
+        .operation-guide h4 {
+            color: var(--ebay-blue);
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .operation-guide ol {
+            margin-left: 16px;
+        }
+
+        .operation-guide li {
+            margin-bottom: 4px;
+            font-size: 13px;
+        }
+
+        .link-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .primary-btn {
+            flex: 1;
+            background: var(--ebay-blue);
+            color: var(--ebay-white);
+            text-decoration: none;
+            padding: 12px 16px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .primary-btn:hover {
+            background: var(--ebay-blue-dark);
+            transform: translateY(-1px);
+        }
+
+        .guide-btn {
+            background: var(--ebay-white);
+            color: var(--ebay-blue);
+            border: 2px solid var(--ebay-blue);
+            padding: 12px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .guide-btn:hover {
+            background: var(--ebay-blue);
+            color: var(--ebay-white);
+        }
+
+        /* ===== API統合エリア ===== */
+        .api-section {
+            background: var(--ebay-white);
+            border: 1px solid var(--ebay-border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .api-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--ebay-green);
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .data-card {
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 6px;
+            border: 1px solid var(--ebay-border);
+            text-align: center;
+        }
+
+        .data-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--ebay-blue);
+            margin-bottom: 4px;
+        }
+
+        .data-value.urgent { color: var(--ebay-red); }
+
+        .data-label {
+            font-size: 12px;
+            color: var(--ebay-text-light);
+            margin-bottom: 4px;
+        }
+
+        .data-label-ja {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--ebay-text);
+        }
+
+        /* ===== モーダル ===== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--ebay-white);
+            border-radius: 8px;
+            padding: 24px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--ebay-border);
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--ebay-blue);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--ebay-text-light);
+        }
+
+        .close-btn:hover { color: var(--ebay-red); }
+
+        /* ===== タスク進捗 ===== */
+        .task-progress {
+            background: var(--ebay-white);
+            border: 1px solid var(--ebay-border);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--ebay-green), var(--ebay-blue));
+            transition: width 0.3s ease;
+        }
+
+        .checklist {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .checklist label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .checklist label:hover { background: #f8f9fa; }
+
+        .checklist input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* ===== レスポンシブ ===== */
+        @media (max-width: 768px) {
+            .smart-link-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .tab-headers {
+                flex-direction: column;
+            }
+            
+            .tab-header {
+                border-right: none;
+                border-bottom: 1px solid var(--ebay-border);
+            }
+            
+            .data-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .header-nav {
+                display: none;
+            }
+        }
+
+        /* ===== 特別エフェクト ===== */
+        .glow-effect {
+            animation: glow 2s infinite alternate;
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 5px var(--ebay-blue); }
+            to { box-shadow: 0 0 20px var(--ebay-blue), 0 0 30px var(--ebay-blue); }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--ebay-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- eBayヘッダー -->
+    <header class="ebay-header">
+        <div class="header-content">
+            <a href="https://www.ebay.com" class="ebay-logo">
+                <i class="fab fa-ebay"></i> eBay
+            </a>
+            <nav class="header-nav">
+                <a href="https://www.ebay.com" class="nav-item">ホーム</a>
+                <a href="https://www.ebay.com/mys" class="nav-item active">マイeBay</a>
+                <a href="https://community.ebay.com" class="nav-item">コミュニティ</a>
+                <a href="https://www.ebay.com/help" class="nav-item">ヘルプ・お問い合わせ</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <!-- ページタイトル -->
+        <div style="margin-bottom: 20px;">
+            <h1 style="font-size: 28px; font-weight: 600; color: var(--ebay-blue); margin-bottom: 8px;">
+                eBay完全ガイド付きダッシュボード
+            </h1>
+            <p style="color: var(--ebay-text-light); font-size: 16px;">
+                初心者でもわかる！すべてのページの使い方を日本語で完全解説
+            </p>
+        </div>
+
+        <!-- 緊急アラート -->
+        <div class="urgent-alert">
+            <i class="fas fa-exclamation-triangle alert-icon"></i>
+            <div class="alert-content">
+                <h3>🚨 今すぐ対応が必要です！</h3>
+                <p>未読メッセージ <strong>5件</strong> | 発送期限 <strong>3件</strong> | ケース対応期限 <strong>2時間</strong></p>
+            </div>
+        </div>
+
+        <!-- API統合データ -->
+        <div class="api-section">
+            <div class="api-status">
+                <div class="status-indicator"></div>
+                <span style="font-weight: 600;">eBay APIリアルタイム接続中</span>
+                <span style="color: var(--ebay-text-light); margin-left: auto;">最終更新: <span id="lastUpdate">--:--</span></span>
+            </div>
+
+            <div class="data-grid">
+                <div class="data-card">
+                    <div class="data-value" id="todaySales">$--</div>
+                    <div class="data-label">Today's Sales</div>
+                    <div class="data-label-ja">今日の売上</div>
+                </div>
+                <div class="data-card">
+                    <div class="data-value urgent" id="unreadMessages">--</div>
+                    <div class="data-label">Unread Messages</div>
+                    <div class="data-label-ja">未読メッセージ</div>
+                </div>
+                <div class="data-card">
+                    <div class="data-value urgent" id="awaitingShipment">--</div>
+                    <div class="data-label">Awaiting Shipment</div>
+                    <div class="data-label-ja">発送待ち</div>
+                </div>
+                <div class="data-card">
+                    <div class="data-value" id="activeListings">--</div>
+                    <div class="data-label">Active Listings</div>
+                    <div class="data-label-ja">出品中商品</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- タスク進捗 -->
+        <div class="task-progress">
+            <div class="progress-header">
+                <h3 style="color: var(--ebay-blue);">📋 今日のタスク進捗</h3>
+                <span id="progressText">0/6 完了</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+            </div>
+            <div class="checklist" id="taskChecklist">
+                <label>
+                    <input type="checkbox" onchange="updateProgress()">
+                    <span>📬 未読メッセージの確認・返信</span>
+                </label>
+                <label>
+                    <input type="checkbox" onchange="updateProgress()">
+                    <span>📦 発送待ち商品のラベル印刷</span>
+                </label>
+                <label>
+                    <input type="checkbox" onchange="updateProgress()">
+                    <span>⚖️ ケース対応・返品処理</span>
+                </label>
+                <label>
+                    <input type="checkbox" onchange="updateProgress()">
+                    <span>⭐ 買い手への評価投稿</span>
+                </label>
+                <label>
+                    <input type="checkbox" onchange="updateProgress()">
+                    <span>📊 パフォーマンス指標確認</span>
+                </label>
+                <label>
+                    <input type="checkbox" onchange="updateProgress()">
+                    <span>💰 売上・手数料確認</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- タブシステム -->
+        <div class="tab-system">
+            <div class="tab-headers">
+                <div class="tab-header active" onclick="switchTab('urgent')">🚨 緊急対応</div>
+                <div class="tab-header" onclick="switchTab('daily')">📅 日常業務</div>
+                <div class="tab-header" onclick="switchTab('weekly')">📊 週次業務</div>
+                <div class="tab-header" onclick="switchTab('monthly')">⚙️ 月次・設定</div>
+            </div>
+
+            <!-- 緊急対応タブ -->
+            <div class="tab-content active" id="urgent">
+                <div class="smart-link-grid">
+                    <div class="smart-link-card glow-effect">
+                        <div class="link-header">
+                            <div class="link-title">
+                                <i class="fas fa-envelope"></i>
+                                メッセージ対応
+                            </div>
+                            <span class="priority-badge urgent">緊急</span>
+                        </div>
+                        <div class="link-content">
+                            <div class="link-description">
+                                <p><strong>目的:</strong> 買い手からの質問・クレーム・要望への返信</p>
+                                <p><strong>重要性:</strong> 24時間以内の返信で評価向上、SEO効果あり</p>
+                                <p><strong>確認項目:</strong> 未読件数、返信期限、緊急度の高いメッセージ</p>
+                            </div>
+                            <div class="operation-guide">
+                                <h4>📝 操作手順:</h4>
+                                <ol>
+                                    <li>「Messages」タブをクリック</li>
+                                    <li>左側の受信箱から未読メッセージを選択</li>
+                                    <li>内容を確認し、適切な返信を作成</li>
+                                    <li>「Reply」→「Send」で送信完了</li>
+                                </ol>
+                            </div>
+                            <div class="link-actions">
+                                <a href="https://www.ebay.com/mys/messages" target="_blank" class="primary-btn" onclick="trackLinkClick('messages')">
+                                    🔗 メッセージ画面へ
+                                </a>
+                                <button class="guide-btn" onclick="showDetailedGuide('messages')">
+                                    📋 詳細ガイド
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="smart-link-card glow-effect">
+                        <div class="link-header">
+                            <div class="link-title">
+                                <i class="fas fa-gavel"></i>
+                                ケース対応
+                            </div>
+                            <span class="priority-badge urgent">緊急</span>
+                        </div>
+                        <div class="link-content">
+                            <div class="link-description">
+                                <p><strong>目的:</strong> 返品・返金・クレームの正式な解決手続き</p>
+                                <p><strong>重要性:</strong> 対応期限あり、セラー評価に直結</p>
+                                <p><strong>確認項目:</strong> 新規ケース、返答期限、エスカレーション状況</p>
+                            </div>
+                            <div class="operation-guide">
+                                <h4>📝 操作手順:</h4>
+                                <ol>
+                                    <li>「Resolution Center」で案件確認</li>
+                                    <li>買い手の要求内容を詳細に確認</li>
+                                    <li>返金・返品・交換の適切な対応を選択</li>
+                                    <li>期限内に正式な返答を送信</li>
+                                </ol>
+                            </div>
+                            <div class="link-actions">
+                                <a href="https://www.ebay.com/mys/cases" target="_blank" class="primary-btn" onclick="trackLinkClick('cases')">
+                                    🔗 ケース管理画面へ
+                                </a>
+                                <button class="guide-btn" onclick="showDetailedGuide('cases')">
+                                    📋 詳細ガイド
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="smart-link-card glow-effect">
+                        <div class="link-header">
+                            <div class="link-title">
+                                <i class="fas fa-shipping-fast"></i>
+                                発送業務
+                            </div>
+                            <span class="priority-badge urgent">緊急</span>
+                        </div>
+                        <div class="link-content">
+                            <div class="link-description">
+                                <p><strong>目的:</strong> 売れた商品の発送手続き・追跡番号登録</p>
+                                <p><strong>重要性:</strong> 発送期限厳守、遅延は評価低下の原因</p>
+                                <p><strong>確認項目:</strong> 発送期限、ラベル印刷、追跡番号入力</p>
+                            </div>
+                            <div class="operation-guide">
+                                <h4>📝 操作手順:</h4>
+                                <ol>
+                                    <li>「Sold」画面で発送待ち商品を確認</li>
+                                    <li>「Print shipping label」でラベル作成</li>
+                                    <li>商品梱包・発送実行</li>
+                                    <li>追跡番号を「Add tracking」で登録</li>
+                                </ol>
+                            </div>
+                            <div class="link-actions">
+                                <a href="https://www.ebay.com/mys/sold" target="_blank" class="primary-btn" onclick="trackLinkClick('sold')">
+                                    🔗 発送管理画面へ
+                                </a>
+                                <button class="guide-btn" onclick="showDetailedGuide('shipping')">
+                                    📋 詳細ガイド
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 日常業務タブ -->
+            <div class="tab-content" id="daily">
+                <div class="smart-link-grid">
+                    <div class="smart-link-card">
+                        <div class="link-header">
+                            <div class="link-title">
+                                <i class="fas fa-list"></i>
+                                出品管理
+                            </div>
+                            <span class="priority-badge high">毎日</span>
+                        </div>
+                        <div class="link-content">
+                            <div class="link-description">
+                                <p><strong>目的:</strong> 出品中商品の価格調整・説明修正・在庫管理</p>
+                                <p><strong>重要性:</strong> 売上向上のための継続的改善</p>
+                                <p><strong>確認項目:</strong> 価格競争力、商品説明、写真品質</p>
+                            </div>
+                            <div class="operation-guide">
+                                <h4>📝 操作手順:</h4>
+                                <ol>
+                                    <li>「Active Listings」で出品商品一覧確認</li>
+                                    <li>競合価格と比較して価格調整</li>
+                                    <li>「Edit」で商品情報を更新</li>
+                                    <li>「Save changes」で変更保存</li>
+                                </ol>
+                            </div>
+                            <div class="link-actions">
+                                <a href="https://www.ebay.com/mys/listing" target="_blank" class="primary-btn" onclick="trackLinkClick('listings')">
+                                    🔗 出品管理画面へ
+                                </a>
+                                <button class="guide-btn" onclick="showDetailedGuide('listings')">
+                                    📋 詳細ガイド
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="smart-link-card">
+                        <div class="link-header">
+                            <div class="link-title">
+                                <i class="fas fa-plus"></i>
+                                新規出品
+                            </div>
+                            <span class="priority-badge medium">随時</span>
+                        </div>
+                        <div class="link-content">
+                            <div class="link-description">
+                                <p><strong>目的:</strong> 新しい商品をeBayマーケットプレイスに出品</p>
+                                <p><strong>重要性:</strong> 売上拡大の基本、継続的な収益確保</p>
+                                <p><strong>確認項目:</strong> 商品写真、タイトル、価格設定、配送料</p>
+                            </div>
+                            <div class="operation-guide">
+                                <h4>📝 操作手順:</h4>
+                                <ol>
+                                    <li>「Sell an item」で出品開始</li>
+                                    <li>商品カテゴリーを正確に選択</li>
+                                    <li>高品質な写真を複数枚アップロード</li>
+                                    <li>SEOを意識したタイトル・説明文作成</li>
+                                </ol>
+                            </div>
+                            <div class="link-actions">
+                                <a href="https://www.ebay.com/sellform" target="_blank" class="primary-btn" onclick="trackLinkClick('sell')">
+                                    🔗 新規出品画面へ
+                                </a>
+                                <button class="guide-btn" onclick="showDetailedGuide('sell')">
+                                    📋 詳細ガイド
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="smart-link-card">
+                        <div class="link-header">
+                            <div class="link-title">
+                                <i class="fas fa-star"></i>
+                                評価管理
+                            </div>
+                            <span class="priority-badge medium">毎日</span>
+                        </div>
+                        <div class="link-content">
+                            <div class="link-description">
+                                <p><strong>目的:</strong> 買い手への評価投稿、受けた評価の確認</p>
+                                <p><strong>重要性:</strong> 信頼関係構築、将来の売上に影響</p>
+                                <p><strong>確認項目:</strong> 評価待ち取引、ネガティブ評価への対応</p>
+                            </div>
+                            <div class="operation-guide">
+                                <h4>📝 操作手順:</h4>
+                                <ol>
+                                    <li>「Feedback」画面で評価状況確認</li>
+                                    <li>「Leave feedback」で買い手を評価</li>
+                                    <li>受けた評価に対してお礼のコメント</li>
+                                    <li>問題がある評価は「Reply」で対応</li>
+                                </ol>
+                            </div>
+                            <div class="link-actions">
+                                <a href="https://www.ebay.com/mys/feedback" target="_blank" class="primary-btn" onclick="trackLinkClick('feedback')">
+                                    🔗 評価管理画面へ
+                                </a>
+                                <button class="guide-btn" onclick="showDetailedGuide('feedback')">
+                                    📋 詳細ガイド
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 週次業務タブ -->
+            <div class="tab-content" id="weekly">
+                <div class="smart-link-grid">
+                    <div class="smart-link-card">
+                        <div class="link-header">
+                            <div class="link-title">
+                                <i class="fas fa-chart-line"></i>
+                                パフォーマンス分析
+                            </div>
+                            <span class="priority-badge medium">週1回</span>
+                        </div>
+                        <div class="link-content">
+                            <div class="link-description">
+                                <p><strong>目的:</strong> セラーレベル維持、TOP seller資格の確認</p>
+                                <p><strong>重要性:</strong> アカウント健全性、検索順位に影響</p>
+                                <p><strong>確認項目:</strong> 欠陥率、遅延配送率、ケース解決率</p>
+                            </div>
+                            <div class="operation-guide">
+                                <h4>📝 操作手順:</h4>
+                                <ol>
+                                    <li>「Performance」タブでメトリクス確認</li>
+                                    <li>各指標が基準値内かチェック</li>
+                                    <li>問題がある項目の改善策検討</li>
+                                    <li>月間・四半期トレンドを分析</li>
+                                </ol>
+                            </div>
+                            <div class="link-actions">
+                                <a href="https://www.ebay.com/sh/performance" target="_blank" class="primary-btn" onclick="trackLinkClick('performance')">
+                                    🔗 パフォーマンス画面へ
+                                </a>
+                                <button class="guide-btn" onclick="showDetailedGuide('performance')">
+                                    📋 詳細ガイド
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="smart-link-card">
+                        <div class="link-header">
+                            <div class="link-title">
+                                <i class="fas fa-search"></i>
+                                市場調査・リサーチ
+                            </div>
+                            <span class="priority-badge medium">週1回</span>
+                        </div>
+                        <div class="link-content">
+                            <div class="link-description">
+                                <p><strong>目的:</strong> 売れ筋商品の発見、競合価格の調査</p>
+                                <p><strong>重要性:</strong> 利益最大化、新商品発掘</p>
+                                <p><strong>確認項目:</strong> トレンド商品、価格動向、需要予測</p>
+                            </div>
+                            <div class="operation-guide">
+                                <h4>📝 操作手順:</h4>
+                                <ol>
+                                    <li>「Research」タブで市場データ確認</li>
+                                    <li>「Terapeak」で売れ筋商品分析</li>
+                                    <li>競合セラーの価格・戦略研究</li>
+                                    <li>新たな商品カテゴリーの検討</li>
+                                </ol>
+                            </div>
+                            <div class="link-actions">
+                                <a href="https://www.ebay.com/sh/research" target="_blank" class="primary-btn" onclick="trackLinkClick('research')">
+                                    🔗 リサーチ画面へ
+                                </a>
+                                <button class="guide-btn" onclick="showDetailedGuide('research')">
+                                    📋 詳細ガイド
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 月次・設定タブ -->
+            <div class="tab-content" id="monthly">
+                <div class="smart-link-grid">
+                    <div class="smart-link-card">
+                        <div class="link-header">
+                            <div class="link-title">
+                                <i class="fas fa-file-invoice-dollar"></i>
+                                請求書・手数料確認
+                            </div>
+                            <span class="priority-badge medium">月1回</span>
+                        </div>
+                        <div class="link-content">
+                            <div class="link-description">
+                                <p><strong>目的:</strong> eBay手数料の確認、経費計算</p>
+                                <p><strong>重要性:</strong> 利益計算、税務処理のために必須</p>
+                                <p><strong>確認項目:</strong> 月次手数料、各種チャージ、支払い状況</p>
+                            </div>
+                            <div class="operation-guide">
+                                <h4>📝 操作手順:</h4>
+                                <ol>
+                                    <li>「Invoices」で月次請求書確認</li>
+                                    <li>各手数料の内訳をチェック</li>
+                                    <li>前月比較で増減要因を分析</li>
+                                    <li>必要に応じてCSVダウンロード</li>
+                                </ol>
+                            </div>
+                            <div class="link-actions">
+                                <a href="https://www.ebay.com/mys/invoices" target="_blank" class="primary-btn" onclick="trackLinkClick('invoices')">
+                                    🔗 請求書画面へ
+                                </a>
+                                <button class="guide-btn" onclick="showDetailedGuide('invoices')">
+                                    📋 詳細ガイド
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="smart-link-card">
+                        <div class="link-header">
+                            <div class="link-title">
+                                <i class="fas fa-cog"></i>
+                                アカウント設定
+                            </div>
+                            <span class="priority-badge medium">月1回</span>
+                        </div>
+                        <div class="link-content">
+                            <div class="link-description">
+                                <p><strong>目的:</strong> 個人情報更新、セキュリティ設定確認</p>
+                                <p><strong>重要性:</strong> アカウント安全性、法的要件遵守</p>
+                                <p><strong>確認項目:</strong> 住所、電話番号、支払い方法、パスワード</p>
+                            </div>
+                            <div class="operation-guide">
+                                <h4>📝 操作手順:</h4>
+                                <ol>
+                                    <li>「Account」設定画面にアクセス</li>
+                                    <li>個人情報が最新か確認・更新</li>
+                                    <li>二段階認証の設定確認</li>
+                                    <li>プライバシー設定の見直し</li>
+                                </ol>
+                            </div>
+                            <div class="link-actions">
+                                <a href="https://www.ebay.com/mys/account" target="_blank" class="primary-btn" onclick="trackLinkClick('account')">
+                                    🔗 アカウント設定へ
+                                </a>
+                                <button class="guide-btn" onclick="showDetailedGuide('account')">
+                                    📋 詳細ガイド
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 詳細ガイドモーダル -->
+    <div class="modal" id="detailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">詳細ガイド</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="modalBody">
+                <!-- 動的コンテンツ -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // グローバル変数
+        let currentProgress = 0;
+        let totalTasks = 6;
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateAPIData();
+            updateProgress();
+            
+            // 5分ごとにAPIデータ更新
+            setInterval(updateAPIData, 300000);
+        });
+
+        // タブ切り替え
+        function switchTab(tabName) {
+            // すべてのタブを非アクティブに
+            document.querySelectorAll('.tab-header').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            // 選択されたタブをアクティブに
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+
+            // タブ切り替えをトラッキング
+            console.log(`タブ切り替え: ${tabName}`);
+        }
+
+        // APIデータ更新（模擬）
+        function updateAPIData() {
+            const now = new Date();
+            document.getElementById('lastUpdate').textContent = 
+                now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+
+            // 模擬データ更新
+            document.getElementById('todaySales').textContent = 
+                '$' + (Math.random() * 500 + 100).toFixed(2);
+            document.getElementById('unreadMessages').textContent = 
+                Math.floor(Math.random() * 10 + 1);
+            document.getElementById('awaitingShipment').textContent = 
+                Math.floor(Math.random() * 15 + 3);
+            document.getElementById('activeListings').textContent = 
+                Math.floor(Math.random() * 50 + 200);
+
+            console.log('APIデータを更新しました:', now.toLocaleTimeString('ja-JP'));
+        }
+
+        // タスク進捗更新
+        function updateProgress() {
+            const checkboxes = document.querySelectorAll('#taskChecklist input[type="checkbox"]');
+            const completed = Array.from(checkboxes).filter(cb => cb.checked).length;
+            const percentage = (completed / totalTasks) * 100;
+
+            document.getElementById('progressFill').style.width = percentage + '%';
+            document.getElementById('progressText').textContent = `${completed}/${totalTasks} 完了`;
+
+            currentProgress = completed;
+
+            // 完了時の祝福メッセージ
+            if (completed === totalTasks) {
+                setTimeout(() => {
+                    alert('🎉 本日のタスクが全て完了しました！お疲れ様でした！');
+                }, 500);
+            }
+        }
+
+        // リンククリック追跡
+        function trackLinkClick(pageName) {
+            const timestamp = new Date().toLocaleTimeString('ja-JP');
+            console.log(`${timestamp}: ${pageName}ページにアクセスしました`);
+            
+            // ローカルストレージに記録
+            const accessLog = JSON.parse(localStorage.getItem('ebayAccessLog') || '[]');
+            accessLog.push({
+                page: pageName,
+                timestamp: timestamp,
+                date: new Date().toDateString()
+            });
+            
+            // 最大50件まで保存
+            if (accessLog.length > 50) {
+                accessLog.shift();
+            }
+            
+            localStorage.setItem('ebayAccessLog', JSON.stringify(accessLog));
+        }
+
+        // 詳細ガイド表示
+        function showDetailedGuide(pageType) {
+            const guides = {
+                messages: {
+                    title: '📬 メッセージ対応 - 完全ガイド',
+                    content: `
+                        <h3>🎯 メッセージ対応の重要性</h3>
+                        <p>24時間以内の返信率はeBayの検索順位に大きく影響します。迅速な対応で信頼を獲得し、売上向上につなげましょう。</p>
+                        
+                        <h3>📝 具体的な操作手順</h3>
+                        <ol>
+                            <li><strong>メッセージページアクセス:</strong> My eBay → Messages</li>
+                            <li><strong>フィルター活用:</strong> 「Unread」で未読のみ表示</li>
+                            <li><strong>優先順位付け:</strong> 購入前の質問 > 購入後の問い合わせ > 一般質問</li>
+                            <li><strong>テンプレート活用:</strong> よくある質問は定型文を準備</li>
+                            <li><strong>写真添付:</strong> 必要に応じて商品画像や説明画像を添付</li>
+                        </ol>
+                        
+                        <h3>💡 効果的な返信のコツ</h3>
+                        <ul>
+                            <li>丁寧で親切な口調を心がける</li>
+                            <li>質問に対して具体的かつ詳細に回答</li>
+                            <li>関連商品の提案で売上アップ</li>
+                            <li>返信後は「Mark as answered」でステータス更新</li>
+                        </ul>
+                        
+                        <h3>⚠️ 注意すべきポイント</h3>
+                        <ul>
+                            <li>個人情報（電話番号、住所等）の交換は禁止</li>
+                            <li>eBay外での取引誘導は規約違反</li>
+                            <li>攻撃的・不適切な内容には冷静に対応</li>
+                            <li>返品・返金要求は必ずケースを通じて処理</li>
+                        </ul>
+                    `
+                },
+                cases: {
+                    title: '⚖️ ケース対応 - 完全ガイド',
+                    content: `
+                        <h3>🎯 ケース対応の重要性</h3>
+                        <p>適切なケース対応はセラー評価に直結します。冷静かつ迅速な対応で顧客満足度を維持しましょう。</p>
+                        
+                        <h3>📝 ケースの種類と対応</h3>
+                        <h4>1. Item Not Received (商品未着)</h4>
+                        <ul>
+                            <li>追跡番号で配送状況確認</li>
+                            <li>配送業者への問い合わせ</li>
+                            <li>必要に応じて再送または返金</li>
+                        </ul>
+                        
+                        <h4>2. Item Not as Described (商品相違)</h4>
+                        <ul>
+                            <li>買い手の具体的な不満点を確認</li>
+                            <li>部分返金（Partial refund）で解決を試行</li>
+                            <li>返品が必要な場合は返送ラベルを提供</li>
+                        </ul>
+                        
+                        <h3>💡 効果的な解決策</h3>
+                        <ul>
+                            <li>買い手の立場に立って考える</li>
+                            <li>迅速な初回返答（24時間以内）</li>
+                            <li>具体的な解決案を複数提示</li>
+                            <li>必要に応じてeBayカスタマーサービスに相談</li>
+                        </ul>
+                    `
+                },
+                shipping: {
+                    title: '📦 発送業務 - 完全ガイド',
+                    content: `
+                        <h3>🎯 発送業務の重要性</h3>
+                        <p>約束した期日内の発送は、セラー評価とリピート購入に大きく影響します。効率的な発送体制を構築しましょう。</p>
+                        
+                        <h3>📝 発送手順（ステップバイステップ）</h3>
+                        <ol>
+                            <li><strong>注文確認:</strong> Sold items → Awaiting shipment</li>
+                            <li><strong>商品準備:</strong> 検品・清掃・梱包材準備</li>
+                            <li><strong>ラベル作成:</strong> Print shipping label → 配送方法選択</li>
+                            <li><strong>梱包作業:</strong> 適切な緩衝材で保護梱包</li>
+                            <li><strong>発送実行:</strong> 郵便局・宅配業者に持ち込み</li>
+                            <li><strong>追跡登録:</strong> Add tracking number で追跡番号入力</li>
+                        </ol>
+                        
+                        <h3>💡 効率化のコツ</h3>
+                        <ul>
+                            <li>定期的な梱包材のまとめ買い</li>
+                            <li>商品別の梱包手順マニュアル作成</li>
+                            <li>ラベル印刷の一括処理</li>
+                            <li>集荷サービスの活用</li>
+                        </ul>
+                        
+                        <h3>⚠️ 発送時の注意点</h3>
+                        <ul>
+                            <li>国際発送の場合は関税書類を正確に記入</li>
+                            <li>壊れやすい商品は十分な緩衝材を使用</li>
+                            <li>高額商品は必ず保険付きで発送</li>
+                            <li>発送後24時間以内に追跡番号を登録</li>
+                        </ul>
+                    `
+                }
+            };
+
+            const guide = guides[pageType] || {
+                title: '詳細ガイド',
+                content: '<p>このページのガイドは準備中です。</p>'
+            };
+
+            document.getElementById('modalTitle').textContent = guide.title;
+            document.getElementById('modalBody').innerHTML = guide.content;
+            document.getElementById('detailModal').style.display = 'block';
+        }
+
+        // モーダル閉じる
+        function closeModal() {
+            document.getElementById('detailModal').style.display = 'none';
+        }
+
+        // モーダル外クリックで閉じる
+        window.onclick = function(event) {
+            const modal = document.getElementById('detailModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // キーボードショートカット
+        document.addEventListener('keydown', function(e) {
+            if (e.altKey) {
+                switch(e.key) {
+                    case '1':
+                        e.preventDefault();
+                        switchTab('urgent');
+                        break;
+                    case '2':
+                        e.preventDefault();
+                        switchTab('daily');
+                        break;
+                    case '3':
+                        e.preventDefault();
+                        switchTab('weekly');
+                        break;
+                    case '4':
+                        e.preventDefault();
+                        switchTab('monthly');
+                        break;
+                    case 'm':
+                        e.preventDefault();
+                        window.open('https://www.ebay.com/mys/messages', '_blank');
+                        trackLinkClick('messages');
+                        break;
+                }
+            }
+            
+            // Escキーでモーダル閉じる
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // ページ離脱時の警告（未完了タスクがある場合）
+        window.addEventListener('beforeunload', function(e) {
+            if (currentProgress < totalTasks) {
+                e.preventDefault();
+                e.returnValue = '未完了のタスクがあります。本当にページを離れますか？';
+            }
+        });
+
+        // 使用統計の表示
+        function showUsageStats() {
+            const accessLog = JSON.parse(localStorage.getItem('ebayAccessLog') || '[]');
+            const today = new Date().toDateString();
+            const todayAccess = accessLog.filter(log => log.date === today);
+            
+            alert(`本日のページアクセス数: ${todayAccess.length}件\n最もアクセスしたページ: ${getMostAccessedPage(todayAccess)}`);
+        }
+
+        function getMostAccessedPage(logs) {
+            const counts = {};
+            logs.forEach(log => {
+                counts[log.page] = (counts[log.page] || 0) + 1;
+            });
+            
+            return Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b, 'なし');
+        }
+
+        // 定期的な進捗確認
+        setInterval(function() {
+            const now = new Date();
+            if (now.getHours() === 17 && now.getMinutes() === 0 && currentProgress < totalTasks) {
+                if (confirm('17時になりました。未完了のタスクがありますが、継続しますか？')) {
+                    console.log('作業継続を選択しました');
+                } else {
+                    console.log('作業終了を選択しました');
+                }
+            }
+        }, 60000); // 1分ごとにチェック
+    </script>
+</body>
+</html>

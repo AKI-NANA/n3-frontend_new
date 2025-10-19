@@ -1,0 +1,742 @@
+/* 🎨 Yahoo Auction Tool 完全版CSS - 既存システム拡張用 */
+/* 既存のインラインCSSを置き換え・新機能追加 */
+
+:root {
+    /* N3デザインシステム変数 */
+    --space-xs: 0.25rem;
+    --space-sm: 0.5rem;
+    --space-md: 1rem;
+    --space-lg: 1.5rem;
+    --space-xl: 2rem;
+    
+    /* カラーシステム */
+    --color-primary: #3b82f6;
+    --color-secondary: #6366f1;
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-danger: #ef4444;
+    --color-info: #06b6d4;
+    
+    /* 背景色 */
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f1f5f9;
+    --bg-hover: #e2e8f0;
+    
+    /* テキスト色 */
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --text-tertiary: #64748b;
+    --text-muted: #94a3b8;
+    --text-white: #ffffff;
+    
+    /* ボーダー・シャドウ */
+    --border-color: #e2e8f0;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    
+    /* ボーダー半径 */
+    --radius-sm: 0.25rem;
+    --radius-md: 0.375rem;
+    --radius-lg: 0.5rem;
+    --radius-xl: 0.75rem;
+    
+    /* トランジション */
+    --transition-fast: all 0.15s ease-in-out;
+    --transition-normal: all 0.2s ease-in-out;
+    
+    /* フォントサイズ */
+    --text-xs: 0.75rem;
+    --text-sm: 0.875rem;
+    --text-base: 1rem;
+    --text-lg: 1.125rem;
+    --text-xl: 1.25rem;
+    --text-2xl: 1.5rem;
+    --text-3xl: 1.875rem;
+}
+
+/* 🌍 HTMLテンプレート管理タブ専用スタイル */
+.html-template-management {
+    padding: var(--space-lg);
+}
+
+.template-selector {
+    margin-bottom: var(--space-xl);
+}
+
+.template-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--space-lg);
+    margin-bottom: var(--space-lg);
+}
+
+.template-card {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    transition: var(--transition-normal);
+    cursor: pointer;
+}
+
+.template-card:hover {
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.template-card.active {
+    border-color: var(--color-primary);
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.template-preview {
+    height: 120px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.template-card h4 {
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--space-xs);
+}
+
+.template-card p {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* HTML編集エリア */
+.html-editor-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+}
+
+.editor-toolbar {
+    background: var(--bg-tertiary);
+    padding: var(--space-sm);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+}
+
+.editor-toolbar button {
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.editor-toolbar button:hover {
+    background: var(--color-primary);
+    color: var(--text-white);
+    border-color: var(--color-primary);
+}
+
+.html-editor {
+    width: 100%;
+    height: 400px;
+    padding: var(--space-md);
+    border: 1px solid var(--border-color);
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    border-top: none;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: var(--text-sm);
+    resize: vertical;
+    background: var(--bg-secondary);
+}
+
+.html-editor:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* プレビューエリア */
+.preview-section {
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-md);
+}
+
+.preview-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-md);
+    padding: var(--space-sm);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+}
+
+.preview-controls button {
+    padding: var(--space-sm) var(--space-md);
+    background: var(--color-primary);
+    color: var(--text-white);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.preview-controls button:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+}
+
+.preview-controls select {
+    padding: var(--space-sm);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-sm);
+    background: var(--bg-secondary);
+}
+
+.html-preview {
+    width: 100%;
+    height: 500px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+}
+
+/* 📊 動的マニュアル専用スタイル */
+.dynamic-manual-container {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: var(--space-lg);
+}
+
+.manual-search {
+    margin-bottom: var(--space-lg);
+}
+
+.manual-search input {
+    width: 100%;
+    padding: var(--space-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    font-size: var(--text-base);
+    background: var(--bg-secondary);
+}
+
+.manual-search input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.field-documentation {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-md);
+    transition: var(--transition-normal);
+}
+
+.field-documentation:hover {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.field-documentation h4 {
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--space-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.field-documentation .required {
+    color: var(--color-danger);
+    font-weight: 700;
+}
+
+.field-documentation p {
+    color: var(--text-secondary);
+    margin-bottom: var(--space-sm);
+    line-height: 1.6;
+}
+
+.field-example {
+    background: var(--bg-tertiary);
+    padding: var(--space-sm);
+    border-radius: var(--radius-md);
+    font-family: monospace;
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+    margin-bottom: var(--space-sm);
+}
+
+.validation {
+    background: #fef3c7;
+    color: #92400e;
+    padding: var(--space-sm);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    border: 1px solid #fbbf24;
+}
+
+/* 🔄 CSV管理専用スタイル */
+.csv-management-section {
+    padding: var(--space-lg);
+}
+
+.csv-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-md);
+    margin-bottom: var(--space-xl);
+}
+
+.csv-stat-card {
+    background: var(--bg-secondary);
+    padding: var(--space-lg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    text-align: center;
+}
+
+.csv-stat-value {
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--color-primary);
+    margin-bottom: var(--space-xs);
+}
+
+.csv-stat-label {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.csv-upload-zone {
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    text-align: center;
+    background: var(--bg-tertiary);
+    margin-bottom: var(--space-lg);
+    transition: var(--transition-normal);
+    cursor: pointer;
+}
+
+.csv-upload-zone:hover {
+    border-color: var(--color-primary);
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.csv-upload-zone.drag-over {
+    border-color: var(--color-success);
+    background: rgba(16, 185, 129, 0.05);
+    transform: scale(1.02);
+}
+
+.csv-upload-icon {
+    font-size: var(--text-3xl);
+    color: var(--color-primary);
+    margin-bottom: var(--space-md);
+}
+
+.csv-upload-text {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--space-sm);
+}
+
+.csv-upload-requirements {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+}
+
+/* 📋 CSV項目テーブル */
+.csv-fields-table {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.csv-fields-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.csv-fields-table th {
+    background: var(--bg-tertiary);
+    padding: var(--space-md);
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color);
+    font-size: var(--text-sm);
+}
+
+.csv-fields-table td {
+    padding: var(--space-md);
+    border-bottom: 1px solid var(--border-color);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.csv-fields-table tr:hover {
+    background: var(--bg-tertiary);
+}
+
+.field-type-badge {
+    display: inline-block;
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--color-info);
+    color: var(--text-white);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
+    font-weight: 600;
+}
+
+.field-required-badge {
+    display: inline-block;
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--color-danger);
+    color: var(--text-white);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
+    font-weight: 600;
+}
+
+/* 🎛️ 共通コンポーネント */
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-lg);
+    padding-bottom: var(--space-md);
+    border-bottom: 2px solid var(--border-color);
+}
+
+.section-title {
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.section-actions {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+/* ボタンシステム */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    white-space: nowrap;
+}
+
+.btn:hover {
+    background: var(--bg-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn--primary { 
+    background: var(--color-primary); 
+    color: var(--text-white); 
+    border-color: var(--color-primary); 
+}
+
+.btn--success { 
+    background: var(--color-success); 
+    color: var(--text-white); 
+    border-color: var(--color-success); 
+}
+
+.btn--warning { 
+    background: var(--color-warning); 
+    color: var(--text-white); 
+    border-color: var(--color-warning); 
+}
+
+.btn--danger { 
+    background: var(--color-danger); 
+    color: var(--text-white); 
+    border-color: var(--color-danger); 
+}
+
+.btn--secondary { 
+    background: transparent; 
+    color: var(--color-primary); 
+    border: 1px solid var(--color-primary); 
+}
+
+.btn--sm {
+    padding: var(--space-xs) var(--space-sm);
+    font-size: var(--text-xs);
+}
+
+.btn--lg {
+    padding: var(--space-md) var(--space-lg);
+    font-size: var(--text-base);
+}
+
+/* 通知システム */
+.notification {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-md);
+    font-size: var(--text-sm);
+}
+
+.notification--info {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #93c5fd;
+}
+
+.notification--success {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #86efac;
+}
+
+.notification--warning {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fbbf24;
+}
+
+.notification--danger {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}
+
+/* 📱 レスポンシブデザイン */
+@media (max-width: 1024px) {
+    .html-editor-section {
+        grid-template-columns: 1fr;
+    }
+    
+    .template-cards {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+    
+    .csv-stats {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-md);
+    }
+    
+    .section-actions {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+    
+    .template-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .csv-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .html-editor {
+        height: 300px;
+    }
+    
+    .html-preview {
+        height: 400px;
+    }
+}
+
+@media (max-width: 480px) {
+    .csv-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .csv-fields-table {
+        font-size: var(--text-xs);
+    }
+    
+    .csv-fields-table th,
+    .csv-fields-table td {
+        padding: var(--space-sm);
+    }
+    
+    .dynamic-manual-container {
+        padding: var(--space-md);
+    }
+    
+    .field-documentation {
+        padding: var(--space-md);
+    }
+}
+
+/* 🎨 アニメーション */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(-100%);
+    }
+    to {
+        transform: translateX(0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.slide-in {
+    animation: slideIn 0.3s ease-out;
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+/* 🔧 ユーティリティクラス */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+
+.hidden { display: none; }
+.block { display: block; }
+.flex { display: flex; }
+.grid { display: grid; }
+
+.items-center { align-items: center; }
+.items-start { align-items: flex-start; }
+.items-end { align-items: flex-end; }
+
+.justify-center { justify-content: center; }
+.justify-start { justify-content: flex-start; }
+.justify-end { justify-content: flex-end; }
+.justify-between { justify-content: space-between; }
+
+.gap-xs { gap: var(--space-xs); }
+.gap-sm { gap: var(--space-sm); }
+.gap-md { gap: var(--space-md); }
+.gap-lg { gap: var(--space-lg); }
+
+.p-xs { padding: var(--space-xs); }
+.p-sm { padding: var(--space-sm); }
+.p-md { padding: var(--space-md); }
+.p-lg { padding: var(--space-lg); }
+
+.m-xs { margin: var(--space-xs); }
+.m-sm { margin: var(--space-sm); }
+.m-md { margin: var(--space-md); }
+.m-lg { margin: var(--space-lg); }
+
+/* 🌟 特殊効果 */
+.hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    transition: var(--transition-normal);
+}
+
+.hover-glow:hover {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+    transition: var(--transition-normal);
+}
+
+.gradient-bg {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    color: var(--text-white);
+}
+
+.glass-effect {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* ダークモード対応（オプション） */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-primary: #0f172a;
+        --bg-secondary: #1e293b;
+        --bg-tertiary: #334155;
+        --bg-hover: #475569;
+        
+        --text-primary: #f8fafc;
+        --text-secondary: #cbd5e1;
+        --text-tertiary: #94a3b8;
+        --text-muted: #64748b;
+        
+        --border-color: #334155;
+    }
+}

@@ -1,0 +1,80 @@
+<!-- Amazon Global 商品説明HTML編集タブ -->
+<div class="ilm-data-section">
+    <div class="ilm-section-header" style="background: linear-gradient(135deg, #ff9900, #ff6600); color: white;">
+        <i class="fas fa-code"></i> Amazon Global商品説明編集
+    </div>
+    
+    <div style="padding: 1rem;">
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
+            <button class="ilm-btn" style="background: #ff9900; color: white;" onclick="IntegratedListingModal.generateAmazonGlobalHtmlTemplate()">
+                <i class="fas fa-magic"></i> テンプレート生成
+            </button>
+            <button class="ilm-btn" onclick="IntegratedListingModal.insertAmazonGlobalCommonElements()">
+                <i class="fas fa-plus-circle"></i> 共通要素追加
+            </button>
+            <button class="ilm-btn" onclick="IntegratedListingModal.copyAmazonGlobalHtmlToClipboard()">
+                <i class="fas fa-copy"></i> コピー
+            </button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div>
+                <h4 style="margin: 0 0 0.5rem 0; font-size: 0.9rem;">HTMLエディタ</h4>
+                <textarea id="amazon-global-html-editor" 
+                          style="width: 100%; height: 400px; font-family: 'Courier New', monospace; 
+                                 font-size: 0.85rem; padding: 0.5rem; border: 1px solid #ddd; 
+                                 border-radius: 4px; resize: vertical;"
+                          oninput="IntegratedListingModal.updateAmazonGlobalHtmlPreview()"
+                          placeholder="商品説明HTMLを入力..."></textarea>
+            </div>
+            
+            <div>
+                <h4 style="margin: 0 0 0.5rem 0; font-size: 0.9rem;">プレビュー</h4>
+                <div id="amazon-global-html-preview" 
+                     style="width: 100%; height: 400px; padding: 1rem; border: 1px solid #ddd; 
+                            border-radius: 4px; overflow-y: auto; background: white;">
+                    <p style="color: #6c757d; text-align: center;">商品説明を入力するとプレビューが表示されます</p>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 1rem; padding: 1rem; background: #fff3e0; border-radius: 6px;">
+            <h5 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; color: #e65100;">
+                <i class="fas fa-info-circle"></i> Amazon HTML注意事項
+            </h5>
+            <ul style="margin: 0; padding-left: 1.5rem; font-size: 0.85rem; color: #6c757d;">
+                <li>AmazonはHTMLタグに制限があります（安全なタグのみ）</li>
+                <li>JavaScript・iframeは使用不可</li>
+                <li>外部CSSリンクは使用不可</li>
+                <li>画像は<code>&lt;img&gt;</code>タグで埋め込み可能</li>
+                <li>各マーケットの言語で記述してください</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Amazon Global HTMLテンプレート -->
+<template id="amazon-global-html-template">
+<div style="font-family: Arial, sans-serif; line-height: 1.6;">
+    <h2 style="color: #ff9900; border-bottom: 2px solid #ff9900; padding-bottom: 10px;">{{PRODUCT_TITLE}}</h2>
+    
+    <div style="background: #f7f7f7; padding: 15px; margin: 15px 0; border-radius: 5px;">
+        <h3>Key Features:</h3>
+        <ul>
+            <li>{{FEATURE_1}}</li>
+            <li>{{FEATURE_2}}</li>
+            <li>{{FEATURE_3}}</li>
+        </ul>
+    </div>
+    
+    <div style="margin: 20px 0;">
+        <h3>Product Description</h3>
+        <p>{{DESCRIPTION}}</p>
+    </div>
+    
+    <div style="background: #e8f5e9; padding: 15px; border-radius: 5px;">
+        <h3>Shipping Information</h3>
+        <p>Fast and secure shipping worldwide</p>
+    </div>
+</div>
+</template>

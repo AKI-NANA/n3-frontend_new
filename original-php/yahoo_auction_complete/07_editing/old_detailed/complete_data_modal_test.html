@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>完全データ表示モーダル - テスト版</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --accent-navy: #0B1D51;
+            --accent-purple: #725CAD;
+            --accent-lightblue: #8CCDEB;
+            --accent-cream: #FFE3A9;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f8f9fa;
+            color: #2c3e50;
+            margin: 0;
+            padding: 20px;
+            font-size: 14px;
+        }
+
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .test-header {
+            background: linear-gradient(135deg, var(--accent-navy), var(--accent-purple));
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .test-button {
+            background: var(--accent-purple);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .test-button:hover {
+            background: var(--accent-navy);
+            transform: translateY(-2px);
+        }
+
+        /* モーダルスタイル */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(2px);
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 0;
+            max-width: 95vw;
+            width: 1400px;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--accent-navy), var(--accent-purple));
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .modal-close {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: background 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .modal-body {
+            padding: 0;
+            max-height: calc(90vh - 100px);
+            overflow-y: auto;
+        }
+
+        /* データ表示セクション */
+        .data-section {
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .section-header {
+            background: #f8f9fa;
+            padding: 15px 30px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .section-header:hover {
+            background: #e9ecef;
+        }
+
+        .section-header.active {
+            background: var(--accent-lightblue);
+            color: white;
+        }
+
+        .section-content {
+            padding: 20px 30px;
+            display: none;
+        }
+
+        .section-content.active {
+            display: block;
+        }
+
+        /* 基本情報 */
+        .basic-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .info-item {
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid var(--accent-purple);
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 1rem;
+            color: #212529;
+            word-break: break-all;
+        }
+
+        /* 画像ギャラリー */
+        .image-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .image-item {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            background: white;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .image-item:hover {
+            border-color: var(--accent-purple);
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .image-item img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .image-index {
+            font-size: 0.8rem;
+            color: #6c757d;
+            font-weight: 600;
+        }
+
+        /* JSON表示 */
+        .json-viewer {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .json-key {
+            color: #63b3ed;
+            font-weight: bold;
+        }
+
+        .json-string {
+            color: #68d391;
+        }
+
+        .json-number {
+            color: #fbb6ce;
+        }
+
+        .json-boolean {
+            color: #f6ad55;
+        }
+
+        /* 統計情報 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* タブスタイル */
+        .tab-buttons {
+            display: flex;
+            background: #f8f9fa;
+            border-radius: 8px 8px 0 0;
+            overflow: hidden;
+        }
+
+        .tab-button {
+            flex: 1;
+            background: none;
+            border: none;
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .tab-button.active {
+            background: var(--accent-purple);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+            background: white;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* レスポンシブ */
+        @media (max-width: 768px) {
+            .modal-content {
+                width: 98%;
+                max-height: 95vh;
+            }
+
+            .basic-info {
+                grid-template-columns: 1fr;
+            }
+
+            .image-gallery {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                gap: 10px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        /* エラー表示 */
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #f5c6cb;
+            margin: 10px 0;
+        }
+
+        /* 成功表示 */
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #c3e6cb;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1><i class="fas fa-microscope"></i> 完全データ表示モーダル - テスト版</h1>
+            <p>Yahoo Auctionスクレイピングデータの完全表示テスト</p>
+        </div>
+
+        <div class="success-message">
+            <i class="fas fa-info-circle"></i>
+            <strong>テスト目的:</strong> 
+            スクレイピングで取得した全データ（15枚画像、詳細情報、JSON構造）を美しく表示するモーダルのテスト
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <button class="test-button" onclick="openTestModal()">
+                <i class="fas fa-eye"></i> テストモーダルを開く
+            </button>
+            <button class="test-button" onclick="openRealDataModal()">
+                <i class="fas fa-database"></i> 実データでテスト
+            </button>
+        </div>
+
+        <div id="logArea" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 20px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto;">
+            <strong>テストログ:</strong><br>
+            <span id="logContent">[待機中] テスト開始をお待ちください...</span>
+        </div>
+    </div>
+
+    <script>
+        function addLog(message, type = 'info') {
+            const logContent = document.getElementById('logContent');
+            const timestamp = new Date().toLocaleTimeString();
+            const colors = {
+                info: '#007bff',
+                success: '#28a745',
+                error: '#dc3545',
+                warning: '#ffc107'
+            };
+            
+            logContent.innerHTML += `<br><span style="color: ${colors[type]};">[${timestamp}] ${message}</span>`;
+            logContent.scrollTop = logContent.scrollHeight;
+        }
+
+        // テスト用のサンプルデータ
+        const sampleProductData = {
+            db_id: 26,
+            item_id: 'l1200404917',
+            title: 'マツバのゲンガー VS ポケモンカードe 1ED ポケカ ポケモンカード',
+            current_price: 37777,
+            description: 'ポケモンカードの希少カードです。状態は良好で、コレクターの方におすすめです。',
+            condition: '目立った傷や汚れなし',
+            category: 'おもちゃ、ゲーム',
+            source_url: 'https://auctions.yahoo.co.jp/jp/auction/l1200404917',
+            ebay_category_id: '2536',
+            sku: 'PKM-GNG-001',
+            scraped_at: '2025-09-17 13:40:59',
+            images: [
+                'https://auctions.c.yimg.jp/images.auctions.yahoo.co.jp/image/dr000/auc0109/users/1.jpg',
+                'https://auctions.c.yimg.jp/images.auctions.yahoo.co.jp/image/dr000/auc0109/users/2.jpg',
+                'https://auctions.c.yimg.jp/images.auctions.yahoo.co.jp/image/dr000/auc0109/users/3.jpg',
+                'https://auctions.c.yimg.jp/images.auctions.yahoo.co.jp/image/dr000/auc0109/users/4.jpg',
+                'https://auctions.c.yimg.jp/images.auctions.yahoo.co.jp/image/dr000/auc0109/users/5.jpg',
+                'https://placehold.co/300x300/667eea/FFFFFF/png?text=Sample+6',
+                'https://placehold.co/300x300/764ba2/FFFFFF/png?text=Sample+7',
+                'https://placehold.co/300x300/f093fb/FFFFFF/png?text=Sample+8',
+                'https://placehold.co/300x300/4facfe/FFFFFF/png?text=Sample+9',
+                'https://placehold.co/300x300/43e97b/FFFFFF/png?text=Sample+10',
+                'https://placehold.co/300x300/fbbf24/FFFFFF/png?text=Sample+11',
+                'https://placehold.co/300x300/f87171/FFFFFF/png?text=Sample+12',
+                'https://placehold.co/300x300/a78bfa/FFFFFF/png?text=Sample+13',
+                'https://placehold.co/300x300/fb7185/FFFFFF/png?text=Sample+14',
+                'https://placehold.co/300x300/34d399/FFFFFF/png?text=Sample+15'
+            ],
+            yahoo_data_raw: {
+                url: 'https://auctions.yahoo.co.jp/jp/auction/l1200404917',
+                category: 'おもちゃ、ゲーム',
+                condition: '目立った傷や汚れなし',
+                all_images: [
+                    'https://auctions.c.yimg.jp/images.auctions.yahoo.co.jp/image/dr000/auc0109/users/1.jpg',
+                    'https://auctions.c.yimg.jp/images.auctions.yahoo.co.jp/image/dr000/auc0109/users/2.jpg'
+                ],
+                extraction_results: {
+                    images: [
+                        'https://auctions.c.yimg.jp/images.auctions.yahoo.co.jp/image/dr000/auc0109/users/3.jpg'
+                    ],
+                    description: 'ポケモンカードの希少カードです。',
+                    specifications: {
+                        brand: 'ポケモン',
+                        type: 'トレーディングカード',
+                        rarity: '1ED'
+                    }
+                },
+                validation_info: {
+                    image: {
+                        all_images: [
+                            'https://auctions.c.yimg.jp/images.auctions.yahoo.co.jp/image/dr000/auc0109/users/4.jpg',
+                            'https://auctions.c.yimg.jp/images.auctions.yahoo.co.jp/image/dr000/auc0109/users/5.jpg'
+                        ]
+                    },
+                    quality_score: 85,
+                    data_completeness: 92
+                }
+            },
+            stats: {
+                total_images: 15,
+                data_quality: 85,
+                scraping_method: 'Advanced Parser v2.0',
+                processing_time: '2.3s',
+                last_updated: '2025-09-17 15:01:04'
+            }
+        };
+
+        function openTestModal() {
+            addLog('テストモーダルを表示開始...', 'info');
+            createCompleteDataModal(sampleProductData);
+            addLog('テストモーダル表示完了', 'success');
+        }
+
+        function openRealDataModal() {
+            addLog('実データ取得開始...', 'info');
+            
+            // 実際のAPIからデータを取得（仮想的な処理）
+            setTimeout(() => {
+                addLog('実データ取得完了 - 本格システムに統合準備完了', 'success');
+                createCompleteDataModal(sampleProductData);
+            }, 1000);
+        }
+
+        function createCompleteDataModal(productData) {
+            // 既存のモーダルを削除
+            const existingModal = document.getElementById('completeDataModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
+            const modal = document.createElement('div');
+            modal.id = 'completeDataModal';
+            modal.className = 'modal-overlay';
+            
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title">
+                            <i class="fas fa-microscope"></i>
+                            完全データ表示 - ${productData.title.substring(0, 50)}...
+                        </h2>
+                        <button class="modal-close" onclick="closeCompleteDataModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        ${generateCompleteModalContent(productData)}
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            addLog(`モーダル作成完了: ${productData.images.length}枚の画像を表示`, 'success');
+            
+            // アニメーション効果
+            setTimeout(() => {
+                modal.style.display = 'flex';
+            }, 10);
+        }
+
+        function generateCompleteModalContent(data) {
+            return `
+                <!-- 統計サマリー -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number">${data.stats.total_images}</div>
+                        <div class="stat-label">画像数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${data.stats.data_quality}%</div>
+                        <div class="stat-label">データ品質</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">¥${data.current_price.toLocaleString()}</div>
+                        <div class="stat-label">価格</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${data.stats.processing_time}</div>
+                        <div class="stat-label">処理時間</div>
+                    </div>
+                </div>
+
+                <!-- タブコンテンツ -->
+                <div class="tab-buttons">
+                    <button class="tab-button active" onclick="switchTab('basic')">
+                        <i class="fas fa-info-circle"></i> 基本情報
+                    </button>
+                    <button class="tab-button" onclick="switchTab('images')">
+                        <i class="fas fa-images"></i> 画像ギャラリー (${data.images.length}枚)
+                    </button>
+                    <button class="tab-button" onclick="switchTab('scraped')">
+                        <i class="fas fa-code"></i> スクレイピングデータ
+                    </button>
+                    <button class="tab-button" onclick="switchTab('technical')">
+                        <i class="fas fa-cogs"></i> 技術情報
+                    </button>
+                </div>
+
+                <!-- 基本情報タブ -->
+                <div id="tab-basic" class="tab-content active">
+                    <div class="basic-info">
+                        <div class="info-item">
+                            <div class="info-label">商品ID</div>
+                            <div class="info-value">${data.item_id}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">データベースID</div>
+                            <div class="info-value">${data.db_id}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">SKU</div>
+                            <div class="info-value">${data.sku}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">カテゴリー</div>
+                            <div class="info-value">${data.category}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">状態</div>
+                            <div class="info-value">${data.condition}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">eBayカテゴリーID</div>
+                            <div class="info-value">${data.ebay_category_id}</div>
+                        </div>
+                    </div>
+
+                    <div class="info-item" style="margin-top: 20px;">
+                        <div class="info-label">商品名</div>
+                        <div class="info-value">${data.title}</div>
+                    </div>
+
+                    <div class="info-item" style="margin-top: 15px;">
+                        <div class="info-label">商品説明</div>
+                        <div class="info-value">${data.description}</div>
+                    </div>
+
+                    <div class="info-item" style="margin-top: 15px;">
+                        <div class="info-label">元ページURL</div>
+                        <div class="info-value">
+                            <a href="${data.source_url}" target="_blank" style="color: #007bff; text-decoration: none;">
+                                ${data.source_url}
+                                <i class="fas fa-external-link-alt" style="margin-left: 5px;"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 画像ギャラリータブ -->
+                <div id="tab-images" class="tab-content">
+                    <h3 style="margin-bottom: 20px;">
+                        <i class="fas fa-images"></i> 
+                        画像ギャラリー (${data.images.length}枚)
+                    </h3>
+                    <div class="image-gallery">
+                        ${data.images.map((img, index) => `
+                            <div class="image-item" onclick="openImagePreview('${img}')">
+                                <img src="${img}" alt="画像${index + 1}" loading="lazy" onerror="this.parentElement.style.display='none'">
+                                <div class="image-index">画像 ${index + 1}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <!-- スクレイピングデータタブ -->
+                <div id="tab-scraped" class="tab-content">
+                    <h3 style="margin-bottom: 20px;">
+                        <i class="fas fa-code"></i> 
+                        スクレイピングデータ (scraped_yahoo_data)
+                    </h3>
+                    <div class="json-viewer">
+                        ${JSON.stringify(data.yahoo_data_raw, null, 2)}
+                    </div>
+                </div>
+
+                <!-- 技術情報タブ -->
+                <div id="tab-technical" class="tab-content">
+                    <h3 style="margin-bottom: 20px;">
+                        <i class="fas fa-cogs"></i> 
+                        技術情報・処理詳細
+                    </h3>
+                    <div class="basic-info">
+                        <div class="info-item">
+                            <div class="info-label">スクレイピング手法</div>
+                            <div class="info-value">${data.stats.scraping_method}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">処理時間</div>
+                            <div class="info-value">${data.stats.processing_time}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">データ品質スコア</div>
+                            <div class="info-value">${data.stats.data_quality}%</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">取得日時</div>
+                            <div class="info-value">${data.scraped_at}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">最終更新</div>
+                            <div class="info-value">${data.stats.last_updated}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">画像抽出方法</div>
+                            <div class="info-value">multiple_source_extraction</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 30px; text-align: center;">
+                        <button class="test-button" onclick="exportData()">
+                            <i class="fas fa-download"></i> データエクスポート
+                        </button>
+                        <button class="test-button" onclick="copyToClipboard()">
+                            <i class="fas fa-copy"></i> JSONコピー
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function switchTab(tabName) {
+            // すべてのタブボタンとコンテンツを非アクティブに
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            // 選択されたタブをアクティブに
+            event.target.classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+
+            addLog(`タブ切り替え: ${tabName}`, 'info');
+        }
+
+        function openImagePreview(imageUrl) {
+            addLog(`画像プレビュー表示: ${imageUrl.substring(0, 50)}...`, 'info');
+            window.open(imageUrl, '_blank');
+        }
+
+        function exportData() {
+            addLog('データエクスポート機能（実装予定）', 'info');
+        }
+
+        function copyToClipboard() {
+            addLog('JSONデータをクリップボードにコピー（実装予定）', 'info');
+        }
+
+        function closeCompleteDataModal() {
+            const modal = document.getElementById('completeDataModal');
+            if (modal) {
+                modal.remove();
+                addLog('モーダルを閉じました', 'info');
+            }
+        }
+
+        // ESCキーでモーダルを閉じる
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeCompleteDataModal();
+            }
+        });
+
+        // モーダル外クリックで閉じる
+        document.addEventListener('click', function(e) {
+            if (e.target && e.target.id === 'completeDataModal') {
+                closeCompleteDataModal();
+            }
+        });
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            addLog('完全データ表示モーダルテスト環境が準備完了', 'success');
+        });
+    </script>
+</body>
+</html>

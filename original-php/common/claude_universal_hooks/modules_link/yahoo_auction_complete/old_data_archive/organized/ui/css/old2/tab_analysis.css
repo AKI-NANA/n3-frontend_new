@@ -1,0 +1,40 @@
+/*
+ * Yahoo Auction Tool - Analysis Tab Styles
+ * -------------------------------------------------------------
+ * Styles for data analysis, reports, and charts.
+ * -------------------------------------------------------------
+ */
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--space-md);
+}
+.analysis-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-md);
+}
+.stat-card {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  text-align: center;
+  border: 1px solid var(--border-color);
+}
+.stat-card .stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+.stat-card .stat-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+.chart-container {
+  height: 300px;
+  padding: var(--space-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+}

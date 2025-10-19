@@ -1,0 +1,1 @@
+chmod +x /Users/aritahiroaki/NAGANO-3/N3-Development/modules/yahoo_auction_tool/setup_complete.sh

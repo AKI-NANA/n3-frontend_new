@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>配送料金比較システム - 国選択式UI設計案</title>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --zone1: #ff6b6b;
+            --zone2: #4ecdc4;
+            --zone3: #45b7d1;
+            --zone4: #96ceb4;
+            --zone5: #feca57;
+        }
+        
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; padding: 20px; background: #f8fafc; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, var(--primary), #1e40af); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+        .controls { background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .control-group { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+        .control-item { display: flex; flex-direction: column; min-width: 200px; }
+        .control-label { font-weight: 600; margin-bottom: 5px; color: #374151; }
+        .control-select { padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; }
+        .zone-info { background: #f3f4f6; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 12px; }
+        .matrix-container { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .matrix-table { width: 100%; border-collapse: collapse; }
+        .matrix-header { background: #f9fafb; border-bottom: 2px solid #e5e7eb; }
+        .matrix-header th { padding: 15px 10px; text-align: center; font-weight: 600; color: #374151; }
+        .weight-cell { background: #f9fafb; padding: 15px; text-align: center; font-weight: 600; border-right: 2px solid #e5e7eb; }
+        .price-cell { padding: 15px 10px; text-align: center; border-bottom: 1px solid #e5e7eb; position: relative; }
+        .price-amount { font-size: 16px; font-weight: 600; color: #111827; }
+        .price-service { font-size: 11px; color: #6b7280; margin-top: 2px; }
+        .price-days { font-size: 10px; color: #9ca3af; margin-top: 1px; }
+        .zone-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; color: white; margin-bottom: 3px; }
+        .zone1 { background: var(--zone1); }
+        .zone2 { background: var(--zone2); }
+        .zone3 { background: var(--zone3); }
+        .zone4 { background: var(--zone4); }
+        .zone5 { background: var(--zone5); }
+        .unavailable { background: #f3f4f6; color: #9ca3af; }
+        .cheapest { background: #d1fae5; border: 2px solid var(--success); }
+        .fastest { background: #fef3c7; border: 2px solid var(--warning); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ヘッダー -->
+        <div class="header">
+            <h1>📦 配送料金比較システム - 国選択式UI</h1>
+            <p>配送先国を選択すると、各サービスのゾーン判定と料金比較が自動表示されます</p>
+        </div>
+        
+        <!-- コントロールパネル -->
+        <div class="controls">
+            <div class="control-group">
+                <div class="control-item">
+                    <label class="control-label">🌍 配送先国</label>
+                    <select class="control-select" id="countrySelect">
+                        <option value="">国を選択してください</option>
+                        <optgroup label="🔥 よく使用される国">
+                            <option value="US">アメリカ合衆国</option>
+                            <option value="GB">イギリス</option>
+                            <option value="DE">ドイツ</option>
+                            <option value="AU">オーストラリア</option>
+                        </optgroup>
+                        <optgroup label="🇯🇵 第1地帯（最安）">
+                            <option value="CN">中国</option>
+                            <option value="KR">韓国</option>
+                            <option value="TW">台湾</option>
+                        </optgroup>
+                        <optgroup label="🌏 第2地帯（アジア）">
+                            <option value="TH">タイ</option>
+                            <option value="SG">シンガポール</option>
+                            <option value="VN">ベトナム</option>
+                        </optgroup>
+                        <optgroup label="🌍 第3地帯（欧米・オセアニア）">
+                            <option value="CA">カナダ</option>
+                            <option value="FR">フランス</option>
+                            <option value="NZ">ニュージーランド</option>
+                        </optgroup>
+                        <optgroup label="🇺🇸 第4地帯（アメリカ）">
+                            <option value="US">アメリカ合衆国</option>
+                        </optgroup>
+                        <optgroup label="🌎 第5地帯（中南米・アフリカ）">
+                            <option value="BR">ブラジル</option>
+                            <option value="ZA">南アフリカ</option>
+                        </optgroup>
+                    </select>
+                    <div class="zone-info" id="zoneInfo">
+                        国を選択すると、自動でゾーン判定されます
+                    </div>
+                </div>
+                
+                <div class="control-item">
+                    <label class="control-label">⚖️ 重量上限</label>
+                    <select class="control-select">
+                        <option value="5">5kg（軽量品）</option>
+                        <option value="10">10kg（中重量品）</option>
+                        <option value="30">30kg（重量品）</option>
+                    </select>
+                </div>
+                
+                <div class="control-item">
+                    <label class="control-label">📏 重量刻み</label>
+                    <select class="control-select">
+                        <option value="0.5">0.5kg刻み</option>
+                        <option value="1.0">1.0kg刻み</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <!-- マトリックス表示 -->
+        <div class="matrix-container">
+            <table class="matrix-table">
+                <thead class="matrix-header">
+                    <tr>
+                        <th style="width: 80px;">重量</th>
+                        <th style="width: 150px;">📮 EMS<br><small>日本郵便</small></th>
+                        <th style="width: 150px;">📦 SpeedPAK<br><small>CPass</small></th>
+                        <th style="width: 150px;">🚛 eLogi<br><small>クーリエ統合</small></th>
+                        <th style="width: 120px;">💡 推奨</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- アメリカ選択時の例 -->
+                    <tr>
+                        <td class="weight-cell">0.5kg</td>
+                        <td class="price-cell">
+                            <div class="zone-badge zone4">第4地帯</div>
+                            <div class="price-amount">¥3,900</div>
+                            <div class="price-service">実データ</div>
+                            <div class="price-days">3-6日</div>
+                        </td>
+                        <td class="price-cell cheapest">
+                            <div class="zone-badge zone1">対応</div>
+                            <div class="price-amount">¥2,060</div>
+                            <div class="price-service">実データ</div>
+                            <div class="price-days">8-12日</div>
+                        </td>
+                        <td class="price-cell fastest">
+                            <div class="zone-badge zone1">対応</div>
+                            <div class="price-amount">¥4,200</div>
+                            <div class="price-service">推定</div>
+                            <div class="price-days">1-3日</div>
+                        </td>
+                        <td class="price-cell">
+                            <div style="font-size: 12px; font-weight: 600; color: var(--success);">💰 最安</div>
+                            <div style="font-size: 11px; color: #6b7280;">SpeedPAK</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="weight-cell">1.0kg</td>
+                        <td class="price-cell">
+                            <div class="zone-badge zone4">第4地帯</div>
+                            <div class="price-amount">¥5,300</div>
+                            <div class="price-service">実データ</div>
+                            <div class="price-days">3-6日</div>
+                        </td>
+                        <td class="price-cell cheapest">
+                            <div class="zone-badge zone1">対応</div>
+                            <div class="price-amount">¥3,020</div>
+                            <div class="price-service">実データ</div>
+                            <div class="price-days">8-12日</div>
+                        </td>
+                        <td class="price-cell fastest">
+                            <div class="zone-badge zone1">対応</div>
+                            <div class="price-amount">¥6,100</div>
+                            <div class="price-service">推定</div>
+                            <div class="price-days">1-3日</div>
+                        </td>
+                        <td class="price-cell">
+                            <div style="font-size: 12px; font-weight: 600; color: var(--success);">💰 最安</div>
+                            <div style="font-size: 11px; color: #6b7280;">SpeedPAK</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="weight-cell">2.0kg</td>
+                        <td class="price-cell">
+                            <div class="zone-badge zone4">第4地帯</div>
+                            <div class="price-amount">¥7,900</div>
+                            <div class="price-service">実データ</div>
+                            <div class="price-days">3-6日</div>
+                        </td>
+                        <td class="price-cell cheapest">
+                            <div class="zone-badge zone1">対応</div>
+                            <div class="price-amount">¥5,245</div>
+                            <div class="price-service">実データ</div>
+                            <div class="price-days">8-12日</div>
+                        </td>
+                        <td class="price-cell fastest">
+                            <div class="zone-badge zone1">対応</div>
+                            <div class="price-amount">¥8,900</div>
+                            <div class="price-service">推定</div>
+                            <div class="price-days">1-3日</div>
+                        </td>
+                        <td class="price-cell">
+                            <div style="font-size: 12px; font-weight: 600; color: var(--success);">💰 最安</div>
+                            <div style="font-size: 11px; color: #6b7280;">SpeedPAK</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        // 国選択時のゾーン情報表示デモ
+        document.getElementById('countrySelect').addEventListener('change', function() {
+            const zoneInfo = document.getElementById('zoneInfo');
+            const country = this.value;
+            
+            const zoneMapping = {
+                'CN': '🟡 第1地帯 - EMSの最安ゾーン、SpeedPAKは対応外',
+                'KR': '🟡 第1地帯 - EMSの最安ゾーン、SpeedPAKは対応外', 
+                'TW': '🟡 第1地帯 - EMSの最安ゾーン、SpeedPAKは対応外',
+                'TH': '🔵 第2地帯 - EMS中価格帯、SpeedPAKは対応外',
+                'SG': '🔵 第2地帯 - EMS中価格帯、SpeedPAKは対応外',
+                'US': '🟢 第4地帯 - EMS対応、SpeedPAK USA対応、eLogi対応',
+                'GB': '🟣 第3地帯 - EMS対応、SpeedPAK UK対応、eLogi対応',
+                'DE': '🟣 第3地帯 - EMS対応、SpeedPAK DE対応、eLogi対応',
+                'AU': '🟣 第3地帯 - EMS対応、SpeedPAK AU対応、eLogi対応',
+                'BR': '🟠 第5地帯 - EMSのみ対応、SpeedPAK・eLogiは対応外',
+                'ZA': '🟠 第5地帯 - EMSのみ対応、SpeedPAK・eLogiは対応外'
+            };
+            
+            if (country && zoneMapping[country]) {
+                zoneInfo.textContent = zoneMapping[country];
+                zoneInfo.style.background = '#e0f2fe';
+                zoneInfo.style.color = '#0369a1';
+            } else {
+                zoneInfo.textContent = '国を選択すると、自動でゾーン判定されます';
+                zoneInfo.style.background = '#f3f4f6';
+                zoneInfo.style.color = '#6b7280';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Google Sheets実データ取得テスト</title>
+</head>
+<body style="font-family: Arial, sans-serif; margin: 20px; background: #f8f9fa;">
+    <div style="max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <h1 style="color: #333; text-align: center; margin-bottom: 30px;">📊 Google Sheets実データ取得テスト</h1>
+        
+        <div style="text-align: center; margin-bottom: 30px;">
+            <button onclick="getSheetsData()" style="padding: 12px 24px; margin: 10px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: bold; background: #007bff; color: white;">
+                📥 Sheetsデータ取得
+            </button>
+            <button onclick="writeToSheets()" style="padding: 12px 24px; margin: 10px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: bold; background: #28a745; color: white;">
+                📤 Sheetsにデータ書き込み
+            </button>
+        </div>
+        
+        <div id="loading" style="display: none; color: #007bff; font-weight: bold; text-align: center;">🔄 処理中...</div>
+        
+        <div id="result" style="margin-top: 20px; padding: 15px; border-radius: 5px; font-family: monospace; white-space: pre-wrap; max-height: 400px; overflow-y: auto; border: 1px solid #ddd;"></div>
+        
+        <div id="data-display" style="margin-top: 20px;"></div>
+    </div>
+
+    <script>
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        async function makeRequest(action) {
+            try {
+                const formData = new FormData();
+                formData.append('action', action);
+                
+                const response = await fetch('google_sheets_simple.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const text = await response.text();
+                
+                try {
+                    return JSON.parse(text);
+                } catch (e) {
+                    return {
+                        success: false,
+                        error: 'レスポンスの解析に失敗しました',
+                        raw_response: text.substring(0, 500)
+                    };
+                }
+            } catch (error) {
+                return {
+                    success: false,
+                    error: error.message
+                };
+            }
+        }
+        
+        function displayResult(result) {
+            const resultElement = document.getElementById('result');
+            
+            if (result.success) {
+                resultElement.style.background = '#d4edda';
+                resultElement.style.color = '#155724';
+                resultElement.style.borderColor = '#c3e6cb';
+            } else {
+                resultElement.style.background = '#f8d7da';
+                resultElement.style.color = '#721c24';
+                resultElement.style.borderColor = '#f5c6cb';
+            }
+            
+            resultElement.innerHTML = JSON.stringify(result, null, 2);
+        }
+        
+        function displayDataTable(values) {
+            const dataDisplay = document.getElementById('data-display');
+            
+            if (!values || values.length === 0) {
+                dataDisplay.innerHTML = '<p style="color: #666;">データがありません</p>';
+                return;
+            }
+            
+            let html = '<h3 style="color: #333; margin-bottom: 15px;">📋 取得したデータ</h3>';
+            html += '<div style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 5px;">';
+            html += '<table style="width: 100%; border-collapse: collapse;">';
+            
+            // ヘッダー行
+            if (values[0]) {
+                html += '<thead><tr>';
+                values[0].forEach((cell, index) => {
+                    html += `<th style="border: 1px solid #ddd; padding: 8px; text-align: left; background: #f8f9fa; font-weight: bold;">列${index + 1}: ${cell || '空'}</th>`;
+                });
+                html += '</tr></thead>';
+            }
+            
+            // データ行
+            html += '<tbody>';
+            values.slice(1, 11).forEach((row, rowIndex) => { // 最大10行表示
+                html += `<tr>`;
+                row.forEach((cell, cellIndex) => {
+                    html += `<td style="border: 1px solid #ddd; padding: 8px; text-align: left;">${cell || '空'}</td>`;
+                });
+                html += `</tr>`;
+            });
+            html += '</tbody></table></div>';
+            
+            if (values.length > 11) {
+                html += `<p style="margin-top: 10px; color: #666; font-size: 14px;"><small>※ ${values.length - 1}行中、最初の10行を表示</small></p>`;
+            }
+            
+            dataDisplay.innerHTML = html;
+        }
+        
+        async function getSheetsData() {
+            showLoading();
+            const result = await makeRequest('get_sheets_data');
+            hideLoading();
+            
+            displayResult(result);
+            
+            if (result.success && result.values) {
+                displayDataTable(result.values);
+            }
+        }
+        
+        async function writeToSheets() {
+            showLoading();
+            const result = await makeRequest('write_to_sheets');
+            hideLoading();
+            
+            displayResult(result);
+            
+            if (result.success) {
+                // 書き込み後、データを再取得して表示
+                setTimeout(() => {
+                    getSheetsData();
+                }, 1000);
+            }
+        }
+        
+        window.onload = function() {
+            console.log('🚀 Google Sheets実データテスト起動完了');
+        };
+    </script>
+</body>
+</html>

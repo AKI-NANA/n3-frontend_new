@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gmail Cleaner 🧹</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #5D688A;
+            --secondary-color: #F7A5A5;
+            --accent-color: #FFDBB6;
+            --bg-color: #FFF2EF;
+            --white: #ffffff;
+            --text-dark: #333333;
+            --text-light: #666666;
+            --border-color: #e0e0e0;
+            --success-color: #4CAF50;
+            --warning-color: #FF9800;
+            --danger-color: #f44336;
+            --shadow: 0 2px 10px rgba(93, 104, 138, 0.1);
+            --radius: 8px;
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-color) 0%, var(--white) 100%);
+            color: var(--text-dark);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), #4a5568);
+            color: white;
+            padding: 30px 0;
+            text-align: center;
+            border-radius: var(--radius);
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* Stats Dashboard */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--white);
+            padding: 20px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            text-align: center;
+            border-left: 4px solid var(--primary-color);
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 20px rgba(93, 104, 138, 0.15);
+        }
+
+        .stat-card.promotions {
+            border-left-color: var(--secondary-color);
+        }
+
+        .stat-card.social {
+            border-left-color: var(--accent-color);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        /* Action Bar */
+        .action-bar {
+            background: var(--white);
+            padding: 20px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .search-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(93, 104, 138, 0.1);
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #4a5568;
+            transform: translateY(-1px);
+        }
+
+        .btn-sync {
+            background: var(--accent-color);
+            color: var(--text-dark);
+        }
+
+        .btn-sync:hover {
+            background: #ffd89e;
+        }
+
+        /* Tab Navigation */
+        .tab-container {
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .tab-nav {
+            display: flex;
+            background: var(--bg-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 15px 20px;
+            background: none;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            color: var(--text-light);
+        }
+
+        .tab-btn.active {
+            color: var(--primary-color);
+            background: var(--white);
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--primary-color);
+        }
+
+        .tab-btn:hover:not(.active) {
+            background: rgba(93, 104, 138, 0.1);
+        }
+
+        .tab-btn .badge {
+            background: var(--secondary-color);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            margin-left: 8px;
+        }
+
+        .tab-btn.active .badge {
+            background: var(--primary-color);
+        }
+
+        /* Email List */
+        .tab-content {
+            display: none;
+            padding: 0;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .email-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .email-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .email-item:hover {
+            background: rgba(93, 104, 138, 0.05);
+        }
+
+        .email-item.selected {
+            background: rgba(93, 104, 138, 0.1);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .email-checkbox {
+            margin-right: 15px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .email-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+
+        .email-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .email-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .email-sender {
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-right: 10px;
+        }
+
+        .email-date {
+            color: var(--text-light);
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+
+        .email-subject {
+            font-weight: 600;
+            margin-bottom: 3px;
+            color: var(--text-dark);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .email-snippet {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .email-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: 15px;
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .email-item:hover .email-actions {
+            opacity: 1;
+        }
+
+        .action-icon {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 50%;
+            background: var(--bg-color);
+            color: var(--text-light);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .action-icon:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* Bulk Actions */
+        .bulk-actions {
+            background: var(--white);
+            padding: 20px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .selected-count {
+            color: var(--text-light);
+            font-weight: 600;
+        }
+
+        .bulk-action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-delete {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #d32f2f;
+        }
+
+        .btn-archive {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        .btn-archive:hover {
+            background: #f57c00;
+        }
+
+        .btn-label {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-label:hover {
+            background: #388e3c;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light);
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            color: var(--accent-color);
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--bg-color);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .stats-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .action-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-container {
+                max-width: none;
+            }
+
+            .tab-nav {
+                flex-direction: column;
+            }
+
+            .email-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .email-header {
+                width: 100%;
+            }
+
+            .email-actions {
+                margin-left: 0;
+                margin-top: 10px;
+                opacity: 1;
+            }
+
+            .bulk-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .bulk-action-buttons {
+                justify-content: center;
+            }
+        }
+
+        /* Custom Scrollbar */
+        .email-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .email-list::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+
+        .email-list::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        .email-list::-webkit-scrollbar-thumb:hover {
+            background: #4a5568;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1><i class="fas fa-broom"></i> Gmail Cleaner</h1>
+            <p>効率的にメールを整理して、受信トレイをすっきりさせましょう</p>
+        </div>
+
+        <!-- Stats Dashboard -->
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-number" id="total-emails">0</div>
+                <div class="stat-label">総メール数</div>
+            </div>
+            <div class="stat-card promotions">
+                <div class="stat-number" id="promotion-emails">0</div>
+                <div class="stat-label">プロモーション</div>
+            </div>
+            <div class="stat-card social">
+                <div class="stat-number" id="social-emails">0</div>
+                <div class="stat-label">ソーシャル</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="selected-emails">0</div>
+                <div class="stat-label">選択中</div>
+            </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="action-bar">
+            <div class="search-container">
+                <input type="text" class="search-input" id="search-input" placeholder="メールを検索...">
+                <button class="btn btn-primary" onclick="searchEmails()">
+                    <i class="fas fa-search"></i> 検索
+                </button>
+            </div>
+            <button class="btn btn-sync" onclick="syncEmails()">
+                <i class="fas fa-sync-alt"></i> 同期
+            </button>
+        </div>
+
+        <!-- Tab Container -->
+        <div class="tab-container">
+            <!-- Tab Navigation -->
+            <div class="tab-nav">
+                <button class="tab-btn active" data-tab="inbox" onclick="switchTab('inbox')">
+                    <i class="fas fa-inbox"></i> 未整理
+                    <span class="badge" id="inbox-count">0</span>
+                </button>
+                <button class="tab-btn" data-tab="promotions" onclick="switchTab('promotions')">
+                    <i class="fas fa-tags"></i> プロモーション
+                    <span class="badge" id="promotions-count">0</span>
+                </button>
+                <button class="tab-btn" data-tab="social" onclick="switchTab('social')">
+                    <i class="fas fa-users"></i> ソーシャル
+                    <span class="badge" id="social-count">0</span>
+                </button>
+            </div>
+
+            <!-- Tab Content - Inbox -->
+            <div class="tab-content active" id="inbox-content">
+                <div class="email-list" id="inbox-list">
+                    <div class="loading" id="inbox-loading">
+                        <div class="spinner"></div>
+                        <p>メールを読み込み中...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Content - Promotions -->
+            <div class="tab-content" id="promotions-content">
+                <div class="email-list" id="promotions-list">
+                    <div class="empty-state">
+                        <i class="fas fa-tag"></i>
+                        <h3>プロモーションメールがありません</h3>
+                        <p>自動分類されたプロモーションメールがここに表示されます</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Content - Social -->
+            <div class="tab-content" id="social-content">
+                <div class="email-list" id="social-list">
+                    <div class="empty-state">
+                        <i class="fas fa-share-alt"></i>
+                        <h3>ソーシャルメールがありません</h3>
+                        <p>SNSや通知メールがここに表示されます</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bulk Actions -->
+        <div class="bulk-actions">
+            <div class="selected-count">
+                <span id="selected-count">0</span>件のメールが選択されています
+            </div>
+            <div class="bulk-action-buttons">
+                <button class="btn btn-delete" onclick="deleteSelected()" id="delete-btn" disabled>
+                    <i class="fas fa-trash"></i> 削除
+                </button>
+                <button class="btn btn-archive" onclick="archiveSelected()" id="archive-btn" disabled>
+                    <i class="fas fa-archive"></i> アーカイブ
+                </button>
+                <button class="btn btn-label" onclick="labelSelected()" id="label-btn" disabled>
+                    <i class="fas fa-tag"></i> ラベル付け
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentTab = 'inbox';
+        let allEmails = {
+            inbox: [],
+            promotions: [],
+            social: []
+        };
+        let selectedEmails = new Set();
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+
+        function initializeApp() {
+            console.log('Gmail Cleaner initialized');
+            loadSampleData();
+            updateStats();
+        }
+
+        // Tab switching functionality
+        function switchTab(tabName) {
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            // Add active class to selected tab
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(`${tabName}-content`).classList.add('active');
+
+            currentTab = tabName;
+            clearSelection();
+            updateStats();
+        }
+
+        // Load sample data for demonstration
+        function loadSampleData() {
+            const sampleEmails = [
+                {
+                    id: '1',
+                    sender: 'Amazon',
+                    email: 'no-reply@amazon.com',
+                    subject: '【Amazon】ご注文商品が発送されました',
+                    snippet: 'ご注文いただいた商品が発送されました。お荷物の追跡情報をご確認ください...',
+                    date: '2024-01-15',
+                    category: 'promotions',
+                    avatar: 'A'
+                },
+                {
+                    id: '2',
+                    sender: 'Twitter',
+                    email: 'notify@twitter.com',
+                    subject: '新しいフォロワーがいます',
+                    snippet: '田中太郎さんがあなたをフォローしました。プロフィールを確認してください...',
+                    date: '2024-01-15',
+                    category: 'social',
+                    avatar: 'T'
+                },
+                {
+                    id: '3',
+                    sender: '山田花子',
+                    email: 'hanako@example.com',
+                    subject: '明日の会議資料について',
+                    snippet: 'お疲れ様です。明日の会議で使用する資料を添付いたします。ご確認ください...',
+                    date: '2024-01-14',
+                    category: 'inbox',
+                    avatar: '山'
+                },
+                {
+                    id: '4',
+                    sender: 'Google',
+                    email: 'noreply@google.com',
+                    subject: 'セキュリティアラート',
+                    snippet: '新しいデバイスからのログインが検出されました。あなたの操作でない場合は...',
+                    date: '2024-01-14',
+                    category: 'inbox',
+                    avatar: 'G'
+                },
+                {
+                    id: '5',
+                    sender: 'Facebook',
+                    email: 'notification@facebook.com',
+                    subject: '友達からのメッセージ',
+                    snippet: '佐藤一郎さんからメッセージが届いています。Messengerで確認してください...',
+                    date: '2024-01-13',
+                    category: 'social',
+                    avatar: 'F'
+                },
+                {
+                    id: '6',
+                    sender: '楽天市場',
+                    email: 'info@rakuten.co.jp',
+                    subject: '【楽天】お得なセール情報',
+                    snippet: '期間限定！最大50%OFF セール開催中。お見逃しなく...',
+                    date: '2024-01-13',
+                    category: 'promotions',
+                    avatar: '楽'
+                }
+            ];
+
+            // Categorize emails
+            allEmails.inbox = sampleEmails.filter(email => email.category === 'inbox');
+            allEmails.promotions = sampleEmails.filter(email => email.category === 'promotions');
+            allEmails.social = sampleEmails.filter(email => email.category === 'social');
+
+            // Render current tab
+            renderEmails(currentTab);
+            hideLoading();
+        }
+
+        function hideLoading() {
+            document.getElementById('inbox-loading').style.display = 'none';
+        }
+
+        function renderEmails(category) {
+            const emails = allEmails[category] || [];
+            const listElement = document.getElementById(`${category}-list`);
+            
+            if (emails.length === 0) {
+                listElement.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <h3>メールがありません</h3>
+                        <p>このカテゴリにはメールがありません</p>
+                    </div>
+                `;
+                return;
+            }
+
+            listElement.innerHTML = emails.map(email => `
+                <div class="email-item" data-email-id="${email.id}" onclick="toggleEmailSelection('${email.id}')">
+                    <input type="checkbox" class="email-checkbox" ${selectedEmails.has(email.id) ? 'checked' : ''} 
+                           onchange="toggleEmailSelection('${email.id}')">
+                    <div class="email-avatar">${email.avatar}</div>
+                    <div class="email-content">
+                        <div class="email-header">
+                            <span class="email-sender">${email.sender}</span>
+                            <span class="email-date">${formatDate(email.date)}</span>
+                        </div>
+                        <div class="email-subject">${email.subject}</div>
+                        <div class="email-snippet">${email.snippet}</div>
+                    </div>
+                    <div class="email-actions">
+                        <button class="action-icon" onclick="replyToEmail('${email.id}')" title="返信">
+                            <i class="fas fa-reply"></i>
+                        </button>
+                        <button class="action-icon" onclick="deleteEmail('${email.id}')" title="削除">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        <button class="action-icon" onclick="archiveEmail('${email.id}')" title="アーカイブ">
+                            <i class="fas fa-archive"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleEmailSelection(emailId) {
+            const emailItem = document.querySelector(`[data-email-id="${emailId}"]`);
+            const checkbox = emailItem.querySelector('.email-checkbox');
+            
+            if (selectedEmails.has(emailId)) {
+                selectedEmails.delete(emailId);
+                emailItem.classList.remove('selected');
+                checkbox.checked = false;
+            } else {
+                selectedEmails.add(emailId);
+                emailItem.classList.add('selected');
+                checkbox.checked = true;
+            }
+            
+            updateStats();
+            updateBulkActionButtons();
+        }
+
+        function clearSelection() {
+            selectedEmails.clear();
+            document.querySelectorAll('.email-item').forEach(item => {
+                item.classList.remove('selected');
+                item.querySelector('.email-checkbox').checked = false;
+            });
+            updateStats();
+            updateBulkActionButtons();
+        }
+
+        function updateStats() {
+            document.getElementById('total-emails').textContent = 
+                allEmails.inbox.length + allEmails.promotions.length + allEmails.social.length;
+            document.getElementById('promotion-emails').textContent = allEmails.promotions.length;
+            document.getElementById('social-emails').textContent = allEmails.social.length;
+            document.getElementById('selected-emails').textContent = selectedEmails.size;
+
+            // Update tab badges
+            document.getElementById('inbox-count').textContent = allEmails.inbox.length;
+            document.getElementById('promotions-count').textContent = allEmails.promotions.length;
+            document.getElementById('social-count').textContent = allEmails.social.length;
+
+            // Update selected count
+            document.getElementById('selected-count').textContent = selectedEmails.size;
+        }
+
+        function updateBulkActionButtons() {
+            const hasSelection = selectedEmails.size > 0;
+            document.getElementById('delete-btn').disabled = !hasSelection;
+            document.getElementById('archive-btn').disabled = !hasSelection;
+            document.getElementById('label-btn').disabled = !hasSelection;
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffTime = Math.abs(now - date);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 1) return '今日';
+            if (diffDays === 2) return '昨日';
+            if (diffDays <= 7) return `${diffDays - 1}日前`;
+            
+            return date.toLocaleDateString('ja-JP', { 
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+
+        // Email actions
+        function deleteSelected() {
+            if (selectedEmails.size === 0) return;
+            
+            if (confirm(`選択した${selectedEmails.size}件のメールを削除しますか？`)) {
+                selectedEmails.forEach(emailId => {
+                    deleteEmailFromData(emailId);
+                });
+                clearSelection();
+                renderEmails(currentTab);
+                updateStats();
+                alert(`${selectedEmails.size}件のメールを削除しました。`);
+            }
+        }
+
+        function archiveSelected() {
+            if (selectedEmails.size === 0) return;
+            
+            if (confirm(`選択した${selectedEmails.size}件のメールをアーカイブしますか？`)) {
+                selectedEmails.forEach(emailId => {
+                    archiveEmailFromData(emailId);
+                });
+                clearSelection();
+                renderEmails(currentTab);
+                updateStats();
+                alert(`${selectedEmails.size}件のメールをアーカイブしました。`);
+            }
+        }
+
+        function labelSelected() {
+            if (selectedEmails.size === 0) return;
+            
+            const label = prompt('追加するラベルを入力してください：');
+            if (label) {
+                alert(`選択した${selectedEmails.size}件のメールに「${label}」ラベルを追加しました。`);
+                clearSelection();
+            }
+        }
+
+        function deleteEmail(emailId) {
+            if (confirm('このメールを削除しますか？')) {
+                deleteEmailFromData(emailId);
+                renderEmails(currentTab);
+                updateStats();
+                alert('メールを削除しました。');
+            }
+        }
+
+        function archiveEmail(emailId) {
+            archiveEmailFromData(emailId);
+            renderEmails(currentTab);
+            updateStats();
+            alert('メールをアーカイブしました。');
+        }
+
+        function replyToEmail(emailId) {
+            const email = findEmailById(emailId);
+            if (email) {
+                alert(`「${email.subject}」に返信します。`);
+                // Here would be the actual reply functionality
+            }
+        }
+
+        function deleteEmailFromData(emailId) {
+            Object.keys(allEmails).forEach(category => {
+                allEmails[category] = allEmails[category].filter(email => email.id !== emailId);
+            });
+            selectedEmails.delete(emailId);
+        }
+
+        function archiveEmailFromData(emailId) {
+            deleteEmailFromData(emailId);
+            // In a real implementation, emails would be moved to archive
+        }
+
+        function findEmailById(emailId) {
+            for (let category of Object.values(allEmails)) {
+                const email = category.find(email => email.id === emailId);
+                if (email) return email;
+            }
+            return null;
+        }
+
+        // Search functionality
+        function searchEmails() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            if (!query) {
+                renderEmails(currentTab);
+                return;
+            }
+
+            const emails = allEmails[currentTab].filter(email => 
+                email.sender.toLowerCase().includes(query) ||
+                email.subject.toLowerCase().includes(query) ||
+                email.snippet.toLowerCase().includes(query)
+            );
+
+            const listElement = document.getElementById(`${currentTab}-list`);
+            if (emails.length === 0) {
+                listElement.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-search"></i>
+                        <h3>検索結果がありません</h3>
+                        <p>「${query}」に一致するメールが見つかりませんでした</p>
+                    </div>
+                `;
+                return;
+            }
+
+            listElement.innerHTML = emails.map(email => `
+                <div class="email-item" data-email-id="${email.id}" onclick="toggleEmailSelection('${email.id}')">
+                    <input type="checkbox" class="email-checkbox" ${selectedEmails.has(email.id) ? 'checked' : ''} 
+                           onchange="toggleEmailSelection('${email.id}')">
+                    <div class="email-avatar">${email.avatar}</div>
+                    <div class="email-content">
+                        <div class="email-header">
+                            <span class="email-sender">${email.sender}</span>
+                            <span class="email-date">${formatDate(email.date)}</span>
+                        </div>
+                        <div class="email-subject">${email.subject}</div>
+                        <div class="email-snippet">${email.snippet}</div>
+                    </div>
+                    <div class="email-actions">
+                        <button class="action-icon" onclick="replyToEmail('${email.id}')" title="返信">
+                            <i class="fas fa-reply"></i>
+                        </button>
+                        <button class="action-icon" onclick="deleteEmail('${email.id}')" title="削除">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        <button class="action-icon" onclick="archiveEmail('${email.id}')" title="アーカイブ">
+                            <i class="fas fa-archive"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Sync functionality
+        function syncEmails() {
+            // Show loading state
+            const loadingHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Gmail から最新のメールを取得中...</p>
+                </div>
+            `;
+            
+            document.getElementById('inbox-list').innerHTML = loadingHTML;
+            
+            // Simulate API call
+            setTimeout(() => {
+                loadSampleData();
+                alert('メールの同期が完了しました。');
+            }, 2000);
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'a':
+                        e.preventDefault();
+                        selectAllEmails();
+                        break;
+                    case 'd':
+                        e.preventDefault();
+                        deleteSelected();
+                        break;
+                    case 'e':
+                        e.preventDefault();
+                        archiveSelected();
+                        break;
+                }
+            }
+            
+            if (e.key === 'Escape') {
+                clearSelection();
+            }
+        });
+
+        function selectAllEmails() {
+            const currentEmails = allEmails[currentTab];
+            currentEmails.forEach(email => {
+                selectedEmails.add(email.id);
+                const emailItem = document.querySelector(`[data-email-id="${email.id}"]`);
+                if (emailItem) {
+                    emailItem.classList.add('selected');
+                    emailItem.querySelector('.email-checkbox').checked = true;
+                }
+            });
+            updateStats();
+            updateBulkActionButtons();
+        }
+
+        // Initialize on page load
+        console.log('Gmail Cleaner UI initialized successfully');
+    </script>
+</body>
+</html>

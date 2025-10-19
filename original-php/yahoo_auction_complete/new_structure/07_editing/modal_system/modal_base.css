@@ -1,0 +1,380 @@
+/* 統合モーダルシステム - 共通CSS */
+
+/* CSS変数（名前空間: integrated-modal-） */
+.integrated-modal-overlay {
+    --integrated-primary: #667eea;
+    --integrated-secondary: #764ba2;
+    --integrated-success: #28a745;
+    --integrated-warning: #ffc107;
+    --integrated-error: #dc3545;
+    --integrated-info: #17a2b8;
+    
+    /* 仕入れ先カラー */
+    --source-yahoo: #0B1D51;
+    --source-amazon: #ff9900;
+    --source-ebay: #0064d2;
+    --source-generic: #6c757d;
+    
+    /* マーケットプレイスカラー */
+    --marketplace-ebay: #0064d2;
+    --marketplace-shopee: #ee4d2d;
+    --marketplace-amazon-global: #ff9900;
+    --marketplace-amazon-jp: #232f3e;
+    
+    --integrated-bg: #ffffff;
+    --integrated-bg-secondary: #f8f9fa;
+    --integrated-text: #2c3e50;
+    --integrated-text-secondary: #6c757d;
+    --integrated-border: #dee2e6;
+}
+
+/* モーダルオーバーレイ */
+.integrated-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(3px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* モーダルコンテンツ */
+.integrated-modal-content {
+    background: var(--integrated-bg);
+    border-radius: 16px;
+    width: 95%;
+    max-width: 1800px;
+    height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+/* ヘッダー */
+.integrated-modal-header {
+    background: linear-gradient(135deg, var(--integrated-primary), var(--integrated-secondary));
+    color: white;
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.product-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.product-thumbnail {
+    width: 50px;
+    height: 50px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.integrated-modal-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem 0;
+}
+
+.source-indicator {
+    font-size: 0.85rem;
+    opacity: 0.95;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.source-indicator .separator {
+    opacity: 0.6;
+}
+
+.integrated-modal-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.8rem;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.3s ease;
+}
+
+.integrated-modal-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* モーダルボディ */
+.integrated-modal-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* マーケットプレイス選択 */
+.integrated-marketplace-selector {
+    background: var(--integrated-bg-secondary);
+    border-bottom: 1px solid var(--integrated-border);
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-shrink: 0;
+    overflow-x: auto;
+}
+
+.marketplace-btn {
+    padding: 0.5rem 1rem;
+    border: 2px solid transparent;
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.marketplace-btn.ebay { border-color: var(--marketplace-ebay); color: var(--marketplace-ebay); }
+.marketplace-btn.shopee { border-color: var(--marketplace-shopee); color: var(--marketplace-shopee); }
+.marketplace-btn.amazon-global { border-color: var(--marketplace-amazon-global); color: var(--marketplace-amazon-global); }
+
+.marketplace-btn.active.ebay { background: var(--marketplace-ebay); color: white; }
+.marketplace-btn.active.shopee { background: var(--marketplace-shopee); color: white; }
+.marketplace-btn.active.amazon-global { background: var(--marketplace-amazon-global); color: white; }
+
+.marketplace-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* タブナビゲーション */
+.integrated-tabs {
+    display: flex;
+    background: var(--integrated-bg-secondary);
+    border-bottom: 1px solid var(--integrated-border);
+    overflow-x: auto;
+    flex-shrink: 0;
+}
+
+.integrated-tab-link {
+    padding: 0.75rem 1rem;
+    color: var(--integrated-text-secondary);
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    font-size: 0.85rem;
+    min-width: 100px;
+    text-align: center;
+}
+
+.integrated-tab-link:hover {
+    color: var(--integrated-primary);
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.integrated-tab-link.active {
+    color: var(--integrated-primary);
+    border-bottom-color: var(--integrated-primary);
+    background: white;
+}
+
+.integrated-tab-link.marketplace-specific::after {
+    content: '🏪';
+    margin-left: 0.25rem;
+    font-size: 0.7rem;
+}
+
+/* タブコンテンツ */
+.integrated-tab-content-container {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.integrated-tab-pane {
+    display: none;
+    padding: 1.5rem;
+    height: 100%;
+}
+
+.integrated-tab-pane.active {
+    display: block;
+}
+
+/* データセクション */
+.integrated-data-section {
+    background: white;
+    border: 1px solid var(--integrated-border);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+}
+
+.integrated-section-header {
+    background: var(--integrated-bg-secondary);
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    border-bottom: 1px solid var(--integrated-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* ステータスグリッド */
+.integrated-status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+/* 画像グリッド */
+.integrated-images-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.integrated-image-item {
+    position: relative;
+    cursor: pointer;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.integrated-image-item img {
+    width: 100%;
+    height: 80px;
+    object-fit: cover;
+}
+
+.integrated-image-item:hover {
+    transform: scale(1.05);
+    border-color: var(--integrated-primary);
+}
+
+.integrated-image-item.selected {
+    border-color: var(--integrated-success);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.integrated-image-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+    color: white;
+    padding: 0.25rem;
+    font-size: 0.7rem;
+    text-align: center;
+}
+
+/* ボタン */
+.integrated-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.integrated-btn-primary {
+    background: var(--integrated-primary);
+    color: white;
+}
+
+.integrated-btn-success {
+    background: var(--integrated-success);
+    color: white;
+}
+
+.integrated-btn-secondary {
+    background: var(--integrated-text-secondary);
+    color: white;
+}
+
+.integrated-btn-large {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+}
+
+.integrated-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* フッター */
+.integrated-modal-footer {
+    background: var(--integrated-bg-secondary);
+    border-top: 1px solid var(--integrated-border);
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.footer-info {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.85rem;
+    color: var(--integrated-text-secondary);
+}
+
+.footer-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+/* レスポンシブ */
+@media (max-width: 1200px) {
+    .integrated-modal-content {
+        width: 98%;
+        height: 95vh;
+    }
+    
+    .integrated-images-grid {
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .integrated-modal-content {
+        width: 100%;
+        height: 100vh;
+        border-radius: 0;
+    }
+    
+    .integrated-tab-link {
+        min-width: 80px;
+        font-size: 0.75rem;
+    }
+}

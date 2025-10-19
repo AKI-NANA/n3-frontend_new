@@ -1,0 +1,309 @@
+/**
+ * NAGANO-3 Layout CSS - N3準拠版
+ * common/css/layout.css
+ * 
+ * ✅ グリッドレイアウト・メインコンテンツ・レスポンシブ
+ * ✅ サイドバー連動幅制御システム
+ */
+
+/* ===== 基本レイアウト ===== */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  padding-top: var(--header-height);
+}
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ===== 🔥 メインコンテンツの動的幅制御（トグル対応完全版） ===== */
+.main-content {
+  /* 初期状態：サイドバー展開時 */
+  margin-left: var(--sidebar-width);
+  width: calc(100vw - var(--sidebar-width));
+  max-width: calc(100vw - var(--sidebar-width));
+  
+  /* 基本レイアウト */
+  padding: 20px;
+  background: var(--bg-primary, #f8f9fa);
+  min-height: calc(100vh - var(--header-height));
+  position: relative;
+  z-index: 1;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  
+  /* トランジション */
+  transition: margin-left 0.3s ease, width 0.3s ease, max-width 0.3s ease;
+}
+
+/* ===== サイドバー折りたたみ時の幅制御 ===== */
+.unified-sidebar--collapsed + .main-content,
+.sidebar-collapsed .main-content {
+  margin-left: var(--sidebar-collapsed);
+  width: calc(100vw - var(--sidebar-collapsed));
+  max-width: calc(100vw - var(--sidebar-collapsed));
+}
+
+/* ===== サイドバー完全非表示時の幅制御 ===== */
+.main-content.sidebar-closed {
+  margin-left: 0 !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+}
+
+/* ===== ヘッダー ===== */
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ===== N3ステータス表示 ===== */
+.n3-status-indicator {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: #10b981;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
+}
+
+/* ===== ローディングスクリーン ===== */
+.loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+  backdrop-filter: blur(4px);
+}
+
+.loading-text {
+  font-size: 1.2rem;
+  color: #1e293b;
+  font-weight: 600;
+}
+
+/* ===== デフォルトページレイアウト ===== */
+.default-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.welcome-section {
+  text-align: center;
+  margin-bottom: 40px;
+  padding: 40px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px;
+}
+
+.welcome-section h1 {
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  opacity: 0.9;
+  margin: 0;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.feature-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 30px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  border-color: #3b82f6;
+}
+
+.feature-icon {
+  font-size: 3rem;
+  color: #3b82f6;
+  margin-bottom: 20px;
+}
+
+.feature-card h3 {
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+  color: #1e293b;
+}
+
+.feature-card p {
+  color: #64748b;
+  margin-bottom: 15px;
+  line-height: 1.6;
+}
+
+.feature-status {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.feature-status.ready {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.error-section, .system-status {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 30px;
+  margin-bottom: 20px;
+}
+
+.error-section h2 {
+  color: #dc2626;
+  margin-bottom: 15px;
+}
+
+.system-status h3 {
+  color: #1e293b;
+  margin-bottom: 20px;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.status-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  background: #f8fafc;
+  border-radius: 6px;
+}
+
+.status-label {
+  font-weight: 600;
+  color: #475569;
+}
+
+.status-value {
+  color: #1e293b;
+  font-family: monospace;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+/* ===== レスポンシブ対応 ===== */
+@media (max-width: 1024px) {
+  .main-content {
+    margin-left: var(--sidebar-collapsed);
+    width: calc(100vw - var(--sidebar-collapsed));
+    max-width: calc(100vw - var(--sidebar-collapsed));
+  }
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0;
+    width: 100vw;
+    max-width: 100vw;
+    padding: 15px;
+  }
+  
+  .main-content.sidebar-closed {
+    margin-left: 0;
+    width: 100vw;
+    max-width: 100vw;
+  }
+  
+  .welcome-section h1 {
+    font-size: 2rem;
+  }
+  
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== アクセシビリティ ===== */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ===== 印刷対応 ===== */
+@media print {
+  .sidebar,
+  .unified-sidebar {
+    display: none;
+  }
+  
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0;
+  }
+  
+  .card {
+    box-shadow: none;
+    border: 1px solid #000;
+  }
+}

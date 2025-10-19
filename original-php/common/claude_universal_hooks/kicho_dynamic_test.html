@@ -1,0 +1,319 @@
+<script>
+// CAIDS user_approval_required Hook
+// CAIDS user_approval_required Hook - 基本実装
+console.log('✅ user_approval_required Hook loaded');
+</script>
+<script>
+// CAIDS natural_explanation Hook
+// CAIDS natural_explanation Hook - 基本実装
+console.log('✅ natural_explanation Hook loaded');
+</script>
+<script>
+// CAIDS character_limit Hook
+// CAIDS character_limit Hook - 基本実装
+console.log('✅ character_limit Hook loaded');
+</script>
+<script>
+// CAIDS pre_analysis_enforcement Hook
+// CAIDS pre_analysis_enforcement Hook - 基本実装
+console.log('✅ pre_analysis_enforcement Hook loaded');
+</script>
+<script>
+// CAIDS emergency_accumulation Hook
+// CAIDS emergency_accumulation Hook - 基本実装
+console.log('✅ emergency_accumulation Hook loaded');
+</script>
+<script>
+// CAIDS development_control Hook
+// CAIDS development_control Hook - 基本実装
+console.log('✅ development_control Hook loaded');
+</script>
+<script>
+// CAIDS error_handling Hook
+
+// CAIDS エラー処理Hook - 完全実装
+window.CAIDS_ERROR_HANDLER = {
+    isActive: true,
+    errorCount: 0,
+    errorHistory: [],
+    
+    initialize: function() {
+        this.setupGlobalErrorHandler();
+        this.setupUnhandledPromiseRejection();
+        this.setupNetworkErrorHandler();
+        console.log('⚠️ CAIDS エラーハンドリングシステム完全初期化');
+    },
+    
+    setupGlobalErrorHandler: function() {
+        window.addEventListener('error', (event) => {
+            this.handleError({
+                type: 'JavaScript Error',
+                message: event.message,
+                filename: event.filename,
+                lineno: event.lineno,
+                colno: event.colno,
+                stack: event.error?.stack
+            });
+        });
+    },
+    
+    setupUnhandledPromiseRejection: function() {
+        window.addEventListener('unhandledrejection', (event) => {
+            this.handleError({
+                type: 'Unhandled Promise Rejection',
+                message: event.reason?.message || String(event.reason),
+                stack: event.reason?.stack
+            });
+        });
+    },
+    
+    setupNetworkErrorHandler: function() {
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            try {
+                const response = await originalFetch.apply(this, args);
+                if (!response.ok) {
+                    window.CAIDS_ERROR_HANDLER.handleError({
+                        type: 'Network Error',
+                        message: `HTTP ${response.status}: ${response.statusText}`,
+                        url: args[0]
+                    });
+                }
+                return response;
+            } catch (error) {
+                window.CAIDS_ERROR_HANDLER.handleError({
+                    type: 'Network Fetch Error',
+                    message: error.message,
+                    url: args[0]
+                });
+                throw error;
+            }
+        };
+    },
+    
+    handleError: function(errorInfo) {
+        this.errorCount++;
+        this.errorHistory.push({...errorInfo, timestamp: new Date().toISOString()});
+        
+        console.error('🚨 CAIDS Error Handler:', errorInfo);
+        this.showErrorNotification(errorInfo);
+        this.reportError(errorInfo);
+    },
+    
+    showErrorNotification: function(errorInfo) {
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = `
+            position: fixed; top: 10px; right: 10px; z-index: 999999;
+            background: linear-gradient(135deg, #ff4444, #cc0000);
+            color: white; padding: 15px 20px; border-radius: 8px;
+            max-width: 350px; box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            font-size: 13px; font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            border: 2px solid #ff6666; animation: caids-error-shake 0.5s ease-in-out;
+        `;
+        errorDiv.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 18px;">🚨</span>
+                <div>
+                    <strong>エラーが発生しました</strong><br>
+                    <small style="opacity: 0.9;">${errorInfo.type}: ${errorInfo.message}</small>
+                </div>
+            </div>
+        `;
+        
+        // CSS Animation
+        if (!document.getElementById('caids-error-styles')) {
+            const style = document.createElement('style');
+            style.id = 'caids-error-styles';
+            style.textContent = `
+                @keyframes caids-error-shake {
+                    0%, 100% { transform: translateX(0); }
+                    25% { transform: translateX(-5px); }
+                    75% { transform: translateX(5px); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(errorDiv);
+        setTimeout(() => errorDiv.remove(), 7000);
+    },
+    
+    reportError: function(errorInfo) {
+        // エラーレポート生成・送信（将来の拡張用）
+        const report = {
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent,
+            url: window.location.href,
+            errorCount: this.errorCount,
+            sessionId: this.getSessionId(),
+            ...errorInfo
+        };
+        
+        console.log('📋 CAIDS Error Report:', report);
+        localStorage.setItem('caids_last_error', JSON.stringify(report));
+    },
+    
+    getSessionId: function() {
+        let sessionId = sessionStorage.getItem('caids_session_id');
+        if (!sessionId) {
+            sessionId = 'caids_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            sessionStorage.setItem('caids_session_id', sessionId);
+        }
+        return sessionId;
+    },
+    
+    getErrorStats: function() {
+        return {
+            totalErrors: this.errorCount,
+            recentErrors: this.errorHistory.slice(-10),
+            sessionId: this.getSessionId()
+        };
+    }
+};
+
+window.CAIDS_ERROR_HANDLER.initialize();
+
+</script>
+<!-- 🧪 kicho動的化テスト用HTML -->
+<!-- 既存のkicho_content.phpに以下を追加してテスト -->
+
+<div class="kicho-dynamic-test-panel" style="margin: 20px; padding: 20px; border: 2px solid #007cba; border-radius: 8px; background: #f0f8ff;">
+    <h3>🧪 動的化テストパネル</h3>
+    <p>既存のdata-action対応確認とAjax通信テスト</p>
+    
+    <!-- 既存システム対応テスト -->
+    <div class="test-section">
+        <h4>✅ 既存システムテスト</h4>
+        
+        <!-- Modal系（既存対応済み） -->
+        <button type="button" data-modal-open="test-modal" class="btn btn-primary">
+            モーダルテスト（既存対応）
+        </button>
+        
+        <!-- Ajax系（要確認） -->
+        <button type="button" data-action="health_check" data-page="kicho_content" class="btn btn-success">
+            ヘルスチェック（Ajax）
+        </button>
+        
+        <button type="button" data-action="get_statistics" data-page="kicho_content" class="btn btn-info">
+            統計取得（Ajax）
+        </button>
+        
+        <button type="button" data-action="refresh-all" data-page="kicho_content" class="btn btn-warning">
+            全体更新（Ajax）
+        </button>
+    </div>
+    
+    <!-- 追加動的化テスト -->
+    <div class="test-section" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ccc;">
+        <h4>🚀 追加動的化テスト</h4>
+        
+        <button type="button" data-action="add-entry" data-page="kicho_content" class="btn btn-primary">
+            📝 新規エントリ追加
+        </button>
+        
+        <button type="button" data-action="calculate-totals" data-page="kicho_content" class="btn btn-secondary">
+            🧮 合計再計算
+        </button>
+        
+        <button type="button" data-action="export-data" data-page="kicho_content" class="btn btn-success">
+            📊 データエクスポート
+        </button>
+    </div>
+</div>
+
+<!-- テスト用モーダル -->
+<div id="test-modal" class="kicho__modal" style="display: none;">
+    <div class="kicho__modal-content">
+        <h4>テストモーダル</h4>
+        <p>既存のモーダルシステムが動作しています！</p>
+        <button type="button" data-modal-close class="btn btn-secondary">閉じる</button>
+    </div>
+</div>
+
+<!-- テスト結果表示エリア -->
+<div id="test-results" style="margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 4px;">
+    <h4>📊 テスト結果</h4>
+    <div id="test-log">
+        <p>ブラウザの開発者ツール（コンソール）でテスト結果を確認してください。</p>
+    </div>
+</div>
+
+<style>
+.kicho-dynamic-test-panel {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.test-section {
+    margin: 15px 0;
+}
+
+.btn {
+    display: inline-block;
+    padding: 8px 16px;
+    margin: 5px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-primary { background: #007cba; color: white; }
+.btn-success { background: #28a745; color: white; }
+.btn-info { background: #17a2b8; color: white; }
+.btn-warning { background: #ffc107; color: black; }
+.btn-secondary { background: #6c757d; color: white; }
+
+.btn:hover {
+    opacity: 0.8;
+    transform: translateY(-1px);
+}
+
+.kicho__modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.kicho__modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 90%;
+}
+</style>
+
+<script>
+// テスト用JavaScript（既存システムとの連携確認）
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🧪 動的化テストシステム初期化完了');
+    
+    // data-action クリック監視
+    document.addEventListener('click', function(e) {
+        const target = e.target.closest('[data-action]');
+        if (target) {
+            const action = target.getAttribute('data-action');
+            const page = target.getAttribute('data-page');
+            
+            console.log(`🔄 data-action検出: ${action} (page: ${page})`);
+            
+            // 既存のkicho.jsが処理しているかチェック
+            if (window.NAGANO3_KICHO && window.NAGANO3_KICHO.initialized) {
+                console.log('✅ 既存KICHOシステム動作中');
+            } else {
+                console.log('⚠️ 既存KICHOシステム未初期化');
+            }
+        }
+    });
+});
+</script>

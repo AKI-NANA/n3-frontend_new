@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASIN/商品URL アップロード - Emverze SaaS</title>
+    
+    <!-- メタタグ -->
+    <meta name="description" content="Amazon ASIN、商品URL、CSVファイルをアップロードして商品データを一括取得">
+    <meta name="keywords" content="ASIN,Amazon,商品URL,一括アップロード,CSV">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    <!-- セキュリティヘッダー -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    
+    <!-- フォント読み込み -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <style>
+        /* ========================================
+           NAGANO-3 ASIN/商品URLアップロードページ
+           インライン CSS実装（分離準備対応版）
+           ======================================== */
+
+        /* ===== CSS変数定義（出典: common/css/core/common.css） ===== */
+        :root {
+            /* カラーパレット */
+            --color-primary: #3b82f6;       /* common.css: プライマリカラー */
+            --color-secondary: #8b5cf6;     /* common.css: セカンダリカラー */
+            --color-success: #10b981;       /* common.css: 成功カラー */
+            --color-warning: #f59e0b;       /* common.css: 警告カラー */
+            --color-danger: #ef4444;        /* common.css: 危険カラー */
+            --color-info: #06b6d4;          /* common.css: 情報カラー */
+            
+            /* アクセントカラー */
+            --accent-blue: #06b6d4;         /* common.css: アクセントブルー */
+            --accent-purple: #8b5cf6;       /* common.css: アクセントパープル */
+            --accent-green: #10b981;        /* common.css: アクセントグリーン */
+            
+            /* 背景カラー */
+            --bg-primary: #f8fafc;          /* common.css: プライマリ背景 */
+            --bg-secondary: #ffffff;        /* common.css: セカンダリ背景 */
+            --bg-tertiary: #f1f5f9;         /* common.css: ターシャリ背景 */
+            --bg-hover: #e2e8f0;            /* common.css: ホバー背景 */
+            
+            /* テキストカラー */
+            --text-primary: #1e293b;        /* common.css: プライマリテキスト */
+            --text-secondary: #475569;      /* common.css: セカンダリテキスト */
+            --text-tertiary: #64748b;       /* common.css: ターシャリテキスト */
+            --text-muted: #94a3b8;          /* common.css: ミュートテキスト */
+            --text-white: #ffffff;          /* common.css: 白テキスト */
+            
+            /* ボーダー・シャドウ */
+            --border-color: #e2e8f0;        /* common.css: ボーダーカラー */
+            --border-light: #f1f5f9;        /* common.css: ライトボーダー */
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);      /* common.css: 小シャドウ */
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);    /* common.css: 中シャドウ */
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);  /* common.css: 大シャドウ */
+            
+            /* スペーシング */
+            --space-1: 0.25rem;             /* common.css: 4px */
+            --space-2: 0.5rem;              /* common.css: 8px */
+            --space-3: 0.75rem;             /* common.css: 12px */
+            --space-4: 1rem;                /* common.css: 16px */
+            --space-5: 1.25rem;             /* common.css: 20px */
+            --space-6: 1.5rem;              /* common.css: 24px */
+            --space-8: 2rem;                /* common.css: 32px */
+            
+            /* ボーダーラジアス */
+            --radius-sm: 0.375rem;          /* common.css: 6px */
+            --radius-md: 0.5rem;            /* common.css: 8px */
+            --radius-lg: 0.75rem;           /* common.css: 12px */
+            --radius-xl: 1rem;              /* common.css: 16px */
+            --radius-2xl: 1.25rem;          /* common.css: 20px */
+            
+            /* フォントサイズ */
+            --text-xs: 0.75rem;             /* common.css: 12px */
+            --text-sm: 0.875rem;            /* common.css: 14px */
+            --text-base: 1rem;              /* common.css: 16px */
+            --text-lg: 1.125rem;            /* common.css: 18px */
+            --text-xl: 1.25rem;             /* common.css: 20px */
+            --text-2xl: 1.5rem;             /* common.css: 24px */
+            --text-3xl: 1.875rem;           /* common.css: 30px */
+            
+            /* トランジション */
+            --transition-fast: all 0.15s ease;     /* common.css: 高速トランジション */
+            --transition-normal: all 0.3s ease;    /* common.css: 標準トランジション */
+            
+            /* ASIN専用変数（出典: pages/asin_upload.css 想定） */
+            --asin-upload-primary: var(--accent-blue);
+            --asin-upload-secondary: var(--accent-purple);
+            --asin-upload-success: var(--accent-green);
+        }
+        
+        /* ===== リセット・ベーススタイル（出典: common/css/core/common.css） ===== */
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            height: 100%;
+            scroll-behavior: smooth;
+            overflow-x: hidden;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+        
+        body {
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            transition: var(--transition-normal);
+            overflow-x: hidden;
+            font-weight: 400;
+            font-size: var(--text-sm);
+        }
+        
+        /* ===== コンテナレイアウト（出典: common/css/core/layout.css） ===== */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--space-4);
+            width: 100%;
+        }
+        
+        /* ===== ASIN アップロードページ専用スタイル（出典: pages/asin_upload.css 想定） ===== */
+        
+        /* ページヘッダー（BEM: asin-upload__page-header） */
+        .asin-upload__page-header {
+            background: linear-gradient(135deg, var(--asin-upload-primary), var(--asin-upload-secondary));
+            border-radius: var(--radius-2xl);
+            padding: var(--space-8);
+            margin-bottom: var(--space-8);
+            color: var(--text-white);
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .asin-upload__page-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            transform: rotate(45deg);
+        }
+        
+        .asin-upload__header-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .asin-upload__page-title {
+            font-size: var(--text-3xl);
+            font-weight: 700;
+            margin-bottom: var(--space-2);
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+        
+        .asin-upload__title-icon {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--text-2xl);
+            backdrop-filter: blur(10px);
+        }
+        
+        .asin-upload__page-subtitle {
+            font-size: var(--text-lg);
+            opacity: 0.9;
+            margin: 0;
+            font-weight: 400;
+        }
+        
+        /* メインセクション（BEM: asin-upload__main-section） */
+        .asin-upload__main-section {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            margin-bottom: var(--space-8);
+        }
+        
+        .asin-upload__section-header {
+            background: var(--bg-primary);
+            padding: var(--space-5);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .asin-upload__section-title {
+            font-size: var(--text-xl);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        /* タブナビゲーション（BEM: asin-upload__tabs） */
+        .asin-upload__tabs {
+            display: flex;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .asin-upload__tab-button {
+            flex: 1;
+            padding: var(--space-4) var(--space-6);
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: var(--text-sm);
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            border-bottom: 3px solid transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+        }
+        
+        .asin-upload__tab-button:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        .asin-upload__tab-button--active {
+            background: var(--bg-secondary);
+            color: var(--asin-upload-primary);
+            border-bottom-color: var(--asin-upload-primary);
+        }
+        
+        /* タブコンテンツ（BEM: asin-upload__tab-content） */
+        .asin-upload__tab-content {
+            padding: var(--space-6);
+            display: none;
+        }
+        
+        .asin-upload__tab-content--active {
+            display: block;
+        }
+        
+        /* 検証ルール表示（BEM: asin-upload__validation-rules） */
+        .asin-upload__validation-rules {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: var(--space-5);
+            margin-bottom: var(--space-6);
+        }
+        
+        .asin-upload__rules-title {
+            font-size: var(--text-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--space-3);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .asin-upload__rules-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .asin-upload__rules-list li {
+            padding: var(--space-2) 0;
+            color: var(--text-secondary);
+            font-size: var(--text-sm);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .asin-upload__rules-list li::before {
+            content: "✓";
+            color: var(--asin-upload-success);
+            font-weight: bold;
+            width: 16px;
+            text-align: center;
+        }
+        
+        /* サンプルセクション（BEM: asin-upload__sample-section） */
+        .asin-upload__sample-section {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: var(--space-5);
+            margin-bottom: var(--space-6);
+        }
+        
+        .asin-upload__sample-title {
+            font-size: var(--text-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--space-3);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .asin-upload__sample-code {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: var(--space-4);
+            font-family: 'Courier New', monospace;
+            font-size: var(--text-xs);
+            color: var(--text-secondary);
+            white-space: pre;
+            overflow-x: auto;
+        }
+        
+        /* ファイルアップロードエリア（BEM: asin-upload__file-upload-area） */
+        .asin-upload__file-upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--space-8);
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            background: var(--bg-tertiary);
+            margin-bottom: var(--space-6);
+            position: relative;
+        }
+        
+        .asin-upload__file-upload-area:hover {
+            border-color: var(--asin-upload-primary);
+            background: var(--bg-hover);
+        }
+        
+        .asin-upload__file-upload-area--dragover {
+            border-color: var(--asin-upload-primary);
+            background: rgba(59, 130, 246, 0.1);
+        }
+        
+        .asin-upload__upload-icon {
+            font-size: var(--text-3xl);
+            margin-bottom: var(--space-3);
+            color: var(--text-muted);
+        }
+        
+        .asin-upload__upload-text {
+            font-size: var(--text-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--space-2);
+        }
+        
+        .asin-upload__upload-subtext {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+        }
+        
+        .asin-upload__hidden-input {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        
+        /* フォームグループ（BEM: asin-upload__form-group） */
+        .asin-upload__form-group {
+            margin-bottom: var(--space-6);
+        }
+        
+        .asin-upload__label {
+            display: block;
+            font-size: var(--text-sm);
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: var(--space-2);
+        }
+        
+        .asin-upload__input {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-size: var(--text-sm);
+            color: var(--text-primary);
+            background: var(--bg-secondary);
+            transition: var(--transition-fast);
+        }
+        
+        .asin-upload__input:focus {
+            outline: none;
+            border-color: var(--asin-upload-primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .asin-upload__textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        /* ボタンスタイル（出典: common/css/core/components.css） */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+            padding: var(--space-3) var(--space-6);
+            border: 1px solid transparent;
+            border-radius: var(--radius-md);
+            font-size: var(--text-sm);
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            user-select: none;
+        }
+        
+        .btn--primary {
+            background: var(--color-primary);
+            color: var(--text-white);
+            border-color: var(--color-primary);
+        }
+        
+        .btn--primary:hover {
+            background: #2563eb;
+            border-color: #2563eb;
+        }
+        
+        .btn--secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+        
+        .btn--secondary:hover {
+            background: var(--bg-hover);
+        }
+        
+        .btn--success {
+            background: var(--color-success);
+            color: var(--text-white);
+            border-color: var(--color-success);
+        }
+        
+        .btn--success:hover {
+            background: #059669;
+            border-color: #059669;
+        }
+        
+        .btn--large {
+            padding: var(--space-4) var(--space-8);
+            font-size: var(--text-base);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        /* プログレスバー（BEM: asin-upload__progress） */
+        .asin-upload__progress {
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            margin-bottom: var(--space-4);
+            display: none;
+        }
+        
+        .asin-upload__progress--show {
+            display: block;
+        }
+        
+        .asin-upload__progress-bar {
+            height: 20px;
+            background: linear-gradient(90deg, var(--asin-upload-primary), var(--asin-upload-secondary));
+            border-radius: var(--radius-md);
+            transition: width 0.3s ease;
+            width: 0%;
+            position: relative;
+        }
+        
+        .asin-upload__progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--text-white);
+            font-size: var(--text-xs);
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* 結果表示エリア（BEM: asin-upload__results） */
+        .asin-upload__results {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: var(--space-5);
+            margin-top: var(--space-6);
+            display: none;
+        }
+        
+        .asin-upload__results--show {
+            display: block;
+        }
+        
+        .asin-upload__results-title {
+            font-size: var(--text-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--space-4);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .asin-upload__results-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: var(--space-4);
+            margin-bottom: var(--space-6);
+        }
+        
+        .asin-upload__stat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: var(--space-4);
+            text-align: center;
+        }
+        
+        .asin-upload__stat-number {
+            font-size: var(--text-2xl);
+            font-weight: 700;
+            color: var(--asin-upload-primary);
+            display: block;
+        }
+        
+        .asin-upload__stat-label {
+            font-size: var(--text-xs);
+            color: var(--text-secondary);
+            margin-top: var(--space-1);
+        }
+        
+        /* 通知システム（出典: common/js/core/notifications.js 想定） */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: var(--space-4) var(--space-6);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            max-width: 400px;
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+        
+        .notification--show {
+            transform: translateX(0);
+        }
+        
+        .notification--success {
+            background: var(--color-success);
+            color: var(--text-white);
+        }
+        
+        .notification--error {
+            background: var(--color-danger);
+            color: var(--text-white);
+        }
+        
+        .notification--info {
+            background: var(--color-info);
+            color: var(--text-white);
+        }
+        
+        /* レスポンシブ対応（出典: common/css/core/common.css メディアクエリ） */
+        @media (min-width: 768px) {
+            .container {
+                padding: var(--space-6);
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            .container {
+                padding: var(--space-8);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .asin-upload__page-header {
+                padding: var(--space-6);
+                margin-bottom: var(--space-6);
+            }
+            
+            .asin-upload__page-title {
+                font-size: var(--text-2xl);
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .asin-upload__tabs {
+                flex-direction: column;
+            }
+            
+            .asin-upload__tab-button {
+                padding: var(--space-3) var(--space-4);
+                border-bottom: 1px solid var(--border-color);
+                border-right: none;
+            }
+            
+            .asin-upload__tab-button--active {
+                border-bottom-color: var(--border-color);
+                border-left: 3px solid var(--asin-upload-primary);
+            }
+            
+            .asin-upload__results-summary {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: var(--space-2);
+            }
+            
+            .asin-upload__file-upload-area {
+                padding: var(--space-6);
+            }
+            
+            .asin-upload__results-summary {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* アニメーション（出典: common/css/core/common.css） */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        /* ローディング状態 */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        /* フォーカス管理（出典: common/css/core/common.css） */
+        *:focus {
+            outline: 2px solid var(--color-primary);
+            outline-offset: 2px;
+        }
+        
+        /* 選択テキスト */
+        ::selection {
+            background-color: rgba(59, 130, 246, 0.3);
+            color: var(--text-primary);
+        }
+    </style>
+<script>
+// CAIDS error_handling Hook
+
+// CAIDS エラー処理Hook - 完全実装
+window.CAIDS_ERROR_HANDLER = {
+    isActive: true,
+    errorCount: 0,
+    errorHistory: [],
+    
+    initialize: function() {
+        this.setupGlobalErrorHandler();
+        this.setupUnhandledPromiseRejection();
+        this.setupNetworkErrorHandler();
+        console.log('⚠️ CAIDS エラーハンドリングシステム完全初期化');
+    },
+    
+    setupGlobalErrorHandler: function() {
+        window.addEventListener('error', (event) => {
+            this.handleError({
+                type: 'JavaScript Error',
+                message: event.message,
+                filename: event.filename,
+                lineno: event.lineno,
+                colno: event.colno,
+                stack: event.error?.stack
+            });
+        });
+    },
+    
+    setupUnhandledPromiseRejection: function() {
+        window.addEventListener('unhandledrejection', (event) => {
+            this.handleError({
+                type: 'Unhandled Promise Rejection',
+                message: event.reason?.message || String(event.reason),
+                stack: event.reason?.stack
+            });
+        });
+    },
+    
+    setupNetworkErrorHandler: function() {
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            try {
+                const response = await originalFetch.apply(this, args);
+                if (!response.ok) {
+                    window.CAIDS_ERROR_HANDLER.handleError({
+                        type: 'Network Error',
+                        message: `HTTP ${response.status}: ${response.statusText}`,
+                        url: args[0]
+                    });
+                }
+                return response;
+            } catch (error) {
+                window.CAIDS_ERROR_HANDLER.handleError({
+                    type: 'Network Fetch Error',
+                    message: error.message,
+                    url: args[0]
+                });
+                throw error;
+            }
+        };
+    },
+    
+    handleError: function(errorInfo) {
+        this.errorCount++;
+        this.errorHistory.push({...errorInfo, timestamp: new Date().toISOString()});
+        
+        console.error('🚨 CAIDS Error Handler:', errorInfo);
+        this.showErrorNotification(errorInfo);
+        this.reportError(errorInfo);
+    },
+    
+    showErrorNotification: function(errorInfo) {
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = `
+            position: fixed; top: 10px; right: 10px; z-index: 999999;
+            background: linear-gradient(135deg, #ff4444, #cc0000);
+            color: white; padding: 15px 20px; border-radius: 8px;
+            max-width: 350px; box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            font-size: 13px; font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            border: 2px solid #ff6666; animation: caids-error-shake 0.5s ease-in-out;
+        `;
+        errorDiv.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 18px;">🚨</span>
+                <div>
+                    <strong>エラーが発生しました</strong><br>
+                    <small style="opacity: 0.9;">${errorInfo.type}: ${errorInfo.message}</small>
+                </div>
+            </div>
+        `;
+        
+        // CSS Animation
+        if (!document.getElementById('caids-error-styles')) {
+            const style = document.createElement('style');
+            style.id = 'caids-error-styles';
+            style.textContent = `
+                @keyframes caids-error-shake {
+                    0%, 100% { transform: translateX(0); }
+                    25% { transform: translateX(-5px); }
+                    75% { transform: translateX(5px); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(errorDiv);
+        setTimeout(() => errorDiv.remove(), 7000);
+    },
+    
+    reportError: function(errorInfo) {
+        // エラーレポート生成・送信（将来の拡張用）
+        const report = {
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent,
+            url: window.location.href,
+            errorCount: this.errorCount,
+            sessionId: this.getSessionId(),
+            ...errorInfo
+        };
+        
+        console.log('📋 CAIDS Error Report:', report);
+        localStorage.setItem('caids_last_error', JSON.stringify(report));
+    },
+    
+    getSessionId: function() {
+        let sessionId = sessionStorage.getItem('caids_session_id');
+        if (!sessionId) {
+            sessionId = 'caids_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            sessionStorage.setItem('caids_session_id', sessionId);
+        }
+        return sessionId;
+    },
+    
+    getErrorStats: function() {
+        return {
+            totalErrors: this.errorCount,
+            recentErrors: this.errorHistory.slice(-10),
+            sessionId: this.getSessionId()
+        };
+    }
+};
+
+window.CAIDS_ERROR_HANDLER.initialize();
+
+</script>
+<script>
+// CAIDS user_feedback Hook
+// CAIDS user_feedback Hook - 基本実装
+console.log('✅ user_feedback Hook loaded');
+</script>
+<script>
+// CAIDS character_limit Hook
+// CAIDS character_limit Hook - 基本実装
+console.log('✅ character_limit Hook loaded');
+</script>
+<script>
+// CAIDS natural_explanation Hook
+// CAIDS natural_explanation Hook - 基本実装
+console.log('✅ natural_explanation Hook loaded');
+</script>
+<script>
+// CAIDS character_monitoring Hook
+// CAIDS character_monitoring Hook - 基本実装
+console.log('✅ character_monitoring Hook loaded');
+</script>
+<script>
+// CAIDS emergency_accumulation Hook
+// CAIDS emergency_accumulation Hook - 基本実装
+console.log('✅ emergency_accumulation Hook loaded');
+</script>
+<script>
+// CAIDS processing_capacity_monitoring Hook
+// CAIDS processing_capacity_monitoring Hook - 基本実装
+console.log('✅ processing_capacity_monitoring Hook loaded');
+</script>
+<script>
+// CAIDS pre_analysis_enforcement Hook
+// CAIDS pre_analysis_enforcement Hook - 基本実装
+console.log('✅ pre_analysis_enforcement Hook loaded');
+</script>
+<script>
+// CAIDS user_approval_required Hook
+// CAIDS user_approval_required Hook - 基本実装
+console.log('✅ user_approval_required Hook loaded');
+</script>
+<script>
+// CAIDS timeout_management Hook
+// CAIDS timeout_management Hook - 基本実装
+console.log('✅ timeout_management Hook loaded');
+</script>
+<script>
+// CAIDS development_control Hook
+// CAIDS development_control Hook - 基本実装
+console.log('✅ development_control Hook loaded');
+</script>
+</head>
+<body>
+    <!-- メインコンテナ -->
+    <div class="container">
+        <!-- ページヘッダー -->
+        <header class="asin-upload__page-header fade-in">
+            <div class="asin-upload__header-content">
+                <h1 class="asin-upload__page-title">
+                    <div class="asin-upload__title-icon">
+                        <i class="fas fa-upload"></i>
+                    </div>
+                    ASIN/商品URL アップロード
+                </h1>
+                <p class="asin-upload__page-subtitle">
+                    Amazon ASIN、商品URL、またはCSVファイルをアップロードして商品データを一括取得します
+                </p>
+            </div>
+        </header>
+
+        <!-- メインアップロードセクション -->
+        <main class="asin-upload__main-section fade-in">
+            <!-- セクションヘッダー -->
+            <div class="asin-upload__section-header">
+                <h2 class="asin-upload__section-title">
+                    <i class="fas fa-database"></i>
+                    データ入力方法を選択
+                </h2>
+            </div>
+
+            <!-- タブナビゲーション -->
+            <nav class="asin-upload__tabs">
+                <button class="asin-upload__tab-button asin-upload__tab-button--active" onclick="switchTab('csv-upload')">
+                    <i class="fas fa-file-csv"></i>
+                    CSVファイルアップロード
+                </button>
+                <button class="asin-upload__tab-button" onclick="switchTab('manual-input')">
+                    <i class="fas fa-edit"></i>
+                    手動入力（ASIN/URL）
+                </button>
+                <button class="asin-upload__tab-button" onclick="switchTab('bulk-paste')">
+                    <i class="fas fa-clipboard"></i>
+                    一括貼り付け
+                </button>
+            </nav>
+
+            <!-- CSVアップロードタブ -->
+            <div id="csv-upload" class="asin-upload__tab-content asin-upload__tab-content--active">
+                <!-- 検証ルール表示 -->
+                <div class="asin-upload__validation-rules">
+                    <div class="asin-upload__rules-title">
+                        <i class="fas fa-check-circle"></i>
+                        CSVファイル形式要件
+                    </div>
+                    <ul class="asin-upload__rules-list">
+                        <li>ファイル形式: .csv, .xlsx対応</li>
+                        <li>最大ファイルサイズ: 10MB</li>
+                        <li>最大行数: 10,000行</li>
+                        <li>文字エンコーディング: UTF-8推奨</li>
+                        <li>列ヘッダー: ASIN, URL, キーワード, SKU (任意)</li>
+                    </ul>
+                </div>
+
+                <!-- サンプル表示 -->
+                <div class="asin-upload__sample-section">
+                    <div class="asin-upload__sample-title">
+                        <i class="fas fa-code"></i>
+                        CSVサンプル形式
+                    </div>
+                    <div class="asin-upload__sample-code">ASIN,URL,キーワード,SKU
+B08N5WRWNW,https://amazon.co.jp/dp/B08N5WRWNW,Echo Dot,ECHO-DOT-001
+B09B8RRQT5,https://amazon.co.jp/dp/B09B8RRQT5,Fire Stick,FIRE-STICK-002
+B07YNM3GJG,https://amazon.co.jp/dp/B07YNM3GJG,Kindle,KINDLE-003</div>
+                </div>
+
+                <!-- ファイルアップロードエリア -->
+                <div class="asin-upload__form-group">
+                    <div class="asin-upload__file-upload-area" onclick="document.getElementById('csvFile').click()">
+                        <div class="asin-upload__upload-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <div class="asin-upload__upload-text">CSVファイルをドラッグ&ドロップ</div>
+                        <div class="asin-upload__upload-subtext">または、クリックしてファイルを選択</div>
+                        <input type="file" id="csvFile" class="asin-upload__hidden-input" accept=".csv,.xlsx,.xls">
+                    </div>
+                </div>
+
+                <!-- 処理ボタン -->
+                <div class="asin-upload__form-group">
+                    <button class="btn btn--primary btn--large" onclick="processCsvFile()" disabled id="processCsvBtn">
+                        <i class="fas fa-cogs"></i>
+                        CSVファイルを処理
+                    </button>
+                </div>
+            </div>
+
+            <!-- 手動入力タブ -->
+            <div id="manual-input" class="asin-upload__tab-content">
+                <div class="asin-upload__form-group">
+                    <label class="asin-upload__label" for="asinInput">
+                        <i class="fas fa-barcode"></i>
+                        ASIN
+                    </label>
+                    <input type="text" id="asinInput" class="asin-upload__input" placeholder="例: B08N5WRWNW">
+                </div>
+
+                <div class="asin-upload__form-group">
+                    <label class="asin-upload__label" for="urlInput">
+                        <i class="fas fa-link"></i>
+                        商品URL
+                    </label>
+                    <input type="url" id="urlInput" class="asin-upload__input" placeholder="例: https://amazon.co.jp/dp/B08N5WRWNW">
+                </div>
+
+                <div class="asin-upload__form-group">
+                    <label class="asin-upload__label" for="keywordInput">
+                        <i class="fas fa-tags"></i>
+                        キーワード（任意）
+                    </label>
+                    <input type="text" id="keywordInput" class="asin-upload__input" placeholder="例: Echo Dot スマートスピーカー">
+                </div>
+
+                <div class="asin-upload__form-group">
+                    <label class="asin-upload__label" for="skuInput">
+                        <i class="fas fa-tag"></i>
+                        SKU（任意）
+                    </label>
+                    <input type="text" id="skuInput" class="asin-upload__input" placeholder="例: ECHO-DOT-001">
+                </div>
+
+                <div class="asin-upload__form-group">
+                    <button class="btn btn--primary btn--large" onclick="processManualInput()">
+                        <i class="fas fa-search"></i>
+                        商品データを取得
+                    </button>
+                </div>
+            </div>
+
+            <!-- 一括貼り付けタブ -->
+            <div id="bulk-paste" class="asin-upload__tab-content">
+                <div class="asin-upload__form-group">
+                    <label class="asin-upload__label" for="bulkInput">
+                        <i class="fas fa-clipboard-list"></i>
+                        ASIN・URL一括入力
+                    </label>
+                    <textarea id="bulkInput" class="asin-upload__input asin-upload__textarea" 
+                              placeholder="ASINまたはURLを1行ずつ入力してください&#10;&#10;例:&#10;B08N5WRWNW&#10;https://amazon.co.jp/dp/B09B8RRQT5&#10;B07YNM3GJG"></textarea>
+                </div>
+
+                <div class="asin-upload__form-group">
+                    <button class="btn btn--primary btn--large" onclick="processBulkInput()">
+                        <i class="fas fa-list-check"></i>
+                        一括処理を開始
+                    </button>
+                </div>
+            </div>
+
+            <!-- プログレスバー -->
+            <div class="asin-upload__progress" id="progressBar">
+                <div class="asin-upload__progress-bar" id="progressBarFill">
+                    <div class="asin-upload__progress-text" id="progressText">0%</div>
+                </div>
+            </div>
+
+            <!-- 結果表示エリア -->
+            <div class="asin-upload__results" id="resultsArea">
+                <div class="asin-upload__results-title">
+                    <i class="fas fa-chart-line"></i>
+                    処理結果
+                </div>
+                
+                <div class="asin-upload__results-summary">
+                    <div class="asin-upload__stat-card">
+                        <span class="asin-upload__stat-number" id="totalCount">0</span>
+                        <div class="asin-upload__stat-label">総件数</div>
+                    </div>
+                    <div class="asin-upload__stat-card">
+                        <span class="asin-upload__stat-number" id="successCount">0</span>
+                        <div class="asin-upload__stat-label">成功</div>
+                    </div>
+                    <div class="asin-upload__stat-card">
+                        <span class="asin-upload__stat-number" id="errorCount">0</span>
+                        <div class="asin-upload__stat-label">エラー</div>
+                    </div>
+                    <div class="asin-upload__stat-card">
+                        <span class="asin-upload__stat-number" id="processingTime">0s</span>
+                        <div class="asin-upload__stat-label">処理時間</div>
+                    </div>
+                </div>
+
+                <div class="asin-upload__form-group">
+                    <button class="btn btn--success" onclick="downloadResults()" disabled id="downloadBtn">
+                        <i class="fas fa-download"></i>
+                        結果をダウンロード
+                    </button>
+                    <button class="btn btn--secondary" onclick="resetForm()" style="margin-left: var(--space-3);">
+                        <i class="fas fa-redo"></i>
+                        リセット
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 通知エリア -->
+    <div id="notificationArea"></div>
+
+    <!-- JavaScript（最小限実装） -->
+    <script>
+        /* ========================================
+           NAGANO-3 ASIN アップロード JavaScript
+           出典: common/js/modules/asin_upload.js 想定
+           ======================================== */
+        
+        "use strict";
+        
+        // グローバル変数
+        let currentFile = null;
+        let isProcessing = false;
+        
+        // ===== タブ切り替え機能 =====
+        function switchTab(tabId) {
+            // 全タブボタンのアクティブ状態をリセット
+            document.querySelectorAll('.asin-upload__tab-button').forEach(btn => {
+                btn.classList.remove('asin-upload__tab-button--active');
+            });
+            
+            // 全タブコンテンツを非表示
+            document.querySelectorAll('.asin-upload__tab-content').forEach(content => {
+                content.classList.remove('asin-upload__tab-content--active');
+            });
+            
+            // 対象タブをアクティブ化
+            document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('asin-upload__tab-button--active');
+            document.getElementById(tabId).classList.add('asin-upload__tab-content--active');
+            
+            // 結果エリアをリセット
+            hideResults();
+        }
+        
+        // ===== ファイル処理機能 =====
+        function setupFileUpload() {
+            const fileInput = document.getElementById('csvFile');
+            const uploadArea = document.querySelector('.asin-upload__file-upload-area');
+            const processBtn = document.getElementById('processCsvBtn');
+            
+            // ファイル選択時の処理
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    handleFileSelection(file);
+                }
+            });
+            
+            // ドラッグ&ドロップ処理
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadArea.classList.add('asin-upload__file-upload-area--dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('asin-upload__file-upload-area--dragover');
+            });
+            
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('asin-upload__file-upload-area--dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFileSelection(files[0]);
+                }
+            });
+        }
+        
+        function handleFileSelection(file) {
+            // ファイル形式チェック
+            const allowedTypes = ['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+            const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+            const allowedExtensions = ['.csv', '.xlsx', '.xls'];
+            
+            if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+                showNotification('サポートされていないファイル形式です。CSV、XLS、XLSXファイルのみアップロード可能です。', 'error');
+                return;
+            }
+            
+            // ファイルサイズチェック (10MB)
+            const maxSize = 10 * 1024 * 1024;
+            if (file.size > maxSize) {
+                showNotification('ファイルサイズが大きすぎます。10MB以下のファイルをアップロードしてください。', 'error');
+                return;
+            }
+            
+            currentFile = file;
+            document.getElementById('processCsvBtn').disabled = false;
+            showNotification(`ファイル "${file.name}" が選択されました。処理ボタンをクリックして続行してください。`, 'success');
+        }
+        
+        // ===== 処理機能 =====
+        async function processCsvFile() {
+            if (!currentFile || isProcessing) return;
+            
+            isProcessing = true;
+            showProgress(true);
+            updateProgress(0, 'ファイルを解析中...');
+            
+            try {
+                // 模擬処理（実際の実装では API 呼び出し）
+                await simulateProcessing();
+                
+                // 結果表示
+                showResults({
+                    total: 1000,
+                    success: 950,
+                    error: 50,
+                    processingTime: 32
+                });
+                
+                showNotification('CSVファイルの処理が完了しました。', 'success');
+                
+            } catch (error) {
+                showNotification('処理中にエラーが発生しました: ' + error.message, 'error');
+            } finally {
+                isProcessing = false;
+                showProgress(false);
+            }
+        }
+        
+        async function processManualInput() {
+            if (isProcessing) return;
+            
+            const asin = document.getElementById('asinInput').value.trim();
+            const url = document.getElementById('urlInput').value.trim();
+            const keyword = document.getElementById('keywordInput').value.trim();
+            const sku = document.getElementById('skuInput').value.trim();
+            
+            if (!asin && !url) {
+                showNotification('ASINまたはURLを入力してください。', 'error');
+                return;
+            }
+            
+            isProcessing = true;
+            showProgress(true);
+            updateProgress(0, '商品データを取得中...');
+            
+            try {
+                await simulateProcessing();
+                
+                showResults({
+                    total: 1,
+                    success: 1,
+                    error: 0,
+                    processingTime: 2
+                });
+                
+                showNotification('商品データの取得が完了しました。', 'success');
+                
+            } catch (error) {
+                showNotification('データ取得中にエラーが発生しました: ' + error.message, 'error');
+            } finally {
+                isProcessing = false;
+                showProgress(false);
+            }
+        }
+        
+        async function processBulkInput() {
+            if (isProcessing) return;
+            
+            const bulkData = document.getElementById('bulkInput').value.trim();
+            if (!bulkData) {
+                showNotification('ASIN・URLを入力してください。', 'error');
+                return;
+            }
+            
+            const lines = bulkData.split('\n').filter(line => line.trim());
+            if (lines.length === 0) {
+                showNotification('有効なデータが見つかりません。', 'error');
+                return;
+            }
+            
+            isProcessing = true;
+            showProgress(true);
+            updateProgress(0, `${lines.length}件のデータを処理中...`);
+            
+            try {
+                await simulateProcessing();
+                
+                const successCount = Math.floor(lines.length * 0.95);
+                const errorCount = lines.length - successCount;
+                
+                showResults({
+                    total: lines.length,
+                    success: successCount,
+                    error: errorCount,
+                    processingTime: Math.ceil(lines.length / 10)
+                });
+                
+                showNotification(`${lines.length}件のデータ処理が完了しました。`, 'success');
+                
+            } catch (error) {
+                showNotification('一括処理中にエラーが発生しました: ' + error.message, 'error');
+            } finally {
+                isProcessing = false;
+                showProgress(false);
+            }
+        }
+        
+        // ===== UI制御機能 =====
+        function showProgress(show) {
+            const progressBar = document.getElementById('progressBar');
+            if (show) {
+                progressBar.classList.add('asin-upload__progress--show');
+            } else {
+                progressBar.classList.remove('asin-upload__progress--show');
+            }
+        }
+        
+        function updateProgress(percentage, message) {
+            const progressFill = document.getElementById('progressBarFill');
+            const progressText = document.getElementById('progressText');
+            
+            progressFill.style.width = percentage + '%';
+            progressText.textContent = message || `${percentage}%`;
+        }
+        
+        function showResults(data) {
+            document.getElementById('totalCount').textContent = data.total.toLocaleString();
+            document.getElementById('successCount').textContent = data.success.toLocaleString();
+            document.getElementById('errorCount').textContent = data.error.toLocaleString();
+            document.getElementById('processingTime').textContent = data.processingTime + 's';
+            
+            document.getElementById('resultsArea').classList.add('asin-upload__results--show');
+            document.getElementById('downloadBtn').disabled = false;
+        }
+        
+        function hideResults() {
+            document.getElementById('resultsArea').classList.remove('asin-upload__results--show');
+            document.getElementById('downloadBtn').disabled = true;
+        }
+        
+        function resetForm() {
+            // フォームリセット
+            document.getElementById('csvFile').value = '';
+            document.getElementById('asinInput').value = '';
+            document.getElementById('urlInput').value = '';
+            document.getElementById('keywordInput').value = '';
+            document.getElementById('skuInput').value = '';
+            document.getElementById('bulkInput').value = '';
+            
+            // 状態リセット
+            currentFile = null;
+            isProcessing = false;
+            document.getElementById('processCsvBtn').disabled = true;
+            
+            // UI リセット
+            hideResults();
+            showProgress(false);
+            
+            showNotification('フォームがリセットされました。', 'info');
+        }
+        
+        function downloadResults() {
+            // 実際の実装では結果データをCSVとしてダウンロード
+            showNotification('結果ファイルのダウンロードを開始します。', 'info');
+            
+            // 模擬ダウンロード
+            const csvContent = "ASIN,商品名,価格,ステータス\nB08N5WRWNW,Echo Dot,3980,成功\nB09B8RRQT5,Fire Stick,4980,成功";
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'asin_upload_results_' + new Date().toISOString().slice(0, 10) + '.csv';
+            link.click();
+        }
+        
+        // ===== 通知システム =====
+        function showNotification(message, type = 'info') {
+            const notificationArea = document.getElementById('notificationArea');
+            
+            const notification = document.createElement('div');
+            notification.className = `notification notification--${type}`;
+            
+            const icon = type === 'success' ? 'fa-check-circle' : 
+                        type === 'error' ? 'fa-times-circle' : 
+                        type === 'warning' ? 'fa-exclamation-triangle' : 
+                        'fa-info-circle';
+            
+            notification.innerHTML = `
+                <i class="fas ${icon}"></i>
+                <span>${message}</span>
+            `;
+            
+            notificationArea.appendChild(notification);
+            
+            // アニメーション表示
+            setTimeout(() => {
+                notification.classList.add('notification--show');
+            }, 100);
+            
+            // 自動削除
+            setTimeout(() => {
+                notification.classList.remove('notification--show');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 4000);
+        }
+        
+        // ===== 模擬処理（開発用） =====
+        async function simulateProcessing() {
+            const steps = [
+                { progress: 10, message: 'ファイルを解析中...' },
+                { progress: 30, message: 'データを検証中...' },
+                { progress: 50, message: 'Amazon APIに接続中...' },
+                { progress: 70, message: '商品データを取得中...' },
+                { progress: 90, message: 'データを処理中...' },
+                { progress: 100, message: '処理完了' }
+            ];
+            
+            for (const step of steps) {
+                updateProgress(step.progress, step.message);
+                await new Promise(resolve => setTimeout(resolve, 800));
+            }
+        }
+        
+        // ===== 初期化 =====
+        document.addEventListener('DOMContentLoaded', function() {
+            setupFileUpload();
+            showNotification('ASIN/商品URLアップロードページが準備完了しました。', 'success');
+        });
+    </script>
+</body>
+</html>

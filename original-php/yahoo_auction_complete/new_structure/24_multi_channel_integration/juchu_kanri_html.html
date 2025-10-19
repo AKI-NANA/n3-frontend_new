@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>受注管理システム - NAGANO-3 多販路一括管理</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            /* 受注管理テーマカラー */
+            --juchu-primary: #1e40af;
+            --juchu-secondary: #3b82f6;
+            --juchu-accent: #60a5fa;
+            --juchu-success: #059669;
+            --juchu-warning: #d97706;
+            --juchu-danger: #dc2626;
+            
+            /* 共通カラー */
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-tertiary: #f1f5f9;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --text-white: #ffffff;
+            --border-color: #e5e7eb;
+            
+            /* スペーシング */
+            --space-1: 0.25rem;
+            --space-2: 0.5rem;
+            --space-3: 0.75rem;
+            --space-4: 1rem;
+            --space-5: 1.25rem;
+            --space-6: 1.5rem;
+            
+            /* 角丸 */
+            --radius-sm: 4px;
+            --radius-md: 6px;
+            --radius-lg: 8px;
+            
+            /* シャドウ */
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+            
+            /* トランジション */
+            --transition: all 0.2s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        /* メインコンテナ */
+        .juchu-container {
+            padding: 5px;
+            min-height: 100vh;
+        }
+
+        /* 4列レイアウト */
+        .juchu-layout {
+            display: grid;
+            grid-template-columns: 320px 240px 1fr 300px;
+            gap: 6px;
+            align-items: start;
+            min-height: calc(100vh - 10px);
+        }
+
+        /* ===== 1列目: フィルター・検索パネル ===== */
+        .filter-panel {
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            height: calc(100vh - 10px);
+        }
+
+        .filter-header {
+            padding: var(--space-4);
+            background: linear-gradient(135deg, var(--juchu-primary), var(--juchu-secondary));
+            color: var(--text-white);
+        }
+
+        .filter-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: var(--space-2);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+
+        .search-box {
+            width: 100%;
+            padding: var(--space-2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: var(--radius-sm);
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-white);
+            font-size: 0.9rem;
+        }
+
+        .search-box::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .filter-content {
+            flex: 1;
+            padding: var(--space-4);
+            overflow-y: auto;
+        }
+
+        .filter-group {
+            margin-bottom: var(--space-5);
+        }
+
+        .filter-group-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-2);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-select, .filter-input {
+            width: 100%;
+            padding: var(--space-2);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            margin-bottom: var(--space-2);
+        }
+
+        .date-range {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-2);
+        }
+
+        .filter-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-1);
+            margin-top: var(--space-2);
+        }
+
+        .filter-tag {
+            padding: var(--space-1) var(--space-2);
+            background: var(--juchu-accent);
+            color: var(--text-white);
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: var(--space-1);
+        }
+
+        .filter-actions {
+            padding: var(--space-4);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: var(--space-2);
+        }
+
+        .filter-btn {
+            flex: 1;
+            padding: var(--space-2);
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .filter-apply {
+            background: var(--juchu-primary);
+            color: var(--text-white);
+        }
+
+        .filter-clear {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+        }
+
+        /* ===== 2列目: ステータス・統計パネル ===== */
+        .status-panel {
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+            height: calc(100vh - 10px);
+            overflow: hidden;
+        }
+
+        .status-header {
+            padding: var(--space-3);
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .status-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .stats-grid {
+            padding: var(--space-3);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+        }
+
+        .stat-card {
+            padding: var(--space-3);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-sm);
+            border-left: 4px solid;
+        }
+
+        .stat-card.new { border-left-color: var(--juchu-warning); }
+        .stat-card.processing { border-left-color: var(--juchu-accent); }
+        .stat-card.shipped { border-left-color: var(--juchu-success); }
+        .stat-card.total { border-left-color: var(--juchu-primary); }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--space-1);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .quick-actions {
+            padding: var(--space-3);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .quick-action-btn {
+            width: 100%;
+            padding: var(--space-2);
+            margin-bottom: var(--space-2);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.8rem;
+            text-align: left;
+        }
+
+        .quick-action-btn:hover {
+            background: var(--juchu-accent);
+            color: var(--text-white);
+        }
+
+        /* ===== 3列目: メイン受注テーブル ===== */
+        .main-panel {
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            height: calc(100vh - 10px);
+        }
+
+        .main-header {
+            padding: var(--space-4);
+            background: linear-gradient(135deg, var(--juchu-primary), var(--juchu-secondary));
+            color: var(--text-white);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .main-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+
+        .main-actions {
+            display: flex;
+            gap: var(--space-2);
+        }
+
+        .main-action-btn {
+            padding: var(--space-2) var(--space-3);
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: var(--text-white);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: var(--transition);
+        }
+
+        .main-action-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .table-controls {
+            padding: var(--space-3);
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .bulk-actions {
+            display: flex;
+            gap: var(--space-2);
+            align-items: center;
+        }
+
+        .bulk-checkbox {
+            margin-right: var(--space-2);
+        }
+
+        .bulk-btn {
+            padding: var(--space-1) var(--space-2);
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
+        .table-container {
+            flex: 1;
+            overflow: auto;
+        }
+
+        .orders-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .orders-table th {
+            background: var(--bg-tertiary);
+            padding: var(--space-3);
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        .orders-table td {
+            padding: var(--space-3);
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+
+        .orders-table tr:hover {
+            background: var(--bg-secondary);
+        }
+
+        .order-row {
+            cursor: pointer;
+        }
+
+        .order-id {
+            font-weight: 600;
+            color: var(--juchu-primary);
+        }
+
+        .order-product {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+
+        .product-image {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            object-fit: cover;
+        }
+
+        .product-info {
+            flex: 1;
+        }
+
+        .product-title {
+            font-weight: 500;
+            margin-bottom: var(--space-1);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .product-sku {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .status-badge {
+            padding: var(--space-1) var(--space-2);
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .status-new { background: #fef3c7; color: #92400e; }
+        .status-paid { background: #dbeafe; color: #1e40af; }
+        .status-shipped { background: #d1fae5; color: #065f46; }
+        .status-delivered { background: #e0e7ff; color: #3730a3; }
+
+        .profit-info {
+            text-align: right;
+        }
+
+        .profit-amount {
+            font-weight: 600;
+            margin-bottom: var(--space-1);
+        }
+
+        .profit-rate {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .ai-score {
+            text-align: center;
+        }
+
+        .score-circle {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.75rem;
+            margin: 0 auto;
+        }
+
+        .score-high { background: #d1fae5; color: #065f46; }
+        .score-medium { background: #fef3c7; color: #92400e; }
+        .score-low { background: #fee2e2; color: #991b1b; }
+
+        /* ===== 4列目: 詳細・アクションパネル ===== */
+        .detail-panel {
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            height: calc(100vh - 10px);
+        }
+
+        .detail-header {
+            padding: var(--space-4);
+            background: linear-gradient(135deg, var(--juchu-primary), var(--juchu-secondary));
+            color: var(--text-white);
+        }
+
+        .detail-title {
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+
+        .detail-content {
+            flex: 1;
+            padding: var(--space-4);
+            overflow-y: auto;
+        }
+
+        .detail-section {
+            margin-bottom: var(--space-4);
+        }
+
+        .detail-section-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--space-2);
+            padding-bottom: var(--space-1);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-2) 0;
+            border-bottom: 1px solid var(--bg-tertiary);
+        }
+
+        .detail-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .detail-value {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            text-align: right;
+        }
+
+        .action-buttons {
+            padding: var(--space-4);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2);
+        }
+
+        .action-btn {
+            padding: var(--space-2);
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+        }
+
+        .action-primary {
+            background: var(--juchu-primary);
+            color: var(--text-white);
+        }
+
+        .action-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .action-success {
+            background: var(--juchu-success);
+            color: var(--text-white);
+        }
+
+        .action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* モーダル */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-6);
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-4);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        /* レスポンシブ */
+        @media (max-width: 1200px) {
+            .juchu-layout {
+                grid-template-columns: 280px 200px 1fr 260px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .juchu-layout {
+                grid-template-columns: 1fr;
+                gap: var(--space-3);
+            }
+            
+            .filter-panel, .status-panel, .detail-panel {
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="juchu-container">
+        <div class="juchu-layout" id="juchuLayout">
+            <!-- 1列目: フィルター・検索パネル -->
+            <div class="filter-panel">
+                <div class="filter-header">
+                    <div class="filter-title">
+                        <i class="fas fa-search"></i>
+                        受注検索・フィルター
+                    </div>
+                    <input type="text" class="search-box" placeholder="注文ID・商品名・顧客名で検索..." id="globalSearch">
+                </div>
+                
+                <div class="filter-content">
+                    <div class="filter-group">
+                        <div class="filter-group-title">期間設定</div>
+                        <div class="date-range">
+                            <input type="date" class="filter-input" id="dateFrom">
+                            <input type="date" class="filter-input" id="dateTo">
+                        </div>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <div class="filter-group-title">販売チャネル</div>
+                        <select class="filter-select" id="channelFilter">
+                            <option value="">全てのチャネル</option>
+                            <option value="ebay">eBay</option>
+                            <option value="shopee">Shopee</option>
+                            <option value="amazon">Amazon</option>
+                            <option value="shopify">Shopify</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <div class="filter-group-title">注文ステータス</div>
+                        <select class="filter-select" id="statusFilter">
+                            <option value="">全てのステータス</option>
+                            <option value="new">新規注文</option>
+                            <option value="paid">支払い完了</option>
+                            <option value="processing">処理中</option>
+                            <option value="shipped">出荷済み</option>
+                            <option value="delivered">配送完了</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <div class="filter-group-title">支払い状況</div>
+                        <select class="filter-select" id="paymentFilter">
+                            <option value="">全ての支払い状況</option>
+                            <option value="pending">支払い待ち</option>
+                            <option value="completed">支払い完了</option>
+                            <option value="failed">支払い失敗</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <div class="filter-group-title">配送先国</div>
+                        <select class="filter-select" id="countryFilter">
+                            <option value="">全ての国</option>
+                            <option value="US">アメリカ</option>
+                            <option value="UK">イギリス</option>
+                            <option value="DE">ドイツ</option>
+                            <option value="AU">オーストラリア</option>
+                            <option value="CA">カナダ</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-tags" id="activeFilters">
+                        <!-- アクティブなフィルタータグがここに表示 -->
+                    </div>
+                </div>
+                
+                <div class="filter-actions">
+                    <button class="filter-btn filter-apply" onclick="applyFilters()">
+                        <i class="fas fa-search"></i> 検索
+                    </button>
+                    <button class="filter-btn filter-clear" onclick="clearFilters()">
+                        <i class="fas fa-times"></i> クリア
+                    </button>
+                </div>
+            </div>
+
+            <!-- 2列目: ステータス・統計パネル -->
+            <div class="status-panel">
+                <div class="status-header">
+                    <div class="status-title">今日の受注状況</div>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card new">
+                        <div class="stat-value" id="newOrdersCount">12</div>
+                        <div class="stat-label">新規注文</div>
+                    </div>
+                    
+                    <div class="stat-card processing">
+                        <div class="stat-value" id="processingCount">8</div>
+                        <div class="stat-label">処理中</div>
+                    </div>
+                    
+                    <div class="stat-card shipped">
+                        <div class="stat-value" id="shippedCount">25</div>
+                        <div class="stat-label">出荷済み</div>
+                    </div>
+                    
+                    <div class="stat-card total">
+                        <div class="stat-value" id="totalRevenue">¥485,670</div>
+                        <div class="stat-label">今日の売上</div>
+                    </div>
+                </div>
+                
+                <div class="quick-actions">
+                    <button class="quick-action-btn" onclick="showUrgentOrders()">
+                        <i class="fas fa-exclamation-triangle"></i> 緊急対応必要
+                    </button>
+                    <button class="quick-action-btn" onclick="showUnpaidOrders()">
+                        <i class="fas fa-credit-card"></i> 未入金注文
+                    </button>
+                    <button class="quick-action-btn" onclick="showShippingToday()">
+                        <i class="fas fa-truck"></i> 今日出荷予定
+                    </button>
+                    <button class="quick-action-btn" onclick="exportOrders()">
+                        <i class="fas fa-download"></i> データエクスポート
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3列目: メイン受注テーブル -->
+            <div class="main-panel">
+                <div class="main-header">
+                    <div class="main-title">
+                        <i class="fas fa-list"></i>
+                        受注一覧 (45件)
+                    </div>
+                    <div class="main-actions">
+                        <button class="main-action-btn" onclick="refreshOrders()">
+                            <i class="fas fa-sync-alt"></i> 更新
+                        </button>
+                        <button class="main-action-btn" onclick="toggleView()">
+                            <i class="fas fa-th-large"></i> 表示切替
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="table-controls">
+                    <div class="bulk-actions">
+                        <input type="checkbox" class="bulk-checkbox" id="selectAll">
+                        <button class="bulk-btn" onclick="bulkMarkShipped()">一括出荷完了</button>
+                        <button class="bulk-btn" onclick="bulkPrintLabels()">一括ラベル印刷</button>
+                        <button class="bulk-btn" onclick="bulkExport()">選択項目エクスポート</button>
+                    </div>
+                    <div class="view-options">
+                        <select onchange="changePageSize(this.value)">
+                            <option value="25">25件表示</option>
+                            <option value="50">50件表示</option>
+                            <option value="100">100件表示</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table class="orders-table">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" onclick="toggleAllSelections()"></th>
+                                <th>注文番号</th>
+                                <th>注文日時</th>
+                                <th>商品情報</th>
+                                <th>金額・利益</th>
+                                <th>支払い状況</th>
+                                <th>出荷状況</th>
+                                <th>AIスコア</th>
+                                <th>配送先</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody">
+                            <!-- 受注データが動的に挿入される -->
+                            <tr class="order-row" onclick="selectOrder('EB001-20241213')">
+                                <td><input type="checkbox" class="order-checkbox"></td>
+                                <td>
+                                    <div class="order-id">EB001-20241213</div>
+                                    <div style="font-size: 0.7rem; color: #6b7280;">eBay-JP-Main</div>
+                                </td>
+                                <td>
+                                    <div>2024/12/13</div>
+                                    <div style="font-size: 0.7rem; color: #6b7280;">14:30</div>
+                                </td>
+                                <td>
+                                    <div class="order-product">
+                                        <img src="https://via.placeholder.com/40" alt="商品画像" class="product-image">
+                                        <div class="product-info">
+                                            <div class="product-title">Nintendo Switch Pro Controller</div>
+                                            <div class="product-sku">SKU: NSW-PRO-001</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="profit-info">
+                                        <div class="profit-amount">¥8,500</div>
+                                        <div class="profit-rate">利益率: 23.5%</div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="status-badge status-paid">支払い完了</div>
+                                </td>
+                                <td>
+                                    <div class="status-badge status-new">出荷待ち</div>
+                                </td>
+                                <td>
+                                    <div class="ai-score">
+                                        <div class="score-circle score-high">85</div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>アメリカ</div>
+                                    <div style="font-size: 0.7rem; color: #6b7280;">期限: 12/20</div>
+                                </td>
+                            </tr>
+                            
+                            <tr class="order-row" onclick="selectOrder('EB002-20241213')">
+                                <td><input type="checkbox" class="order-checkbox"></td>
+                                <td>
+                                    <div class="order-id">EB002-20241213</div>
+                                    <div style="font-size: 0.7rem; color: #6b7280;">eBay-US-Sub</div>
+                                </td>
+                                <td>
+                                    <div>2024/12/13</div>
+                                    <div style="font-size: 0.7rem; color: #6b7280;">16:45</div>
+                                </td>
+                                <td>
+                                    <div class="order-product">
+                                        <img src="https://via.placeholder.com/40" alt="商品画像" class="product-image">
+                                        <div class="product-info">
+                                            <div class="product-title">Sony WH-1000XM4 Headphones</div>
+                                            <div class="product-sku">SKU: SONY-WH-004</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="profit-info">
+                                        <div class="profit-amount">¥35,000</div>
+                                        <div class="profit-rate">利益率: 18.2%</div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="status-badge status-new">支払い待ち</div>
+                                </td>
+                                <td>
+                                    <div class="status-badge status-new">未処理</div>
+                                </td>
+                                <td>
+                                    <div class="ai-score">
+                                        <div class="score-circle score-medium">72</div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>カナダ</div>
+                                    <div style="font-size: 0.7rem; color: #6b7280;">期限: 12/18</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 4列目: 詳細・アクションパネル -->
+            <div class="detail-panel">
+                <div class="detail-header">
+                    <div class="detail-title">
+                        <i class="fas fa-info-circle"></i>
+                        注文詳細
+                    </div>
+                </div>
+                
+                <div class="detail-content" id="orderDetailContent">
+                    <div class="detail-section">
+                        <div class="detail-section-title">基本情報</div>
+                        <div class="detail-row">
+                            <span class="detail-label">注文番号</span>
+                            <span class="detail-value" id="detailOrderId">選択してください</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">注文日時</span>
+                            <span class="detail-value" id="detailOrderDate">-</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">販売チャネル</span>
+                            <span class="detail-value" id="detailChannel">-</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">出荷期限</span>
+                            <span class="detail-value" id="detailDeadline">-</span>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <div class="detail-section-title">商品情報</div>
+                        <div class="detail-row">
+                            <span class="detail-label">商品名</span>
+                            <span class="detail-value" id="detailProductName">-</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">SKU</span>
+                            <span class="detail-value" id="detailSku">-</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">数量</span>
+                            <span class="detail-value" id="detailQuantity">-</span>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <div class="detail-section-title">金額・利益</div>
+                        <div class="detail-row">
+                            <span class="detail-label">販売価格</span>
+                            <span class="detail-value" id="detailPrice">-</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">手数料</span>
+                            <span class="detail-value" id="detailFees">-</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">配送料</span>
+                            <span class="detail-value" id="detailShipping">-</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">予想利益</span>
+                            <span class="detail-value" id="detailProfit">-</span>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <div class="detail-section-title">配送情報</div>
+                        <div class="detail-row">
+                            <span class="detail-label">配送先国</span>
+                            <span class="detail-value" id="detailCountry">-</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">配送方法</span>
+                            <span class="detail-value" id="detailShippingMethod">-</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">追跡番号</span>
+                            <span class="detail-value" id="detailTracking">-</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="action-btn action-primary" onclick="processOrder()">
+                        <i class="fas fa-play"></i> 注文処理開始
+                    </button>
+                    <button class="action-btn action-success" onclick="markAsShipped()">
+                        <i class="fas fa-truck"></i> 出荷完了マーク
+                    </button>
+                    <button class="action-btn action-secondary" onclick="printShippingLabel()">
+                        <i class="fas fa-print"></i> 配送ラベル印刷
+                    </button>
+                    <button class="action-btn action-secondary" onclick="openInquiry()">
+                        <i class="fas fa-comments"></i> 問い合わせ確認
+                    </button>
+                    <button class="action-btn action-secondary" onclick="viewEbayListing()">
+                        <i class="fas fa-external-link-alt"></i> eBay商品ページ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 詳細モーダル -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>受注詳細情報</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="modalContent">
+                <!-- モーダル内容が動的に生成される -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // サンプルデータ
+        const sampleOrders = [
+            {
+                id: 'EB001-20241213',
+                date: '2024-12-13 14:30',
+                channel: 'eBay-JP-Main',
+                product: 'Nintendo Switch Pro Controller',
+                sku: 'NSW-PRO-001',
+                price: 8500,
+                profit: 2000,
+                profitRate: 23.5,
+                paymentStatus: 'paid',
+                shippingStatus: 'pending',
+                aiScore: 85,
+                country: 'US',
+                deadline: '2024-12-20'
+            },
+            {
+                id: 'EB002-20241213',
+                date: '2024-12-13 16:45',
+                channel: 'eBay-US-Sub',
+                product: 'Sony WH-1000XM4 Headphones',
+                sku: 'SONY-WH-004',
+                price: 35000,
+                profit: 6370,
+                profitRate: 18.2,
+                paymentStatus: 'pending',
+                shippingStatus: 'new',
+                aiScore: 72,
+                country: 'CA',
+                deadline: '2024-12-18'
+            }
+        ];
+
+        let selectedOrder = null;
+
+        // 注文選択
+        function selectOrder(orderId) {
+            selectedOrder = sampleOrders.find(order => order.id === orderId);
+            if (selectedOrder) {
+                updateDetailPanel(selectedOrder);
+                
+                // テーブルの選択状態を更新
+                document.querySelectorAll('.order-row').forEach(row => {
+                    row.classList.remove('selected');
+                });
+                event.currentTarget.classList.add('selected');
+            }
+        }
+
+        // 詳細パネル更新
+        function updateDetailPanel(order) {
+            document.getElementById('detailOrderId').textContent = order.id;
+            document.getElementById('detailOrderDate').textContent = order.date;
+            document.getElementById('detailChannel').textContent = order.channel;
+            document.getElementById('detailDeadline').textContent = order.deadline;
+            document.getElementById('detailProductName').textContent = order.product;
+            document.getElementById('detailSku').textContent = order.sku;
+            document.getElementById('detailPrice').textContent = `¥${order.price.toLocaleString()}`;
+            document.getElementById('detailProfit').textContent = `¥${order.profit.toLocaleString()} (${order.profitRate}%)`;
+            document.getElementById('detailCountry').textContent = order.country;
+        }
+
+        // フィルター機能
+        function applyFilters() {
+            console.log('フィルター適用');
+            // ここで実際のフィルタリング処理を実装
+        }
+
+        function clearFilters() {
+            document.getElementById('globalSearch').value = '';
+            document.getElementById('dateFrom').value = '';
+            document.getElementById('dateTo').value = '';
+            document.getElementById('channelFilter').value = '';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('paymentFilter').value = '';
+            document.getElementById('countryFilter').value = '';
+            console.log('フィルタークリア');
+        }
+
+        // アクション関数
+        function refreshOrders() {
+            console.log('受注データ更新');
+        }
+
+        function processOrder() {
+            if (selectedOrder) {
+                console.log('注文処理開始:', selectedOrder.id);
+            }
+        }
+
+        function markAsShipped() {
+            if (selectedOrder) {
+                console.log('出荷完了マーク:', selectedOrder.id);
+            }
+        }
+
+        function printShippingLabel() {
+            if (selectedOrder) {
+                console.log('配送ラベル印刷:', selectedOrder.id);
+            }
+        }
+
+        function openInquiry() {
+            if (selectedOrder) {
+                window.open(`/modules/toiawase_kanri/php/toiawase_controller.php?order_id=${selectedOrder.id}`, '_blank');
+            }
+        }
+
+        function exportOrders() {
+            console.log('データエクスポート');
+        }
+
+        function showUrgentOrders() {
+            console.log('緊急対応必要な注文を表示');
+        }
+
+        function showUnpaidOrders() {
+            console.log('未入金注文を表示');
+        }
+
+        function showShippingToday() {
+            console.log('今日出荷予定の注文を表示');
+        }
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('受注管理システム初期化完了');
+            
+            // 今日の日付をデフォルトで設定
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('dateFrom').value = today;
+            document.getElementById('dateTo').value = today;
+        });
+    </script>
+</body>
+</html>

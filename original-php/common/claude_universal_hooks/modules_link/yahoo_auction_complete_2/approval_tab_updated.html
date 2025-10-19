@@ -1,0 +1,303 @@
+    <!-- 🆕 商品承認タブ（統合データベース版・shouhin.htmlベース） -->
+    <div id="approval" class="tab-content fade-in">
+        <div class="approval-system">
+            <!-- AI推奨表示バー -->
+            <div style="background: linear-gradient(135deg, #8b5cf6, #06b6d4); color: white; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h2 style="margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
+                        <i class="fas fa-brain"></i>
+                        AI推奨: スクレイピングデータのみ表示中
+                    </h2>
+                    <p style="margin: 0; font-size: 0.8rem; opacity: 0.9;">
+                        スクレイピングデータから抽出した商品のみを承認システムで表示しています。既存eBayデータは除外済み。
+                    </p>
+                </div>
+                <button class="btn" style="background: white; color: var(--primary-color); font-weight: 700; padding: 0.75rem 1.5rem; border-radius: 0.5rem; border: none; cursor: pointer;" onclick="openNewProductModal()">
+                    <i class="fas fa-plus-circle"></i> 新規商品登録
+                </button>
+            </div>
+
+            <!-- 統計表示 -->
+            <div class="approval-stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="pendingCount">3</div>
+                    <div class="stat-label">承認待ち</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">2</div>
+                    <div class="stat-label">AI承認推奨</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="highRiskCount">1</div>
+                    <div class="stat-label">AI否認推奨</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="mediumRiskCount">0</div>
+                    <div class="stat-label">人間判定要</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">¥12,166</div>
+                    <div class="stat-label">平均価格</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalRegistered">0</div>
+                    <div class="stat-label">承認済み</div>
+                </div>
+            </div>
+
+            <!-- フィルターコントロール -->
+            <div class="approval__filter-controls">
+                <div class="approval__filter-group">
+                    <span class="approval__filter-label">表示:</span>
+                    <button class="approval__filter-btn approval__filter-btn--active" data-filter="all">
+                        すべて <span class="approval__filter-count" id="countAll">3</span>
+                    </button>
+                </div>
+
+                <div class="approval__filter-group">
+                    <span class="approval__filter-label">AI判定:</span>
+                    <button class="approval__filter-btn" data-filter="ai-approved">
+                        AI承認済み <span class="approval__filter-count" id="countAiApproved">2</span>
+                    </button>
+                    <button class="approval__filter-btn" data-filter="ai-rejected">
+                        AI非承認 <span class="approval__filter-count" id="countAiRejected">1</span>
+                    </button>
+                    <button class="approval__filter-btn" data-filter="ai-pending">
+                        AI判定待ち <span class="approval__filter-count" id="countAiPending">0</span>
+                    </button>
+                </div>
+
+                <div class="approval__filter-group">
+                    <span class="approval__filter-label">リスク:</span>
+                    <button class="approval__filter-btn" data-filter="high-risk">
+                        高リスク <span class="approval__filter-count" id="countHighRisk">1</span>
+                    </button>
+                    <button class="approval__filter-btn" data-filter="medium-risk">
+                        中リスク <span class="approval__filter-count" id="countMediumRisk">2</span>
+                    </button>
+                </div>
+
+                <div class="approval__filter-group">
+                    <span class="approval__filter-label">価格帯:</span>
+                    <button class="approval__filter-btn" data-filter="low-price">
+                        ~5,000円 <span class="approval__filter-count" id="countLowPrice">1</span>
+                    </button>
+                    <button class="approval__filter-btn" data-filter="medium-price">
+                        5,001~20,000円 <span class="approval__filter-count" id="countMediumPrice">2</span>
+                    </button>
+                    <button class="approval__filter-btn" data-filter="high-price">
+                        20,001円~ <span class="approval__filter-count" id="countHighPrice">0</span>
+                    </button>
+                </div>
+
+                <div class="approval__filter-group">
+                    <span class="approval__filter-label">コンディション:</span>
+                    <button class="approval__filter-btn" data-filter="new">
+                        新品 <span class="approval__filter-count" id="countNew">2</span>
+                    </button>
+                    <button class="approval__filter-btn" data-filter="used">
+                        中古 <span class="approval__filter-count" id="countUsed">1</span>
+                    </button>
+                </div>
+
+                <div class="approval__filter-group">
+                    <span class="approval__filter-label">カテゴリ:</span>
+                    <button class="approval__filter-btn" data-filter="electronics">
+                        電子機器 <span class="approval__filter-count" id="countElectronics">1</span>
+                    </button>
+                    <button class="approval__filter-btn" data-filter="toys">
+                        おもちゃ <span class="approval__filter-count" id="countToys">1</span>
+                    </button>
+                    <button class="approval__filter-btn" data-filter="books">
+                        書籍 <span class="approval__filter-count" id="countBooks">1</span>
+                    </button>
+                </div>
+
+                <div class="approval__filter-group">
+                    <span class="approval__filter-label">仕入先:</span>
+                    <button class="approval__filter-btn" data-filter="amazon">
+                        Amazon <span class="approval__filter-count" id="countAmazon">1</span>
+                    </button>
+                    <button class="approval__filter-btn" data-filter="ebay">
+                        eBay <span class="approval__filter-count" id="countEbay">1</span>
+                    </button>
+                    <button class="approval__filter-btn" data-filter="shopify">
+                        Shopify <span class="approval__filter-count" id="countShopify">1</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 一括操作バー -->
+            <div class="approval__bulk-actions" id="bulkActions">
+                <div class="approval__bulk-info">
+                    <i class="fas fa-check-square"></i>
+                    <span id="selectedCount">0</span>件 を選択中
+                </div>
+                <div class="approval__bulk-buttons">
+                    <button class="approval__bulk-btn approval__bulk-btn--success" onclick="bulkApprove()">
+                        <i class="fas fa-check"></i> 一括承認
+                    </button>
+                    <button class="approval__bulk-btn approval__bulk-btn--danger" onclick="bulkReject()">
+                        <i class="fas fa-ban"></i> 一括否認
+                    </button>
+                    <button class="approval__bulk-btn" onclick="bulkHold()">
+                        <i class="fas fa-pause"></i> 一括保留
+                    </button>
+                    <button class="approval__bulk-btn" onclick="clearSelection()">
+                        <i class="fas fa-times"></i> 選択クリア
+                    </button>
+                </div>
+            </div>
+
+            <!-- 商品グリッド（スクレイピングデータのみ表示） -->
+            <div class="approval__grid-container">
+                <div class="approval__grid" id="approval-product-grid">
+                    <!-- JavaScriptで動的生成されるエリア -->
+                    <div class="loading-container" id="loadingContainer">
+                        <div class="loading-spinner"></div>
+                        <p>スクレイピングデータから承認待ち商品を読み込み中...</p>
+                    </div>
+                </div>
+
+                <div class="approval__pagination">
+                    <div class="approval__pagination-info">
+                        <span id="displayRange">1-3件表示</span> / 全<span id="totalCount">3</span>件
+                    </div>
+                    <div class="approval__pagination-controls">
+                        <button class="approval__pagination-btn approval__pagination-btn--active">1</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- メインアクション -->
+            <div class="approval__main-actions">
+                <div class="approval__selection-controls">
+                    <button class="approval__main-btn approval__main-btn--select" onclick="selectAllVisible()">
+                        <i class="fas fa-check-square"></i> 全選択
+                    </button>
+                    <button class="approval__main-btn approval__main-btn--deselect" onclick="deselectAll()">
+                        <i class="fas fa-square"></i> 全解除
+                    </button>
+                </div>
+                
+                <div class="approval__decision-controls">
+                    <button class="approval__main-btn approval__main-btn--approve" onclick="bulkApprove()">
+                        <i class="fas fa-check"></i> 承認
+                    </button>
+                    <button class="approval__main-btn approval__main-btn--reject" onclick="bulkReject()">
+                        <i class="fas fa-times"></i> 否認
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🆕 商品詳細確認モーダル -->
+    <div id="productDetailModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 800px; width: 90vw; max-height: 80vh;">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <i class="fas fa-search"></i>
+                    商品詳細確認
+                </h2>
+                <button class="modal-close" onclick="closeProductDetailModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="modal-body" style="overflow-y: auto;">
+                <!-- 商品画像 -->
+                <div class="product-detail-image">
+                    <img id="detailProductImage" src="" alt="商品画像" style="width: 100%; max-width: 400px; height: auto; border-radius: 8px; margin-bottom: 1rem;">
+                </div>
+
+                <!-- 商品基本情報 -->
+                <div class="product-detail-info">
+                    <h3 id="detailProductTitle" style="margin-bottom: 1rem; font-size: 1.2rem; font-weight: 700; color: var(--text-primary);"></h3>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                        <div class="detail-field">
+                            <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">SKU</label>
+                            <div id="detailProductSku" style="font-size: 0.9rem; color: var(--text-primary);"></div>
+                        </div>
+                        <div class="detail-field">
+                            <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">価格</label>
+                            <div id="detailProductPrice" style="font-size: 1.1rem; font-weight: 700; color: var(--filter-success);"></div>
+                        </div>
+                        <div class="detail-field">
+                            <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">カテゴリ</label>
+                            <div id="detailProductCategory" style="font-size: 0.9rem; color: var(--text-primary);"></div>
+                        </div>
+                        <div class="detail-field">
+                            <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">コンディション</label>
+                            <div id="detailProductCondition" style="font-size: 0.9rem; color: var(--text-primary);"></div>
+                        </div>
+                        <div class="detail-field">
+                            <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">在庫</label>
+                            <div id="detailProductStock" style="font-size: 0.9rem; color: var(--text-primary);"></div>
+                        </div>
+                        <div class="detail-field">
+                            <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">仕入先</label>
+                            <div id="detailProductSource" style="font-size: 0.9rem; color: var(--text-primary);"></div>
+                        </div>
+                    </div>
+
+                    <!-- AI判定・リスク情報 -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div class="detail-field">
+                            <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">AI判定</label>
+                            <div id="detailAiStatus" style="font-size: 0.9rem;"></div>
+                        </div>
+                        <div class="detail-field">
+                            <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">リスクレベル</label>
+                            <div id="detailRiskLevel" style="font-size: 0.9rem;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 利益情報 -->
+                    <div style="background: var(--bg-tertiary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                        <h4 style="margin-bottom: 0.5rem; font-size: 1rem; color: var(--text-primary);">利益情報</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div>
+                                <label style="font-size: 0.8rem; color: var(--text-secondary);">利益率</label>
+                                <div id="detailProfitRate" style="font-size: 1.1rem; font-weight: 700; color: var(--filter-success);"></div>
+                            </div>
+                            <div>
+                                <label style="font-size: 0.8rem; color: var(--text-secondary);">予想利益</label>
+                                <div id="detailProfitAmount" style="font-size: 1.1rem; font-weight: 700; color: var(--filter-success);"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 商品説明 -->
+                    <div class="detail-field" style="margin-bottom: 1rem;">
+                        <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">商品説明</label>
+                        <div id="detailProductDescription" style="font-size: 0.9rem; color: var(--text-primary); line-height: 1.5; background: var(--bg-tertiary); padding: 1rem; border-radius: 8px; margin-top: 0.5rem;">
+                            商品説明がここに表示されます
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <div style="display: flex; justify-content: space-between; width: 100%;">
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-secondary" onclick="closeProductDetailModal()">
+                            <i class="fas fa-times"></i> 閉じる
+                        </button>
+                        <button class="btn btn-info" onclick="editProductDetails()">
+                            <i class="fas fa-edit"></i> 編集
+                        </button>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-danger" onclick="rejectProductFromModal()">
+                            <i class="fas fa-ban"></i> 否認
+                        </button>
+                        <button class="btn btn-success" onclick="approveProductFromModal()">
+                            <i class="fas fa-check"></i> 承認
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>

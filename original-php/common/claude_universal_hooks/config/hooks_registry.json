@@ -1,0 +1,32 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2025-07-13T18:40:00Z",
+  "hooks_mapping": {
+    "nagano3_web_application": {
+      "universal": ["security_validation", "infrastructure_check", "quality_assurance"],
+      "category": ["web_application"],
+      "technology": ["php_development"],
+      "project": ["nagano3_kicho_specific"]
+    },
+    "php_web_application": {
+      "universal": ["security_validation", "quality_assurance"],
+      "category": ["web_application"],
+      "technology": ["php_development"],
+      "project": []
+    },
+    "unknown": {
+      "universal": ["infrastructure_check"],
+      "category": [],
+      "technology": [],
+      "project": []
+    }
+  },
+  "hooks_priority": {
+    "security_validation": 1,
+    "infrastructure_check": 2,
+    "nagano3_kicho_specific": 3,
+    "quality_assurance": 4,
+    "web_application": 5,
+    "php_development": 6
+  }
+}

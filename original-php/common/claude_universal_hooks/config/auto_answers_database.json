@@ -1,0 +1,353 @@
+{
+  "auto_answers_database": {
+    "version": "1.0.0",
+    "last_updated": "2025-01-15",
+    "description": "完全自動化Hooksシステム - 自動回答データベース",
+    "project_templates": {
+      "nagano3_kicho": {
+        "project_info": {
+          "project_type": "NAGANO3 KICHO記帳ツール",
+          "primary_language": "PHP",
+          "frontend_framework": "Custom Ajax System",
+          "database": "PostgreSQL",
+          "special_features": [
+            "40 data-action buttons",
+            "MoneyForward連携",
+            "AI学習システム",
+            "CSV処理・分析",
+            "自動バックアップ"
+          ]
+        },
+        "universal_answers": {
+          "security_requirements": {
+            "csrf_protection": "必須 - CSRF_TOKEN_SECRET使用",
+            "session_management": "PHP Sessions + セキュアCookie",
+            "input_validation": "厳密 - 全入力値検証必須",
+            "sql_injection_prevention": "PDO準備文 + パラメータバインド",
+            "authentication": "セッション + 多要素認証",
+            "authorization": "ロールベース権限管理",
+            "encryption": "重要データは暗号化保存"
+          },
+          "performance_requirements": {
+            "response_time": "< 2秒（標準操作）",
+            "concurrent_users": "50人同時",
+            "data_processing": "リアルタイム（CSV処理除く）",
+            "csv_processing_time": "< 30秒（10MBまで）",
+            "ai_response_time": "< 5秒",
+            "database_optimization": "インデックス最適化必須"
+          },
+          "quality_standards": {
+            "code_coverage": "80%以上",
+            "coding_standards": "PSR-12準拠",
+            "documentation": "必須 - コメント・仕様書",
+            "error_handling": "全例外ハンドリング",
+            "logging": "詳細ログ + エラートラッキング",
+            "testing": "PHPUnit + 手動テスト"
+          }
+        },
+        "technology_answers": {
+          "php_settings": {
+            "version": "8.1以上",
+            "framework": "なし（Pure PHP + 独自基盤）",
+            "orm": "なし（Direct SQL + PDO）",
+            "testing": "PHPUnit",
+            "error_reporting": "E_ALL",
+            "memory_limit": "512M",
+            "max_execution_time": "300秒（CSV処理時）"
+          },
+          "javascript_settings": {
+            "framework": "Vanilla JavaScript",
+            "ajax_library": "Fetch API",
+            "ui_framework": "KICHO独自UIシステム",
+            "build_tool": "なし（直接配信）",
+            "es6_support": "モダンブラウザのみ",
+            "polyfills": "必要に応じて"
+          },
+          "database_settings": {
+            "engine": "PostgreSQL 13以上",
+            "charset": "UTF-8",
+            "timezone": "Asia/Tokyo",
+            "backup_frequency": "日次自動 + 操作前手動",
+            "index_strategy": "クエリ最適化重視",
+            "connection_pooling": "必要に応じて"
+          }
+        },
+        "category_answers": {
+          "web_application": {
+            "architecture": "MVC + Ajax Hooks Pattern",
+            "session_management": "PHP Sessions + DB保存",
+            "caching": "なし（リアルタイム性重視）",
+            "cdn": "なし",
+            "responsive_design": "PC特化（タブレット対応）",
+            "browser_support": "Chrome, Firefox, Edge（最新版）",
+            "seo_requirements": "不要（内部ツール）"
+          },
+          "ui_intensive": {
+            "data_actions_count": "40個",
+            "action_categories": [
+              "CSV処理系",
+              "MF連携系",
+              "AI学習系",
+              "データ表示系",
+              "設定管理系"
+            ],
+            "animation_library": "CSS Transitions + カスタム",
+            "state_management": "DOM Based + Session Storage",
+            "component_system": "KICHO UI Components",
+            "event_handling": "Event Delegation",
+            "performance_optimization": "仮想スクロール・遅延読み込み"
+          }
+        },
+        "project_specific_answers": {
+          "mf_integration": {
+            "api_version": "v1",
+            "authentication": "OAuth2",
+            "data_sync_frequency": "リアルタイム + スケジュール",
+            "backup_strategy": "自動バックアップ + 人間承認",
+            "error_handling": "リトライ + フォールバック + 通知",
+            "rate_limiting": "API制限遵守",
+            "data_validation": "厳密検証 + 差分チェック"
+          },
+          "ai_learning": {
+            "backend": "Python FastAPI",
+            "model": "カスタム学習モデル",
+            "data_processing": "リアルタイム分析",
+            "result_display": "動的UI更新",
+            "training_frequency": "週次 + 手動トリガー",
+            "feature_engineering": "自動特徴量抽出",
+            "model_evaluation": "精度・再現率監視"
+          },
+          "csv_processing": {
+            "max_file_size": "10MB",
+            "supported_encodings": ["UTF-8", "Shift_JIS", "EUC-JP"],
+            "validation": "厳密 - スキーマ検証",
+            "error_reporting": "詳細 - 行番号・エラー内容",
+            "processing_mode": "バックグラウンド処理",
+            "progress_tracking": "リアルタイム進捗表示",
+            "rollback_support": "処理前スナップショット"
+          },
+          "data_actions": {
+            "execute-csv-analysis": {
+              "description": "CSV分析実行",
+              "validation": "ファイル形式・サイズ確認",
+              "processing": "バックグラウンド",
+              "ui_feedback": "進捗バー + 結果表示"
+            },
+            "execute-mf-import": {
+              "description": "MFデータ取得",
+              "validation": "認証確認 + API疎通",
+              "processing": "同期処理",
+              "ui_feedback": "ローディング + 成功通知"
+            },
+            "execute-integrated-ai-learning": {
+              "description": "統合AI学習実行",
+              "validation": "データ準備確認",
+              "processing": "非同期（FastAPI）",
+              "ui_feedback": "学習進捗 + 結果可視化"
+            }
+          }
+        }
+      },
+      "generic_web_app": {
+        "project_info": {
+          "project_type": "汎用Webアプリケーション",
+          "primary_language": "PHP",
+          "frontend_framework": "検出による",
+          "database": "MySQL",
+          "special_features": []
+        },
+        "universal_answers": {
+          "security_requirements": {
+            "csrf_protection": "必須",
+            "session_management": "PHP Sessions",
+            "input_validation": "全入力値検証",
+            "sql_injection_prevention": "PDO準備文",
+            "https_enforcement": "必須",
+            "password_hashing": "bcrypt以上"
+          },
+          "performance_requirements": {
+            "response_time": "< 3秒",
+            "concurrent_users": "100人",
+            "data_processing": "標準",
+            "caching": "検討"
+          },
+          "quality_standards": {
+            "code_coverage": "70%以上",
+            "coding_standards": "PSR-12",
+            "documentation": "標準"
+          }
+        },
+        "technology_answers": {
+          "php_settings": {
+            "version": "8.0以上",
+            "framework": "検出による推奨",
+            "testing": "PHPUnit推奨"
+          },
+          "javascript_settings": {
+            "framework": "検出による",
+            "build_tool": "Webpack推奨"
+          }
+        }
+      },
+      "api_service": {
+        "project_info": {
+          "project_type": "API サービス",
+          "primary_language": "Python",
+          "api_framework": "FastAPI",
+          "database": "PostgreSQL",
+          "special_features": ["RESTful API", "OpenAPI仕様", "認証システム"]
+        },
+        "universal_answers": {
+          "security_requirements": {
+            "authentication": "JWT必須",
+            "authorization": "ロールベース",
+            "rate_limiting": "必須実装",
+            "cors_settings": "適切な設定",
+            "input_validation": "Pydantic厳密検証",
+            "api_versioning": "URLパス方式"
+          },
+          "performance_requirements": {
+            "response_time": "< 500ms",
+            "concurrent_requests": "1000/sec",
+            "data_processing": "高速",
+            "caching": "Redis推奨"
+          },
+          "quality_standards": {
+            "code_coverage": "90%以上",
+            "api_documentation": "OpenAPI完全対応",
+            "testing": "pytest + 統合テスト"
+          }
+        },
+        "technology_answers": {
+          "python_settings": {
+            "version": "3.9以上",
+            "framework": "FastAPI",
+            "async_support": "必須",
+            "virtual_env": "Poetry推奨"
+          },
+          "api_settings": {
+            "design_pattern": "RESTful",
+            "documentation": "自動生成 + カスタム",
+            "versioning": "v1, v2...",
+            "error_handling": "統一フォーマット"
+          }
+        }
+      }
+    },
+    "learning_data": {
+      "pattern_recognition": {
+        "project_type_indicators": {
+          "nagano3_kicho": {
+            "file_patterns": [
+              "modules/kicho/",
+              "kicho_content.php",
+              "kicho_ai_visualization.js"
+            ],
+            "content_patterns": [
+              "data-action",
+              "mf_integration",
+              "ai_learning",
+              "NAGANO3"
+            ],
+            "config_patterns": [
+              "MF_CLIENT_ID",
+              "OPENAI_API_KEY",
+              "KICHO_"
+            ]
+          },
+          "e_commerce": {
+            "file_patterns": [
+              "cart/",
+              "payment/",
+              "order/",
+              "product/"
+            ],
+            "content_patterns": [
+              "shopping_cart",
+              "payment_gateway",
+              "order_management"
+            ],
+            "config_patterns": [
+              "STRIPE_",
+              "PAYPAL_",
+              "SHOPIFY_"
+            ]
+          },
+          "api_service": {
+            "file_patterns": [
+              "api/",
+              "endpoints/",
+              "services/"
+            ],
+            "content_patterns": [
+              "@app.get",
+              "@app.post",
+              "fastapi"
+            ],
+            "config_patterns": [
+              "JWT_SECRET",
+              "API_KEY"
+            ]
+          }
+        },
+        "technology_indicators": {
+          "php": {
+            "files": [".php", "composer.json"],
+            "content": ["<?php", "namespace"],
+            "confidence_weight": 0.9
+          },
+          "python": {
+            "files": [".py", "requirements.txt", "pyproject.toml"],
+            "content": ["def ", "import ", "from "],
+            "confidence_weight": 0.9
+          },
+          "javascript": {
+            "files": [".js", "package.json"],
+            "content": ["function", "const ", "let "],
+            "confidence_weight": 0.8
+          },
+          "fastapi": {
+            "files": ["main.py", "app.py"],
+            "content": ["from fastapi import", "@app."],
+            "confidence_weight": 0.95
+          }
+        }
+      },
+      "confidence_thresholds": {
+        "project_type_detection": 0.7,
+        "technology_detection": 0.6,
+        "complexity_assessment": 0.8,
+        "auto_answer_application": 0.8
+      }
+    },
+    "dynamic_answers": {
+      "description": "動的回答生成のためのルール",
+      "rules": {
+        "high_data_actions": {
+          "condition": "data_actions_count > 20",
+          "additional_questions": [
+            "大量のdata-action要素の管理戦略",
+            "UIの状態管理方針",
+            "パフォーマンス最適化手法"
+          ]
+        },
+        "multiple_integrations": {
+          "condition": "integrations.length > 2",
+          "additional_questions": [
+            "複数システム統合の管理方針",
+            "API制限・エラー処理戦略",
+            "データ整合性確保方法"
+          ]
+        },
+        "large_codebase": {
+          "condition": "code_files > 100",
+          "additional_questions": [
+            "大規模コードベースの管理戦略",
+            "モジュール分割・依存関係管理",
+            "継続的インテグレーション"
+          ]
+        }
+      }
+    }
+  }
+}

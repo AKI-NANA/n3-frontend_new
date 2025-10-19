@@ -1,0 +1,187 @@
+/* 🎯 Phase 1完全修正版 - Yahoo→eBay統合システム最適化CSS */
+
+/* モール別アイコン - 強化版 */
+.mall-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    border: 2px solid rgba(255,255,255,0.3);
+}
+
+.mall-icon.yahoo { 
+    background: linear-gradient(135deg, #ff6600, #ff8800); 
+    color: white; 
+}
+.mall-icon.mercari { 
+    background: linear-gradient(135deg, #ff0050, #ff3366); 
+    color: white; 
+}
+.mall-icon.rakuten { 
+    background: linear-gradient(135deg, #bf0000, #cc2200); 
+    color: white; 
+}
+.mall-icon.amazon { 
+    background: linear-gradient(135deg, #ff9900, #ffaa00); 
+    color: white; 
+}
+.mall-icon.paypay { 
+    background: linear-gradient(135deg, #ff6b35, #f7931e); 
+    color: white; 
+}
+.mall-icon.other { 
+    background: linear-gradient(135deg, #64748b, #94a3b8); 
+    color: white; 
+}
+
+/* 商品画像 - 最適化 */
+.product-image {
+    width: 36px;
+    height: 36px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 2px solid rgba(255,255,255,0.8);
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+    margin: 1px 0;
+}
+
+.product-image:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    z-index: 10;
+    position: relative;
+}
+
+/* 販売形式アイコン - 強化版 */
+.listing-type {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-weight: 600;
+    text-align: center;
+    min-width: 32px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.listing-type.auction { 
+    background: linear-gradient(135deg, #fef3c7, #fcd34d); 
+    color: #92400e; 
+    border: 1px solid #f59e0b;
+}
+.listing-type.fixed { 
+    background: linear-gradient(135deg, #dcfce7, #86efac); 
+    color: #166534; 
+    border: 1px solid #10b981;
+}
+
+/* データテーブル - 最適化版 */
+.data-table-container {
+    overflow-x: auto;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    border-radius: 12px;
+    margin: 0;
+    border: 2px solid #e2e8f0;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: #ffffff;
+    font-size: 0.7rem;
+    table-layout: fixed;
+}
+
+.data-table th,
+.data-table td {
+    padding: 0.25rem 0.4rem;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+    border-right: 1px solid #e2e8f0;
+    vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.data-table th:last-child,
+.data-table td:last-child {
+    border-right: none;
+}
+
+.data-table th {
+    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 0.65rem;
+    height: 32px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.data-table tbody tr {
+    height: 32px;
+    min-height: 32px;
+    transition: all 0.15s ease;
+}
+
+.data-table tbody tr:hover {
+    background: linear-gradient(135deg, #f1f5f9, rgba(59, 130, 246, 0.05));
+    transform: scale(1.001);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.data-table tbody tr:nth-child(even) {
+    background: rgba(248, 250, 252, 0.5);
+}
+
+/* モーダル - 固定サイズ版 */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.75);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 20px;
+    backdrop-filter: blur(3px);
+}
+
+.modal.show {
+    display: flex;
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+.modal-content {
+    background: #ffffff;
+    border-radius: 12px;
+    width: 1200px !important;
+    height: 800px !important;
+    max-width: 95vw;
+    max-height: 95vh;
+    overflow: hidden;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    border: 3px solid rgba(255,255,255,0.1);
+}
+
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}

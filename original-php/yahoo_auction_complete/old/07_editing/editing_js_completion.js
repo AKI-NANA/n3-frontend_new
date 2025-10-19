@@ -1,0 +1,62 @@
+        pageInfo.textContent = `ページ ${currentPage} / ${maxPage} (全 ${totalItems} 件)`;
+        
+        prevBtn.disabled = currentPage <= 1;
+        nextBtn.disabled = currentPage >= maxPage;
+    }
+
+    // UI ヘルパー関数
+    function showLoading() {
+        const tbody = document.getElementById('editingTableBody');
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="11" style="text-align: center; padding: var(--space-4);">
+                    <i class="fas fa-spinner fa-spin" style="margin-right: var(--space-2);"></i>
+                    データを読み込み中...
+                </td>
+            </tr>
+        `;
+    }
+
+    function showNotification(message, type = 'info') {
+        // 既存の通知を削除
+        const existingNotification = document.querySelector('.notification-temp');
+        if (existingNotification) {
+            existingNotification.remove();
+        }
+        
+        // 新しい通知を作成
+        const notification = document.createElement('div');
+        notification.className = `notification ${type} notification-temp`;
+        notification.innerHTML = `
+            <i class="fas fa-${getNotificationIcon(type)}"></i>
+            <span>${message}</span>
+        `;
+        
+        // ヘッダーの後に挿入
+        const header = document.querySelector('.dashboard-header');
+        header.insertAdjacentElement('afterend', notification);
+        
+        // 5秒後に自動削除
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+
+    function showError(message) {
+        showNotification(message, 'error');
+    }
+
+    function getNotificationIcon(type) {
+        switch (type) {
+            case 'success': return 'check-circle';
+            case 'error': return 'exclamation-triangle';
+            case 'warning': return 'exclamation-triangle';
+            case 'info': 
+            default: return 'info-circle';
+        }
+    }
+    </script>
+</body>
+</html>

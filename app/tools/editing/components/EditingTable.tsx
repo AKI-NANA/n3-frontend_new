@@ -3,6 +3,7 @@
 
 import { useState } from 'react'
 import type { Product, ProductUpdate } from '../types/product'
+import { ListingStatusBadge } from './ListingStatusBadge'
 
 interface EditingTableProps {
   products: Product[]
@@ -126,7 +127,8 @@ export function EditingTable({
               <th className="p-2 border-r border-border w-[60px] text-foreground">SM最安<br/>利益率%</th>
               <th className="p-2 border-r border-border w-[70px] text-foreground">SM最安<br/>利益額<div className="text-[10px] text-muted-foreground">(USD)</div></th>
               <th className="p-2 border-r border-border w-[70px] text-foreground">スコア</th>
-              <th className="p-2 w-[60px] text-foreground">出品<br/>可否</th>
+              <th className="p-2 border-r border-border w-[60px] text-foreground">出品<br/>可否</th>
+              <th className="p-2 border-r border-border min-w-[150px] text-foreground">出品ステータス</th>
             </tr>
           </thead>
           <tbody>
@@ -247,12 +249,16 @@ export function EditingTable({
                   ) : '-'}
                 </td>
 
-                <td className="p-2 text-center">
+                <td className="p-2 text-center border-r border-border">
                   <span className={`font-semibold ${
                     product.status === 'ready' ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'
                   }`}>
                     {product.status === 'ready' ? '✓' : '✗'}
                   </span>
+                </td>
+                
+                <td className="p-2 border-r border-border">
+                  <ListingStatusBadge product={product} />
                 </td>
               </tr>
             ))}

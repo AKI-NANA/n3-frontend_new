@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eBay手数料管理システム - ダッシュボード</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f5f7fa; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px 0; text-align: center; }
+        .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0; }
+        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s; cursor: pointer; }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.2); }
+        .card-icon { font-size: 2.5rem; color: #667eea; margin-bottom: 15px; }
+        .card-title { font-size: 1.5rem; font-weight: bold; margin-bottom: 10px; color: #2d3748; }
+        .card-desc { color: #4a5568; margin-bottom: 15px; }
+        .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
+        .status-active { background: #c6f6d5; color: #2d5a3b; }
+        .status-ready { background: #bee3f8; color: #2c5282; }
+        .stats-bar { background: white; border-radius: 8px; padding: 20px; margin: 20px 0; display: flex; justify-content: space-around; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .stat-item { text-align: center; }
+        .stat-number { font-size: 2rem; font-weight: bold; color: #667eea; }
+        .stat-label { color: #4a5568; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-tags"></i> eBay手数料管理システム</h1>
+        <p>カテゴリー別手数料の自動判定・データベース管理</p>
+    </div>
+
+    <div class="container">
+        <div class="stats-bar" id="statsBar">
+            <div class="stat-item">
+                <div class="stat-number" id="totalCategories">-</div>
+                <div class="stat-label">総カテゴリー数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="matchedFees">-</div>
+                <div class="stat-label">手数料マッチ数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="avgConfidence">-</div>
+                <div class="stat-label">平均信頼度</div>
+            </div>
+        </div>
+
+        <div class="card-grid">
+            <div class="card" onclick="openTool('fee_matching_tool.html')">
+                <div class="card-icon"><i class="fas fa-robot"></i></div>
+                <div class="card-title">手数料マッチング</div>
+                <div class="card-desc">eBay手数料テキストとカテゴリーCSVの自動照合</div>
+                <span class="status-badge status-active">実行可能</span>
+            </div>
+
+            <div class="card" onclick="openTool('check.php')">
+                <div class="card-icon"><i class="fas fa-database"></i></div>
+                <div class="card-title">データベース確認</div>
+                <div class="card-desc">格納済み手数料データの確認・統計表示</div>
+                <span class="status-badge status-ready">データ確認</span>
+            </div>
+
+            <div class="card" onclick="openTool('fee_ai_manager.php')">
+                <div class="card-icon"><i class="fas fa-brain"></i></div>
+                <div class="card-title">AI手数料解析</div>
+                <div class="card-desc">AI powered手数料データ解析・自動分類</div>
+                <span class="status-badge status-active">AI機能</span>
+            </div>
+
+            <div class="card" onclick="openTool('sync_management_dashboard.php')">
+                <div class="card-icon"><i class="fas fa-sync"></i></div>
+                <div class="card-title">同期管理</div>
+                <div class="card-desc">eBay APIとの同期・カテゴリー更新管理</div>
+                <span class="status-badge status-ready">管理機能</span>
+            </div>
+        </div>
+
+        <div id="recentActivity" style="background: white; border-radius: 8px; padding: 20px; margin: 20px 0;">
+            <h3><i class="fas fa-history"></i> 最近のアクティビティ</h3>
+            <div id="activityList">データを読み込み中...</div>
+        </div>
+    </div>
+
+    <script>
+        function openTool(url) {
+            window.open(url, '_blank');
+        }
+
+        // 統計データ読み込み
+        async function loadStats() {
+            try {
+                const response = await fetch('check.php?json=1');
+                const data = await response.json();
+                
+                document.getElementById('totalCategories').textContent = data.total || '0';
+                document.getElementById('matchedFees').textContent = data.matched || '0';
+                document.getElementById('avgConfidence').textContent = (data.avg_confidence || '0') + '%';
+                
+            } catch (error) {
+                console.error('統計データ読み込みエラー:', error);
+            }
+        }
+
+        // アクティビティ読み込み
+        function loadActivity() {
+            document.getElementById('activityList').innerHTML = `
+                <div style="padding: 10px; border-left: 4px solid #667eea; margin: 10px 0;">
+                    <strong>手数料データ格納完了</strong><br>
+                    <small>4件のカテゴリーがマッチしました - 数分前</small>
+                </div>
+                <div style="padding: 10px; border-left: 4px solid #48bb78; margin: 10px 0;">
+                    <strong>システム初期化完了</strong><br>  
+                    <small>データベーステーブル作成完了 - 数分前</small>
+                </div>
+            `;
+        }
+
+        // ページ読み込み時に実行
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStats();
+            loadActivity();
+            
+            // 5分毎に統計更新
+            setInterval(loadStats, 300000);
+        });
+
+        console.log('🏷️ eBay手数料管理システム ダッシュボード初期化完了');
+    </script>
+</body>
+</html>

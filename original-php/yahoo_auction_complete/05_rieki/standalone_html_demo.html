@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>利益計算システム - 表示確認版</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* 完全スタンドアロン版CSS */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            line-height: 1.6;
+            color: #1e293b;
+            background: #f8fafc;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .nav-brand i {
+            background: linear-gradient(45deg, #f59e0b, #d97706);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 1.75rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .nav-links a {
+            color: #cbd5e1;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .nav-links a:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-links a.active {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+        }
+
+        .page-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem 2rem;
+            border-radius: 1rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .page-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .page-header h1 {
+            font-size: 2.5rem;
+            margin: 0 0 1rem 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .page-header p {
+            font-size: 1.125rem;
+            margin: 0 0 1.5rem 0;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .system-status {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-warning {
+            background: #f59e0b;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+        }
+
+        section {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 2rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .section-header h3 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-header h3 i {
+            color: #f59e0b;
+            font-size: 1.25rem;
+        }
+
+        .calculator-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            margin-top: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.875rem;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.875rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: #f9fafb;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #f59e0b;
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+            background: white;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            font-size: 1rem;
+        }
+
+        .btn-primary { 
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+
+        .btn-info { 
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+            color: white;
+            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .result-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            text-align: center;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .result-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            border-color: #f59e0b;
+        }
+
+        .result-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #059669;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 4px rgba(5, 150, 105, 0.2);
+        }
+
+        .result-label {
+            font-size: 0.875rem;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .recommendation {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 2px solid #0ea5e9;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            margin-top: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .recommendation::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        }
+
+        .recommendation i {
+            color: #0ea5e9;
+            margin-right: 0.75rem;
+            font-size: 1.25rem;
+        }
+
+        .recommendation-text {
+            font-weight: 500;
+            line-height: 1.6;
+        }
+
+        .roi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .roi-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 2px solid #e2e8f0;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .roi-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+            border-color: #f59e0b;
+        }
+
+        .roi-card h4 {
+            margin: 0 0 1rem 0;
+            color: #1e293b;
+            font-size: 1.25rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .roi-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .stat-item:hover {
+            background: white;
+            transform: scale(1.05);
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #059669;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #6b7280;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .advanced-features {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #f59e0b;
+            border-radius: 1rem;
+            padding: 2rem;
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .advanced-features h4 {
+            color: #92400e;
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+        }
+
+        .advanced-features p {
+            color: #78350f;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .feature-item {
+            background: rgba(255, 255, 255, 0.7);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            color: #78350f;
+        }
+
+        @media (max-width: 768px) {
+            .calculator-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+
+            .page-header h1 {
+                font-size: 1.875rem;
+            }
+
+            .system-status {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ナビゲーション -->
+        <nav class="navbar">
+            <div class="nav-brand">
+                <i class="fas fa-calculator"></i>
+                <span>利益計算システム</span>
+            </div>
+            <div class="nav-links">
+                <a href="#"><i class="fas fa-tachometer-alt"></i> ダッシュボード</a>
+                <a href="#"><i class="fas fa-spider"></i> データ取得</a>
+                <a href="#"><i class="fas fa-check-circle"></i> 商品承認</a>
+                <a href="#" class="active"><i class="fas fa-calculator"></i> 利益計算</a>
+                <a href="#"><i class="fas fa-warehouse"></i> 在庫管理</a>
+            </div>
+        </nav>
+
+        <!-- ヘッダー -->
+        <div class="page-header">
+            <h1><i class="fas fa-chart-pie"></i> 拡張版利益計算・ROI分析システム</h1>
+            <p>eBayカテゴリー別手数料・為替変動・階層型利益率設定による高精度価格計算</p>
+            
+            <div class="system-status">
+                <div class="status-item">
+                    <div class="status-indicator"></div>
+                    <span>基本計算機能</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-indicator"></div>
+                    <span>データベース接続</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-indicator status-warning"></div>
+                    <span>高度機能（要設定）</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 利益計算セクション -->
+        <section class="profit-calculator">
+            <div class="section-header">
+                <h3><i class="fas fa-calculator"></i> 高精度利益計算ツール</h3>
+                <button class="btn btn-info" onclick="clearForm()">
+                    <i class="fas fa-eraser"></i> フォームクリア
+                </button>
+            </div>
+            
+            <div class="calculator-grid">
+                <div class="calculator-inputs">
+                    <h4>💰 商品・価格情報</h4>
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-tag"></i> 商品ID</label>
+                        <input type="text" id="itemId" placeholder="商品IDを入力" value="SAMPLE-001">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-yen-sign"></i> 商品価格 (円)</label>
+                        <input type="number" id="priceJpy" step="0.01" placeholder="10000" value="15000">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-shipping-fast"></i> 送料 (円)</label>
+                        <input type="number" id="shippingJpy" step="0.01" placeholder="800" value="1200">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-list"></i> eBayカテゴリー</label>
+                        <select id="categoryId">
+                            <option value="293" selected>Consumer Electronics (10.0%)</option>
+                            <option value="11450">Clothing, Shoes & Accessories (12.9%)</option>
+                            <option value="58058">Collectibles (9.15%)</option>
+                            <option value="267">Books (15.0%)</option>
+                            <option value="550">Art (12.9%)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-star"></i> 商品コンディション</label>
+                        <select id="condition">
+                            <option value="New">新品 (28%目標利益率)</option>
+                            <option value="Used" selected>中古 (20%目標利益率)</option>
+                            <option value="Refurbished">リファビッシュ品 (25%)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-calendar-day"></i> 出品からの経過日数</label>
+                        <input type="number" id="daysSinceListing" value="0" min="0" max="365">
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="calculateAdvancedProfit()">
+                        <i class="fas fa-magic"></i> 高精度計算実行
+                    </button>
+                </div>
+
+                <div class="calculator-results">
+                    <h4>📊 計算結果・推奨価格</h4>
+                    
+                    <div class="result-cards" id="resultCards">
+                        <div class="result-card">
+                            <div class="result-value" id="recommendedPrice">$125.50</div>
+                            <div class="result-label">推奨販売価格</div>
+                        </div>
+                        <div class="result-card">
+                            <div class="result-value" id="estimatedProfit">$28.45</div>
+                            <div class="result-label">予想利益</div>
+                        </div>
+                        <div class="result-card">
+                            <div class="result-value" id="profitMargin">22.7%</div>
+                            <div class="result-label">利益率</div>
+                        </div>
+                        <div class="result-card">
+                            <div class="result-value" id="roiValue">34.2%</div>
+                            <div class="result-label">ROI</div>
+                        </div>
+                        <div class="result-card">
+                            <div class="result-value" id="totalFees">$14.25</div>
+                            <div class="result-label">総手数料</div>
+                        </div>
+                        <div class="result-card">
+                            <div class="result-value" id="exchangeRate">¥148.5</div>
+                            <div class="result-label">適用為替レート</div>
+                        </div>
+                    </div>
+                    
+                    <div class="recommendation" id="profitRecommendation">
+                        <i class="fas fa-lightbulb"></i>
+                        <span class="recommendation-text">良好な利益率です。この価格設定を維持し、さらなる最適化の余地があります。コンディションが中古品のため、競合価格もチェックして調整を検討してください。</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 高度機能プレビュー -->
+        <section class="advanced-features">
+            <h4><i class="fas fa-rocket"></i> 高度機能プレビュー</h4>
+            <p>データベース設定完了後、以下の機能が利用可能になります</p>
+            
+            <div class="feature-list">
+                <div class="feature-item">
+                    <i class="fas fa-exchange-alt"></i><br>
+                    自動為替レート取得
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-tags"></i><br>
+                    カテゴリー別手数料管理
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-chart-line"></i><br>
+                    価格変動シミュレーション
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-history"></i><br>
+                    計算履歴・CSV出力
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-cog"></i><br>
+                    階層型利益率設定
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-clock"></i><br>
+                    期間別価格自動調整
+                </div>
+            </div>
+        </section>
+
+        <!-- ROI分析セクション -->
+        <section class="roi-analysis">
+            <div class="section-header">
+                <h3><i class="fas fa-chart-bar"></i> カテゴリー別ROI分析</h3>
+                <button class="btn btn-info" onclick="updateROIAnalysis()">
+                    <i class="fas fa-sync-alt"></i> 分析データ更新
+                </button>
+            </div>
+            
+            <div class="roi-grid" id="roiGrid">
+                <div class="roi-card">
+                    <h4><i class="fas fa-laptop"></i> エレクトロニクス</h4>
+                    <div class="roi-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">35.2%</div>
+                            <div class="stat-label">平均ROI</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">85.6%</div>
+                            <div class="stat-label">最高ROI</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">342</div>
+                            <div class="stat-label">商品数</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">28.5%</div>
+                            <div class="stat-label">中央値</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="roi-card">
+                    <h4><i class="fas fa-tshirt"></i> ファッション</h4>
+                    <div class="roi-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">42.1%</div>
+                            <div class="stat-label">平均ROI</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">120.3%</div>
+                            <div class="stat-label">最高ROI</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">156</div>
+                            <div class="stat-label">商品数</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">38.7%</div>
+                            <div class="stat-label">中央値</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="roi-card">
+                    <h4><i class="fas fa-home"></i> ホーム・ガーデン</h4>
+                    <div class="roi-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">28.9%</div>
+                            <div class="stat-label">平均ROI</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">67.8%</div>
+                            <div class="stat-label">最高ROI</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">89</div>
+                            <div class="stat-label">商品数</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">25.4%</div>
+                            <div class="stat-label">中央値</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="roi-card">
+                    <h4><i class="fas fa-gem"></i> コレクティブル</h4>
+                    <div class="roi-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">48.7%</div>
+                            <div class="stat-label">平均ROI</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">156.2%</div>
+                            <div class="stat-label">最高ROI</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">67</div>
+                            <div class="stat-label">商品数</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">42.1%</div>
+                            <div class="stat-label">中央値</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="roi-card">
+                    <h4><i class="fas fa-book"></i> 書籍・メディア</h4>
+                    <div class="roi-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">31.4%</div>
+                            <div class="stat-label">平均ROI</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">78.9%</div>
+                            <div class="stat-label">最高ROI</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">124</div>
+                            <div class="stat-label">商品数</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">28.7%</div>
+                            <div class="stat-label">中央値</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="roi-card">
+                    <h4><i class="fas fa-palette"></i> アート・クラフト</h4>
+                    <div class="roi-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">55.3%</div>
+                            <div class="stat-label">平均ROI</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">198.7%</div>
+                            <div class="stat-label">最高ROI</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">43</div>
+                            <div class="stat-label">商品数</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">51.2%</div>
+                            <div class="stat-label">中央値</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // デモ用JavaScript - 表示確認のみ
+        
+        function calculateAdvancedProfit() {
+            // サンプル計算結果の表示
+            const priceJpy = parseFloat(document.getElementById('priceJpy').value) || 15000;
+            const shippingJpy = parseFloat(document.getElementById('shippingJpy').value) || 1200;
+            const categoryId = document.getElementById('categoryId').value;
+            const condition = document.getElementById('condition').value;
+            
+            // 簡易計算（デモ用）
+            const totalCostJpy = priceJpy + shippingJpy;
+            const exchangeRate = 148.5; // サンプルレート（5%安全マージン込み）
+            const totalCostUsd = totalCostJpy / exchangeRate;
+            
+            // カテゴリー別手数料
+            const feeRates = {
+                '293': 10.0,   // Electronics
+                '11450': 12.9, // Fashion
+                '58058': 9.15, // Collectibles
+                '267': 15.0,   // Books
+                '550': 12.9    // Art
+            };
+            
+            // コンディション別利益率
+            const profitTargets = {
+                'New': 28,
+                'Used': 20,
+                'Refurbished': 25
+            };
+            
+            const feeRate = feeRates[categoryId] || 10.0;
+            const targetMargin = profitTargets[condition] || 20;
+            const insertionFee = 0.35;
+            
+            // 推奨価格計算
+            const targetProfit = totalCostUsd * (targetMargin / 100);
+            const recommendedPrice = (totalCostUsd + insertionFee + targetProfit) / (1 - (feeRate / 100));
+            
+            // 実際の利益計算
+            const finalValueFee = recommendedPrice * (feeRate / 100);
+            const totalFees = insertionFee + finalValueFee;
+            const actualProfit = recommendedPrice - totalCostUsd - totalFees;
+            const actualMargin = (actualProfit / recommendedPrice) * 100;
+            const roi = (actualProfit / totalCostUsd) * 100;
+            
+            // 結果表示
+            document.getElementById('recommendedPrice').textContent = `$${recommendedPrice.toFixed(2)}`;
+            document.getElementById('estimatedProfit').textContent = `$${actualProfit.toFixed(2)}`;
+            document.getElementById('profitMargin').textContent = `${actualMargin.toFixed(1)}%`;
+            document.getElementById('roiValue').textContent = `${roi.toFixed(1)}%`;
+            document.getElementById('totalFees').textContent = `$${totalFees.toFixed(2)}`;
+            document.getElementById('exchangeRate').textContent = `¥${exchangeRate.toFixed(1)}`;
+            
+            // 推奨事項の更新
+            updateRecommendation(actualMargin, roi, condition);
+            
+            // エフェクト
+            document.getElementById('resultCards').style.transform = 'scale(0.98)';
+            setTimeout(() => {
+                document.getElementById('resultCards').style.transform = 'scale(1)';
+            }, 100);
+        }
+        
+        function updateRecommendation(margin, roi, condition) {
+            let recommendation = '';
+            
+            if (margin > 30 && roi > 50) {
+                recommendation = '🎉 優秀な利益率です！この価格設定を維持し、同様の商品の仕入れを増やすことを検討してください。';
+            } else if (margin > 20 && roi > 30) {
+                recommendation = '✅ 良好な利益率です。この価格設定を維持し、さらなる最適化の余地があります。';
+            } else if (margin > 10 && roi > 15) {
+                recommendation = '⚠️ 利益率は標準的です。コスト削減または価格調整を検討してください。';
+            } else {
+                recommendation = '🔴 利益率が低めです。価格見直しまたはコスト削減が必要です。';
+            }
+            
+            if (condition === 'Used') {
+                recommendation += ' 中古品のため、競合価格もチェックして調整を検討してください。';
+            } else if (condition === 'New') {
+                recommendation += ' 新品のため、プレミアム価格設定も可能です。';
+            }
+            
+            document.querySelector('.recommendation-text').textContent = recommendation;
+        }
+        
+        function clearForm() {
+            document.getElementById('itemId').value = '';
+            document.getElementById('priceJpy').value = '';
+            document.getElementById('shippingJpy').value = '';
+            document.getElementById('categoryId').selectedIndex = 0;
+            document.getElementById('condition').selectedIndex = 0;
+            document.getElementById('daysSinceListing').value = '0';
+            
+            // 結果をクリア
+            document.getElementById('recommendedPrice').textContent = '-';
+            document.getElementById('estimatedProfit').textContent = '-';
+            document.getElementById('profitMargin').textContent = '-';
+            document.getElementById('roiValue').textContent = '-';
+            document.getElementById('totalFees').textContent = '-';
+            document.getElementById('exchangeRate').textContent = '-';
+            
+            document.querySelector('.recommendation-text').textContent = '商品情報を入力して計算を実行してください。';
+        }
+        
+        function updateROIAnalysis() {
+            // ROIカードにアニメーション効果
+            const cards = document.querySelectorAll('.roi-card');
+            cards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        card.style.transform = 'scale(1)';
+                    }, 150);
+                }, index * 100);
+            });
+            
+            // 完了メッセージ
+            setTimeout(() => {
+                alert('📊 ROI分析データを更新しました！\n\n・カテゴリー別収益性を分析\n・最新の市場動向を反映\n・推奨仕入れ戦略を提案');
+            }, 1000);
+        }
+        
+        // 初期設定
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎯 利益計算システム - 表示確認版 初期化完了');
+            
+            // サンプルデータで初期計算
+            setTimeout(() => {
+                calculateAdvancedProfit();
+            }, 500);
+            
+            // 入力フィールドのイベントリスナー
+            const inputs = ['priceJpy', 'shippingJpy', 'categoryId', 'condition'];
+            inputs.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('change', calculateAdvancedProfit);
+                }
+            });
+        });
+        
+        console.log('✅ 利益計算システム - 表示確認版 JavaScript 読み込み完了');
+    </script>
+</body>
+</html>

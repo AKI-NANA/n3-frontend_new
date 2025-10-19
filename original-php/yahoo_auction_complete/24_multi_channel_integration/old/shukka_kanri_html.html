@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>出荷管理システム - NAGANO-3 多販路一括管理</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            /* 出荷管理テーマカラー */
+            --shukka-primary: #7c3aed;
+            --shukka-secondary: #a855f7;
+            --shukka-accent: #c084fc;
+            --shukka-success: #059669;
+            --shukka-warning: #d97706;
+            --shukka-danger: #dc2626;
+            
+            /* ステータスカラー */
+            --status-pending: #f59e0b;
+            --status-processing: #3b82f6;
+            --status-ready: #10b981;
+            --status-shipped: #6366f1;
+            --status-delivered: #059669;
+            
+            /* 共通カラー */
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-tertiary: #f1f5f9;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --text-white: #ffffff;
+            --border-color: #e5e7eb;
+            
+            /* スペーシング */
+            --space-1: 0.25rem;
+            --space-2: 0.5rem;
+            --space-3: 0.75rem;
+            --space-4: 1rem;
+            --space-5: 1.25rem;
+            --space-6: 1.5rem;
+            
+            /* 角丸・シャドウ */
+            --radius-sm: 4px;
+            --radius-md: 6px;
+            --radius-lg: 8px;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+            --transition: all 0.2s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        /* メインコンテナ */
+        .shukka-container {
+            padding: 5px;
+            min-height: 100vh;
+        }
+
+        /* 4列レイアウト */
+        .shukka-layout {
+            display: grid;
+            grid-template-columns: 300px 250px 1fr 320px;
+            gap: 6px;
+            align-items: start;
+            min-height: calc(100vh - 10px);
+        }
+
+        /* ===== 1列目: 出荷待ちキューパネル ===== */
+        .queue-panel {
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            height: calc(100vh - 10px);
+        }
+
+        .queue-header {
+            padding: var(--space-4);
+            background: linear-gradient(135deg, var(--shukka-primary), var(--shukka-secondary));
+            color: var(--text-white);
+        }
+
+        .queue-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: var(--space-2);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+
+        .queue-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+
+        .queue-controls {
+            padding: var(--space-3);
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .bulk-actions {
+            display: flex;
+            gap: var(--space-2);
+            margin-bottom: var(--space-2);
+        }
+
+        .bulk-btn {
+            flex: 1;
+            padding: var(--space-1) var(--space-2);
+            background: var(--shukka-primary);
+            color: var(--text-white);
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .bulk-btn:hover {
+            background: var(--shukka-secondary);
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: var(--space-1);
+        }
+
+        .filter-tab {
+            padding: var(--space-1) var(--space-2);
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .filter-tab.active {
+            background: var(--shukka-primary);
+            color: var(--text-white);
+        }
+
+        .queue-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--space-2);
+        }
+
+        .queue-item {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: var(--space-3);
+            margin-bottom: var(--space-2);
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            border-left: 4px solid var(--status-pending);
+        }
+
+        .queue-item:hover {
+            transform: translateX(2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .queue-item.selected {
+            background: rgba(124, 58, 237, 0.1);
+            border-color: var(--shukka-primary);
+        }
+
+        .queue-item.urgent {
+            border-left-color: var(--shukka-danger);
+            background: rgba(220, 38, 38, 0.05);
+        }
+
+        .queue-item.ready {
+            border-left-color: var(--status-ready);
+        }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-2);
+        }
+
+        .item-id {
+            font-weight: 600;
+            color: var(--shukka-primary);
+            font-size: 0.85rem;
+        }
+
+        .priority-badge {
+            padding: var(--space-1) var(--space-2);
+            border-radius: var(--radius-sm);
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+
+        .priority-high { background: #fee2e2; color: #991b1b; }
+        .priority-medium { background: #fef3c7; color: #92400e; }
+        .priority-low { background: #e0e7ff; color: #3730a3; }
+
+        .item-product {
+            font-size: 0.8rem;
+            margin-bottom: var(--space-1);
+            color: var(--text-primary);
+        }
+
+        .item-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+
+        .item-deadline {
+            color: var(--shukka-danger);
+            font-weight: 500;
+        }
+
+        /* ===== 2列目: 配送オプション・統計パネル ===== */
+        .shipping-panel {
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+            height: calc(100vh - 10px);
+            overflow: hidden;
+        }
+
+        .shipping-header {
+            padding: var(--space-3);
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .shipping-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .shipping-content {
+            padding: var(--space-3);
+            overflow-y: auto;
+            height: calc(100% - 60px);
+        }
+
+        .stats-section {
+            margin-bottom: var(--space-4);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-2);
+            margin-bottom: var(--space-3);
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            padding: var(--space-2);
+            border-radius: var(--radius-sm);
+            text-align: center;
+            border-left: 3px solid;
+        }
+
+        .stat-card.pending { border-left-color: var(--status-pending); }
+        .stat-card.ready { border-left-color: var(--status-ready); }
+        .stat-card.shipped { border-left-color: var(--status-shipped); }
+        .stat-card.urgent { border-left-color: var(--shukka-danger); }
+
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .shipping-methods {
+            margin-bottom: var(--space-4);
+        }
+
+        .method-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: var(--space-2);
+            color: var(--text-primary);
+        }
+
+        .method-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-2);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-sm);
+            margin-bottom: var(--space-1);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .method-option:hover {
+            background: var(--shukka-accent);
+            color: var(--text-white);
+        }
+
+        .method-option.selected {
+            background: var(--shukka-primary);
+            color: var(--text-white);
+        }
+
+        .method-name {
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .method-cost {
+            font-size: 0.75rem;
+        }
+
+        .api-status {
+            padding: var(--space-2);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+        }
+
+        .api-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: var(--space-1);
+        }
+
+        .api-indicator {
+            display: flex;
+            align-items: center;
+            gap: var(--space-1);
+            font-size: 0.75rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-online { background: var(--status-ready); }
+        .status-offline { background: var(--shukka-danger); }
+
+        /* ===== 3列目: メイン作業エリア ===== */
+        .main-panel {
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            height: calc(100vh - 10px);
+        }
+
+        .main-header {
+            padding: var(--space-4);
+            background: linear-gradient(135deg, var(--shukka-primary), var(--shukka-secondary));
+            color: var(--text-white);
+        }
+
+        .main-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: var(--space-2);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+
+        .main-breadcrumb {
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: var(--space-4);
+            overflow-y: auto;
+        }
+
+        .work-sections {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-4);
+            height: 100%;
+        }
+
+        .work-section {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            padding: var(--space-4);
+            border: 1px solid var(--border-color);
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: var(--space-3);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+
+        /* 梱包情報セクション */
+        .package-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-3);
+            margin-bottom: var(--space-4);
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-label {
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: var(--space-1);
+            color: var(--text-secondary);
+        }
+
+        .input-field {
+            padding: var(--space-2);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--shukka-primary);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+        }
+
+        .package-preview {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: var(--space-3);
+            margin-top: var(--space-3);
+        }
+
+        .preview-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: var(--space-2);
+        }
+
+        .preview-box {
+            width: 100%;
+            height: 120px;
+            background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: var(--text-secondary);
+        }
+
+        .preview-dimensions {
+            font-size: 0.75rem;
+            margin-top: var(--space-1);
+        }
+
+        /* 伝票発行セクション */
+        .label-options {
+            margin-bottom: var(--space-4);
+        }
+
+        .label-template {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: var(--space-3);
+            margin-bottom: var(--space-2);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .label-template:hover {
+            background: var(--shukka-accent);
+            color: var(--text-white);
+        }
+
+        .label-template.selected {
+            background: var(--shukka-primary);
+            color: var(--text-white);
+        }
+
+        .template-name {
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: var(--space-1);
+        }
+
+        .template-desc {
+            font-size: 0.7rem;
+            opacity: 0.8;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: var(--space-2);
+            margin-top: var(--space-3);
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: var(--space-2);
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-1);
+        }
+
+        .btn-primary {
+            background: var(--shukka-primary);
+            color: var(--text-white);
+        }
+
+        .btn-secondary {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-success {
+            background: var(--shukka-success);
+            color: var(--text-white);
+        }
+
+        .action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* ===== 4列目: 詳細・追跡パネル ===== */
+        .detail-panel {
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            height: calc(100vh - 10px);
+        }
+
+        .detail-header {
+            padding: var(--space-4);
+            background: linear-gradient(135deg, var(--shukka-primary), var(--shukka-secondary));
+            color: var(--text-white);
+        }
+
+        .detail-title {
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+
+        .detail-content {
+            flex: 1;
+            padding: var(--space-4);
+            overflow-y: auto;
+        }
+
+        .detail-section {
+            margin-bottom: var(--space-4);
+        }
+
+        .detail-section-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--space-2);
+            padding-bottom: var(--space-1);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-2) 0;
+            border-bottom: 1px solid var(--bg-tertiary);
+        }
+
+        .detail-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .detail-value {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            text-align: right;
+        }
+
+        .tracking-section {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-sm);
+            padding: var(--space-3);
+            margin-top: var(--space-3);
+        }
+
+        .tracking-timeline {
+            position: relative;
+            padding-left: var(--space-4);
+        }
+
+        .tracking-event {
+            position: relative;
+            padding-bottom: var(--space-3);
+            border-left: 2px solid var(--border-color);
+        }
+
+        .tracking-event:last-child {
+            border-left: none;
+        }
+
+        .tracking-event::before {
+            content: '';
+            position: absolute;
+            left: -5px;
+            top: 0;
+            width: 8px;
+            height: 8px;
+            background: var(--shukka-primary);
+            border-radius: 50%;
+        }
+
+        .tracking-event.completed::before {
+            background: var(--status-ready);
+        }
+
+        .tracking-event.current::before {
+            background: var(--status-pending);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .tracking-info {
+            margin-left: var(--space-3);
+        }
+
+        .tracking-status {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .tracking-date {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+
+        .tracking-location {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: var(--space-1);
+        }
+
+        /* 印刷プレビューモーダル */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-6);
+            max-width: 800px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-4);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .label-preview {
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: var(--space-4);
+            background: var(--bg-secondary);
+            margin-bottom: var(--space-4);
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+        }
+
+        /* ドラッグ&ドロップ対応 */
+        .queue-item.dragging {
+            opacity: 0.5;
+            transform: rotate(5deg);
+        }
+
+        .drop-zone {
+            border: 2px dashed var(--shukka-primary);
+            background: rgba(124, 58, 237, 0.1);
+        }
+
+        /* レスポンシブ */
+        @media (max-width: 1200px) {
+            .shukka-layout {
+                grid-template-columns: 280px 220px 1fr 280px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .shukka-layout {
+                grid-template-columns: 1fr;
+                gap: var(--space-3);
+            }
+            
+            .queue-panel, .shipping-panel, .detail-panel {
+                height: auto;
+            }
+            
+            .work-sections {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="shukka-container">
+        <div class="shukka-layout" id="shukkaLayout">
+            <!-- 1列目: 出荷待ちキューパネル -->
+            <div class="queue-panel">
+                <div class="queue-header">
+                    <div class="queue-title">
+                        <i class="fas fa-list-ul"></i>
+                        出荷待ちキュー
+                    </div>
+                    <div class="queue-stats">
+                        <span>待機中: 12件</span>
+                        <span>緊急: 3件</span>
+                    </div>
+                </div>
+                
+                <div class="queue-controls">
+                    <div class="bulk-actions">
+                        <button class="bulk-btn" onclick="bulkGenerateLabels()">
+                            <i class="fas fa-print"></i> 一括伝票
+                        </button>
+                        <button class="bulk-btn" onclick="bulkMarkShipped()">
+                            <i class="fas fa-truck"></i> 一括出荷
+                        </button>
+                    </div>
+                    
+                    <div class="filter-tabs">
+                        <button class="filter-tab active" onclick="filterQueue('all')">全て</button>
+                        <button class="filter-tab" onclick="filterQueue('urgent')">緊急</button>
+                        <button class="filter-tab" onclick="filterQueue('ready')">準備完了</button>
+                    </div>
+                </div>
+                
+                <div class="queue-list" id="queueList">
+                    <div class="queue-item urgent selected" onclick="selectShippingItem('SH001-20241213')" draggable="true">
+                        <div class="item-header">
+                            <div class="item-id">SH001-20241213</div>
+                            <div class="priority-badge priority-high">緊急</div>
+                        </div>
+                        <div class="item-product">Nintendo Switch Pro Controller</div>
+                        <div class="item-details">
+                            <span>アメリカ → EMS</span>
+                            <span class="item-deadline">期限: 12/20</span>
+                        </div>
+                    </div>
+                    
+                    <div class="queue-item" onclick="selectShippingItem('SH002-20241213')" draggable="true">
+                        <div class="item-header">
+                            <div class="item-id">SH002-20241213</div>
+                            <div class="priority-badge priority-medium">中</div>
+                        </div>
+                        <div class="item-product">Sony WH-1000XM4 Headphones</div>
+                        <div class="item-details">
+                            <span>カナダ → ePacket</span>
+                            <span class="item-deadline">期限: 12/18</span>
+                        </div>
+                    </div>
+                    
+                    <div class="queue-item ready" onclick="selectShippingItem('SH003-20241213')" draggable="true">
+                        <div class="item-header">
+                            <div class="item-id">SH003-20241213</div>
+                            <div class="priority-badge priority-low">低</div>
+                        </div>
+                        <div class="item-product">Apple AirPods Pro</div>
+                        <div class="item-details">
+                            <span>イギリス → 国際書留</span>
+                            <span class="item-deadline">期限: 12/25</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2列目: 配送オプション・統計パネル -->
+            <div class="shipping-panel">
+                <div class="shipping-header">
+                    <div class="shipping-title">配送統計・オプション</div>
+                </div>
+                
+                <div class="shipping-content">
+                    <div class="stats-section">
+                        <div class="stats-grid">
+                            <div class="stat-card pending">
+                                <div class="stat-value">12</div>
+                                <div class="stat-label">出荷待ち</div>
+                            </div>
+                            <div class="stat-card ready">
+                                <div class="stat-value">8</div>
+                                <div class="stat-label">準備完了</div>
+                            </div>
+                            <div class="stat-card shipped">
+                                <div class="stat-value">25</div>
+                                <div class="stat-label">本日出荷</div>
+                            </div>
+                            <div class="stat-card urgent">
+                                <div class="stat-value">3</div>
+                                <div class="stat-label">緊急対応</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="shipping-methods">
+                        <div class="method-title">配送方法選択</div>
+                        <div class="method-option selected" onclick="selectShippingMethod('ems')">
+                            <div class="method-name">EMS</div>
+                            <div class="method-cost">¥2,400</div>
+                        </div>
+                        <div class="method-option" onclick="selectShippingMethod('epacket')">
+                            <div class="method-name">ePacket</div>
+                            <div class="method-cost">¥890</div>
+                        </div>
+                        <div class="method-option" onclick="selectShippingMethod('sal')">
+                            <div class="method-name">SAL便</div>
+                            <div class="method-cost">¥650</div>
+                        </div>
+                        <div class="method-option" onclick="selectShippingMethod('surface')">
+                            <div class="method-name">船便</div>
+                            <div class="method-cost">¥420</div>
+                        </div>
+                    </div>
+                    
+                    <div class="api-status">
+                        <div class="api-title">Ship&co API連携</div>
+                        <div class="api-indicator">
+                            <div class="status-dot status-online"></div>
+                            <span>接続中 - 自動伝票発行可能</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3列目: メイン作業エリア -->
+            <div class="main-panel">
+                <div class="main-header">
+                    <div class="main-title">
+                        <i class="fas fa-box-open"></i>
+                        梱包・伝票作業
+                    </div>
+                    <div class="main-breadcrumb">
+                        SH001-20241213 > Nintendo Switch Pro Controller > アメリカ
+                    </div>
+                </div>
+                
+                <div class="main-content">
+                    <div class="work-sections">
+                        <!-- 梱包情報セクション -->
+                        <div class="work-section">
+                            <div class="section-title">
+                                <i class="fas fa-cube"></i>
+                                梱包情報入力
+                            </div>
+                            
+                            <div class="package-inputs">
+                                <div class="input-group">
+                                    <label class="input-label">縦 (cm)</label>
+                                    <input type="number" class="input-field" id="packageLength" 
+                                           placeholder="30.0" step="0.1" onchange="updatePackagePreview()">
+                                </div>
+                                <div class="input-group">
+                                    <label class="input-label">横 (cm)</label>
+                                    <input type="number" class="input-field" id="packageWidth" 
+                                           placeholder="25.0" step="0.1" onchange="updatePackagePreview()">
+                                </div>
+                                <div class="input-group">
+                                    <label class="input-label">高さ (cm)</label>
+                                    <input type="number" class="input-field" id="packageHeight" 
+                                           placeholder="15.0" step="0.1" onchange="updatePackagePreview()">
+                                </div>
+                                <div class="input-group">
+                                    <label class="input-label">重量 (g)</label>
+                                    <input type="number" class="input-field" id="packageWeight" 
+                                           placeholder="2500" step="1" onchange="updatePackagePreview()">
+                                </div>
+                            </div>
+                            
+                            <div class="package-preview">
+                                <div class="preview-title">梱包プレビュー</div>
+                                <div class="preview-box">
+                                    <i class="fas fa-box" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                                    <div id="previewDimensions" class="preview-dimensions">
+                                        寸法を入力してください
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="action-buttons">
+                                <button class="action-btn btn-secondary" onclick="scanBarcode()">
+                                    <i class="fas fa-barcode"></i> バーコード
+                                </button>
+                                <button class="action-btn btn-primary" onclick="savePackageInfo()">
+                                    <i class="fas fa-save"></i> 保存
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 伝票発行セクション -->
+                        <div class="work-section">
+                            <div class="section-title">
+                                <i class="fas fa-print"></i>
+                                伝票発行
+                            </div>
+                            
+                            <div class="label-options">
+                                <div class="label-template selected" onclick="selectLabelTemplate('ems')">
+                                    <div class="template-name">EMS伝票</div>
+                                    <div class="template-desc">国際スピード郵便 - 追跡番号付き</div>
+                                </div>
+                                <div class="label-template" onclick="selectLabelTemplate('epacket')">
+                                    <div class="template-name">ePacket伝票</div>
+                                    <div class="template-desc">小型包装物 - 追跡番号付き</div>
+                                </div>
+                                <div class="label-template" onclick="selectLabelTemplate('sal')">
+                                    <div class="template-name">SAL便伝票</div>
+                                    <div class="template-desc">エコノミー航空便</div>
+                                </div>
+                            </div>
+                            
+                            <div class="action-buttons">
+                                <button class="action-btn btn-secondary" onclick="previewLabel()">
+                                    <i class="fas fa-eye"></i> プレビュー
+                                </button>
+                                <button class="action-btn btn-success" onclick="generateLabel()">
+                                    <i class="fas fa-print"></i> 伝票発行
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4列目: 詳細・追跡パネル -->
+            <div class="detail-panel">
+                <div class="detail-header">
+                    <div class="detail-title">
+                        <i class="fas fa-info-circle"></i>
+                        出荷詳細・追跡
+                    </div>
+                </div>
+                
+                <div class="detail-content" id="shippingDetailContent">
+                    <div class="detail-section">
+                        <div class="detail-section-title">出荷情報</div>
+                        <div class="detail-row">
+                            <span class="detail-label">出荷番号</span>
+                            <span class="detail-value" id="detailShippingId">SH001-20241213</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">注文番号</span>
+                            <span class="detail-value" id="detailOrderId">EB001-20241213</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">商品名</span>
+                            <span class="detail-value" id="detailProductName">Nintendo Switch Pro Controller</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">配送先</span>
+                            <span class="detail-value" id="detailDestination">アメリカ</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">配送方法</span>
+                            <span class="detail-value" id="detailShippingMethod">EMS</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">出荷期限</span>
+                            <span class="detail-value" id="detailDeadline">2024/12/20</span>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <div class="detail-section-title">梱包詳細</div>
+                        <div class="detail-row">
+                            <span class="detail-label">寸法</span>
+                            <span class="detail-value" id="detailDimensions">30×25×15 cm</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">重量</span>
+                            <span class="detail-value" id="detailWeight">2,500g</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">配送料</span>
+                            <span class="detail-value" id="detailShippingCost">¥2,400</span>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <div class="detail-section-title">追跡情報</div>
+                        <div class="tracking-section">
+                            <div class="tracking-timeline">
+                                <div class="tracking-event completed">
+                                    <div class="tracking-info">
+                                        <div class="tracking-status">集荷完了</div>
+                                        <div class="tracking-date">2024/12/13 18:30</div>
+                                        <div class="tracking-location">東京国際郵便局</div>
+                                    </div>
+                                </div>
+                                <div class="tracking-event current">
+                                    <div class="tracking-info">
+                                        <div class="tracking-status">国際交換局到着</div>
+                                        <div class="tracking-date">2024/12/14 02:15</div>
+                                        <div class="tracking-location">成田国際空港</div>
+                                    </div>
+                                </div>
+                                <div class="tracking-event">
+                                    <div class="tracking-info">
+                                        <div class="tracking-status">海外発送</div>
+                                        <div class="tracking-date">予定</div>
+                                        <div class="tracking-location">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="action-buttons" style="padding: var(--space-4); border-top: 1px solid var(--border-color);">
+                    <button class="action-btn btn-primary" onclick="updateTracking()">
+                        <i class="fas fa-sync-alt"></i> 追跡更新
+                    </button>
+                    <button class="action-btn btn-secondary" onclick="notifyCustomer()">
+                        <i class="fas fa-envelope"></i> 顧客通知
+                    </button>
+                    <button class="action-btn btn-success" onclick="completeShipping()">
+                        <i class="fas fa-check"></i> 出荷完了
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 伝票プレビューモーダル -->
+    <div class="modal-overlay" id="labelPreviewModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>配送伝票プレビュー</h3>
+                <button class="modal-close" onclick="closeLabelPreview()">&times;</button>
+            </div>
+            <div class="label-preview" id="labelPreviewContent">
+                伝票プレビューがここに表示されます
+            </div>
+            <div class="action-buttons">
+                <button class="action-btn btn-secondary" onclick="closeLabelPreview()">キャンセル</button>
+                <button class="action-btn btn-primary" onclick="printLabel()">印刷実行</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // サンプル出荷データ
+        const sampleShippingItems = [
+            {
+                id: 'SH001-20241213',
+                orderId: 'EB001-20241213',
+                product: 'Nintendo Switch Pro Controller',
+                destination: 'アメリカ',
+                method: 'EMS',
+                deadline: '2024/12/20',
+                priority: 'high',
+                status: 'urgent',
+                dimensions: { length: 30, width: 25, height: 15 },
+                weight: 2500,
+                cost: 2400
+            },
+            {
+                id: 'SH002-20241213',
+                orderId: 'EB002-20241213',
+                product: 'Sony WH-1000XM4 Headphones',
+                destination: 'カナダ',
+                method: 'ePacket',
+                deadline: '2024/12/18',
+                priority: 'medium',
+                status: 'pending'
+            }
+        ];
+
+        let selectedShippingItem = sampleShippingItems[0];
+        let selectedShippingMethod = 'ems';
+        let selectedLabelTemplate = 'ems';
+
+        // 出荷アイテム選択
+        function selectShippingItem(itemId) {
+            selectedShippingItem = sampleShippingItems.find(item => item.id === itemId);
+            if (selectedShippingItem) {
+                updateShippingDetail(selectedShippingItem);
+                
+                // UI選択状態更新
+                document.querySelectorAll('.queue-item').forEach(item => {
+                    item.classList.remove('selected');
+                });
+                event.currentTarget.classList.add('selected');
+            }
+        }
+
+        // 出荷詳細パネル更新
+        function updateShippingDetail(item) {
+            document.getElementById('detailShippingId').textContent = item.id;
+            document.getElementById('detailOrderId').textContent = item.orderId;
+            document.getElementById('detailProductName').textContent = item.product;
+            document.getElementById('detailDestination').textContent = item.destination;
+            document.getElementById('detailShippingMethod').textContent = item.method;
+            document.getElementById('detailDeadline').textContent = item.deadline;
+            
+            if (item.dimensions) {
+                const dim = item.dimensions;
+                document.getElementById('detailDimensions').textContent = 
+                    `${dim.length}×${dim.width}×${dim.height} cm`;
+            }
+            if (item.weight) {
+                document.getElementById('detailWeight').textContent = `${item.weight.toLocaleString()}g`;
+            }
+            if (item.cost) {
+                document.getElementById('detailShippingCost').textContent = `¥${item.cost.toLocaleString()}`;
+            }
+        }
+
+        // 配送方法選択
+        function selectShippingMethod(method) {
+            selectedShippingMethod = method;
+            document.querySelectorAll('.method-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+            console.log('配送方法選択:', method);
+        }
+
+        // 伝票テンプレート選択
+        function selectLabelTemplate(template) {
+            selectedLabelTemplate = template;
+            document.querySelectorAll('.label-template').forEach(tmpl => {
+                tmpl.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+            console.log('伝票テンプレート選択:', template);
+        }
+
+        // 梱包プレビュー更新
+        function updatePackagePreview() {
+            const length = document.getElementById('packageLength').value;
+            const width = document.getElementById('packageWidth').value;
+            const height = document.getElementById('packageHeight').value;
+            const weight = document.getElementById('packageWeight').value;
+            
+            if (length && width && height && weight) {
+                const dimensions = `${length}×${width}×${height} cm, ${weight}g`;
+                document.getElementById('previewDimensions').textContent = dimensions;
+            }
+        }
+
+        // 梱包情報保存
+        function savePackageInfo() {
+            console.log('梱包情報保存');
+            // 実際の保存処理
+        }
+
+        // 伝票プレビュー
+        function previewLabel() {
+            document.getElementById('labelPreviewModal').style.display = 'flex';
+            console.log('伝票プレビュー表示');
+        }
+
+        function closeLabelPreview() {
+            document.getElementById('labelPreviewModal').style.display = 'none';
+        }
+
+        // 伝票発行
+        function generateLabel() {
+            console.log('伝票発行:', selectedLabelTemplate);
+            closeLabelPreview();
+        }
+
+        function printLabel() {
+            console.log('伝票印刷実行');
+            closeLabelPreview();
+        }
+
+        // その他の機能
+        function filterQueue(filter) {
+            console.log('キューフィルター:', filter);
+            // フィルター処理実装
+        }
+
+        function bulkGenerateLabels() {
+            console.log('一括伝票発行');
+        }
+
+        function bulkMarkShipped() {
+            console.log('一括出荷完了');
+        }
+
+        function scanBarcode() {
+            console.log('バーコードスキャン');
+        }
+
+        function updateTracking() {
+            console.log('追跡情報更新');
+        }
+
+        function notifyCustomer() {
+            console.log('顧客通知送信');
+        }
+
+        function completeShipping() {
+            console.log('出荷完了処理');
+        }
+
+        // ドラッグ&ドロップ機能
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('出荷管理システム初期化完了');
+            
+            // 初期選択アイテムの詳細表示
+            updateShippingDetail(selectedShippingItem);
+            
+            // ドラッグ&ドロップイベント
+            const queueItems = document.querySelectorAll('.queue-item');
+            queueItems.forEach(item => {
+                item.addEventListener('dragstart', function(e) {
+                    this.classList.add('dragging');
+                });
+                
+                item.addEventListener('dragend', function(e) {
+                    this.classList.remove('dragging');
+                });
+            });
+        });
+    </script>
+</body>
+</html>

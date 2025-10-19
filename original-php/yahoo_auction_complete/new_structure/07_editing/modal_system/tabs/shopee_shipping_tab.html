@@ -1,0 +1,88 @@
+<!-- Shopee 配送・在庫タブ -->
+<div class="ilm-data-section">
+    <div class="ilm-section-header" style="background: linear-gradient(135deg, #ee4d2d, #f05837); color: white;">
+        <i class="fas fa-shipping-fast"></i> Shopee配送・在庫設定
+    </div>
+    
+    <div style="padding: 1rem;">
+        <!-- パッケージサイズ -->
+        <div class="ilm-data-section">
+            <div class="ilm-section-header">
+                <i class="fas fa-box"></i> パッケージサイズ
+            </div>
+            <div style="padding: 1rem;">
+                <div class="ilm-form-grid" style="grid-template-columns: repeat(3, 1fr);">
+                    <div class="form-row">
+                        <label class="form-label">長さ (cm)</label>
+                        <input type="number" class="ilm-form-input" id="shopee-length" min="0" step="0.1">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label">幅 (cm)</label>
+                        <input type="number" class="ilm-form-input" id="shopee-width" min="0" step="0.1">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label">高さ (cm)</label>
+                        <input type="number" class="ilm-form-input" id="shopee-height" min="0" step="0.1">
+                    </div>
+                </div>
+                <div class="form-row" style="margin-top: 1rem;">
+                    <label class="form-label">重量 (kg)</label>
+                    <input type="number" class="ilm-form-input" id="shopee-weight-kg" min="0" step="0.01">
+                </div>
+            </div>
+        </div>
+
+        <!-- 配送オプション -->
+        <div class="ilm-data-section" style="margin-top: 1rem;">
+            <div class="ilm-section-header">
+                <i class="fas fa-truck"></i> 配送オプション
+            </div>
+            <div style="padding: 1rem;">
+                <div class="form-row">
+                    <label class="form-label">配送方法</label>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <label style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" checked> Standard Delivery
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox"> Express Delivery
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox"> Economy Delivery
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-row" style="margin-top: 1rem;">
+                    <label class="form-label">処理時間（発送まで）</label>
+                    <select class="ilm-form-select" id="shopee-processing-time">
+                        <option value="1">1日以内</option>
+                        <option value="2" selected>2日以内</option>
+                        <option value="3">3日以内</option>
+                        <option value="5">5日以内</option>
+                        <option value="7">7日以内</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 在庫管理 -->
+        <div class="ilm-data-section" style="margin-top: 1rem;">
+            <div class="ilm-section-header">
+                <i class="fas fa-warehouse"></i> 在庫管理
+            </div>
+            <div style="padding: 1rem;">
+                <div class="ilm-form-grid">
+                    <div class="form-row">
+                        <label class="form-label">現在の在庫数</label>
+                        <input type="number" class="ilm-form-input" id="shopee-current-stock" value="1" min="0">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label">最低在庫警告</label>
+                        <input type="number" class="ilm-form-input" id="shopee-min-stock" value="1" min="0">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

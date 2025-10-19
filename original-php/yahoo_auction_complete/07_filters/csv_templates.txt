@@ -1,0 +1,28 @@
+# 🗂️ 5段階フィルターシステム CSVテンプレート
+
+## 1️⃣ 輸出禁止キーワード (export_keywords.csv)
+keyword,priority,description
+偽物,HIGH,ブランド偽造品
+レプリカ,MEDIUM,複製品全般
+fake,HIGH,英語偽造品表記
+
+## 2️⃣ パテントトロール事例 (patent_troll_cases.csv)
+case_title,patent_number,plaintiff,defendant,risk_level,case_date,source_url,keywords
+スマートフォン特許侵害訴訟,US10123456,Tech Licensing LLC,Various Manufacturers,HIGH,2023-06-15,https://example.com,smartphone;touchscreen;mobile
+
+## 3️⃣ 国別規制情報 (country_restrictions.csv)
+country_code,country_name,restriction_type,restricted_keywords,description,effective_date,source_url
+USA,アメリカ合衆国,EXPORT_BAN,military;weapon;dual-use,軍事関連技術輸出規制,2023-01-01,https://bis.doc.gov/
+CHN,中華人民共和国,IMPORT_BAN,political;sensitive,政治的センシティブ商品規制,2023-01-01,https://example.com/china
+
+## 4️⃣ モール別禁止キーワード (mall_restrictions.csv)
+keyword,mall_name,priority,description
+replica,ebay,HIGH,eBayでのレプリカ商品禁止
+fake,ebay,HIGH,eBayでの偽造品禁止
+copy,amazon,HIGH,Amazonでのコピー商品禁止
+
+## 5️⃣ VEROブランド情報 (vero_participants.csv)
+brand_name,company_name,vero_id,protected_keywords,status
+Nike,Nike Inc.,NIKE_VERO_001,"nike;swoosh;just do it;air jordan",ACTIVE
+Apple,Apple Inc.,APPLE_VERO_001,"apple;iphone;ipad;macbook",ACTIVE
+Louis Vuitton,LVMH,LV_VERO_001,"louis vuitton;lv;monogram",ACTIVE

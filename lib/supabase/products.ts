@@ -16,7 +16,24 @@ export async function fetchProducts(limit = 100, offset = 0) {
     throw error
   }
 
-  return { products: data as Product[], total: count || 0 }
+  // 各商品の出品履歴を取得
+  const productsWithHistory = await Promise.all(
+    (data || []).map(async (product) => {
+      const { data: history } = await supabase
+        .from('listing_history')
+        .select('marketplace, account, listing_id, status, error_message, listed_at')
+        .eq('product_id', product.id)
+        .order('listed_at', { ascending: false })
+        .limit(5)
+      
+      return {
+        ...product,
+        listing_history: history || []
+      }
+    })
+  )
+
+  return { products: productsWithHistory as Product[], total: count || 0 }
 }
 
 export async function fetchProductById(id: string) {

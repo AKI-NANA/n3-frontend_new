@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品詳細</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+    body {
+        margin: 0;
+        padding: 1rem;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: white;
+    }
+    
+    .detail-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    
+    .product-header {
+        display: flex;
+        gap: 2rem;
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background: #f8f9fa;
+        border-radius: 12px;
+    }
+    
+    .product-image {
+        flex: 0 0 300px;
+        height: 300px;
+        border-radius: 8px;
+        overflow: hidden;
+        background: white;
+        border: 1px solid #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .product-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .product-image .no-image {
+        color: #6c757d;
+        font-size: 3rem;
+    }
+    
+    .product-info {
+        flex: 1;
+    }
+    
+    .product-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .product-sku {
+        font-size: 1rem;
+        color: #64748b;
+        background: #f1f5f9;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-family: 'Monaco', 'Consolas', monospace;
+        margin-bottom: 1rem;
+        display: inline-block;
+    }
+    
+    .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .detail-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        border: 1px solid #e9ecef;
+    }
+    
+    .detail-section h3 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .detail-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .detail-item:last-child {
+        border-bottom: none;
+    }
+    
+    .detail-label {
+        font-weight: 500;
+        color: #64748b;
+    }
+    
+    .detail-value {
+        font-weight: 600;
+        color: #1e293b;
+    }
+    
+    .price-value {
+        color: #059669;
+        font-size: 1.1rem;
+    }
+    
+    .stock-value {
+        padding: 0.25rem 0.75rem;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+    
+    .stock-high { background: #d1fae5; color: #065f46; }
+    .stock-medium { background: #fef3c7; color: #92400e; }
+    .stock-low { background: #fee2e2; color: #991b1b; }
+    
+    .badge {
+        padding: 0.375rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .badge-stock { background: #d1fae5; color: #065f46; }
+    .badge-dropship { background: #dbeafe; color: #1e40af; }
+    .badge-set { background: #f3e8ff; color: #7c3aed; }
+    .badge-hybrid { background: #fed7d7; color: #c53030; }
+    
+    .badge-new { background: #d1fae5; color: #065f46; }
+    .badge-used { background: #fef3c7; color: #92400e; }
+    .badge-refurbished { background: #dbeafe; color: #1e40af; }
+    
+    .btn-group {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+        padding-top: 1rem;
+        border-top: 1px solid #e2e8f0;
+        margin-top: 2rem;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .btn-secondary {
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #cbd5e1;
+    }
+    
+    .btn-secondary:hover {
+        background: #e2e8f0;
+        transform: translateY(-1px);
+    }
+    
+    .btn-primary {
+        background: #3b82f6;
+        color: white;
+        border: 1px solid #3b82f6;
+    }
+    
+    .btn-primary:hover {
+        background: #2563eb;
+        transform: translateY(-1px);
+    }
+    
+    .btn-success {
+        background: #10b981;
+        color: white;
+        border: 1px solid #10b981;
+    }
+    
+    .btn-success:hover {
+        background: #059669;
+        transform: translateY(-1px);
+    }
+    </style>
+</head>
+<body>
+    <div class="detail-container">
+        <div class="product-header">
+            <div class="product-image" id="productImage">
+                <div class="no-image">
+                    <i class="fas fa-image"></i>
+                </div>
+            </div>
+            <div class="product-info">
+                <h1 class="product-title">
+                    <i class="fas fa-cube" id="productTypeIcon"></i>
+                    <span id="productName">商品名を読み込み中...</span>
+                </h1>
+                <div class="product-sku" id="productSku">SKU: 読み込み中...</div>
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                    <span class="badge" id="productTypeBadge">読み込み中</span>
+                    <span class="badge" id="productConditionBadge">読み込み中</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="detail-grid">
+            <div class="detail-section">
+                <h3>
+                    <i class="fas fa-dollar-sign text-success"></i>
+                    価格情報
+                </h3>
+                <div class="detail-item">
+                    <span class="detail-label">販売価格</span>
+                    <span class="detail-value price-value" id="productPrice">$0.00</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">仕入価格</span>
+                    <span class="detail-value" id="productCost">$0.00</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">利益率</span>
+                    <span class="detail-value" id="productMargin">0%</span>
+                </div>
+            </div>
+            
+            <div class="detail-section">
+                <h3>
+                    <i class="fas fa-warehouse text-primary"></i>
+                    在庫情報
+                </h3>
+                <div class="detail-item">
+                    <span class="detail-label">在庫数</span>
+                    <span class="detail-value stock-value" id="productStock">0個</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">在庫価値</span>
+                    <span class="detail-value" id="stockValue">$0.00</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">状態</span>
+                    <span class="detail-value" id="stockStatus">-</span>
+                </div>
+            </div>
+            
+            <div class="detail-section">
+                <h3>
+                    <i class="fas fa-info-circle text-info"></i>
+                    商品情報
+                </h3>
+                <div class="detail-item">
+                    <span class="detail-label">カテゴリ</span>
+                    <span class="detail-value" id="productCategory">-</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">登録日</span>
+                    <span class="detail-value" id="productCreated">-</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">更新日</span>
+                    <span class="detail-value" id="productUpdated">-</span>
+                </div>
+            </div>
+            
+            <div class="detail-section">
+                <h3>
+                    <i class="fas fa-chart-line text-warning"></i>
+                    販売情報
+                </h3>
+                <div class="detail-item">
+                    <span class="detail-label">出品チャンネル</span>
+                    <span class="detail-value" id="salesChannels">-</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">販売数</span>
+                    <span class="detail-value" id="salesCount">0個</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">総売上</span>
+                    <span class="detail-value" id="totalRevenue">$0.00</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="detail-section" id="descriptionSection" style="display: none;">
+            <h3>
+                <i class="fas fa-align-left"></i>
+                商品説明
+            </h3>
+            <p id="productDescription" style="margin: 0; line-height: 1.6; color: #475569;">
+                商品説明が登録されていません。
+            </p>
+        </div>
+        
+        <div class="btn-group">
+            <button class="btn btn-secondary" onclick="closeModal()">
+                <i class="fas fa-times"></i>
+                閉じる
+            </button>
+            <button class="btn btn-primary" onclick="editProduct()">
+                <i class="fas fa-edit"></i>
+                編集
+            </button>
+            <button class="btn btn-success" onclick="duplicateProduct()">
+                <i class="fas fa-copy"></i>
+                複製
+            </button>
+        </div>
+    </div>
+
+    <script>
+    // 商品詳細データを受け取って表示
+    let currentProductData = null;
+    
+    // 親ウィンドウからの商品データを受信
+    window.addEventListener('message', function(e) {
+        if (e.data.action === 'showProductDetail') {
+            currentProductData = e.data.productData;
+            displayProductDetail(currentProductData);
+        }
+    });
+    
+    // 商品詳細表示関数
+    function displayProductDetail(product) {
+        console.log('🎯 商品詳細表示:', product);
+        
+        // 基本情報
+        document.getElementById('productName').textContent = product.name || '商品名未設定';
+        document.getElementById('productSku').textContent = `SKU: ${product.sku || 'SKU未設定'}`;
+        
+        // 商品タイプアイコンとバッジ
+        updateProductType(product.type || 'stock');
+        
+        // 状態バッジ
+        updateConditionBadge(product.condition || 'new');
+        
+        // 価格情報
+        const price = parseFloat(product.price || 0);
+        const cost = parseFloat(product.cost || 0);
+        const margin = price > 0 && cost > 0 ? (((price - cost) / price) * 100).toFixed(1) : '0';
+        
+        document.getElementById('productPrice').textContent = `$${price.toFixed(2)}`;
+        document.getElementById('productCost').textContent = `$${cost.toFixed(2)}`;
+        document.getElementById('productMargin').textContent = `${margin}%`;
+        
+        // 在庫情報
+        const stock = parseInt(product.stock || 0);
+        const stockValue = (stock * price).toFixed(2);
+        
+        document.getElementById('productStock').textContent = `${stock}個`;
+        document.getElementById('stockValue').textContent = `$${stockValue}`;
+        
+        // 在庫状態の色分け
+        const stockElement = document.getElementById('productStock');
+        stockElement.className = 'detail-value stock-value';
+        if (stock > 50) stockElement.classList.add('stock-high');
+        else if (stock > 10) stockElement.classList.add('stock-medium');
+        else stockElement.classList.add('stock-low');
+        
+        // その他の情報
+        document.getElementById('productCategory').textContent = product.category || '未分類';
+        document.getElementById('productCreated').textContent = product.created || '不明';
+        document.getElementById('productUpdated').textContent = product.updated || '不明';
+        
+        // 販売情報（サンプルデータ）
+        document.getElementById('salesChannels').textContent = 'eBay, Amazon';
+        document.getElementById('salesCount').textContent = '0個';
+        document.getElementById('totalRevenue').textContent = '$0.00';
+        
+        // 商品説明
+        if (product.description && product.description.trim()) {
+            document.getElementById('productDescription').textContent = product.description;
+            document.getElementById('descriptionSection').style.display = 'block';
+        }
+        
+        // 商品画像
+        if (product.image) {
+            document.getElementById('productImage').innerHTML = `<img src="${product.image}" alt="${product.name}">`;
+        }
+    }
+    
+    // 商品タイプ更新
+    function updateProductType(type) {
+        const iconElement = document.getElementById('productTypeIcon');
+        const badgeElement = document.getElementById('productTypeBadge');
+        
+        const typeConfig = {
+            'stock': { icon: 'fas fa-warehouse', text: '有在庫', class: 'badge-stock' },
+            'dropship': { icon: 'fas fa-truck', text: '無在庫', class: 'badge-dropship' },
+            'set': { icon: 'fas fa-layer-group', text: 'セット品', class: 'badge-set' },
+            'hybrid': { icon: 'fas fa-sync-alt', text: 'ハイブリッド', class: 'badge-hybrid' }
+        };
+        
+        const config = typeConfig[type] || typeConfig['stock'];
+        iconElement.className = config.icon;
+        badgeElement.textContent = config.text;
+        badgeElement.className = `badge ${config.class}`;
+    }
+    
+    // 状態バッジ更新
+    function updateConditionBadge(condition) {
+        const badgeElement = document.getElementById('productConditionBadge');
+        
+        const conditionConfig = {
+            'new': { text: '新品', class: 'badge-new' },
+            'used': { text: '中古', class: 'badge-used' },
+            'refurbished': { text: '整備済み', class: 'badge-refurbished' }
+        };
+        
+        const config = conditionConfig[condition] || conditionConfig['new'];
+        badgeElement.textContent = config.text;
+        badgeElement.className = `badge ${config.class}`;
+    }
+    
+    // モーダル閉じる機能
+    function closeModal() {
+        window.parent.postMessage({
+            action: 'closeModal',
+            modalId: 'productDetailModal'
+        }, '*');
+    }
+    
+    // 商品編集機能
+    function editProduct() {
+        console.log('🔧 商品編集:', currentProductData);
+        // 編集モーダルを開く処理
+        alert('商品編集機能は開発中です');
+    }
+    
+    // 商品複製機能
+    function duplicateProduct() {
+        console.log('📋 商品複製:', currentProductData);
+        // 複製処理
+        alert('商品複製機能は開発中です');
+    }
+    
+    console.log('✅ 商品詳細iframe初期化完了');
+    </script>
+</body>
+</html>

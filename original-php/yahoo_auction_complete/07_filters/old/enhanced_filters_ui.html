@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5段階フィルターシステム - Yahoo Auction Tool</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #64748b;
+            --success-color: #16a34a;
+            --warning-color: #d97706;
+            --danger-color: #dc2626;
+            --info-color: #0891b2;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-tertiary: #f1f5f9;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --border-color: #e2e8f0;
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --space-xs: 0.25rem;
+            --space-sm: 0.5rem;
+            --space-md: 1rem;
+            --space-lg: 1.5rem;
+            --space-xl: 2rem;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-primary); color: var(--text-primary); }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: var(--space-lg); }
+        .header { text-align: center; margin-bottom: var(--space-xl); }
+        .header h1 { color: var(--primary-color); margin-bottom: var(--space-sm); }
+        .header p { color: var(--text-secondary); }
+
+        /* フィルタータブシステム */
+        .filter-tabs {
+            display: flex;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xs);
+            margin-bottom: var(--space-xl);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: var(--space-md);
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-sm);
+        }
+
+        .tab-button.active {
+            background: var(--primary-color);
+            color: white;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+        }
+
+        .tab-button:not(.active):hover {
+            background: rgba(37, 99, 235, 0.1);
+        }
+
+        /* フィルターコンテンツエリア */
+        .filter-content {
+            display: none;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            margin-bottom: var(--space-xl);
+        }
+
+        .filter-content.active { display: block; }
+
+        /* 統計ダッシュボード */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-md);
+            margin-bottom: var(--space-xl);
+        }
+
+        .stat-card {
+            background: var(--bg-primary);
+            padding: var(--space-lg);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            text-align: center;
+            transition: transform 0.2s ease;
+        }
+
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: var(--space-xs);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        /* データテーブル */
+        .data-table-container {
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            background: var(--bg-tertiary);
+            padding: var(--space-md);
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .data-table td {
+            padding: var(--space-md);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-table tbody tr:hover {
+            background: rgba(37, 99, 235, 0.05);
+        }
+
+        /* アクションボタン */
+        .action-buttons {
+            display: flex;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-lg);
+        }
+
+        .btn {
+            padding: var(--space-sm) var(--space-md);
+            border: none;
+            border-radius: var(--radius-sm);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+        }
+
+        .btn-primary { background: var(--primary-color); color: white; }
+        .btn-success { background: var(--success-color); color: white; }
+        .btn-warning { background: var(--warning-color); color: white; }
+        .btn-danger { background: var(--danger-color); color: white; }
+        .btn-info { background: var(--info-color); color: white; }
+
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+
+        /* ステータスバッジ */
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-active { background: var(--success-color); color: white; }
+        .status-inactive { background: var(--text-muted); color: white; }
+        .risk-high { background: var(--danger-color); color: white; }
+        .risk-medium { background: var(--warning-color); color: white; }
+        .risk-low { background: var(--info-color); color: white; }
+
+        /* CSV アップロードエリア */
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-md);
+            padding: var(--space-xl);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: var(--space-lg) 0;
+        }
+
+        .upload-area:hover { border-color: var(--primary-color); background: rgba(37, 99, 235, 0.05); }
+        .upload-area i { font-size: 3rem; color: var(--primary-color); margin-bottom: var(--space-md); }
+
+        /* レスポンシブ対応 */
+        @media (max-width: 768px) {
+            .filter-tabs { flex-direction: column; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .action-buttons { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ヘッダー -->
+        <div class="header">
+            <h1><i class="fas fa-shield-alt"></i> 5段階フィルターシステム</h1>
+            <p>パテントトロール・輸出禁止・国別禁止・モール別禁止・VERO禁止の統合管理</p>
+        </div>
+
+        <!-- フィルタータブ -->
+        <div class="filter-tabs">
+            <button class="tab-button active" data-tab="export">
+                <i class="fas fa-ban"></i>
+                輸出禁止
+            </button>
+            <button class="tab-button" data-tab="patent-troll">
+                <i class="fas fa-gavel"></i>
+                パテントトロール
+            </button>
+            <button class="tab-button" data-tab="country">
+                <i class="fas fa-globe"></i>
+                国別禁止
+            </button>
+            <button class="tab-button" data-tab="mall">
+                <i class="fas fa-store"></i>
+                モール別禁止
+            </button>
+            <button class="tab-button" data-tab="vero">
+                <i class="fas fa-copyright"></i>
+                VERO禁止
+            </button>
+        </div>
+
+        <!-- 輸出禁止フィルター -->
+        <div id="export-content" class="filter-content active">
+            <div class="action-buttons">
+                <button class="btn btn-success" onclick="uploadCSV('export')">
+                    <i class="fas fa-upload"></i> CSVアップロード
+                </button>
+                <button class="btn btn-info" onclick="addKeyword('export')">
+                    <i class="fas fa-plus"></i> キーワード追加
+                </button>
+                <button class="btn btn-warning" onclick="exportData('export')">
+                    <i class="fas fa-download"></i> エクスポート
+                </button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" style="color: var(--danger-color);">1,247</div>
+                    <div class="stat-label">登録キーワード数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: var(--warning-color);">89</div>
+                    <div class="stat-label">今月の検出数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: var(--success-color);">98.5%</div>
+                    <div class="stat-label">フィルター精度</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: var(--info-color);">2分前</div>
+                    <div class="stat-label">最終更新</div>
+                </div>
+            </div>
+
+            <div class="upload-area" onclick="uploadCSV('export')">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <div><strong>輸出禁止キーワードCSVファイルをドラッグ&ドロップ</strong></div>
+                <div style="color: var(--text-secondary); font-size: 0.9rem; margin-top: var(--space-sm);">
+                    またはクリックしてファイルを選択
+                </div>
+            </div>
+
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;"><input type="checkbox"></th>
+                            <th>キーワード</th>
+                            <th>カテゴリ</th>
+                            <th>検出回数</th>
+                            <th>最終検出</th>
+                            <th>ステータス</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="export-table-body">
+                        <tr>
+                            <td><input type="checkbox"></td>
+                            <td><strong>偽物</strong></td>
+                            <td>ブランド保護</td>
+                            <td>127</td>
+                            <td>2025-09-20</td>
+                            <td><span class="status-badge status-active">有効</span></td>
+                            <td>
+                                <button class="btn btn-warning" style="padding: 4px 8px; font-size: 0.75rem;">編集</button>
+                                <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;">削除</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- パテントトロールフィルター -->
+        <div id="patent-troll-content" class="filter-content">
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="startScraping('patent')">
+                    <i class="fas fa-spider"></i> 自動スクレイピング開始
+                </button>
+                <button class="btn btn-info" onclick="addPatentCase()">
+                    <i class="fas fa-plus"></i> 事例追加
+                </button>
+                <button class="btn btn-warning" onclick="exportData('patent')">
+                    <i class="fas fa-download"></i> エクスポート
+                </button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" style="color: var(--danger-color);">342</div>
+                    <div class="stat-label">パテントトロール事例</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: var(--warning-color);">45</div>
+                    <div class="stat-label">高リスク案件</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: var(--info-color);">15</div>
+                    <div class="stat-label">新規検出（今週）</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: var(--success-color);">6時間前</div>
+                    <div class="stat-label">最終スクレイピング</div>
+                </div>
+            </div>
+
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;"><input type="checkbox"></th>
+                            <th>事例タイトル</th>
+                            <th>特許番号</th>
+                            <th>原告</th>
+                            <th>リスクレベル</th>
+                            <th>発生日</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="patent-table-body">
+                        <tr>
+                            <td><input type="checkbox"></td>
+                            <td><strong>スマートフォンケース特許侵害訴訟</strong></td>
+                            <td>US10123456</td>
+                            <td>Patent Solutions LLC</td>
+                            <td><span class="status-badge risk-high">高リスク</span></td>
+                            <td>2025-09-15</td>
+                            <td>
+                                <button class="btn btn-info" style="padding: 4px 8px; font-size: 0.75rem;">詳細</button>
+                                <button class="btn btn-warning" style="padding: 4px 8px; font-size: 0.75rem;">編集</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 国別禁止フィルター -->
+        <div id="country-content" class="filter-content">
+            <div class="action-buttons">
+                <button class="btn btn-success" onclick="uploadCSV('country')">
+                    <i class="fas fa-upload"></i> CSVアップロード
+                </button>
+                <button class="btn btn-info" onclick="addCountryRestriction()">
+                    <i class="fas fa-plus"></i> 国別規制追加
+                </button>
+                <button class="btn btn-primary" onclick="updateCountryData()">
+                    <i class="fas fa-sync"></i> 規制情報更新
+                </button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" style="color: var(--primary-color);">195</div>
+                    <div class="stat-label">対象国数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: var(--danger-color);">1,890</div>
+                    <div class="stat-label">規制項目数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: var(--warning-color);">67</div>
+                    <div class="stat-label">新規規制（今月）</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: var(--success-color);">1日前</div>
+                    <div class="stat-label">最終更新</div>
+                </div>
+            </div>
+
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;"><input type="checkbox"></th>
+                            <th>国名</th>
+                            <th>規制タイプ</th>
+                            <th>規制項目</th>
+                            <th>施行日</th>
+                            <th>ステータス</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="country-table-body">
+                        <tr>
+                            <td><input type="checkbox"></td>
+                            <td><img src="https://flagicons.lipis.dev/flags/4x3/us.svg" style="width: 20px; margin-right: 8px;">米国</td>
+                            <td>輸出規制</td>
+                            <td><strong>軍事関連技術</strong></td>
+                            <td>2025-01-01</td>
+                            <td><span class="status-badge status-active">有効</span></td>
+                            <td>
+                                <button class="btn btn-info" style="padding: 4px 8px; font-size: 0.75rem;">詳細</button>
+                                <button class="btn btn-warning" style="padding: 4px 8px; font-size: 0.75rem;">編集</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- モール別禁止フィルター -->
+        <div id="mall-content" class="filter-content">
+            <div class="action-buttons">
+                <button class="btn btn-success" onclick="uploadCSV('mall')">
+                    <i class="fas fa-upload"></i> CSVアップロード
+                </button>
+                <button class="btn btn-info" onclick="addMallRestriction()">
+                    <i class="fas fa-plus"></i> モール規制追加
+                </button>
+                <button class="btn btn-primary" onclick="updateMallPolicies()">
+                    <i class="fas fa-sync"></i> ポリシー更新
+                </button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" style="color: var(--primary-color);">8</div>
+                    <div class="stat-label">対象モール数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: var(--danger-color);">2,341</div>
+                    <div class="stat-label">禁止項目数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: var(--warning-color);">123</div>
+                    <div class="stat-label">今週の更新</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: var(--success-color);">3時間前</div>
+                    <div class="stat-label">最終同期</div>
+                </div>
+            </div>
+
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;"><input type="checkbox"></th>
+                            <th>モール名</th>
+                            <th>禁止カテゴリ</th>
+                            <th>禁止キーワード</th>
+                            <th>更新日</th>
+                            <th>ステータス</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mall-table-body">
+                        <tr>
+                            <td><input type="checkbox"></td>
+                            <td><strong>eBay</strong></td>
+                            <td>レプリカ商品</td>
+                            <td>replica, fake, copy</td>
+                            <td>2025-09-20</td>
+                            <td><span class="status-badge status-active">有効</span></td>
+                            <td>
+                                <button class="btn btn-info" style="padding: 4px 8px; font-size: 0.75rem;">詳細</button>
+                                <button class="btn btn-warning" style="padding: 4px 8px; font-size: 0.75rem;">編集</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- VERO禁止フィルター -->
+        <div id="vero-content" class="filter-content">
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="startScraping('vero')">
+                    <i class="fas fa-spider"></i> VERO自動更新
+                </button>
+                <button class="btn btn-info" onclick="addVeroBrand()">
+                    <i class="fas fa-plus"></i> ブランド追加
+                </button>
+                <button class="btn btn-warning" onclick="exportData('vero')">
+                    <i class="fas fa-download"></i> エクスポート
+                </button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" style="color: var(--primary-color);">15,678</div>
+                    <div class="stat-label">VERO参加ブランド数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: var(--danger-color);">89,432</div>
+                    <div class="stat-label">保護キーワード数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: var(--warning-color);">234</div>
+                    <div class="stat-label">新規追加（今週）</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: var(--success-color);">12時間前</div>
+                    <div class="stat-label">最終スクレイピング</div>
+                </div>
+            </div>
+
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;"><input type="checkbox"></th>
+                            <th>ブランド名</th>
+                            <th>会社名</th>
+                            <th>VERO ID</th>
+                            <th>保護キーワード数</th>
+                            <th>ステータス</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vero-table-body">
+                        <tr>
+                            <td><input type="checkbox"></td>
+                            <td><strong>Nike</strong></td>
+                            <td>Nike, Inc.</td>
+                            <td>VERO-123456</td>
+                            <td>1,234</td>
+                            <td><span class="status-badge status-active">有効</span></td>
+                            <td>
+                                <button class="btn btn-info" style="padding: 4px 8px; font-size: 0.75rem;">詳細</button>
+                                <button class="btn btn-warning" style="padding: 4px 8px; font-size: 0.75rem;">更新</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // タブ切り替え機能
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                // 全タブを非アクティブ化
+                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.filter-content').forEach(c => c.classList.remove('active'));
+                
+                // 選択されたタブをアクティブ化
+                button.classList.add('active');
+                const tabId = button.getAttribute('data-tab');
+                document.getElementById(tabId + '-content').classList.add('active');
+            });
+        });
+
+        // 機能プレースホルダー
+        function uploadCSV(type) {
+            alert(`${type} CSVアップロード機能を実装します`);
+        }
+
+        function addKeyword(type) {
+            alert(`${type} キーワード追加機能を実装します`);
+        }
+
+        function exportData(type) {
+            alert(`${type} データエクスポート機能を実装します`);
+        }
+
+        function startScraping(type) {
+            alert(`${type} 自動スクレイピング機能を実装します`);
+        }
+
+        function addPatentCase() {
+            alert('パテント事例追加機能を実装します');
+        }
+
+        function addCountryRestriction() {
+            alert('国別規制追加機能を実装します');
+        }
+
+        function updateCountryData() {
+            alert('規制情報更新機能を実装します');
+        }
+
+        function addMallRestriction() {
+            alert('モール規制追加機能を実装します');
+        }
+
+        function updateMallPolicies() {
+            alert('モールポリシー更新機能を実装します');
+        }
+
+        function addVeroBrand() {
+            alert('VEROブランド追加機能を実装します');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>データベース緊急診断システム</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f8fafc;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            color: white;
+            padding: 30px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .diagnostic-panel {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.2s;
+        }
+        
+        .btn:hover {
+            background: #b91c1c;
+            transform: translateY(-1px);
+        }
+        
+        .btn-primary { background: #3b82f6; }
+        .btn-primary:hover { background: #2563eb; }
+        
+        .btn-success { background: #10b981; }
+        .btn-success:hover { background: #059669; }
+        
+        .result-area {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 20px;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 15px;
+            border: 2px solid #374151;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        
+        .alert-error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+        }
+        
+        .alert-success {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+        
+        .alert-warning {
+            background: #fffbeb;
+            border: 1px solid #fed7aa;
+            color: #d97706;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .data-table th {
+            background: #f3f4f6;
+            padding: 10px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .data-table td {
+            padding: 10px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 14px;
+        }
+        
+        .price-highlight {
+            background: #fef3c7;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        
+        .country-flag {
+            font-size: 16px;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚨 データベース緊急診断システム</h1>
+            <p>表示問題の原因究明・データベース実状確認</p>
+            <p><strong>EMS料金データの実際の状況を調査</strong></p>
+        </div>
+
+        <div class="diagnostic-panel">
+            <h2>🔍 緊急診断メニュー</h2>
+            
+            <div style="margin: 20px 0;">
+                <button class="btn" onclick="checkDatabaseStatus()">
+                    🗄️ データベース接続確認
+                </button>
+                <button class="btn" onclick="checkEMSData()">
+                    📊 EMS実データ確認
+                </button>
+                <button class="btn" onclick="checkUSData()">
+                    🇺🇸 アメリカ向け料金確認
+                </button>
+                <button class="btn btn-primary" onclick="rawSQLQuery()">
+                    💻 生SQL実行
+                </button>
+                <button class="btn btn-success" onclick="fixDataDisplay()">
+                    🔧 表示修正実行
+                </button>
+            </div>
+            
+            <div style="margin: 20px 0;">
+                <label for="custom-sql" style="font-weight: 600;">カスタムSQL実行:</label>
+                <textarea id="custom-sql" style="width: 100%; height: 100px; margin: 10px 0; font-family: monospace;" placeholder="SELECT * FROM shipping_service_rates WHERE country_code = 'US' ORDER BY weight_from_g;"></textarea>
+                <button class="btn btn-primary" onclick="executeCustomSQL()">SQL実行</button>
+            </div>
+        </div>
+
+        <div class="diagnostic-panel">
+            <h2>📋 診断結果</h2>
+            <div id="diagnostic-results">
+                <p style="color: #6b7280;">診断ボタンをクリックして調査を開始してください</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'api/database_viewer.php';
+        
+        // データベース接続確認
+        async function checkDatabaseStatus() {
+            showResult('🔍 データベース接続確認中...', 'info');
+            
+            try {
+                const response = await fetch(API_BASE, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'get_statistics' })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult(`✅ データベース接続成功
+                    
+📊 統計情報:
+• 総レコード数: ${result.data.total_records || 0}
+• 配送会社数: ${result.data.companies || 0}  
+• サービス数: ${result.data.services || 0}
+• 対応国数: ${result.data.countries || 0}
+• EMSデータ: ${result.data.ems_records || 0}件
+
+レスポンス詳細:
+${JSON.stringify(result, null, 2)}`, 'success');
+                } else {
+                    showResult(`❌ データベースエラー: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ 接続エラー: ${error.message}`, 'error');
+            }
+        }
+        
+        // EMS実データ確認
+        async function checkEMSData() {
+            showResult('📊 EMS実データ確認中...', 'info');
+            
+            try {
+                const response = await fetch(API_BASE, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'get_shipping_data',
+                        filters: { 
+                            company: 'JPPOST', 
+                            service: 'EMS', 
+                            country: 'ALL', 
+                            zone: 'ALL' 
+                        }
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    let output = `✅ EMS実データ取得成功 (${result.data.length}件)\n\n`;
+                    
+                    result.data.forEach((row, index) => {
+                        output += `${index + 1}. ${getCountryFlag(row.country_code)} ${row.country_code} | ${row.zone_code} | ${row.weight_from_g}g-${row.weight_to_g}g | ¥${row.price_jpy}\n`;
+                    });
+                    
+                    output += `\n📊 料金分析:`;
+                    const prices = result.data.map(r => r.price_jpy);
+                    output += `\n最安値: ¥${Math.min(...prices)}`;
+                    output += `\n最高値: ¥${Math.max(...prices)}`;
+                    output += `\n平均値: ¥${Math.round(prices.reduce((a,b) => a+b, 0) / prices.length)}`;
+                    
+                    showResult(output, 'success');
+                } else {
+                    showResult(`❌ EMSデータ取得エラー: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ EMSデータ確認エラー: ${error.message}`, 'error');
+            }
+        }
+        
+        // アメリカ向け料金確認
+        async function checkUSData() {
+            showResult('🇺🇸 アメリカ向け料金確認中...', 'info');
+            
+            try {
+                const response = await fetch(API_BASE, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'get_shipping_data',
+                        filters: { 
+                            company: 'JPPOST', 
+                            service: 'EMS', 
+                            country: 'US', 
+                            zone: 'ALL' 
+                        }
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    let output = `🇺🇸 アメリカ向けEMS料金 (${result.data.length}件)\n\n`;
+                    
+                    if (result.data.length === 0) {
+                        output += `⚠️ アメリカ向けEMSデータが見つかりません！\n`;
+                        output += `データベースに投入されていない可能性があります。\n`;
+                    } else {
+                        output += `正しい料金（スクリーンショット）との比較:\n`;
+                        output += `期待値: 0.5kg=¥2,560, 1kg=¥2,720, 1.5kg=¥2,880\n\n`;
+                        
+                        result.data.forEach((row, index) => {
+                            const weightKg = row.weight_to_g / 1000;
+                            output += `${index + 1}. ${weightKg}kg: ¥${row.price_jpy} (${row.zone_code})\n`;
+                        });
+                    }
+                    
+                    showResult(output, result.data.length > 0 ? 'success' : 'warning');
+                } else {
+                    showResult(`❌ アメリカデータ取得エラー: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ アメリカデータ確認エラー: ${error.message}`, 'error');
+            }
+        }
+        
+        // 生SQL実行
+        async function rawSQLQuery() {
+            const sql = "SELECT COUNT(*) as total, company_code, service_code FROM shipping_service_rates GROUP BY company_code, service_code ORDER BY total DESC;";
+            await executeSQL(sql);
+        }
+        
+        // カスタムSQL実行
+        async function executeCustomSQL() {
+            const sql = document.getElementById('custom-sql').value.trim();
+            if (!sql) {
+                showResult('❌ SQLクエリを入力してください', 'error');
+                return;
+            }
+            await executeSQL(sql);
+        }
+        
+        // SQL実行共通関数
+        async function executeSQL(sql) {
+            showResult(`💻 SQL実行中...\n\nクエリ:\n${sql}`, 'info');
+            
+            try {
+                const response = await fetch(API_BASE, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'execute_raw_sql',
+                        sql: sql
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    let output = `✅ SQL実行成功\n\n`;
+                    output += `結果:\n${JSON.stringify(result.data, null, 2)}`;
+                    showResult(output, 'success');
+                } else {
+                    showResult(`❌ SQL実行エラー: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ SQL実行失敗: ${error.message}`, 'error');
+            }
+        }
+        
+        // 表示修正実行
+        async function fixDataDisplay() {
+            showResult('🔧 表示修正を実行中...', 'info');
+            
+            try {
+                // 1. 既存データクリア
+                await fetch(API_BASE, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'clear_data' })
+                });
+                
+                // 2. 正しいデータ投入
+                const response = await fetch(API_BASE, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'import_ems_data' })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult(`✅ 表示修正完了\n\n${result.data.imported_count}件のデータを再投入しました`, 'success');
+                } else {
+                    showResult(`❌ 表示修正エラー: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ 表示修正失敗: ${error.message}`, 'error');
+            }
+        }
+        
+        // 結果表示
+        function showResult(text, type) {
+            const resultsDiv = document.getElementById('diagnostic-results');
+            const alertClass = type === 'error' ? 'alert-error' : 
+                              type === 'success' ? 'alert-success' : 
+                              type === 'warning' ? 'alert-warning' : '';
+            
+            resultsDiv.innerHTML = `
+                <div class="alert ${alertClass}">
+                    <pre style="white-space: pre-wrap; margin: 0;">${text}</pre>
+                </div>
+            `;
+        }
+        
+        // ユーティリティ関数
+        function getCountryFlag(code) {
+            const flags = {
+                'US': '🇺🇸', 'CN': '🇨🇳', 'KR': '🇰🇷', 'TW': '🇹🇼',
+                'HK': '🇭🇰', 'SG': '🇸🇬', 'GB': '🇬🇧', 'DE': '🇩🇪',
+                'AU': '🇦🇺', 'CA': '🇨🇦', 'TH': '🇹🇭', 'BR': '🇧🇷', 'MX': '🇲🇽'
+            };
+            return flags[code] || '🌍';
+        }
+        
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚨 データベース緊急診断システム起動');
+        });
+    </script>
+</body>
+</html>

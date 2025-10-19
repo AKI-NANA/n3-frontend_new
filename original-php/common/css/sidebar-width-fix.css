@@ -1,0 +1,250 @@
+/**
+ * NAGANO-3 サイドバー連動修正CSS - 完全版
+ * common/css/sidebar-width-fix.css として保存
+ * 
+ * 🎯 解決項目:
+ * ✅ サイドバートグル時のメインコンテンツ幅連動修正
+ * ✅ JavaScript連動クラス制御対応
+ * ✅ 三段階状態管理（展開・折りたたみ・非表示）
+ * ✅ レスポンシブ対応
+ * ✅ !important使用による確実な適用
+ * 
+ * 作成日: 2025年9月1日
+ */
+
+/* ===== サイドバー幅制御専用CSS変数 ===== */
+:root {
+    /* サイドバー基本サイズ */
+    --sidebar-width: 220px;
+    --sidebar-collapsed: 60px;
+    --sidebar-hidden: 0px;
+    --header-height: 80px;
+    
+    /* コンテンツ幅計算（動的） */
+    --content-width-expanded: calc(100vw - var(--sidebar-width));
+    --content-width-collapsed: calc(100vw - var(--sidebar-collapsed));
+    --content-width-hidden: 100vw;
+    
+    /* コンテンツマージン */
+    --content-margin-expanded: var(--sidebar-width);
+    --content-margin-collapsed: var(--sidebar-collapsed);
+    --content-margin-hidden: 0px;
+    
+    /* トランジション */
+    --sidebar-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== サイドバー本体の基本スタイル ===== */
+.unified-sidebar, .sidebar {
+    position: fixed !important;
+    top: var(--header-height) !important;
+    left: 0 !important;
+    height: calc(100vh - var(--header-height)) !important;
+    z-index: 2000 !important;
+    transition: var(--sidebar-transition) !important;
+    overflow: hidden !important;
+    
+    /* デフォルト展開状態 */
+    width: var(--sidebar-width) !important;
+}
+
+/* ===== メインコンテンツの基本設定 ===== */
+.main-content, main, #mainContent, .content {
+    transition: var(--sidebar-transition) !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+    min-height: 100vh !important;
+    
+    /* デフォルト展開状態 */
+    margin-left: var(--content-margin-expanded) !important;
+    width: var(--content-width-expanded) !important;
+    max-width: var(--content-width-expanded) !important;
+    min-width: 0 !important;
+}
+
+/* ===== 🎯 サイドバー状態別制御（完全版） ===== */
+
+/* 1️⃣ 展開状態（デフォルト） */
+body:not(.sidebar-collapsed):not(.sidebar-hidden) .unified-sidebar,
+body:not(.sidebar-collapsed):not(.sidebar-hidden) .sidebar {
+    width: var(--sidebar-width) !important;
+    transform: translateX(0) !important;
+}
+
+body:not(.sidebar-collapsed):not(.sidebar-hidden) .main-content,
+body:not(.sidebar-collapsed):not(.sidebar-hidden) main,
+body:not(.sidebar-collapsed):not(.sidebar-hidden) #mainContent,
+body:not(.sidebar-collapsed):not(.sidebar-hidden) .content {
+    margin-left: var(--content-margin-expanded) !important;
+    width: var(--content-width-expanded) !important;
+    max-width: var(--content-width-expanded) !important;
+}
+
+/* 2️⃣ 折りたたみ状態 */
+body.sidebar-collapsed .unified-sidebar,
+body.sidebar-collapsed .sidebar,
+.unified-sidebar--collapsed {
+    width: var(--sidebar-collapsed) !important;
+    transform: translateX(0) !important;
+}
+
+body.sidebar-collapsed .main-content,
+body.sidebar-collapsed main,
+body.sidebar-collapsed #mainContent,
+body.sidebar-collapsed .content,
+.unified-sidebar--collapsed + .main-content,
+.unified-sidebar--collapsed ~ .main-content {
+    margin-left: var(--content-margin-collapsed) !important;
+    width: var(--content-width-collapsed) !important;
+    max-width: var(--content-width-collapsed) !important;
+}
+
+/* 3️⃣ 非表示状態 */
+body.sidebar-hidden .unified-sidebar,
+body.sidebar-hidden .sidebar,
+.unified-sidebar--hidden {
+    width: 0px !important;
+    transform: translateX(-100%) !important;
+}
+
+body.sidebar-hidden .main-content,
+body.sidebar-hidden main,
+body.sidebar-hidden #mainContent,
+body.sidebar-hidden .content,
+.unified-sidebar--hidden + .main-content,
+.unified-sidebar--hidden ~ .main-content {
+    margin-left: var(--content-margin-hidden) !important;
+    width: var(--content-width-hidden) !important;
+    max-width: var(--content-width-hidden) !important;
+}
+
+/* ===== JavaScript連動クラス制御 ===== */
+
+/* js-sidebar-expanded */
+.js-sidebar-expanded .unified-sidebar,
+.js-sidebar-expanded .sidebar {
+    width: var(--sidebar-width) !important;
+    transform: translateX(0) !important;
+}
+
+.js-sidebar-expanded .main-content,
+.js-sidebar-expanded main,
+.js-sidebar-expanded #mainContent,
+.js-sidebar-expanded .content {
+    margin-left: var(--content-margin-expanded) !important;
+    width: var(--content-width-expanded) !important;
+    max-width: var(--content-width-expanded) !important;
+}
+
+/* js-sidebar-collapsed */
+.js-sidebar-collapsed .unified-sidebar,
+.js-sidebar-collapsed .sidebar {
+    width: var(--sidebar-collapsed) !important;
+    transform: translateX(0) !important;
+}
+
+.js-sidebar-collapsed .main-content,
+.js-sidebar-collapsed main,
+.js-sidebar-collapsed #mainContent,
+.js-sidebar-collapsed .content {
+    margin-left: var(--content-margin-collapsed) !important;
+    width: var(--content-width-collapsed) !important;
+    max-width: var(--content-width-collapsed) !important;
+}
+
+/* js-sidebar-hidden */
+.js-sidebar-hidden .unified-sidebar,
+.js-sidebar-hidden .sidebar {
+    width: 0px !important;
+    transform: translateX(-100%) !important;
+}
+
+.js-sidebar-hidden .main-content,
+.js-sidebar-hidden main,
+.js-sidebar-hidden #mainContent,
+.js-sidebar-hidden .content {
+    margin-left: var(--content-margin-hidden) !important;
+    width: var(--content-width-hidden) !important;
+    max-width: var(--content-width-hidden) !important;
+}
+
+/* ===== レスポンシブ対応 ===== */
+
+/* タブレット（1024px以下） */
+@media (max-width: 1024px) {
+    :root {
+        --sidebar-width: 200px;           /* 少し細く */
+        --sidebar-collapsed: 50px;        /* 少し細く */
+    }
+    
+    /* タブレットでは自動的に折りたたみ */
+    body:not(.js-sidebar-expanded) .unified-sidebar,
+    body:not(.js-sidebar-expanded) .sidebar {
+        width: var(--sidebar-collapsed) !important;
+    }
+    
+    body:not(.js-sidebar-expanded) .main-content,
+    body:not(.js-sidebar-expanded) main,
+    body:not(.js-sidebar-expanded) #mainContent,
+    body:not(.js-sidebar-expanded) .content {
+        margin-left: var(--sidebar-collapsed) !important;
+        width: var(--content-width-collapsed) !important;
+        max-width: var(--content-width-collapsed) !important;
+    }
+}
+
+/* モバイル（768px以下） */
+@media (max-width: 768px) {
+    /* モバイルでは完全非表示 */
+    .unified-sidebar, .sidebar {
+        transform: translateX(-100%) !important;
+        width: var(--sidebar-width) !important;
+        z-index: 10000 !important;
+    }
+    
+    .main-content, main, #mainContent, .content {
+        margin-left: 0 !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+    }
+    
+    /* モバイルでサイドバーが開いた場合のオーバーレイ */
+    .unified-sidebar--mobile-open,
+    .sidebar--mobile-open {
+        transform: translateX(0) !important;
+    }
+}
+
+/* ===== デバッグ用スタイル ===== */
+.sidebar-debug-info {
+    position: fixed;
+    top: 100px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    font-family: monospace;
+    font-size: 12px;
+    z-index: 9999;
+    max-width: 300px;
+    word-wrap: break-word;
+}
+
+/* デバッグ用表示制御 */
+.debug-mode .sidebar-debug-info {
+    display: block;
+}
+
+:not(.debug-mode) .sidebar-debug-info {
+    display: none;
+}
+
+/* ===== 統合完了マーク ===== */
+/* このCSS読み込み確認用 */
+body[data-sidebar-fix="loaded"]::before {
+    content: "Sidebar Fix CSS Loaded";
+    position: absolute;
+    left: -9999px;
+    opacity: 0;
+}

@@ -33,6 +33,17 @@ export interface Product {
   // タイムスタンプ
   created_at: string
   updated_at: string
+  
+  // 出品情報
+  listed_at?: string | null
+  listing_history?: Array<{
+    marketplace: string
+    account: string
+    listing_id: string | null
+    status: 'success' | 'failed'
+    error_message?: string | null
+    listed_at: string
+  }>
 }
 
 export interface ProductUpdate {

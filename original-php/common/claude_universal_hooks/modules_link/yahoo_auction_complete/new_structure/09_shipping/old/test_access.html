@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>送料計算システム - アクセステスト</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
+        .status { padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .link-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin: 20px 0; }
+        .link-card { background: #f8f9fa; padding: 20px; border-radius: 5px; border: 1px solid #dee2e6; }
+        .btn { display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; margin: 5px; }
+        .btn:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚢 送料計算システム - アクセステスト</h1>
+        
+        <div class="status success">
+            ✅ このページが表示されていれば、HTMLファイルは正常にアクセスできています
+        </div>
+        
+        <div class="status info">
+            📍 現在のアクセス方法を確認中...
+        </div>
+        
+        <h3>🌐 利用可能なページ</h3>
+        <div class="link-grid">
+            <div class="link-card">
+                <h4>配送会社別独立マトリックス</h4>
+                <p>各社のゾーン体系を分離表示</p>
+                <a href="carrier_separated_matrix.html" class="btn">アクセス</a>
+            </div>
+            
+            <div class="link-card">
+                <h4>ゾーン管理UI（完全版）</h4>
+                <p>全配送会社のゾーン可視化</p>
+                <a href="zone_management_ui.html" class="btn">アクセス</a>
+            </div>
+            
+            <div class="link-card">
+                <h4>ゾーン確認（簡易版）</h4>
+                <p>軽量版の確認UI</p>
+                <a href="zone_check_simple.html" class="btn">アクセス</a>
+            </div>
+        </div>
+        
+        <h3>🔧 起動方法</h3>
+        <div class="status info">
+            <h4>方法1: メインサーバー (推奨)</h4>
+            <code>cd /Users/aritahiroaki/NAGANO-3/N3-Development/modules/yahoo_auction_complete/</code><br>
+            <code>./start_server_8080.sh</code><br>
+            <strong>アクセス:</strong> http://localhost:8080/new_structure/09_shipping/test_access.html
+        </div>
+        
+        <div class="status info">
+            <h4>方法2: 送料システム専用サーバー</h4>
+            <code>cd /Users/aritahiroaki/NAGANO-3/N3-Development/modules/yahoo_auction_complete/new_structure/09_shipping/</code><br>
+            <code>./start_shipping_server.sh</code><br>
+            <strong>アクセス:</strong> http://localhost:8080/test_access.html
+        </div>
+        
+        <div class="status info">
+            <h4>方法3: 直接ファイルアクセス</h4>
+            <strong>ブラウザで直接開く:</strong><br>
+            <code>file:///Users/aritahiroaki/NAGANO-3/N3-Development/modules/yahoo_auction_complete/new_structure/09_shipping/carrier_separated_matrix.html</code>
+        </div>
+        
+        <h3>📊 システム状態</h3>
+        <div id="system-status">
+            <p>JavaScript が有効な場合、システム状態を表示...</p>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const statusDiv = document.getElementById('system-status');
+            
+            // 現在のURL情報
+            const currentUrl = window.location.href;
+            const currentProtocol = window.location.protocol;
+            const currentHost = window.location.host;
+            
+            let statusHtml = `
+                <p><strong>現在のURL:</strong> ${currentUrl}</p>
+                <p><strong>プロトコル:</strong> ${currentProtocol}</p>
+                <p><strong>ホスト:</strong> ${currentHost || 'ローカルファイル'}</p>
+            `;
+            
+            if (currentProtocol === 'file:') {
+                statusHtml += `
+                    <div style="background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                        <strong>📁 ローカルファイルアクセス</strong><br>
+                        ファイルプロトコルでアクセス中。API機能は制限されます。<br>
+                        完全な機能を使用するにはHTTPサーバーを起動してください。
+                    </div>
+                `;
+            } else if (currentHost === 'localhost:8080') {
+                statusHtml += `
+                    <div style="background: #d4edda; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                        <strong>✅ メインサーバー接続</strong><br>
+                        Yahoo Auction統合システムのメインサーバーに接続中。
+                    </div>
+                `;
+            } else if (currentHost === 'localhost:8080') {
+                statusHtml += `
+                    <div style="background: #d1ecf1; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                        <strong>🚢 送料システム専用サーバー</strong><br>
+                        送料計算システム専用サーバーに接続中。
+                    </div>
+                `;
+            }
+            
+            statusDiv.innerHTML = statusHtml;
+        });
+    </script>
+</body>
+</html>

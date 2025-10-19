@@ -1,0 +1,907 @@
+/* ===============================================
+   eBayカテゴリ自動判定システム - 完全版CSS
+   ファイル: yahoo_auction_tool_ebay_category.css
+   バージョン: 1.0.0
+   更新日: 2025-09-16
+   =============================================== */
+
+/* =================================
+   CSS変数定義（N3デザインシステム統合）
+   ================================= */
+:root {
+    /* 既存システムとの互換性を保持 */
+    --ebay-primary: #3b82f6;
+    --ebay-success: #10b981;
+    --ebay-warning: #f59e0b;
+    --ebay-danger: #ef4444;
+    --ebay-info: #06b6d4;
+    --ebay-purple: #8b5cf6;
+    
+    /* eBayカテゴリシステム専用色 */
+    --category-highlight: #6366f1;
+    --category-confirmed: #059669;
+    --category-pending: #d97706;
+    --category-error: #dc2626;
+    
+    /* 背景・テキスト */
+    --ebay-bg-primary: #f8fafc;
+    --ebay-bg-secondary: #ffffff;
+    --ebay-bg-tertiary: #f1f5f9;
+    --ebay-text-primary: #1e293b;
+    --ebay-text-secondary: #475569;
+    --ebay-text-muted: #64748b;
+    
+    /* 境界線・影 */
+    --ebay-border: #e2e8f0;
+    --ebay-border-hover: #cbd5e1;
+    --ebay-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --ebay-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --ebay-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    
+    /* スペーシング */
+    --ebay-space-xs: 0.25rem;
+    --ebay-space-sm: 0.5rem;
+    --ebay-space-md: 1rem;
+    --ebay-space-lg: 1.5rem;
+    --ebay-space-xl: 2rem;
+    
+    /* 境界半径 */
+    --ebay-radius-sm: 0.25rem;
+    --ebay-radius-md: 0.375rem;
+    --ebay-radius-lg: 0.5rem;
+    --ebay-radius-xl: 0.75rem;
+    
+    /* アニメーション */
+    --ebay-transition-fast: all 0.15s ease-in-out;
+    --ebay-transition-normal: all 0.2s ease-in-out;
+    --ebay-transition-slow: all 0.3s ease-in-out;
+}
+
+/* =================================
+   eBayカテゴリシステム基本レイアウト
+   ================================= */
+
+.ebay-category-system {
+    background: var(--ebay-bg-secondary);
+    border-radius: var(--ebay-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--ebay-shadow-lg);
+}
+
+.category-detection-section {
+    background: var(--ebay-bg-secondary);
+    border: 1px solid var(--ebay-border);
+    border-radius: var(--ebay-radius-lg);
+    padding: var(--ebay-space-lg);
+    margin-bottom: var(--ebay-space-lg);
+    box-shadow: var(--ebay-shadow-sm);
+    transition: var(--ebay-transition-normal);
+}
+
+.category-detection-section:hover {
+    box-shadow: var(--ebay-shadow-md);
+    transform: translateY(-1px);
+    border-color: var(--ebay-border-hover);
+}
+
+/* =================================
+   CSVアップロード専用スタイル
+   ================================= */
+
+.csv-upload-container {
+    position: relative;
+    border: 2px dashed var(--ebay-border);
+    border-radius: var(--ebay-radius-lg);
+    padding: var(--ebay-space-xl);
+    text-align: center;
+    background: var(--ebay-bg-tertiary);
+    cursor: pointer;
+    transition: var(--ebay-transition-slow);
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.csv-upload-container:hover {
+    border-color: var(--ebay-primary);
+    background: rgba(59, 130, 246, 0.05);
+    transform: translateY(-2px);
+    box-shadow: var(--ebay-shadow-md);
+}
+
+.csv-upload-container.drag-over {
+    border-color: var(--ebay-success);
+    background: rgba(16, 185, 129, 0.1);
+    transform: scale(1.02);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+}
+
+.upload-icon {
+    font-size: 3rem;
+    color: var(--ebay-primary);
+    margin-bottom: var(--ebay-space-md);
+    transition: var(--ebay-transition-slow);
+}
+
+.csv-upload-container:hover .upload-icon {
+    transform: scale(1.1) rotate(5deg);
+    color: var(--ebay-success);
+}
+
+.upload-text {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--ebay-text-primary);
+    margin-bottom: var(--ebay-space-sm);
+    line-height: 1.4;
+}
+
+.upload-subtitle {
+    font-size: 0.875rem;
+    color: var(--ebay-text-secondary);
+    margin-bottom: var(--ebay-space-md);
+    opacity: 0.8;
+}
+
+.supported-formats {
+    display: flex;
+    gap: var(--ebay-space-sm);
+    justify-content: center;
+    margin-bottom: var(--ebay-space-md);
+    flex-wrap: wrap;
+}
+
+.format-tag {
+    padding: var(--ebay-space-xs) var(--ebay-space-sm);
+    background: var(--ebay-primary);
+    color: white;
+    border-radius: var(--ebay-radius-xl);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.025em;
+    box-shadow: var(--ebay-shadow-sm);
+}
+
+/* =================================
+   処理進行状況表示
+   ================================= */
+
+.processing-progress {
+    display: none;
+    background: var(--ebay-bg-tertiary);
+    border: 1px solid var(--ebay-border);
+    border-radius: var(--ebay-radius-lg);
+    padding: var(--ebay-space-lg);
+    margin: var(--ebay-space-lg) 0;
+    box-shadow: var(--ebay-shadow-sm);
+}
+
+.progress-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: var(--ebay-space-md);
+    gap: var(--ebay-space-md);
+}
+
+.progress-icon {
+    font-size: 1.5rem;
+    color: var(--ebay-primary);
+    animation: spin 2s linear infinite;
+}
+
+.progress-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--ebay-text-primary);
+    margin-bottom: var(--ebay-space-xs);
+}
+
+.progress-subtitle {
+    font-size: 0.875rem;
+    color: var(--ebay-text-secondary);
+    margin: 0;
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 8px;
+    background: var(--ebay-bg-secondary);
+    border-radius: var(--ebay-radius-sm);
+    overflow: hidden;
+    margin-bottom: var(--ebay-space-sm);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--ebay-primary), var(--ebay-success));
+    border-radius: var(--ebay-radius-sm);
+    transition: width 0.3s ease;
+    width: 0%;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.progress-text {
+    font-size: 0.875rem;
+    color: var(--ebay-text-secondary);
+    text-align: center;
+    font-weight: 500;
+}
+
+/* =================================
+   カテゴリ判定結果表示
+   ================================= */
+
+.category-result-card {
+    background: var(--ebay-bg-secondary);
+    border: 1px solid var(--ebay-border);
+    border-radius: var(--ebay-radius-lg);
+    padding: var(--ebay-space-lg);
+    margin-bottom: var(--ebay-space-md);
+    transition: var(--ebay-transition-normal);
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.category-result-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--ebay-shadow-lg);
+    border-color: var(--ebay-primary);
+}
+
+.category-result-card.recommended {
+    border-color: var(--ebay-success);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+}
+
+.category-result-card.recommended::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--ebay-success), var(--category-highlight));
+}
+
+.category-result-card.selected {
+    border-color: var(--category-highlight);
+    background: rgba(99, 102, 241, 0.05);
+    transform: scale(1.02);
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.15);
+}
+
+.category-result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--ebay-space-md);
+    gap: var(--ebay-space-md);
+}
+
+.category-name {
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: var(--ebay-text-primary);
+    line-height: 1.4;
+    flex: 1;
+}
+
+.category-path {
+    font-size: 0.75rem;
+    color: var(--ebay-text-muted);
+    margin-top: var(--ebay-space-xs);
+    font-weight: 400;
+}
+
+.confidence-score {
+    padding: var(--ebay-space-sm) var(--ebay-space-md);
+    border-radius: var(--ebay-radius-xl);
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+    min-width: 60px;
+    text-align: center;
+    box-shadow: var(--ebay-shadow-sm);
+}
+
+.confidence-high {
+    background: linear-gradient(135deg, var(--ebay-success), #047857);
+}
+
+.confidence-medium {
+    background: linear-gradient(135deg, var(--ebay-warning), var(--category-pending));
+}
+
+.confidence-low {
+    background: linear-gradient(135deg, var(--ebay-danger), var(--category-error));
+}
+
+.category-details {
+    font-size: 0.875rem;
+    color: var(--ebay-text-secondary);
+    margin-bottom: var(--ebay-space-md);
+    line-height: 1.6;
+}
+
+.category-id {
+    font-family: monospace;
+    background: var(--ebay-bg-tertiary);
+    padding: var(--ebay-space-xs) var(--ebay-space-sm);
+    border-radius: var(--ebay-radius-sm);
+    font-size: 0.75rem;
+    color: var(--ebay-text-primary);
+    font-weight: 600;
+}
+
+.keywords-matched {
+    margin-top: var(--ebay-space-xs);
+}
+
+.keyword-tag {
+    display: inline-block;
+    background: var(--category-highlight);
+    color: white;
+    padding: var(--ebay-space-xs) var(--ebay-space-sm);
+    border-radius: var(--ebay-radius-sm);
+    font-size: 0.7rem;
+    margin-right: var(--ebay-space-xs);
+    margin-bottom: var(--ebay-space-xs);
+    font-weight: 500;
+}
+
+/* =================================
+   Item Specifics表示
+   ================================= */
+
+.item-specifics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--ebay-space-sm);
+    margin: var(--ebay-space-md) 0;
+    padding: var(--ebay-space-md);
+    background: var(--ebay-bg-tertiary);
+    border-radius: var(--ebay-radius-md);
+    border: 1px solid var(--ebay-border);
+}
+
+.specific-item {
+    background: var(--ebay-bg-secondary);
+    padding: var(--ebay-space-sm);
+    border-radius: var(--ebay-radius-md);
+    text-align: center;
+    border: 1px solid var(--ebay-border);
+    transition: var(--ebay-transition-fast);
+    box-shadow: var(--ebay-shadow-sm);
+}
+
+.specific-item:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--ebay-shadow-md);
+    border-color: var(--ebay-border-hover);
+}
+
+.specific-label {
+    font-weight: 600;
+    font-size: 0.75rem;
+    color: var(--ebay-text-primary);
+    margin-bottom: var(--ebay-space-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.specific-value {
+    color: var(--ebay-text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* =================================
+   カテゴリアクションボタン
+   ================================= */
+
+.category-actions {
+    display: flex;
+    gap: var(--ebay-space-sm);
+    justify-content: flex-end;
+    margin-top: var(--ebay-space-md);
+    padding-top: var(--ebay-space-md);
+    border-top: 1px solid var(--ebay-border);
+}
+
+.btn-sm {
+    padding: var(--ebay-space-sm) var(--ebay-space-md);
+    font-size: 0.875rem;
+    border-radius: var(--ebay-radius-md);
+    font-weight: 500;
+    transition: var(--ebay-transition-fast);
+    border: 1px solid transparent;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ebay-space-xs);
+    text-decoration: none;
+    box-shadow: var(--ebay-shadow-sm);
+}
+
+.btn-sm:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--ebay-shadow-md);
+}
+
+.btn-success.btn-sm {
+    background: var(--ebay-success);
+    color: white;
+    border-color: var(--ebay-success);
+}
+
+.btn-success.btn-sm:hover {
+    background: var(--category-confirmed);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-info.btn-sm {
+    background: var(--ebay-info);
+    color: white;
+    border-color: var(--ebay-info);
+}
+
+.btn-info.btn-sm:hover {
+    background: #0891b2;
+    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+}
+
+.btn-primary.btn-sm {
+    background: var(--ebay-primary);
+    color: white;
+    border-color: var(--ebay-primary);
+}
+
+.btn-primary.btn-sm:hover {
+    background: #2563eb;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* =================================
+   統計カード
+   ================================= */
+
+.demo-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--ebay-space-md);
+    margin: var(--ebay-space-xl) 0;
+}
+
+.demo-stat-card {
+    background: var(--ebay-bg-secondary);
+    border: 1px solid var(--ebay-border);
+    border-radius: var(--ebay-radius-lg);
+    padding: var(--ebay-space-lg);
+    text-align: center;
+    transition: var(--ebay-transition-normal);
+    box-shadow: var(--ebay-shadow-sm);
+    position: relative;
+    overflow: hidden;
+}
+
+.demo-stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--ebay-primary), var(--category-highlight));
+}
+
+.demo-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--ebay-shadow-lg);
+    border-color: var(--ebay-border-hover);
+}
+
+.demo-stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--ebay-primary);
+    margin-bottom: var(--ebay-space-sm);
+    line-height: 1;
+}
+
+.demo-stat-label {
+    font-size: 0.875rem;
+    color: var(--ebay-text-secondary);
+    font-weight: 500;
+}
+
+/* =================================
+   ステータスインジケーター
+   ================================= */
+
+.demo-status {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--ebay-space-md);
+    margin: var(--ebay-space-md) 0;
+    padding: var(--ebay-space-md);
+    background: var(--ebay-bg-tertiary);
+    border-radius: var(--ebay-radius-lg);
+    border: 1px solid var(--ebay-border);
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    gap: var(--ebay-space-sm);
+    padding: var(--ebay-space-sm);
+    background: var(--ebay-bg-secondary);
+    border-radius: var(--ebay-radius-md);
+    box-shadow: var(--ebay-shadow-sm);
+    transition: var(--ebay-transition-fast);
+}
+
+.status-item:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--ebay-shadow-md);
+}
+
+.status-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.status-completed {
+    color: var(--ebay-success);
+}
+
+.status-pending {
+    color: var(--ebay-warning);
+}
+
+.status-error {
+    color: var(--ebay-danger);
+}
+
+.status-info {
+    color: var(--ebay-info);
+}
+
+/* =================================
+   通知システム
+   ================================= */
+
+.ebay-notification {
+    padding: var(--ebay-space-md);
+    border-radius: var(--ebay-radius-md);
+    margin: var(--ebay-space-md) 0;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--ebay-space-sm);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    border: 1px solid;
+    position: relative;
+    overflow: hidden;
+}
+
+.ebay-notification::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+}
+
+.ebay-notification.info {
+    background: #dbeafe;
+    color: #1e40af;
+    border-color: #93c5fd;
+}
+
+.ebay-notification.info::before {
+    background: var(--ebay-info);
+}
+
+.ebay-notification.warning {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #fbbf24;
+}
+
+.ebay-notification.warning::before {
+    background: var(--ebay-warning);
+}
+
+.ebay-notification.success {
+    background: #dcfce7;
+    color: #166534;
+    border-color: #86efac;
+}
+
+.ebay-notification.success::before {
+    background: var(--ebay-success);
+}
+
+.ebay-notification.error {
+    background: #fee2e2;
+    color: #991b1b;
+    border-color: #fca5a5;
+}
+
+.ebay-notification.error::before {
+    background: var(--ebay-danger);
+}
+
+/* =================================
+   フォーム要素
+   ================================= */
+
+.ebay-form-group {
+    margin-bottom: var(--ebay-space-md);
+}
+
+.ebay-form-label {
+    display: block;
+    margin-bottom: var(--ebay-space-sm);
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--ebay-text-primary);
+}
+
+.ebay-form-input,
+.ebay-form-textarea,
+.ebay-form-select {
+    width: 100%;
+    padding: var(--ebay-space-sm) var(--ebay-space-md);
+    border: 1px solid var(--ebay-border);
+    border-radius: var(--ebay-radius-md);
+    background: var(--ebay-bg-secondary);
+    font-size: 0.875rem;
+    color: var(--ebay-text-primary);
+    transition: var(--ebay-transition-fast);
+    box-shadow: var(--ebay-shadow-sm);
+}
+
+.ebay-form-input:focus,
+.ebay-form-textarea:focus,
+.ebay-form-select:focus {
+    outline: none;
+    border-color: var(--ebay-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.ebay-form-textarea {
+    resize: vertical;
+    min-height: 100px;
+    line-height: 1.5;
+}
+
+/* =================================
+   アニメーション
+   ================================= */
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+    0%, 100% { 
+        transform: scale(1); 
+        opacity: 1; 
+    }
+    50% { 
+        transform: scale(1.05); 
+        opacity: 0.9; 
+    }
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.category-result-card {
+    animation: slideInUp 0.4s ease-out;
+}
+
+.category-result-card:nth-child(2) { animation-delay: 0.1s; }
+.category-result-card:nth-child(3) { animation-delay: 0.2s; }
+.category-result-card:nth-child(4) { animation-delay: 0.3s; }
+.category-result-card:nth-child(5) { animation-delay: 0.4s; }
+
+.demo-stat-card {
+    animation: slideInRight 0.5s ease-out;
+}
+
+.demo-stat-card:nth-child(2) { animation-delay: 0.1s; }
+.demo-stat-card:nth-child(3) { animation-delay: 0.2s; }
+.demo-stat-card:nth-child(4) { animation-delay: 0.3s; }
+
+/* =================================
+   レスポンシブ対応
+   ================================= */
+
+@media (max-width: 1024px) {
+    .category-result-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--ebay-space-sm);
+    }
+    
+    .confidence-score {
+        align-self: flex-start;
+    }
+    
+    .item-specifics {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    }
+    
+    .category-actions {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 768px) {
+    .csv-upload-container {
+        padding: var(--ebay-space-lg);
+        min-height: 150px;
+    }
+    
+    .upload-icon {
+        font-size: 2rem;
+    }
+    
+    .upload-text {
+        font-size: 1rem;
+    }
+    
+    .item-specifics {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--ebay-space-sm);
+    }
+    
+    .category-actions {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .demo-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .demo-status {
+        grid-template-columns: 1fr;
+    }
+    
+    .category-result-header {
+        gap: var(--ebay-space-sm);
+    }
+}
+
+@media (max-width: 480px) {
+    .category-detection-section {
+        padding: var(--ebay-space-md);
+    }
+    
+    .csv-upload-container {
+        padding: var(--ebay-space-md);
+        min-height: 120px;
+    }
+    
+    .category-result-card {
+        padding: var(--ebay-space-md);
+    }
+    
+    .item-specifics {
+        grid-template-columns: 1fr;
+    }
+    
+    .demo-stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .supported-formats {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .category-name {
+        font-size: 1rem;
+    }
+    
+    .confidence-score {
+        font-size: 0.75rem;
+        padding: var(--ebay-space-xs) var(--ebay-space-sm);
+    }
+}
+
+/* =================================
+   ダークモード対応（将来用）
+   ================================= */
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --ebay-bg-primary: #0f172a;
+        --ebay-bg-secondary: #1e293b;
+        --ebay-bg-tertiary: #334155;
+        --ebay-text-primary: #f1f5f9;
+        --ebay-text-secondary: #cbd5e1;
+        --ebay-text-muted: #94a3b8;
+        --ebay-border: #475569;
+        --ebay-border-hover: #64748b;
+    }
+    
+    .category-result-card {
+        background: var(--ebay-bg-secondary);
+        border-color: var(--ebay-border);
+    }
+    
+    .csv-upload-container {
+        background: var(--ebay-bg-tertiary);
+        border-color: var(--ebay-border);
+    }
+    
+    .specific-item {
+        background: var(--ebay-bg-secondary);
+        border-color: var(--ebay-border);
+    }
+    
+    .demo-stat-card {
+        background: var(--ebay-bg-secondary);
+        border-color: var(--ebay-border);
+    }
+}
+
+/* =================================
+   プリント用スタイル
+   ================================= */
+
+@media print {
+    .category-result-card {
+        break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #000;
+    }
+    
+    .csv-upload-container,
+    .processing-progress,
+    .category-actions {
+        display: none;
+    }
+    
+    .demo-stats-grid {
+        break-before: page;
+    }
+}

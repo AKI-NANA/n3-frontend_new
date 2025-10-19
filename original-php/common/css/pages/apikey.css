@@ -1,0 +1,883 @@
+/**
+ * APIキー管理専用CSS - apikey.css
+ * 共通style.cssを基盤とした専用デザイン
+ * 配置: /common/css/pages/apikey.css
+ */
+
+/* ===== 🔥 重要: 共通クラスが存在しないため、必要なクラスを追加定義 ===== */
+
+/* 共通CSSで定義されていないクラスを追加 */
+.dashboard__stat-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    text-align: center;
+    transition: var(--transition);
+    box-shadow: var(--shadow-sm);
+}
+
+.dashboard__stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-primary);
+}
+
+.dashboard__stat-title {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-2);
+    font-weight: 500;
+}
+
+.dashboard__stat-value {
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--color-primary);
+    margin: 0;
+}
+
+.dashboard__section {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-6);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.dashboard__section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-4);
+    border-bottom: 1px solid var(--border-light);
+    background: var(--bg-primary);
+}
+
+.dashboard__section-title {
+    margin: 0;
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.dashboard__section-content {
+    padding: var(--space-4);
+}
+
+.dashboard__actions {
+    display: flex;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+    flex-wrap: wrap;
+}
+
+/* テーブル関連クラス（共通CSSにない場合） */
+.table-responsive {
+    overflow-x: auto;
+}
+
+.common-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.common-table th {
+    padding: var(--space-3);
+    text-align: left;
+    border-bottom: 1px solid var(--border-light);
+    background: var(--bg-secondary);
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: var(--text-sm);
+}
+
+.common-table td {
+    padding: var(--space-3);
+    border-bottom: 1px solid var(--border-light);
+    font-size: var(--text-sm);
+    vertical-align: middle;
+}
+
+.common-table tbody tr:hover {
+    background: var(--bg-hover);
+}
+
+.table-cell-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.table-cell-primary {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.table-cell-secondary {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+}
+
+.table-cell-date {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.table-actions {
+    display: flex;
+    gap: var(--space-2);
+}
+
+/* 空状態クラス（共通CSSにない場合） */
+.empty-state {
+    text-align: center;
+    padding: var(--space-8);
+    color: var(--text-secondary);
+}
+
+.empty-state__icon {
+    font-size: 3rem;
+    margin-bottom: var(--space-4);
+    opacity: 0.3;
+    color: var(--text-muted);
+}
+
+.empty-state__title {
+    font-size: var(--text-xl);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--space-2);
+}
+
+.empty-state__description {
+    margin-bottom: var(--space-4);
+    line-height: 1.6;
+}
+
+/* ボタンクラス（共通CSSにない場合） */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    text-decoration: none;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    transition: var(--transition);
+    line-height: 1.5;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn--primary {
+    background: var(--color-primary);
+    color: white;
+}
+
+.btn--primary:hover:not(:disabled) {
+    background: var(--color-secondary);
+    transform: translateY(-1px);
+}
+
+.btn--secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.btn--secondary:hover:not(:disabled) {
+    background: var(--bg-hover);
+    border-color: var(--color-primary);
+}
+
+.btn--success {
+    background: var(--color-success);
+    color: white;
+}
+
+.btn--success:hover:not(:disabled) {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.btn--warning {
+    background: var(--color-warning);
+    color: white;
+}
+
+.btn--warning:hover:not(:disabled) {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.btn--info {
+    background: var(--color-info);
+    color: white;
+}
+
+.btn--info:hover:not(:disabled) {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.btn--danger {
+    background: var(--color-danger);
+    color: white;
+}
+
+.btn--danger:hover:not(:disabled) {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.btn--small {
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--text-xs);
+}
+
+/* モーダル関連クラス（共通CSSにない場合） */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-overlay--active {
+    display: flex !important;
+}
+
+.modal {
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-xl);
+}
+
+.modal__header {
+    padding: var(--space-4);
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-secondary);
+}
+
+.modal__title {
+    margin: 0;
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.modal__close {
+    background: none;
+    border: none;
+    font-size: var(--text-lg);
+    cursor: pointer;
+    padding: var(--space-1);
+    color: var(--text-secondary);
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+}
+
+.modal__close:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.modal__body {
+    padding: var(--space-4);
+}
+
+.modal__footer {
+    padding: var(--space-4);
+    border-top: 1px solid var(--border-light);
+    display: flex;
+    gap: var(--space-3);
+    justify-content: flex-end;
+    background: var(--bg-secondary);
+}
+
+/* ===== APIキー管理専用ヘッダー ===== */
+.apikey-header {
+    background: linear-gradient(135deg, #06b6d4, #8b5cf6);
+    color: white;
+    padding: var(--space-8);
+    border-radius: var(--radius-xl);
+    margin-bottom: var(--space-6);
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    overflow: hidden;
+}
+
+.apikey-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    transform: translate(30px, -30px);
+}
+
+.apikey-header h1 {
+    margin: 0 0 var(--space-2) 0;
+    font-size: var(--text-3xl);
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.apikey-header p {
+    margin: 0;
+    font-size: var(--text-lg);
+    opacity: 0.9;
+}
+
+/* ===== .env統合セクション ===== */
+.apikey-stats-enhanced {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(139, 92, 246, 0.04));
+    border: 1px solid rgba(59, 130, 246, 0.15);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    margin-bottom: var(--space-6);
+    position: relative;
+}
+
+.apikey-stats-enhanced::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #06b6d4, #8b5cf6);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+.apikey-stats-enhanced h3 {
+    margin: 0 0 var(--space-3) 0;
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+.apikey-stats-enhanced p {
+    margin: 0 0 var(--space-4) 0;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+/* ===== デバッグ情報スタイル ===== */
+.debug-info {
+    background: linear-gradient(135deg, #f0f8ff, #e6f3ff);
+    border: 1px solid var(--color-info);
+    border-left: 4px solid var(--color-info);
+    padding: var(--space-4);
+    margin: var(--space-4) 0;
+    border-radius: var(--radius-lg);
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: var(--text-xs);
+    line-height: 1.5;
+}
+
+.debug-info strong {
+    color: var(--color-info);
+    font-weight: 600;
+}
+
+/* ===== フォーム専用スタイル ===== */
+.form-group {
+    margin-bottom: var(--space-4);
+}
+
+.form-label {
+    display: block;
+    margin-bottom: var(--space-2);
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: var(--text-sm);
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    font-size: var(--text-sm);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    transition: var(--transition);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    transform: translateY(-1px);
+}
+
+.form-textarea {
+    min-height: 80px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+/* ===== ログビューア専用スタイル ===== */
+.log-viewer {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    max-height: 300px;
+    overflow-y: auto;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: var(--text-xs);
+    line-height: 1.4;
+    padding: var(--space-4);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.log-entry {
+    margin-bottom: var(--space-2);
+    padding: var(--space-1) 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.log-entry:last-child {
+    border-bottom: none;
+}
+
+.log-entry--info {
+    color: var(--color-info);
+}
+
+.log-entry--success {
+    color: var(--color-success);
+}
+
+.log-entry--warning {
+    color: var(--color-warning);
+}
+
+.log-entry--error {
+    color: var(--color-danger);
+}
+
+.log-timestamp {
+    color: var(--text-muted);
+    margin-right: var(--space-2);
+    font-weight: 500;
+}
+
+.log-level {
+    margin-right: var(--space-2);
+    font-weight: 600;
+}
+
+/* ===== プログレスバー ===== */
+.progress {
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    height: 8px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress__bar {
+    background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+    height: 100%;
+    transition: width 0.6s ease;
+    position: relative;
+}
+
+.progress__bar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(45deg,
+            transparent 33%,
+            rgba(255, 255, 255, 0.3) 33%,
+            rgba(255, 255, 255, 0.3) 66%,
+            transparent 66%);
+    background-size: 20px 20px;
+    animation: progress-stripes 1s linear infinite;
+}
+
+@keyframes progress-stripes {
+    0% {
+        background-position: 0 0;
+    }
+
+    100% {
+        background-position: 20px 0;
+    }
+}
+
+/* ===== モジュール統合項目 ===== */
+.module-item {
+    transition: all var(--transition);
+    border-left: 4px solid transparent;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-2);
+}
+
+.module-item:hover {
+    background: var(--bg-hover);
+    border-left-color: var(--color-primary);
+    transform: translateX(var(--space-1));
+    box-shadow: var(--shadow-md);
+}
+
+.module-item--active {
+    border-left-color: var(--color-success);
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.module-item--pending {
+    border-left-color: var(--color-warning);
+    background: rgba(245, 158, 11, 0.05);
+}
+
+/* ===== 通知トースト ===== */
+.notification-toast {
+    position: fixed;
+    top: var(--space-6);
+    right: var(--space-6);
+    z-index: var(--z-notification, 10000);
+    padding: var(--space-4) var(--space-6);
+    border-radius: var(--radius-lg);
+    color: white;
+    font-weight: 600;
+    box-shadow: var(--shadow-xl);
+    max-width: 400px;
+    word-wrap: break-word;
+    backdrop-filter: blur(8px);
+}
+
+.notification-toast--success {
+    background: linear-gradient(135deg, var(--color-success), #059669);
+}
+
+.notification-toast--error {
+    background: linear-gradient(135deg, var(--color-danger), #dc2626);
+}
+
+.notification-toast--warning {
+    background: linear-gradient(135deg, var(--color-warning), #d97706);
+    color: var(--text-primary);
+}
+
+.notification-toast--info {
+    background: linear-gradient(135deg, var(--color-info), #0284c7);
+}
+
+/* ===== バッジシステム ===== */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--space-1) var(--space-3);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.badge--success {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--color-success);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.badge--warning {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--color-warning);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.badge--primary {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--color-primary);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.badge--secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+/* ===== アニメーション ===== */
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* ===== レスポンシブ対応 ===== */
+@media (max-width: 768px) {
+    .apikey-header {
+        padding: var(--space-6);
+        text-align: center;
+    }
+
+    .apikey-header h1 {
+        font-size: var(--text-2xl);
+    }
+
+    .apikey-stats-enhanced {
+        padding: var(--space-4);
+    }
+
+    .dashboard__actions {
+        flex-direction: column;
+        gap: var(--space-2);
+    }
+
+    .dashboard__actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .notification-toast {
+        top: var(--space-4);
+        right: var(--space-4);
+        left: var(--space-4);
+        max-width: none;
+    }
+
+    .log-viewer {
+        max-height: 200px;
+        font-size: 11px;
+    }
+
+    .modal {
+        width: 95%;
+        margin: var(--space-4);
+    }
+
+    .dashboard__stats-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-3);
+    }
+}
+
+@media (max-width: 480px) {
+    .apikey-header {
+        padding: var(--space-4);
+    }
+
+    .apikey-header h1 {
+        font-size: var(--text-xl);
+    }
+
+    .form-input,
+    .form-select,
+    .form-textarea {
+        padding: var(--space-2) var(--space-3);
+    }
+
+    .debug-info {
+        font-size: 10px;
+        padding: var(--space-3);
+    }
+
+    .dashboard__section-header {
+        flex-direction: column;
+        gap: var(--space-2);
+        align-items: stretch;
+    }
+
+    .table-actions {
+        flex-direction: column;
+        gap: var(--space-1);
+    }
+}
+
+/* ===== ダークモード対応 ===== */
+@media (prefers-color-scheme: dark) {
+    .apikey-header {
+        background: linear-gradient(135deg, #0891b2, #7c3aed);
+    }
+
+    .debug-info {
+        background: linear-gradient(135deg, #1e293b, #334155);
+        border-color: var(--color-info);
+    }
+
+    .log-viewer {
+        background: var(--bg-tertiary);
+        border-color: var(--border-dark);
+    }
+}
+
+/* ===== 印刷対応 ===== */
+@media print {
+    .apikey-header {
+        background: #f8fafc !important;
+        color: #1e293b !important;
+        border: 1px solid #e2e8f0 !important;
+    }
+
+    .debug-info,
+    .log-viewer,
+    .notification-toast {
+        display: none !important;
+    }
+
+    .dashboard__actions {
+        display: none !important;
+    }
+
+    .dashboard__stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+/* ===== アクセシビリティ強化 ===== */
+@media (prefers-reduced-motion: reduce) {
+
+    .module-item,
+    .form-input,
+    .form-select,
+    .form-textarea,
+    .progress__bar {
+        transition: none !important;
+    }
+
+    .progress__bar::before {
+        animation: none !important;
+    }
+
+    .notification-toast {
+        animation: none !important;
+    }
+}
+
+/* ===== フォーカス管理 ===== */
+.form-input:focus-visible,
+.form-select:focus-visible,
+.form-textarea:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* ===== 高コントラストモード対応 ===== */
+@media (prefers-contrast: high) {
+    .apikey-header {
+        background: #000 !important;
+        color: #fff !important;
+        border: 2px solid #fff !important;
+    }
+
+    .form-input,
+    .form-select,
+    .form-textarea {
+        border-width: 2px !important;
+    }
+}
+
+/* ===== レイアウト修正: 縦並び統一 ===== */
+.page-content {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1.5rem !important;
+    max-width: 1000px !important;
+    margin: 0 auto !important;
+    padding: 1.5rem !important;
+}
+
+.dashboard__stats-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1rem !important;
+}
+
+.dashboard__actions {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+    max-width: 300px !important;
+}
+
+.dashboard__section {
+    width: 100% !important;
+    margin-bottom: 1.5rem !important;
+}

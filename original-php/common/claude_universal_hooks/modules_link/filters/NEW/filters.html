@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>フィルター管理 | NAGANO-3 統合管理システム | Emverze SaaS</title>
+
+    <!-- セキュリティヘッダー -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self';"
+    />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+
+    <!-- 外部ライブラリ -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+
+    <!-- ナレッジベースCSS -->
+    <link href="style.css" rel="stylesheet" />
+    <!-- フィルター専用CSS -->
+    <link href="filters.css" rel="stylesheet" />
+  <script>
+// CAIDS error_handling Hook
+
+// CAIDS エラー処理Hook - 完全実装
+window.CAIDS_ERROR_HANDLER = {
+    isActive: true,
+    errorCount: 0,
+    errorHistory: [],
+    
+    initialize: function() {
+        this.setupGlobalErrorHandler();
+        this.setupUnhandledPromiseRejection();
+        this.setupNetworkErrorHandler();
+        console.log('⚠️ CAIDS エラーハンドリングシステム完全初期化');
+    },
+    
+    setupGlobalErrorHandler: function() {
+        window.addEventListener('error', (event) => {
+            this.handleError({
+                type: 'JavaScript Error',
+                message: event.message,
+                filename: event.filename,
+                lineno: event.lineno,
+                colno: event.colno,
+                stack: event.error?.stack
+            });
+        });
+    },
+    
+    setupUnhandledPromiseRejection: function() {
+        window.addEventListener('unhandledrejection', (event) => {
+            this.handleError({
+                type: 'Unhandled Promise Rejection',
+                message: event.reason?.message || String(event.reason),
+                stack: event.reason?.stack
+            });
+        });
+    },
+    
+    setupNetworkErrorHandler: function() {
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            try {
+                const response = await originalFetch.apply(this, args);
+                if (!response.ok) {
+                    window.CAIDS_ERROR_HANDLER.handleError({
+                        type: 'Network Error',
+                        message: `HTTP ${response.status}: ${response.statusText}`,
+                        url: args[0]
+                    });
+                }
+                return response;
+            } catch (error) {
+                window.CAIDS_ERROR_HANDLER.handleError({
+                    type: 'Network Fetch Error',
+                    message: error.message,
+                    url: args[0]
+                });
+                throw error;
+            }
+        };
+    },
+    
+    handleError: function(errorInfo) {
+        this.errorCount++;
+        this.errorHistory.push({...errorInfo, timestamp: new Date().toISOString()});
+        
+        console.error('🚨 CAIDS Error Handler:', errorInfo);
+        this.showErrorNotification(errorInfo);
+        this.reportError(errorInfo);
+    },
+    
+    showErrorNotification: function(errorInfo) {
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = `
+            position: fixed; top: 10px; right: 10px; z-index: 999999;
+            background: linear-gradient(135deg, #ff4444, #cc0000);
+            color: white; padding: 15px 20px; border-radius: 8px;
+            max-width: 350px; box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            font-size: 13px; font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            border: 2px solid #ff6666; animation: caids-error-shake 0.5s ease-in-out;
+        `;
+        errorDiv.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 18px;">🚨</span>
+                <div>
+                    <strong>エラーが発生しました</strong><br>
+                    <small style="opacity: 0.9;">${errorInfo.type}: ${errorInfo.message}</small>
+                </div>
+            </div>
+        `;
+        
+        // CSS Animation
+        if (!document.getElementById('caids-error-styles')) {
+            const style = document.createElement('style');
+            style.id = 'caids-error-styles';
+            style.textContent = `
+                @keyframes caids-error-shake {
+                    0%, 100% { transform: translateX(0); }
+                    25% { transform: translateX(-5px); }
+                    75% { transform: translateX(5px); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(errorDiv);
+        setTimeout(() => errorDiv.remove(), 7000);
+    },
+    
+    reportError: function(errorInfo) {
+        // エラーレポート生成・送信（将来の拡張用）
+        const report = {
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent,
+            url: window.location.href,
+            errorCount: this.errorCount,
+            sessionId: this.getSessionId(),
+            ...errorInfo
+        };
+        
+        console.log('📋 CAIDS Error Report:', report);
+        localStorage.setItem('caids_last_error', JSON.stringify(report));
+    },
+    
+    getSessionId: function() {
+        let sessionId = sessionStorage.getItem('caids_session_id');
+        if (!sessionId) {
+            sessionId = 'caids_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            sessionStorage.setItem('caids_session_id', sessionId);
+        }
+        return sessionId;
+    },
+    
+    getErrorStats: function() {
+        return {
+            totalErrors: this.errorCount,
+            recentErrors: this.errorHistory.slice(-10),
+            sessionId: this.getSessionId()
+        };
+    }
+};
+
+window.CAIDS_ERROR_HANDLER.initialize();
+
+</script>
+<script>
+// CAIDS user_feedback Hook
+// CAIDS user_feedback Hook - 基本実装
+console.log('✅ user_feedback Hook loaded');
+</script>
+<script>
+// CAIDS character_limit Hook
+// CAIDS character_limit Hook - 基本実装
+console.log('✅ character_limit Hook loaded');
+</script>
+<script>
+// CAIDS emergency_accumulation Hook
+// CAIDS emergency_accumulation Hook - 基本実装
+console.log('✅ emergency_accumulation Hook loaded');
+</script>
+<script>
+// CAIDS processing_capacity_monitoring Hook
+// CAIDS processing_capacity_monitoring Hook - 基本実装
+console.log('✅ processing_capacity_monitoring Hook loaded');
+</script>
+<script>
+// CAIDS pre_analysis_enforcement Hook
+// CAIDS pre_analysis_enforcement Hook - 基本実装
+console.log('✅ pre_analysis_enforcement Hook loaded');
+</script>
+<script>
+// CAIDS user_approval_required Hook
+// CAIDS user_approval_required Hook - 基本実装
+console.log('✅ user_approval_required Hook loaded');
+</script>
+<script>
+// CAIDS timeout_management Hook
+// CAIDS timeout_management Hook - 基本実装
+console.log('✅ timeout_management Hook loaded');
+</script>
+<script>
+// CAIDS development_control Hook
+// CAIDS development_control Hook - 基本実装
+console.log('✅ development_control Hook loaded');
+</script>
+<script>
+// CAIDS natural_explanation Hook
+// CAIDS natural_explanation Hook - 基本実装
+console.log('✅ natural_explanation Hook loaded');
+</script>
+</head>
+  <body data-system-ready="false">
+    <div
+      class="dashboard__container"
+      id="dashboardContainer"
+      data-sidebar="expanded"
+    >
+      <!-- ヘッダー（ナレッジベース維持） -->
+      <header class="header" id="mainHeader">
+        <div class="header-left">
+          <a href="/" class="logo">
+            <div class="logo__icon">N3</div>
+            <div class="logo__text">
+              <h1>NAGANO-3</h1>
+            </div>
+          </a>
+        </div>
+
+        <!-- 検索機能 -->
+        <div class="header__search" id="headerSearchContainer">
+          <i class="fas fa-search search__icon"></i>
+          <input
+            type="text"
+            class="search__input"
+            placeholder="フィルター設定、NGワードを検索..."
+            id="globalSearchInput"
+          />
+        </div>
+
+        <!-- 世界時計 -->
+        <div class="world-clock">
+          <div class="clock__item">
+            <div class="clock__label">西海岸</div>
+            <div class="clock__time">
+              <div class="clock__time-main" id="westCoastTime">01:07</div>
+              <div class="clock__time-sub" id="westCoastDate">05/30</div>
+            </div>
+          </div>
+          <div class="clock__item">
+            <div class="clock__label">東海岸</div>
+            <div class="clock__time">
+              <div class="clock__time-main" id="eastCoastTime">04:07</div>
+              <div class="clock__time-sub" id="eastCoastDate">05/30</div>
+            </div>
+          </div>
+          <div class="clock__item">
+            <div class="clock__label">ドイツ</div>
+            <div class="clock__time">
+              <div class="clock__time-main" id="germanyTime">15:41</div>
+              <div class="clock__time-sub" id="germanyDate">05/30</div>
+            </div>
+          </div>
+          <div class="clock__item clock__item--japan">
+            <div class="clock__label">日本</div>
+            <div class="clock__time">
+              <div class="clock__time-main" id="japanTime">22:41</div>
+              <div class="clock__date" id="japanDate">05/30(金)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 為替表示 -->
+        <div class="exchange-rates">
+          <div class="rate__item rate__item--usd">
+            <div class="rate__value" id="usdRate">¥149.2</div>
+            <div class="rate__label">USD</div>
+          </div>
+          <div class="rate__item">
+            <div class="rate__value" id="cadRate">¥110.3</div>
+            <div class="rate__label">CAD</div>
+          </div>
+          <div class="rate__item">
+            <div class="rate__value" id="audRate">¥98.7</div>
+            <div class="rate__label">AUD</div>
+          </div>
+          <div class="rate__item">
+            <div class="rate__value" id="eurRate">¥162.8</div>
+            <div class="rate__label">EUR</div>
+          </div>
+          <div class="rate__item">
+            <div class="rate__value" id="gbpRate">¥189.5</div>
+            <div class="rate__label">GBP</div>
+          </div>
+        </div>
+
+        <!-- ヘッダーアクション -->
+        <div class="header__actions">
+          <!-- 通知アイコンシステム -->
+          <div class="notification__container" id="notificationContainer">
+            <div
+              class="notification__icon notification__icon--system"
+              id="systemNotificationIcon"
+            >
+              <i class="fas fa-server"></i>
+              <div class="notification__badge" data-type="system">0</div>
+            </div>
+
+            <div
+              class="notification__icon notification__icon--chatwork"
+              id="chatworkNotificationIcon"
+            >
+              <i class="fas fa-comments"></i>
+              <div class="notification__badge" data-type="chatwork">3</div>
+            </div>
+
+            <div
+              class="notification__icon notification__icon--inquiry"
+              id="inquiryNotificationIcon"
+            >
+              <i class="fas fa-envelope"></i>
+              <div class="notification__badge" data-type="inquiry">5</div>
+            </div>
+
+            <div
+              class="notification__icon notification__icon--purchase"
+              id="purchaseNotificationIcon"
+            >
+              <i class="fas fa-cart-plus"></i>
+              <div class="notification__badge" data-type="purchase">12</div>
+            </div>
+
+            <div
+              class="notification__icon notification__icon--shipping"
+              id="shippingNotificationIcon"
+            >
+              <i class="fas fa-truck"></i>
+              <div class="notification__badge" data-type="shipping">8</div>
+            </div>
+
+            <div
+              class="notification__icon notification__icon--ai"
+              id="aiNotificationIcon"
+            >
+              <i class="fas fa-robot"></i>
+              <div class="notification__badge" data-type="ai">2</div>
+            </div>
+          </div>
+
+          <!-- テーマ切り替え -->
+          <div
+            class="theme-switcher"
+            id="themeSwitcher"
+            data-tooltip="ダークモードに切り替え"
+          >
+            <i class="fas fa-palette"></i>
+          </div>
+
+          <!-- ユーザーランキング -->
+          <div
+            class="user-ranking"
+            id="userRanking"
+            data-tooltip="ユーザーランキング"
+          >
+            <i class="fas fa-trophy"></i>
+          </div>
+
+          <!-- マニュアル -->
+          <div
+            class="manual-btn"
+            id="manualBtn"
+            data-tooltip="マニュアル・ヘルプ"
+          >
+            <i class="fas fa-question-circle"></i>
+          </div>
+
+          <!-- ユーザー情報 -->
+          <div class="user__info" id="userInfo">
+            <div class="user__avatar">N</div>
+            <div class="user__info-text">NAGANO-3 User</div>
+          </div>
+        </div>
+
+        <!-- モバイル用メニューボタン -->
+        <button class="mobile-menu__toggle" id="mobileMenuToggle">
+          <i class="fas fa-bars menu-icon"></i>
+          <i class="fas fa-times close-icon"></i>
+        </button>
+      </header>
+
+      <!-- サイドバー（ナレッジベース維持） -->
+      <aside class="sidebar" id="mainSidebar" data-state="expanded">
+        <!-- サイドバーヘッダー -->
+        <div class="sidebar__header">
+          <a href="/" class="sidebar__logo">
+            <div class="sidebar__logo-icon">N3</div>
+            <div class="sidebar__logo-text">NAGANO-3</div>
+          </a>
+        </div>
+
+        <!-- サイドバーコンテンツ -->
+        <div class="sidebar__content">
+          <!-- サイドバー内トグルボタン -->
+          <button
+            class="sidebar__toggle"
+            id="sidebarToggleButton"
+            data-tooltip="サイドバー切り替え"
+          >
+            <span id="toggleIcon">⋯</span>
+          </button>
+
+          <div class="navigation__section">
+            <h3 class="navigation__title">メイン機能</h3>
+            <ul class="navigation__menu">
+              <li class="navigation__item">
+                <a
+                  href="/dashboard.html"
+                  class="navigation__link"
+                  data-tooltip="ダッシュボード"
+                >
+                  <i class="navigation__icon fas fa-tachometer-alt"></i>
+                  <span class="navigation__text">ダッシュボード</span>
+                </a>
+              </li>
+              <li
+                class="navigation__item navigation__item--has-submenu"
+                data-nav="products"
+              >
+                <a href="#" class="navigation__link" data-tooltip="商品管理">
+                  <i class="navigation__icon fas fa-cube"></i>
+                  <span class="navigation__text">商品管理</span>
+                </a>
+                <div class="navigation__submenu">
+                  <a
+                    href="/shohin_touroku.html"
+                    class="navigation__submenu-link"
+                    >商品登録</a
+                  >
+                  <a
+                    href="/shohin_ichiran.html"
+                    class="navigation__submenu-link"
+                    >商品一覧</a
+                  >
+                  <a
+                    href="/shohin_henshuu.html"
+                    class="navigation__submenu-link"
+                    >商品編集</a
+                  >
+                  <a href="/shohin_sakujo.html" class="navigation__submenu-link"
+                    >商品削除</a
+                  >
+                  <a
+                    href="/category_kanri.html"
+                    class="navigation__submenu-link"
+                    >カテゴリ管理</a
+                  >
+                </div>
+              </li>
+              <li
+                class="navigation__item navigation__item--has-submenu"
+                data-nav="inventory"
+              >
+                <a href="#" class="navigation__link" data-tooltip="在庫管理">
+                  <i class="navigation__icon fas fa-warehouse"></i>
+                  <span class="navigation__text">出品・在庫管理</span>
+                </a>
+                <div class="navigation__submenu">
+                  <a href="/zaiko_ichiran.html" class="navigation__submenu-link"
+                    >在庫一覧</a
+                  >
+                  <a href="/zaiko_chousei.html" class="navigation__submenu-link"
+                    >在庫調整</a
+                  >
+                  <a href="/shuppin_kanri.html" class="navigation__submenu-link"
+                    >出品管理</a
+                  >
+                  <a href="/kakaku_settei.html" class="navigation__submenu-link"
+                    >価格設定</a
+                  >
+                </div>
+              </li>
+              <li
+                class="navigation__item navigation__item--has-submenu"
+                data-nav="sales"
+              >
+                <a href="#" class="navigation__link" data-tooltip="売上分析">
+                  <i class="navigation__icon fas fa-chart-line"></i>
+                  <span class="navigation__text">売上・利益集計</span>
+                </a>
+                <div class="navigation__submenu">
+                  <a href="/uriage_report.html" class="navigation__submenu-link"
+                    >売上レポート</a
+                  >
+                  <a href="/rieki_bunseki.html" class="navigation__submenu-link"
+                    >利益分析</a
+                  >
+                  <a href="/kikan_hikaku.html" class="navigation__submenu-link"
+                    >期間比較</a
+                  >
+                </div>
+              </li>
+              <li
+                class="navigation__item navigation__item--has-submenu"
+                data-nav="shipping"
+              >
+                <a href="#" class="navigation__link" data-tooltip="出荷管理">
+                  <i class="navigation__icon fas fa-shipping-fast"></i>
+                  <span class="navigation__text">出荷管理</span>
+                </a>
+                <div class="navigation__submenu">
+                  <a href="/shukka_machi.html" class="navigation__submenu-link"
+                    >出荷待ち</a
+                  >
+                  <a
+                    href="/haisou_joukyou.html"
+                    class="navigation__submenu-link"
+                    >配送状況</a
+                  >
+                  <a
+                    href="/tsuiseki_bangou.html"
+                    class="navigation__submenu-link"
+                    >追跡番号</a
+                  >
+                </div>
+              </li>
+              <li
+                class="navigation__item navigation__item--has-submenu"
+                data-nav="orders"
+              >
+                <a href="#" class="navigation__link" data-tooltip="受注管理">
+                  <i class="navigation__icon fas fa-clipboard-list"></i>
+                  <span class="navigation__text">受注管理</span>
+                </a>
+                <div class="navigation__submenu">
+                  <a
+                    href="/juchuu_ichiran.html"
+                    class="navigation__submenu-link"
+                    >受注一覧</a
+                  >
+                  <a href="/juchuu_shori.html" class="navigation__submenu-link"
+                    >受注処理</a
+                  >
+                  <a href="/cancel_shori.html" class="navigation__submenu-link"
+                    >キャンセル処理</a
+                  >
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="navigation__section">
+            <h3 class="navigation__title">モール・販売</h3>
+            <ul class="navigation__menu">
+              <li
+                class="navigation__item navigation__item--has-submenu"
+                data-nav="mall"
+              >
+                <a href="#" class="navigation__link" data-tooltip="モール統合">
+                  <i class="navigation__icon fas fa-store"></i>
+                  <span class="navigation__text">モール統合管理</span>
+                </a>
+                <div class="navigation__submenu">
+                  <a href="/amazon_kanri.html" class="navigation__submenu-link"
+                    >Amazon</a
+                  >
+                  <a href="/ebay_kanri.html" class="navigation__submenu-link"
+                    >eBay</a
+                  >
+                  <a href="/shopify_kanri.html" class="navigation__submenu-link"
+                    >Shopify</a
+                  >
+                  <a href="/rakuten_kanri.html" class="navigation__submenu-link"
+                    >楽天市場</a
+                  >
+                </div>
+              </li>
+              <li
+                class="navigation__item navigation__item--has-submenu"
+                data-nav="domestic"
+              >
+                <a href="#" class="navigation__link" data-tooltip="国内販売">
+                  <i class="navigation__icon fas fa-home"></i>
+                  <span class="navigation__text">国内販売</span>
+                </a>
+                <div class="navigation__submenu">
+                  <a
+                    href="/rakuten_ichiba.html"
+                    class="navigation__submenu-link"
+                    >楽天市場</a
+                  >
+                  <a
+                    href="/yahoo_shopping.html"
+                    class="navigation__submenu-link"
+                    >Yahoo!ショッピング</a
+                  >
+                  <a href="/amazon_japan.html" class="navigation__submenu-link"
+                    >Amazon Japan</a
+                  >
+                </div>
+              </li>
+              <li
+                class="navigation__item navigation__item--has-submenu"
+                data-nav="international"
+              >
+                <a href="#" class="navigation__link" data-tooltip="海外販売">
+                  <i class="navigation__icon fas fa-globe-asia"></i>
+                  <span class="navigation__text">海外販売</span>
+                </a>
+                <div class="navigation__submenu">
+                  <a href="/ebay_us.html" class="navigation__submenu-link"
+                    >eBay US</a
+                  >
+                  <a href="/amazon_us.html" class="navigation__submenu-link"
+                    >Amazon US</a
+                  >
+                  <a href="/amazon_eu.html" class="navigation__submenu-link"
+                    >Amazon EU</a
+                  >
+                </div>
+              </li>
+              <li class="navigation__item">
+                <a
+                  href="/toiawase_kanri.html"
+                  class="navigation__link"
+                  data-tooltip="問い合わせ"
+                >
+                  <i class="navigation__icon fas fa-headset"></i>
+                  <span class="navigation__text">問い合わせ一元化</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <div class="navigation__section">
+            <h3 class="navigation__title">AI・分析</h3>
+            <ul class="navigation__menu">
+              <li
+                class="navigation__item navigation__item--has-submenu"
+                data-nav="ai-control"
+              >
+                <a href="#" class="navigation__link" data-tooltip="AI制御">
+                  <i class="navigation__icon fas fa-robot"></i>
+                  <span class="navigation__text">AI制御デッキ</span>
+                </a>
+                <div class="navigation__submenu">
+                  <a href="/ai_settei.html" class="navigation__submenu-link"
+                    >AI設定</a
+                  >
+                  <a href="/gakushuu_data.html" class="navigation__submenu-link"
+                    >学習データ</a
+                  >
+                  <a href="/yosoku_kekka.html" class="navigation__submenu-link"
+                    >予測結果</a
+                  >
+                </div>
+              </li>
+              <li
+                class="navigation__item navigation__item--has-submenu"
+                data-nav="ai-prediction"
+              >
+                <a href="#" class="navigation__link" data-tooltip="AI予測">
+                  <i class="navigation__icon fas fa-brain"></i>
+                  <span class="navigation__text">AI予測分析</span>
+                </a>
+                <div class="navigation__submenu">
+                  <a href="/juyou_yosoku.html" class="navigation__submenu-link"
+                    >需要予測</a
+                  >
+                  <a href="/kakaku_yosoku.html" class="navigation__submenu-link"
+                    >価格予測</a
+                  >
+                  <a href="/zaiko_yosoku.html" class="navigation__submenu-link"
+                    >在庫予測</a
+                  >
+                </div>
+              </li>
+              <li class="navigation__item">
+                <a
+                  href="/filters.html"
+                  class="navigation__link navigation__link--active"
+                  data-tooltip="フィルター管理"
+                >
+                  <i class="navigation__icon fas fa-filter"></i>
+                  <span class="navigation__text">フィルター管理</span>
+                </a>
+              </li>
+              <li class="navigation__item">
+                <a
+                  href="/kaikei_shisan.html"
+                  class="navigation__link"
+                  data-tooltip="会計・資産"
+                >
+                  <i class="navigation__icon fas fa-calculator"></i>
+                  <span class="navigation__text">会計・資産</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <div class="navigation__section">
+            <h3 class="navigation__title">ツール・設定</h3>
+            <ul class="navigation__menu">
+              <li class="navigation__item">
+                <a
+                  href="/task_calendar.html"
+                  class="navigation__link"
+                  data-tooltip="タスク管理"
+                >
+                  <i class="navigation__icon fas fa-calendar-alt"></i>
+                  <span class="navigation__text">タスクカレンダー</span>
+                </a>
+              </li>
+              <li class="navigation__item">
+                <a
+                  href="/gazou_kanri.html"
+                  class="navigation__link"
+                  data-tooltip="画像管理"
+                >
+                  <i class="navigation__icon fas fa-images"></i>
+                  <span class="navigation__text">画像管理</span>
+                </a>
+              </li>
+              <li
+                class="navigation__item navigation__item--has-submenu"
+                data-nav="settings"
+              >
+                <a
+                  href="#"
+                  class="navigation__link"
+                  data-tooltip="システム設定"
+                >
+                  <i class="navigation__icon fas fa-cog"></i>
+                  <span class="navigation__text">設定・構成管理</span>
+                </a>
+                <div class="navigation__submenu">
+                  <a href="/kihon_settei.html" class="navigation__submenu-link"
+                    >基本設定</a
+                  >
+                  <a href="/api_settei.html" class="navigation__submenu-link"
+                    >API設定</a
+                  >
+                  <a href="/tsuchi_settei.html" class="navigation__submenu-link"
+                    >通知設定</a
+                  >
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </aside>
+
+      <!-- モバイル用縦型メニュー -->
+      <nav class="mobile-nav" id="mobileNav">
+        <div class="mobile-nav__header">
+          <h3>メニュー</h3>
+          <button class="mobile-nav__close" id="mobileNavClose">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="mobile-nav__content">
+          <div class="mobile-nav__section">
+            <h4>メイン機能</h4>
+            <ul>
+              <li><a href="/dashboard.html">ダッシュボード</a></li>
+              <li><a href="/shohin_kanri.html">商品管理</a></li>
+              <li><a href="/zaiko_kanri.html">出品・在庫管理</a></li>
+              <li><a href="/uriage_bunseki.html">売上・利益集計</a></li>
+              <li><a href="/shukka_kanri.html">出荷管理</a></li>
+              <li><a href="/juchu_kanri.html">受注管理</a></li>
+            </ul>
+          </div>
+          <div class="mobile-nav__section">
+            <h4>AI・分析</h4>
+            <ul>
+              <li><a href="/ai_seigyo.html">AI制御デッキ</a></li>
+              <li><a href="/ai_yosoku.html">AI予測分析</a></li>
+              <li><a href="/filters.html">フィルター管理</a></li>
+              <li><a href="/kaikei_shisan.html">会計・資産</a></li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+
+      <!-- メインコンテンツ（フィルター専用） -->
+      <main class="content">
+        
+        <!-- フィルター概要セクション -->
+        <div class="filters__overview-section">
+          <div class="filters__header">
+            <h1 class="filters__title">
+              <i class="fas fa-filter filters__title-icon"></i>
+              AI多段階フィルター管理
+            </h1>
+            <div class="filters__header-actions">
+              <button class="btn btn--secondary filters__export-btn" id="exportConfig">
+                <i class="fas fa-download"></i>
+                設定エクスポート
+              </button>
+              <button class="btn btn--primary filters__run-btn" id="runAllFilters">
+                <i class="fas fa-play"></i>
+                全フィルター実行
+              </button>
+            </div>
+          </div>
+
+          <div class="filters__description">
+            <p>AIを活用した4段階フィルタリングにより、出品禁止商品や危険商品を自動的に検出します。フィルター精度は98.5%以上を実現しています。</p>
+          </div>
+
+          <!-- フィルター統計カード -->
+          <div class="filters__stats-grid">
+            <div class="filters__stat-card filters__stat-card--primary">
+              <div class="filters__stat-header">
+                <span class="filters__stat-title">今日の処理商品</span>
+                <i class="fas fa-box filters__stat-icon"></i>
+              </div>
+              <div class="filters__stat-value" id="todayProcessed">1,243</div>
+              <div class="filters__stat-trend">
+                <i class="fas fa-arrow-up"></i>
+                <span>+12.3% 前日比</span>
+              </div>
+            </div>
+
+            <div class="filters__stat-card filters__stat-card--warning">
+              <div class="filters__stat-header">
+                <span class="filters__stat-title">フィルター除外</span>
+                <i class="fas fa-ban filters__stat-icon"></i>
+              </div>
+              <div class="filters__stat-value" id="filteredOut">127</div>
+              <div class="filters__stat-trend">
+                <i class="fas fa-arrow-down"></i>
+                <span>-5.2% 前日比</span>
+              </div>
+            </div>
+
+            <div class="filters__stat-card filters__stat-card--danger">
+              <div class="filters__stat-header">
+                <span class="filters__stat-title">人間確認待ち</span>
+                <i class="fas fa-user-check filters__stat-icon"></i>
+              </div>
+              <div class="filters__stat-value" id="pendingReview">15</div>
+              <div class="filters__stat-trend">
+                <span>要対応</span>
+              </div>
+            </div>
+
+            <div class="filters__stat-card filters__stat-card--success">
+              <div class="filters__stat-header">
+                <span class="filters__stat-title">フィルター精度</span>
+                <i class="fas fa-target filters__stat-icon"></i>
+              </div>
+              <div class="filters__stat-value" id="accuracy">99.2%</div>
+              <div class="filters__stat-trend">
+                <i class="fas fa-arrow-up"></i>
+                <span>+0.3% 先週比</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- フィルター段階セクション -->
+        <div class="filters__stages-section">
+          
+          <!-- 段階1: NGワードフィルター -->
+          <div class="filters__stage-card" data-stage="1">
+            <div class="filters__stage-header">
+              <div class="filters__stage-info">
+                <div class="filters__stage-number">1</div>
+                <div class="filters__stage-title-group">
+                  <h3 class="filters__stage-title">NGワードフィルター</h3>
+                  <p class="filters__stage-description">キーワードベースのフィルタリングで、99%の危険商品を検出</p>
+                </div>
+              </div>
+              <div class="filters__stage-actions">
+                <label class="filters__toggle">
+                  <input type="checkbox" checked id="stage1Toggle" />
+                  <span class="filters__toggle-slider"></span>
+                </label>
+                <button class="btn btn--small btn--secondary filters__stage-settings" data-stage="1">
+                  <i class="fas fa-cog"></i>
+                  設定
+                </button>
+              </div>
+            </div>
+
+            <div class="filters__stage-stats">
+              <div class="filters__stage-stat">
+                <span class="filters__stage-stat-label">対象商品</span>
+                <span class="filters__stage-stat-value">1,243</span>
+              </div>
+              <div class="filters__stage-stat">
+                <span class="filters__stage-stat-label">通過</span>
+                <span class="filters__stage-stat-value">1,180</span>
+              </div>
+              <div class="filters__stage-stat">
+                <span class="filters__stage-stat-label">除外</span>
+                <span class="filters__stage-stat-value">63</span>
+              </div>
+              <div class="filters__stage-stat">
+                <span class="filters__stage-stat-label">精度</span>
+                <span class="filters__stage-stat-value">99.1%</span>
+              </div>
+            </div>
+
+            <div class="filters__stage-progress">
+              <div class="filters__progress-bar">
+                <div class="filters__progress-fill" style="width: 95%"></div>
+              </div>
+              <span class="filters__progress-text">95% 完了</span>
+            </div>
+
+            <!-- NGワード管理 -->
+            <div class="filters__ngword-section">
+              <div class="filters__ngword-add">
+                <input 
+                  type="text" 
+                  class="filters__ngword-input" 
+                  placeholder="NGワードを入力..." 
+                  id="ngwordInput"
+                />
+                <button class="btn btn--primary filters__ngword-add-btn" id="addNgword">
+                  <i class="fas fa-plus"></i>
+                  追加
+                </button>
+              </div>
+              
+              <div class="filters__ngword-tags" id="ngwordTags">
+                <div class="filters__ngword-tag" data-word="R18">
+                  R18 <button class="filters__ngword-remove">×</button>
+                </div>
+                <div class="filters__ngword-tag" data-word="成人向け">
+                  成人向け <button class="filters__ngword-remove">×</button>
+                </div>
+                <div class="filters__ngword-tag" data-word="アダルト">
+                  アダルト <button class="filters__ngword-remove">×</button>
+                </div>
+                <div class="filters__ngword-tag" data-word="中古">
+                  中古 <button class="filters__ngword-remove">×</button>
+                </div>
+                <div class="filters__ngword-tag" data-word="電子タバコ">
+                  電子タバコ <button class="filters__ngword-remove">×</button>
+                </div>
+                <div class="filters__ngword-tag" data-word="偽造品">
+                  偽造品 <button class="filters__ngword-remove">×</button>
+                </div>
+                <div class="filters__ngword-tag" data-word="医薬品">
+                  医薬品 <button class="filters__ngword-remove">×</button>
+                </div>
+                <div class="filters__ngword-tag" data-word="危険物">
+                  危険物 <button class="filters__ngword-remove">×</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 段階2: カテゴリベース判定 -->
+          <div class="filters__stage-card" data-stage="2">
+            <div class="filters__stage-header">
+              <div class="filters__stage-info">
+                <div class="filters__stage-number">2</div>
+                <div class="filters__stage-title-group">
+                  <h3 class="filters__stage-title">カテゴリベース判定</h3>
+                  <p class="filters__stage-description">カテゴリベースのフィルタリングで、残り0.8%を検出</p>
+                </div>
+              </div>
+              <div class="filters__stage-actions">
+                <label class="filters__toggle">
+                  <input type="checkbox" checked id="stage2Toggle" />
+                  <span class="filters__toggle-slider"></span>
+                </label>
+                <button class="btn btn--small btn--secondary filters__stage-settings" data-stage="2">
+                  <i class="fas fa-cog"></i>
+                  設定
+                </button>
+              </div>
+            </div>
+
+            <div class="filters__stage-stats">
+              <div class="filters__stage-stat">
+                <span class="filters__stage-stat-label">対象商品</span>
+                <span class="filters__stage-stat-value">1,180</span>
+              </div>
+              <div class="filters__stage-stat">
+                <span class="filters__stage-stat-label">通過</span>
+                <span class="filters__stage-stat-value">1,142</span>
+              </div>
+              <div class="filters__stage-stat">
+                <span class="filters__stage-stat-label">除外</span>
+                <span class="filters__stage-stat-value">38</span>
+              </div>
+              <div class="filters__stage-stat">
+                <span class="filters__stage-stat-label">精度</span>
+                <span class="filters__stage-stat-value">98.7%</span>
+              </div>
+            </div>
+
+            <div class="filters__stage-progress">
+              <div class="filters__progress-bar">
+                <div class="filters__progress-fill" style="width: 88%"></div>
+              </div>
+              <span class="filters__progress-text">88% 完了</span>
+            </div>
+
+            <!-- カテゴリ選択 -->
+            <div class="filters__category-section">
+              <div class="filters__category-info">
+                <span class="filters__category-count">カテゴリデータベース: 10,432カテゴリ登録済み</span>
+                <span class="filters__category-updated">最終更新: 2024/05/22</span>
+              </div>
+              
+              <div class="filters__category-grid">
+                <div class="filters__category-item filters__category-item--blocked">
+                  <i class="fas fa-times-circle"></i>
+                  <span>アダルト商品</span>
+                </div>
+                <div class="filters__category-item filters__category-item--blocked">
+                  <i class="fas fa-times-circle"></i>
+                  <span>武器・危険物</span>
+                </div>
+                <div class="filters__category-item filters__category-item--blocked">
+                  <i class="fas fa-times-circle"></i>
+                  <span>医薬品・健康食品</span>
+                </div>
+                <div class="filters__category-item filters__category-item--blocked">
+                  <i class="fas fa-times-circle"></i>
+                  <span>タバコ・電子タバコ</span>
+                </div>
+                <div class="filters__category-item filters__category-item--blocked">
+                  <i class="fas fa-times-circle"></i>
+                  <span>アルコール</span>
+                </div>
+                <div class="filters__category-item filters__category-item--blocked">
+                  <i class="fas fa-times-circle"></i>
+                  <span>偽造品・模造品</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 段階3: 画像AI判定 -->
+          <div class="filters__stage-card" data-stage="3">
+            <div class="filters__stage-header">
+              <div class="filters__stage-info">
+                <div class="filters__stage-number">3</div>
+                <div class="filters__stage-title-group">
+                  <h3 class="filters__stage-title">画像AI判定</h3>
+                  <p class="filters__stage-description">画像認識AIによるフィルタリングで、残り0.15%を検出</p>
+                </div>
+              </div>
+              <div class="filters__stage-actions">
+                <label class="filters__toggle">
+                  <input type="checkbox" checked id="stage3Toggle" />
+                  <span class="filters__toggle-slider"></span>
+                </label>
+                <button class="btn btn--small btn--secondary filters__stage-settings" data-stage="3">
+                  <i class="fas fa-cog"></i>
+                  設定
+                </button>
+              </div>
+            </div>
+
+            <div class="filters__stage-stats">
+              <div class="filters__stage-stat">
+                <span class="filters__stage-stat-label">対象商品</span>
+                <span class="filters__stage-stat-value">1,142</span>
+              </div>
+              <div class="filters__stage-stat">
+                <span class="filters__stage-stat-label">通過</span>
+                <span class="filters__stage-stat-value">1,120</span>
+              </div>
+              <div class="filters__stage-stat">
+                <span class="filters__stage-stat-label">除外</span>
+                <span class="filters__stage-stat-value">22</span>
+              </div>
+              <div class="filters__stage-stat">
+                <span class="filters__stage-stat-label">精度</span>
+                <span class="filters__stage-stat-value">97.8%</span>
+              </div>
+            </div>
+
+            <div class="filters__stage-progress">
+              <div class="filters__progress-bar">
+                <div class="filters__progress-fill" style="width: 72%"></div>
+              </div>
+              <span class="filters__progress-text">72% 完了</span>
+            </div>
+
+            <!-- AI モデル選択 -->
+            <div class="filters__ai-section">
+              <div class="filters__ai-models">
+                <div class="filters__ai-model filters__ai-model--selected" data-model="local">
+                  <div class="filters__ai-model-header">
+                    <i class="fas fa-microchip"></i>
+                    <span class="filters__ai-model-name">ローカルAI (DeepSeek)</span>
+                  </div>
+                  <div class="filters__ai-model-desc">MacBook対応の軽量モデル。精度97%、処理速度: 高</div>
+                  <div class="filters__ai-model-stats">
+                    <span class="filters__ai-model-stat">精度: 97%</span>
+                    <span class="filters__ai-model-stat">速度: 高</span>
+                    <span class="filters__ai-model-stat">コスト: 無料</span>
+                  </div>
+                </div>
+                
+                <div class="filters__ai-model" data-model="google">
+                  <div class="filters__ai-model-header">
+                    <i class="fas fa-cloud"></i>
+                    <span class="filters__ai-model-name">Google Vision API</span>
+                  </div>
+                  <div class="filters__ai-model-desc">高精度モデル。精度99%、処理速度: 中、API料金あり</div>
+                  <div class="filters__ai-model-stats">
+                    <span class="filters__ai-model-stat">精度: 99%</span>
+                    <span class="filters__ai-model-stat">速度: 中</span>
+                    <span class="filters__ai-model-stat">コスト: 有料</span>
+                  </div>
+                </div>
+                
+                <div class="filters__ai-model" data-model="custom">
+                  <div class="filters__ai-model-header">
+                    <i class="fas fa-cogs"></i>
+                    <span class="filters__ai-model-name">自社開発モデル</span>
+                  </div>
+                  <div class="filters__ai-model-desc">商品画像に特化したモデル。精度98%、処理速度: 中</div>
+                  <div class="filters__ai-model-stats">
+                    <span class="filters__ai-model-stat">精度: 98%</span>
+                    <span class="filters__ai-model-stat">速度: 中</span>
+                    <span class="filters__ai-model-stat">コスト: 無料</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 検出しきい値 -->
+              <div class="filters__threshold-section">
+                <label class="filters__threshold-label">検出しきい値</label>
+                <div class="filters__threshold-slider">
+                  <input 
+                    type="range" 
+                    class="filters__threshold-input" 
+                    min="0" 
+                    max="100" 
+                    value="85" 
+                    id="imageThreshold"
+                  />
+                  <div class="filters__threshold-labels">
+                    <span>緩い (誤検出↑)</span>
+                    <span id="imageThresholdValue">85%</span>
+                    <span>厳しい (見逃し↑)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 段階4: 商品説明文AI解析 -->
+          <div class="filters__stage-card" data-stage="4">
+            <div class="filters__stage-header">
+              <div class="filters__stage-info">
+                <div class="filters__stage-number">4</div>
+                <div class="filters__stage-title-group">
+                  <h3 class="filters__stage-title">商品説明文AI解析</h3>
+                  <p class="filters__stage-description">テキスト解析AIで残り0.05%を検出し、人間確認が必要な商品を特定</p>
+                </div>
+              </div>
+              <div class="filters__stage-actions">
+                <label class="filters__toggle">
+                  <input type="checkbox" checked id="stage4Toggle" />
+                  <span class="filters__toggle-slider"></span>
+                </label>
+                <button class="btn btn--small btn--secondary filters__stage-settings" data-stage="4">
+                  <i class="fas fa-cog"></i>
+                  設定
+                </button>
+              </div>
+            </div>
+
+            <div class="filters__stage-stats">
+              <div class="filters__stage-stat">
+                <span class="filters__stage-stat-label">対象商品</span>
+                <span class="filters__stage-stat-value">1,120</span>
+              </div>
+              <div class="filters__stage-stat">
+                <span class="filters__stage-stat-label">通過</span>
+                <span class="filters__stage-stat-value">1,105</span>
+              </div>
+              <div class="filters__stage-stat">
+                <span class="filters__stage-stat-label">人間確認</span>
+                <span class="filters__stage-stat-value">15</span>
+              </div>
+              <div class="filters__stage-stat">
+                <span class="filters__stage-stat-label">精度</span>
+                <span class="filters__stage-stat-value">99.8%</span>
+              </div>
+            </div>
+
+            <div class="filters__stage-progress">
+              <div class="filters__progress-bar">
+                <div class="filters__progress-fill" style="width: 65%"></div>
+              </div>
+              <span class="filters__progress-text">65% 完了</span>
+            </div>
+
+            <!-- テキストAI設定 -->
+            <div class="filters__text-ai-section">
+              <div class="filters__setting-group">
+                <label class="filters__setting-label">精度優先度</label>
+                <select class="filters__setting-select" id="textAiMode">
+                  <option value="precision">精度優先 (偽陽性↓ 偽陰性↑)</option>
+                  <option value="balanced" selected>バランス型 (偽陽性↔ 偽陰性)</option>
+                  <option value="recall">検出優先 (偽陽性↑ 偽陰性↓)</option>
+                </select>
+              </div>
+
+              <div class="filters__setting-group">
+                <label class="filters__setting-label">人間確認しきい値</label>
+                <div class="filters__threshold-slider">
+                  <input 
+                    type="range" 
+                    class="filters__threshold-input" 
+                    min="0" 
+                    max="100" 
+                    value="95" 
+                    id="humanThreshold"
+                  />
+                  <div class="filters__threshold-labels">
+                    <span>少ない確認作業</span>
+                    <span id="humanThresholdValue">95%</span>
+                    <span>多くの確認作業</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 人間確認待ち商品セクション -->
+        <div class="filters__review-section">
+          <div class="filters__review-header">
+            <h2 class="filters__review-title">
+              <i class="fas fa-user-check"></i>
+              人間確認待ち商品
+            </h2>
+            <div class="filters__review-actions">
+              <button class="btn btn--success filters__batch-approve" id="batchApprove">
+                <i class="fas fa-check-double"></i>
+                一括承認
+              </button>
+              <button class="btn btn--secondary" id="viewAllReviews">
+                <i class="fas fa-list"></i>
+                すべて表示
+              </button>
+            </div>
+          </div>
+
+          <div class="filters__review-table-container">
+            <table class="filters__review-table">
+              <thead>
+                <tr>
+                  <th>
+                    <input type="checkbox" id="selectAllReviews" />
+                  </th>
+                  <th>SKU</th>
+                  <th>商品名</th>
+                  <th>確認理由</th>
+                  <th>信頼度</th>
+                  <th>検出段階</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="reviewTableBody">
+                <tr class="filters__review-row">
+                  <td>
+                    <input type="checkbox" class="filters__review-checkbox" />
+                  </td>
+                  <td class="filters__review-sku">EMV-STOCK-NEW-2100</td>
+                  <td class="filters__review-product">Generic Bluetooth イヤホン</td>
+                  <td class="filters__review-reason">
+                    <span class="filters__reason-badge filters__reason-badge--ip">知的財産権の懸念</span>
+                  </td>
+                  <td class="filters__review-confidence">
+                    <span class="filters__confidence-value">85%</span>
+                  </td>
+                  <td class="filters__review-stage">
+                    <span class="filters__stage-badge filters__stage-badge--3">画像AI</span>
+                  </td>
+                  <td class="filters__review-actions">
+                    <button class="btn btn--small btn--success filters__approve-btn" data-id="2100">
+                      <i class="fas fa-check"></i>
+                      承認
+                    </button>
+                    <button class="btn btn--small btn--danger filters__reject-btn" data-id="2100">
+                      <i class="fas fa-times"></i>
+                      拒否
+                    </button>
+                  </td>
+                </tr>
+                <tr class="filters__review-row">
+                  <td>
+                    <input type="checkbox" class="filters__review-checkbox" />
+                  </td>
+                  <td class="filters__review-sku">EMV-STOCK-USED-950</td>
+                  <td class="filters__review-product">中古 電子体温計</td>
+                  <td class="filters__review-reason">
+                    <span class="filters__reason-badge filters__reason-badge--medical">医療機器の可能性</span>
+                  </td>
+                  <td class="filters__review-confidence">
+                    <span class="filters__confidence-value">92%</span>
+                  </td>
+                  <td class="filters__review-stage">
+                    <span class="filters__stage-badge filters__stage-badge--2">カテゴリ</span>
+                  </td>
+                  <td class="filters__review-actions">
+                    <button class="btn btn--small btn--success filters__approve-btn" data-id="950">
+                      <i class="fas fa-check"></i>
+                      承認
+                    </button>
+                    <button class="btn btn--small btn--danger filters__reject-btn" data-id="950">
+                      <i class="fas fa-times"></i>
+                      拒否
+                    </button>
+                  </td>
+                </tr>
+                <tr class="filters__review-row">
+                  <td>
+                    <input type="checkbox" class="filters__review-checkbox" />
+                  </td>
+                  <td class="filters__review-sku">EMV-STOCK-NEW-1800</td>
+                  <td class="filters__review-product">ハーブティー ダイエットブレンド</td>
+                  <td class="filters__review-reason">
+                    <span class="filters__reason-badge filters__reason-badge--health">医薬品的効果の表現</span>
+                  </td>
+                  <td class="filters__review-confidence">
+                    <span class="filters__confidence-value">88%</span>
+                  </td>
+                  <td class="filters__review-stage">
+                    <span class="filters__stage-badge filters__stage-badge--4">テキストAI</span>
+                  </td>
+                  <td class="filters__review-actions">
+                    <button class="btn btn--small btn--success filters__approve-btn" data-id="1800">
+                      <i class="fas fa-check"></i>
+                      承認
+                    </button>
+                    <button class="btn btn--small btn--danger filters__reject-btn" data-id="1800">
+                      <i class="fas fa-times"></i>
+                      拒否
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- オーバーレイ（モバイル用） -->
+    <div class="sidebar__overlay" id="sidebarOverlay"></div>
+
+    <!-- スクロールトップボタン -->
+    <button class="scroll-to-top" id="scrollToTop">
+      <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <!-- フッター -->
+    <footer class="footer">
+      <div class="footer__content">
+        <p>
+          &copy; 2024 NAGANO-3 統合管理システム by Emverze SaaS. All rights
+          reserved.
+        </p>
+      </div>
+    </footer>
+
+    <!-- ナレッジベースJS -->
+    <script src="script.js"></script>
+    <!-- フィルター専用JS -->
+    <script src="filters.js"></script>
+  </body>
+</html>

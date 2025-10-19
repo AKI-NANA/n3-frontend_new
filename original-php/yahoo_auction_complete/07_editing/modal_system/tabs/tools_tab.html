@@ -1,0 +1,221 @@
+<!-- ツール実行タブ -->
+<div style="padding: 1.5rem;">
+    <h3 style="margin: 0 0 1rem 0; font-size: 1.1rem; font-weight: 600;">
+        <i class="fas fa-tools"></i> ツール実行
+    </h3>
+    
+    <p style="color: #6c757d; margin-bottom: 1.5rem; font-size: 0.9rem;">
+        商品データを元に各種ツールを実行します
+    </p>
+    
+    <!-- ツール実行ボタングループ -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        
+        <!-- カテゴリ判定 -->
+        <button onclick="IntegratedListingModal.runCategoryTool()" 
+                class="ilm-tool-btn category-tool">
+            <i class="fas fa-tags"></i>
+            <div>
+                <div style="font-weight: 600;">カテゴリ判定</div>
+                <div style="font-size: 0.75rem; opacity: 0.8;">eBayカテゴリを自動判定</div>
+            </div>
+        </button>
+        
+        <!-- 送料計算 -->
+        <button onclick="IntegratedListingModal.runShippingCalculator()" 
+                class="ilm-tool-btn shipping-tool">
+            <i class="fas fa-shipping-fast"></i>
+            <div>
+                <div style="font-weight: 600;">送料計算</div>
+                <div style="font-size: 0.75rem; opacity: 0.8;">配送料金を計算</div>
+            </div>
+        </button>
+        
+        <!-- 利益計算 -->
+        <button onclick="IntegratedListingModal.runProfitCalculator()" 
+                class="ilm-tool-btn profit-tool">
+            <i class="fas fa-calculator"></i>
+            <div>
+                <div style="font-weight: 600;">利益計算</div>
+                <div style="font-size: 0.75rem; opacity: 0.8;">純利益と利益率を計算</div>
+            </div>
+        </button>
+        
+        <!-- フィルター判定 -->
+        <button onclick="IntegratedListingModal.runFilterTool()" 
+                class="ilm-tool-btn filter-tool">
+            <i class="fas fa-filter"></i>
+            <div>
+                <div style="font-weight: 600;">フィルター判定</div>
+                <div style="font-size: 0.75rem; opacity: 0.8;">出品可否を判定</div>
+            </div>
+        </button>
+        
+        <!-- SellerMirror競合分析 -->
+        <button onclick="IntegratedListingModal.runSellerMirrorTool()" 
+                class="ilm-tool-btn mirror-tool">
+            <i class="fas fa-search-dollar"></i>
+            <div>
+                <div style="font-weight: 600;">競合分析</div>
+                <div style="font-size: 0.75rem; opacity: 0.8;">SellerMirror分析実行</div>
+            </div>
+        </button>
+        
+        <!-- 一括実行 -->
+        <button onclick="IntegratedListingModal.runAllTools()" 
+                class="ilm-tool-btn all-tools"
+                style="grid-column: span 2;">
+            <i class="fas fa-play-circle"></i>
+            <div>
+                <div style="font-weight: 600;">すべて実行</div>
+                <div style="font-size: 0.75rem; opacity: 0.8;">全ツールを順番に実行</div>
+            </div>
+        </button>
+    </div>
+    
+    <!-- 結果表示エリア -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <!-- カテゴリ判定結果 -->
+        <div id="category-results-container"></div>
+        
+        <!-- 送料計算結果 -->
+        <div id="shipping-results-container"></div>
+        
+        <!-- 利益計算結果 -->
+        <div id="profit-results-container"></div>
+        
+        <!-- フィルター判定結果 -->
+        <div id="filter-results-container"></div>
+        
+        <!-- SellerMirror結果 -->
+        <div id="sellermirror-results-container"></div>
+    </div>
+</div>
+
+<style>
+.ilm-tool-btn {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    font-size: 0.9rem;
+    text-align: left;
+}
+
+.ilm-tool-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.ilm-tool-btn i {
+    font-size: 1.8rem;
+}
+
+.ilm-tool-btn.category-tool {
+    border-color: #80D8C3;
+    color: #0d6e58;
+}
+
+.ilm-tool-btn.category-tool:hover {
+    background: #f0fdf9;
+    border-color: #80D8C3;
+}
+
+.ilm-tool-btn.shipping-tool {
+    border-color: #578FCA;
+    color: #1e3a5f;
+}
+
+.ilm-tool-btn.shipping-tool:hover {
+    background: #f0f7ff;
+    border-color: #578FCA;
+}
+
+.ilm-tool-btn.profit-tool {
+    border-color: #FFD66B;
+    color: #7d5a00;
+}
+
+.ilm-tool-btn.profit-tool:hover {
+    background: #fffef0;
+    border-color: #FFD66B;
+}
+
+.ilm-tool-btn.filter-tool {
+    border-color: #FFB4B4;
+    color: #7d1f1f;
+}
+
+.ilm-tool-btn.filter-tool:hover {
+    background: #fff5f5;
+    border-color: #FFB4B4;
+}
+
+.ilm-tool-btn.mirror-tool {
+    border-color: #8b5cf6;
+    color: #5b21b6;
+}
+
+.ilm-tool-btn.mirror-tool:hover {
+    background: #faf5ff;
+    border-color: #8b5cf6;
+}
+
+.ilm-tool-btn.all-tools {
+    border-color: #4DA8DA;
+    color: #0B1D51;
+}
+
+.ilm-tool-btn.all-tools:hover {
+    background: #f0f9ff;
+    border-color: #4DA8DA;
+}
+
+.ilm-results-card {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.ilm-results-card h4 {
+    margin: 0 0 1rem 0;
+    font-size: 0.95rem;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ilm-results-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.ilm-result-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    background: white;
+    border-radius: 4px;
+}
+
+.ilm-result-item .label {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.ilm-result-item .value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #212529;
+}
+</style>

@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>出荷管理カード - NAGANO-3デザイン統一版</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* NAGANO-3統一デザインベース */
+        :root {
+            --kicho-primary: #3b82f6;
+            --kicho-primary-rgb: 59, 130, 246;
+            --kicho-secondary: #8b5cf6;
+            --kicho-success: #10b981;
+            --kicho-success-rgb: 16, 185, 129;
+            --kicho-warning: #f59e0b;
+            --kicho-danger: #ef4444;
+            --kicho-mf-blue: #0066cc;
+            --kicho-mf-green: #28a745;
+            --kicho-mf-orange: #ff6b35;
+            
+            /* 基本色 */
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-hover: #f3f4f6;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --shadow-dark: #e5e7eb;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'ヒラギノ角ゴシック', YuGothic, 'Yu Gothic', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .shipping-card {
+            background: var(--bg-primary);
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            border: 1px solid var(--shadow-dark);
+            overflow: hidden;
+            transform: translateY(0);
+            transition: all 0.3s ease;
+        }
+
+        .shipping-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 32px rgba(0,0,0,0.16);
+        }
+
+        /* ヘッダーセクション - 進捗に応じて色変更 */
+        .header-section {
+            color: white;
+            padding: 32px;
+            display: grid;
+            grid-template-columns: 240px 1fr 200px;
+            gap: 32px;
+            align-items: center;
+            position: relative;
+            transition: all 0.5s ease;
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%); /* デフォルト: 未開始 */
+        }
+
+        /* 進捗段階別グラデーション */
+        .header-section.progress-0 {
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+        }
+
+        .header-section.progress-1-3 {
+            background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
+        }
+
+        .header-section.progress-4-6 {
+            background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+        }
+
+        .header-section.progress-7-8 {
+            background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+        }
+
+        .header-section.progress-9 {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        }
+
+        .header-section.shipped {
+            background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+        }
+
+        .status-flag {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.25);
+            color: white;
+            padding: 8px 20px;
+            font-size: 13px;
+            font-weight: 700;
+            border-bottom-left-radius: 12px;
+            backdrop-filter: blur(10px);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 180px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed rgba(255, 255, 255, 0.4);
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        .product-info h1 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            line-height: 1.3;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .product-meta {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 6px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-weight: 500;
+        }
+
+        .customer-info {
+            font-size: 15px;
+            opacity: 0.95;
+            font-weight: 500;
+        }
+
+        .status-section {
+            text-align: center;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 24px;
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            backdrop-filter: blur(10px);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .progress-info {
+            font-size: 13px;
+            opacity: 0.9;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        /* 進捗バー */
+        .progress-bar {
+            background: rgba(255, 255, 255, 0.25);
+            height: 8px;
+            border-radius: 4px;
+            margin: 16px 0;
+            overflow: hidden;
+            backdrop-filter: blur(5px);
+        }
+
+        .progress-fill {
+            background: rgba(255, 255, 255, 0.9);
+            height: 100%;
+            width: 0%;
+            border-radius: 4px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 8px rgba(255,255,255,0.5);
+        }
+
+        /* メインコンテンツ */
+        .main-content {
+            padding: 32px;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 24px;
+        }
+
+        .info-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--shadow-dark);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .info-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            border-color: var(--kicho-primary);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--shadow-dark);
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--kicho-primary), var(--kicho-secondary));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin-right: 16px;
+            font-size: 16px;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* 特定カード色分け */
+        .work-progress .card-icon {
+            background: linear-gradient(135deg, var(--kicho-success), var(--kicho-mf-green));
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .packaging-info .card-icon {
+            background: linear-gradient(135deg, var(--kicho-warning), var(--kicho-mf-orange));
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+
+        .shipping-info .card-icon {
+            background: linear-gradient(135deg, var(--kicho-mf-blue), var(--kicho-primary));
+            box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
+        }
+
+        .handover-info .card-icon {
+            background: linear-gradient(135deg, var(--kicho-mf-orange), #fd7e14);
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+        }
+
+        .tracking-info .card-icon {
+            background: linear-gradient(135deg, var(--kicho-success), var(--kicho-mf-green));
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .field-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 20px;
+        }
+
+        .field-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .field-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 700;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .field-value {
+            font-size: 15px;
+            color: var(--text-primary);
+            padding: 12px 16px;
+            background: var(--bg-primary);
+            border: 2px solid var(--shadow-dark);
+            border-radius: 8px;
+            font-weight: 600;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .field-value.editable {
+            cursor: pointer;
+        }
+
+        .field-value.editable:hover {
+            border-color: var(--kicho-primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .field-value.editable:focus {
+            outline: none;
+            border-color: var(--kicho-primary);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+        }
+
+        .field-full {
+            grid-column: 1 / -1;
+        }
+
+        .field-value textarea {
+            width: 100%;
+            border: none;
+            background: transparent;
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+            font-size: 15px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .field-value textarea:focus {
+            outline: none;
+        }
+
+        /* 作業進捗チェックリスト */
+        .checklist {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid var(--shadow-dark);
+            font-weight: 500;
+        }
+
+        .checklist-item:hover {
+            background: var(--bg-hover);
+            border-color: var(--kicho-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .checklist-item input[type="checkbox"] {
+            margin-right: 12px;
+            transform: scale(1.2);
+            accent-color: var(--kicho-success);
+        }
+
+        .checklist-item.completed {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1));
+            border-color: var(--kicho-success);
+            transform: scale(0.98);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+        }
+
+        .checklist-item.completed span {
+            text-decoration: line-through;
+            color: var(--kicho-success);
+            font-weight: 700;
+        }
+
+        .checklist-item.completed input[type="checkbox"] {
+            accent-color: var(--kicho-success);
+        }
+
+        /* 配送選択 */
+        .shipping-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .shipping-option {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            background: var(--bg-primary);
+            border: 2px solid var(--shadow-dark);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .shipping-option:hover {
+            border-color: var(--kicho-primary);
+            background: rgba(59, 130, 246, 0.05);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .shipping-option.selected {
+            border-color: var(--kicho-primary);
+            background: rgba(59, 130, 246, 0.1);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        }
+
+        .shipping-option input[type="radio"] {
+            margin-right: 16px;
+            transform: scale(1.2);
+            accent-color: var(--kicho-primary);
+        }
+
+        .option-details {
+            flex: 1;
+        }
+
+        .option-name {
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            font-size: 15px;
+        }
+
+        .option-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .option-badge {
+            background: var(--kicho-primary);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .option-badge--warning {
+            background: var(--kicho-warning);
+        }
+
+        .option-badge--secondary {
+            background: var(--text-secondary);
+        }
+
+        /* 大きなテキストエリア・入力フィールド */
+        .large-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 16px;
+            border: 2px solid var(--shadow-dark);
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: inherit;
+            resize: vertical;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .large-input {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid var(--shadow-dark);
+            border-radius: 8px;
+            font-size: 18px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-weight: 700;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+        }
+
+        .large-input:focus,
+        .large-textarea:focus {
+            outline: none;
+            border-color: var(--kicho-primary);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+        }
+
+        .tracking-status {
+            margin-top: 16px;
+            padding: 12px 20px;
+            text-align: center;
+            border-radius: 8px;
+            font-weight: 700;
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--kicho-danger);
+            border: 2px solid rgba(239, 68, 68, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .tracking-status.shipped {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--kicho-success);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        /* アクションボタン */
+        .action-buttons {
+            display: flex;
+            gap: 16px;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 2px solid var(--shadow-dark);
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            min-height: 50px;
+        }
+
+        .btn--primary {
+            background: linear-gradient(135deg, var(--kicho-primary), var(--kicho-secondary));
+            color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn--primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn--secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 2px solid var(--shadow-dark);
+        }
+
+        .btn--secondary:hover {
+            background: var(--bg-hover);
+            border-color: var(--kicho-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        /* コピー機能 */
+        .copyable {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .copyable:hover::after {
+            content: "📋 クリックでコピー";
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--text-primary);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .copy-feedback {
+            background: rgba(16, 185, 129, 0.2) !important;
+            border-color: var(--kicho-success) !important;
+            transition: all 0.3s ease !important;
+        }
+
+        /* レスポンシブ対応 */
+        @media (max-width: 768px) {
+            .header-section {
+                grid-template-columns: 1fr;
+                text-align: center;
+                gap: 20px;
+                padding: 24px;
+            }
+
+            .product-image {
+                height: 140px;
+                max-width: 240px;
+                margin: 0 auto;
+            }
+
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .field-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .checklist {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 12px;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+
+            .header-section {
+                padding: 20px;
+            }
+
+            .info-card {
+                padding: 20px;
+            }
+        }
+
+        /* アニメーション */
+        @keyframes bounce {
+            0%, 20%, 53%, 80%, 100% {
+                transform: translate3d(0,0,0);
+            }
+            40%, 43% {
+                transform: translate3d(0, -8px, 0);
+            }
+            70% {
+                transform: translate3d(0, -4px, 0);
+            }
+            90% {
+                transform: translate3d(0, -2px, 0);
+            }
+        }
+
+        .animate-bounce {
+            animation: bounce 1s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+            }
+        }
+
+        .animate-pulse {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="shipping-card">
+            <!-- ヘッダーセクション - 進捗に応じて色が変わる -->
+            <div class="header-section progress-0" id="headerSection">
+                <div class="status-flag" id="statusFlag">未開始</div>
+                
+                <div class="product-image">
+                    <img src="https://i.ebayimg.com/images/g/MRIAAOSwZidnfdpN/s-l1600.jpg" alt="商品画像" onerror="this.style.display='none'; this.parentNode.innerHTML='<i class=&quot;fas fa-image fa-3x&quot;></i><br>商品画像';">
+                </div>
+                
+                <div class="product-info">
+                    <h1>呪術廻戦 1-30巻 日本のコミック マンガ本 アニメセット</h1>
+                    <div class="product-meta">商品番号: 1704</div>
+                    <div class="product-meta">注文番号: 09-13118-13602</div>
+                    <div class="product-meta">SKU: 063c21df-6117-4205-b186-38ab2eb021a7</div>
+                    <div class="customer-info">配送先: イギリス (Paul Davies)</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+                
+                <div class="status-section">
+                    <div class="status-badge" id="statusBadge">商品到着待ち</div>
+                    <div class="progress-info" id="progressInfo">作業進捗: 0/9 完了</div>
+                    <div class="progress-info" id="remainingInfo">残り作業: 9項目</div>
+                </div>
+            </div>
+
+            <!-- メインコンテンツ -->
+            <div class="main-content">
+                <!-- 詳細情報グリッド -->
+                <div class="details-grid">
+                    <!-- 作業進捗 -->
+                    <div class="info-card work-progress">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+                            <div class="card-title">作業進捗チェックリスト</div>
+                        </div>
+                        <div class="checklist" id="checklist">
+                            <label class="checklist-item" data-step="1">
+                                <input type="checkbox" onchange="updateProgress()"> <span>商品到着</span>
+                            </label>
+                            <label class="checklist-item" data-step="2">
+                                <input type="checkbox" onchange="updateProgress()"> <span>商品検品</span>
+                            </label>
+                            <label class="checklist-item" data-step="3">
+                                <input type="checkbox" onchange="updateProgress()"> <span>箱の加工実行</span>
+                            </label>
+                            <label class="checklist-item" data-step="4">
+                                <input type="checkbox" onchange="updateProgress()"> <span>梱包重量測定</span>
+                            </label>
+                            <label class="checklist-item" data-step="5">
+                                <input type="checkbox" onchange="updateProgress()"> <span>梱包サイズ測定</span>
+                            </label>
+                            <label class="checklist-item" data-step="6">
+                                <input type="checkbox" onchange="updateProgress()"> <span>伝票作成</span>
+                            </label>
+                            <label class="checklist-item" data-step="7">
+                                <input type="checkbox" onchange="updateProgress()"> <span>最終確認</span>
+                            </label>
+                            <label class="checklist-item" data-step="8">
+                                <input type="checkbox" onchange="updateProgress()"> <span>集荷依頼</span>
+                            </label>
+                            <label class="checklist-item" data-step="9">
+                                <input type="checkbox" onchange="updateProgress()"> <span>集荷完了</span>
+                            </label>
+                            <label class="checklist-item" data-step="10">
+                                <input type="checkbox" onchange="updateProgress()"> <span>追跡UP完了</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 梱包情報 -->
+                    <div class="info-card packaging-info">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-box"></i>
+                            </div>
+                            <div class="card-title">梱包情報</div>
+                        </div>
+                        <div class="field-grid">
+                            <div class="field-group">
+                                <div class="field-label">重量 (g)</div>
+                                <input type="number" class="field-value editable" placeholder="206" value="206" id="weight" onchange="calculateVolume()">
+                            </div>
+                            <div class="field-group">
+                                <div class="field-label">縦 (cm)</div>
+                                <input type="number" class="field-value editable" placeholder="20.5" value="20.5" id="length" onchange="calculateSize()">
+                            </div>
+                            <div class="field-group">
+                                <div class="field-label">横 (cm)</div>
+                                <input type="number" class="field-value editable" placeholder="15" value="15" id="width" onchange="calculateSize()">
+                            </div>
+                            <div class="field-group">
+                                <div class="field-label">高さ (cm)</div>
+                                <input type="number" class="field-value editable" placeholder="3" value="3" id="height" onchange="calculateSize()">
+                            </div>
+                            <div class="field-group">
+                                <div class="field-label">合計サイズ</div>
+                                <div class="field-value" id="totalSize">38.5cm</div>
+                            </div>
+                            <div class="field-group">
+                                <div class="field-label">容積重量</div>
+                                <div class="field-value" id="volumeWeight">0.1845kg</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 商品詳細情報 -->
+                    <div class="info-card">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-info-circle"></i>
+                            </div>
+                            <div class="card-title">商品詳細情報</div>
+                        </div>
+                        <div class="field-grid">
+                            <div class="field-group">
+                                <div class="field-label">原産国 (Country of Origin)</div>
+                                <input type="text" class="field-value editable copyable" value="Japan">
+                            </div>
+                            <div class="field-group">
+                                <div class="field-label">HSコード</div>
+                                <input type="text" class="field-value editable copyable" value="4901.99">
+                            </div>
+                            <div class="field-group field-full">
+                                <div class="field-label">出荷用タイトル (英語)</div>
+                                <div class="field-value editable copyable">
+                                    <textarea>Set of Japanese manga books, paper material, non-hazardous.</textarea>
+                                </div>
+                            </div>
+                            <div class="field-group field-full">
+                                <div class="field-label">配送先住所</div>
+                                <div class="field-value copyable">Paul Davies, 12 hodder green close Wigan, Lancashire WN2 5ff, United Kingdom</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 配送情報 -->
+                    <div class="info-card shipping-info">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-truck"></i>
+                            </div>
+                            <div class="card-title">配送方法選択</div>
+                        </div>
+                        <div class="shipping-options">
+                            <label class="shipping-option selected">
+                                <input type="radio" name="shipping" value="fedex" checked>
+                                <div class="option-details">
+                                    <div class="option-name">FedEx International Priority</div>
+                                    <div class="option-desc">2-3日配達 | 追跡あり | 保険対応</div>
+                                </div>
+                                <div class="option-badge">推奨</div>
+                            </label>
+                            <label class="shipping-option">
+                                <input type="radio" name="shipping" value="dhl">
+                                <div class="option-details">
+                                    <div class="option-name">DHL Express Worldwide</div>
+                                    <div class="option-desc">3-4日配達 | 追跡あり | 保険対応</div>
+                                </div>
+                                <div class="option-badge option-badge--warning">代替</div>
+                            </label>
+                            <label class="shipping-option">
+                                <input type="radio" name="shipping" value="ems">
+                                <div class="option-details">
+                                    <div class="option-name">EMS (国際スピード郵便)</div>
+                                    <div class="option-desc">5-7日配達 | 追跡あり | 基本保険</div>
+                                </div>
+                                <div class="option-badge option-badge--secondary">安価</div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 申し送り情報 -->
+                    <div class="info-card handover-info">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-hand-paper"></i>
+                            </div>
+                            <div class="card-title">申し送り事項</div>
+                        </div>
+                        <div class="field-grid">
+                            <div class="field-group field-full">
+                                <div class="field-label">特別指示・注意事項</div>
+                                <textarea class="large-textarea" placeholder="特別な指示や注意事項を入力してください...">要確認事項あり - 商品の状態を再度確認すること</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 追跡情報 -->
+                    <div class="info-card tracking-info">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-barcode"></i>
+                            </div>
+                            <div class="card-title">追跡番号・出荷状況</div>
+                        </div>
+                        <div class="field-grid">
+                            <div class="field-group field-full">
+                                <div class="field-label">追跡番号</div>
+                                <input type="text" class="large-input" placeholder="追跡番号を入力..." id="trackingNumber" oninput="updateTrackingStatus()">
+                            </div>
+                            <div class="field-group field-full">
+                                <div class="field-label">出荷ステータス</div>
+                                <div class="tracking-status" id="trackingStatus">未出荷</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- アクションボタン -->
+                <div class="action-buttons">
+                    <button class="btn btn--primary" onclick="saveData()">
+                        <i class="fas fa-save"></i>
+                        保存
+                    </button>
+                    <button class="btn btn--secondary" onclick="printCard()">
+                        <i class="fas fa-print"></i>
+                        印刷
+                    </button>
+                    <button class="btn btn--secondary" onclick="copyAllData()">
+                        <i class="fas fa-copy"></i>
+                        データコピー
+                    </button>
+                    <button class="btn btn--secondary" onclick="showHistory()">
+                        <i class="fas fa-history"></i>
+                        履歴表示
+                    </button>
+                    <button class="btn btn--secondary" onclick="exportData()">
+                        <i class="fas fa-download"></i>
+                        エクスポート
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === グローバル変数 ===
+        let progressData = {
+            completed: 0,
+            total: 10, // 追跡UP完了を追加したため10項目に変更
+            lastUpdated: new Date().toISOString()
+        };
+
+        // === 進捗バー更新と色変更 ===
+        function updateProgress() {
+            const total = document.querySelectorAll('input[type="checkbox"]').length;
+            const completed = document.querySelectorAll('input[type="checkbox"]:checked').length;
+            const percentage = Math.round((completed / total) * 100);
+            
+            // 進捗データ更新
+            progressData.completed = completed;
+            progressData.total = total;
+            progressData.lastUpdated = new Date().toISOString();
+            
+            // 進捗バー更新（アニメーション付き）
+            const progressFill = document.getElementById('progressFill');
+            progressFill.style.width = percentage + '%';
+            
+            // 進捗情報更新
+            document.getElementById('progressInfo').textContent = `作業進捗: ${completed}/${total} 完了 (${percentage}%)`;
+            document.getElementById('remainingInfo').textContent = `残り作業: ${total - completed}項目`;
+            
+            // ヘッダー色変更
+            updateHeaderColor(completed);
+            
+            // チェックボックス完了状態の視覚的更新
+            updateChecklistVisuals();
+            
+            // 完了時のアニメーション
+            if (completed === total) {
+                celebrateCompletion();
+            }
+            
+            // データ自動保存
+            autoSave();
+        }
+
+        // === ヘッダー色変更 ===
+        function updateHeaderColor(completed) {
+            const headerSection = document.getElementById('headerSection');
+            const statusFlag = document.getElementById('statusFlag');
+            const statusBadge = document.getElementById('statusBadge');
+            
+            // 既存のprogressクラスを削除
+            headerSection.className = headerSection.className.replace(/progress-\w+/g, '').replace(/shipped/g, '');
+            
+            // 追跡番号入力済みかチェック
+            const trackingNumber = document.getElementById('trackingNumber').value.trim();
+            
+            if (trackingNumber && completed === 9) {
+                // 出荷済み
+                headerSection.classList.add('shipped');
+                statusFlag.textContent = '出荷済み';
+                statusBadge.textContent = '配送中';
+            } else if (completed === 0) {
+                headerSection.classList.add('progress-0');
+                statusFlag.textContent = '未開始';
+                statusBadge.textContent = '商品到着待ち';
+            } else if (completed >= 1 && completed <= 3) {
+                headerSection.classList.add('progress-1-3');
+                statusFlag.textContent = '開始';
+                statusBadge.textContent = '作業開始';
+            } else if (completed >= 4 && completed <= 6) {
+                headerSection.classList.add('progress-4-6');
+                statusFlag.textContent = '作業中';
+                statusBadge.textContent = '梱包作業中';
+            } else if (completed >= 7 && completed <= 8) {
+                headerSection.classList.add('progress-7-8');
+                statusFlag.textContent = 'ほぼ完了';
+                statusBadge.textContent = '最終確認中';
+            } else if (completed === 9) {
+                headerSection.classList.add('progress-9');
+                statusFlag.textContent = '作業完了';
+                statusBadge.textContent = '集荷待ち';
+            }
+        }
+
+        // === チェックリスト視覚的更新 ===
+        function updateChecklistVisuals() {
+            document.querySelectorAll('.checklist-item').forEach(item => {
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                if (checkbox.checked) {
+                    item.classList.add('completed');
+                    item.classList.add('animate-bounce');
+                    setTimeout(() => item.classList.remove('animate-bounce'), 1000);
+                } else {
+                    item.classList.remove('completed');
+                }
+            });
+        }
+
+        // === 完了時のお祝いアニメーション ===
+        function celebrateCompletion() {
+            const headerSection = document.getElementById('headerSection');
+            headerSection.classList.add('animate-pulse');
+            
+            // 効果音再生（ブラウザ対応）
+            try {
+                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmMiCSBxwu3WiiIbHGu69t6PQQgWX7zr66tWEwt');
+                audio.play().catch(() => {});
+            } catch (e) {}
+            
+            // 通知表示
+            showNotification('🎉 全ての作業が完了しました！', 'success');
+            
+            setTimeout(() => headerSection.classList.remove('animate-pulse'), 2000);
+        }
+
+        // === 梱包サイズ計算 ===
+        function calculateSize() {
+            const length = parseFloat(document.getElementById('length').value) || 0;
+            const width = parseFloat(document.getElementById('width').value) || 0;
+            const height = parseFloat(document.getElementById('height').value) || 0;
+            
+            const totalSize = length + width + height;
+            document.getElementById('totalSize').textContent = totalSize.toFixed(1) + 'cm';
+            
+            calculateVolume();
+        }
+
+        // === 容積重量計算 ===
+        function calculateVolume() {
+            const length = parseFloat(document.getElementById('length').value) || 0;
+            const width = parseFloat(document.getElementById('width').value) || 0;
+            const height = parseFloat(document.getElementById('height').value) || 0;
+            
+            // 容積重量 = (縦 × 横 × 高さ) ÷ 5000
+            const volumeWeight = (length * width * height) / 5000;
+            document.getElementById('volumeWeight').textContent = volumeWeight.toFixed(4) + 'kg';
+        }
+
+        // === 追跡番号入力処理 ===
+        function updateTrackingStatus() {
+            const trackingNumber = document.getElementById('trackingNumber').value.trim();
+            const status = document.getElementById('trackingStatus');
+            
+            if (trackingNumber) {
+                status.textContent = '出荷済み';
+                status.classList.add('shipped');
+                
+                // 全作業完了時は出荷済み状態に
+                const completed = document.querySelectorAll('input[type="checkbox"]:checked').length;
+                if (completed === 9) {
+                    updateHeaderColor(completed);
+                }
+            } else {
+                status.textContent = '未出荷';
+                status.classList.remove('shipped');
+            }
+        }
+
+        // === 配送方法選択処理 ===
+        function initShippingSelection() {
+            document.querySelectorAll('input[name="shipping"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    document.querySelectorAll('.shipping-option').forEach(option => {
+                        option.classList.remove('selected');
+                    });
+                    this.closest('.shipping-option').classList.add('selected');
+                    autoSave();
+                });
+            });
+        }
+
+        // === コピー機能 ===
+        function setupCopyables() {
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('copyable') || e.target.closest('.copyable')) {
+                    const element = e.target.classList.contains('copyable') ? e.target : e.target.closest('.copyable');
+                    const text = element.value || element.querySelector('textarea')?.value || element.textContent.trim();
+                    
+                    navigator.clipboard.writeText(text).then(() => {
+                        element.classList.add('copy-feedback');
+                        showNotification('📋 コピーしました: ' + text.substring(0, 30) + '...', 'info');
+                        setTimeout(() => element.classList.remove('copy-feedback'), 1000);
+                    }).catch(err => {
+                        console.error('コピーに失敗しました:', err);
+                        showNotification('❌ コピーに失敗しました', 'error');
+                    });
+                }
+            });
+        }
+
+        // === 通知システム ===
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification notification--${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+                color: white;
+                padding: 16px 24px;
+                border-radius: 12px;
+                font-weight: 600;
+                z-index: 1000;
+                max-width: 400px;
+                box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // アニメーション開始
+            setTimeout(() => notification.style.transform = 'translateX(0)', 100);
+            
+            // 自動削除
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => notification.remove(), 300);
+            }, 4000);
+        }
+
+        // === データ保存機能 ===
+        function saveData() {
+            const data = collectAllData();
+            
+            try {
+                localStorage.setItem('shippingCardData', JSON.stringify(data));
+                showNotification('💾 データを保存しました', 'success');
+            } catch (error) {
+                console.error('保存に失敗しました:', error);
+                showNotification('❌ 保存に失敗しました', 'error');
+            }
+        }
+
+        // === データ自動保存 ===
+        function autoSave() {
+            const data = collectAllData();
+            try {
+                localStorage.setItem('shippingCardAutoSave', JSON.stringify(data));
+            } catch (error) {
+                console.error('自動保存に失敗しました:', error);
+            }
+        }
+
+        // === 全データ収集 ===
+        function collectAllData() {
+            const data = {
+                progress: progressData,
+                checklist: [],
+                packaging: {
+                    weight: document.getElementById('weight').value,
+                    length: document.getElementById('length').value,
+                    width: document.getElementById('width').value,
+                    height: document.getElementById('height').value
+                },
+                tracking: document.getElementById('trackingNumber').value,
+                shipping: document.querySelector('input[name="shipping"]:checked')?.value || '',
+                notes: document.querySelector('.large-textarea').value,
+                timestamp: new Date().toISOString()
+            };
+            
+            // チェックリストデータ
+            document.querySelectorAll('.checklist-item input[type="checkbox"]').forEach((checkbox, index) => {
+                data.checklist.push({
+                    id: index,
+                    text: checkbox.parentNode.querySelector('span').textContent,
+                    completed: checkbox.checked
+                });
+            });
+            
+            return data;
+        }
+
+        // === データ復元 ===
+        function loadSavedData() {
+            try {
+                const savedData = localStorage.getItem('shippingCardAutoSave');
+                if (savedData) {
+                    const data = JSON.parse(savedData);
+                    
+                    // パッケージングデータ復元
+                    if (data.packaging) {
+                        document.getElementById('weight').value = data.packaging.weight || '';
+                        document.getElementById('length').value = data.packaging.length || '';
+                        document.getElementById('width').value = data.packaging.width || '';
+                        document.getElementById('height').value = data.packaging.height || '';
+                        calculateSize();
+                    }
+                    
+                    // 追跡番号復元
+                    if (data.tracking) {
+                        document.getElementById('trackingNumber').value = data.tracking;
+                        updateTrackingStatus();
+                    }
+                    
+                    // チェックリスト復元
+                    if (data.checklist) {
+                        data.checklist.forEach((item, index) => {
+                            const checkbox = document.querySelectorAll('.checklist-item input[type="checkbox"]')[index];
+                            if (checkbox) {
+                                checkbox.checked = item.completed;
+                            }
+                        });
+                    }
+                    
+                    // 配送方法復元
+                    if (data.shipping) {
+                        const shippingRadio = document.querySelector(`input[name="shipping"][value="${data.shipping}"]`);
+                        if (shippingRadio) {
+                            shippingRadio.checked = true;
+                            shippingRadio.closest('.shipping-option').classList.add('selected');
+                        }
+                    }
+                    
+                    // 申し送り事項復元
+                    if (data.notes) {
+                        document.querySelector('.large-textarea').value = data.notes;
+                    }
+                    
+                    // 進捗更新
+                    updateProgress();
+                }
+            } catch (error) {
+                console.error('データ復元に失敗しました:', error);
+            }
+        }
+
+        // === その他のアクション関数 ===
+        function printCard() {
+            window.print();
+            showNotification('🖨️ 印刷ダイアログを開きました', 'info');
+        }
+
+        function copyAllData() {
+            const data = collectAllData();
+            const text = JSON.stringify(data, null, 2);
+            navigator.clipboard.writeText(text).then(() => {
+                showNotification('📋 全データをコピーしました', 'success');
+            }).catch(() => {
+                showNotification('❌ コピーに失敗しました', 'error');
+            });
+        }
+
+        function showHistory() {
+            const savedData = localStorage.getItem('shippingCardData');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                alert(`保存履歴:\n最終保存: ${new Date(data.timestamp).toLocaleString()}\n進捗: ${data.progress.completed}/${data.progress.total}`);
+            } else {
+                showNotification('📝 保存履歴がありません', 'info');
+            }
+        }
+
+        function exportData() {
+            const data = collectAllData();
+            const jsonString = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `shipping_card_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification('📥 データをエクスポートしました', 'success');
+        }
+
+        // === 初期化 ===
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初期進捗バー設定
+            updateProgress();
+            
+            // 配送方法選択初期化
+            initShippingSelection();
+            
+            // コピー機能初期化
+            setupCopyables();
+            
+            // 保存データ復元
+            loadSavedData();
+            
+            // 初期サイズ計算
+            calculateSize();
+            
+            // キーボードショートカット
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey || e.metaKey) {
+                    switch (e.key) {
+                        case 's':
+                            e.preventDefault();
+                            saveData();
+                            break;
+                        case 'p':
+                            e.preventDefault();
+                            printCard();
+                            break;
+                    }
+                }
+            });
+            
+            console.log('🚀 出荷管理カードシステムが正常に初期化されました');
+            showNotification('✅ システムが正常に起動しました', 'success');
+        });
+
+        // === エラーハンドリング ===
+        window.addEventListener('error', function(e) {
+            console.error('エラーが発生しました:', e.error);
+            showNotification('⚠️ システムエラーが発生しました', 'error');
+        });
+
+        // === 自動保存（5秒間隔） ===
+        setInterval(autoSave, 5000);
+    </script>
+</body>
+</html>

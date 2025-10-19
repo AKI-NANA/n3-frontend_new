@@ -1,0 +1,726 @@
+/**
+ * maru9商品データ修正ツール専用CSS
+ * NAGANO-3完全統合版 - 標準格納版
+ * パス: common/css/pages/maru9_tool.css
+ */
+
+/* ===== NAGANO-3統一CSS変数（既存活用） ===== */
+:root {
+    --space-xs: 0.25rem;
+    --space-sm: 0.5rem;
+    --space-md: 1rem;
+    --space-lg: 1.5rem;
+    --space-xl: 2rem;
+    --space-2xl: 3rem;
+    
+    --color-primary: #3b82f6;
+    --color-secondary: #8b5cf6;
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-danger: #ef4444;
+    --color-info: #06b6d4;
+    
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f1f5f9;
+    --bg-hover: #e2e8f0;
+    --bg-active: #cbd5e1;
+    
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --text-tertiary: #64748b;
+    --text-muted: #94a3b8;
+    --text-white: #ffffff;
+    
+    --border-color: #e2e8f0;
+    --border-light: #f1f5f9;
+    --border-dark: #cbd5e1;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    
+    --radius-sm: 0.25rem;
+    --radius-md: 0.375rem;
+    --radius-lg: 0.5rem;
+    --radius-xl: 0.75rem;
+    --radius-2xl: 1rem;
+    --radius-full: 9999px;
+    
+    --transition-fast: all 0.15s ease-in-out;
+    --transition-normal: all 0.2s ease-in-out;
+    --transition-slow: all 0.3s ease-in-out;
+}
+
+/* ===== N3統合メインコンテナ（N3システム標準レイアウト） ===== */
+.kicho__container {
+    margin-left: 220px !important; /* N3標準サイドバー幅 */
+    width: calc(100vw - 220px) !important;
+    max-width: calc(100vw - 220px) !important;
+    padding: var(--space-lg, 1.5rem) !important;
+    box-sizing: border-box !important;
+    min-height: 100vh;
+    background: var(--bg-primary, #ffffff);
+    overflow-x: hidden !important;
+    transition: margin-left 0.3s ease, width 0.3s ease;
+}
+
+.maru9-dashboard {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+}
+
+.maru9-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: var(--space-lg);
+    background: var(--bg-secondary);
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    position: relative;
+}
+
+/* ===== ヘッダー（NAGANO-3統合版） ===== */
+.maru9-header {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    color: var(--text-white);
+    padding: var(--space-xl);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.maru9-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+    animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0%, 100% { transform: translateX(-100%); }
+    50% { transform: translateX(100%); }
+}
+
+.maru9-header__title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: var(--space-sm);
+    position: relative;
+    z-index: 2;
+}
+
+.maru9-header__subtitle {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1rem;
+    position: relative;
+    z-index: 2;
+    margin-bottom: var(--space-lg);
+}
+
+/* ===== ステータスグリッド（右側切れ修正） ===== */
+.maru9-status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--space-md);
+    margin-bottom: var(--space-xl);
+    padding: 0;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.maru9-status-item {
+    background: rgba(255, 255, 255, 0.2);
+    padding: var(--space-md);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-size: 0.875rem;
+    font-weight: 500;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition: var(--transition-normal);
+    box-sizing: border-box;
+    min-width: 0;
+    word-wrap: break-word;
+}
+
+.maru9-status-item:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+.maru9-status-item i {
+    font-size: 1.25rem;
+    color: var(--color-warning);
+    flex-shrink: 0;
+}
+
+/* ===== アップロードゾーン（レスポンシブ修正） ===== */
+.maru9-upload {
+    border: 3px dashed var(--border-color);
+    border-radius: var(--radius-xl);
+    padding: var(--space-2xl);
+    cursor: pointer;
+    transition: var(--transition-slow);
+    background: linear-gradient(135deg, var(--bg-tertiary), rgba(59, 130, 246, 0.05));
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    margin: var(--space-lg) 0;
+    box-sizing: border-box;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.maru9-upload::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: var(--transition-slow);
+}
+
+.maru9-upload:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.maru9-upload:hover {
+    border-color: var(--color-primary);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05));
+    transform: translateY(-2px);
+}
+
+.maru9-upload--dragover {
+    border-color: var(--color-success);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+    transform: scale(1.02);
+}
+
+.maru9-upload__input {
+    display: none;
+}
+
+.maru9-upload__icon {
+    font-size: 3rem;
+    margin-bottom: var(--space-lg);
+    display: block;
+    color: var(--color-primary);
+    position: relative;
+    z-index: 2;
+}
+
+.maru9-upload__title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--space-sm);
+    position: relative;
+    z-index: 2;
+}
+
+.maru9-upload__description {
+    color: var(--text-secondary);
+    margin-bottom: var(--space-sm);
+    position: relative;
+    z-index: 2;
+}
+
+.maru9-upload__status {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    position: relative;
+    z-index: 2;
+}
+
+/* ===== ボタン（NAGANO-3統合版） ===== */
+.maru9-btn {
+    padding: var(--space-lg) var(--space-xl);
+    border-radius: var(--radius-lg);
+    font-weight: 600;
+    transition: var(--transition-normal);
+    cursor: pointer;
+    border: none;
+    font-size: 1rem;
+    margin: var(--space-lg) auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    text-decoration: none;
+    font-family: inherit;
+    position: relative;
+    overflow: hidden;
+    max-width: 300px;
+    box-sizing: border-box;
+}
+
+.maru9-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: var(--transition-slow);
+}
+
+.maru9-btn:hover::before {
+    left: 100%;
+}
+
+.maru9-btn--primary {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    color: var(--text-white);
+    box-shadow: var(--shadow-md);
+}
+
+.maru9-btn--primary:hover:not(.maru9-btn--disabled) {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.maru9-btn--disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* ===== カード・パネル（NAGANO-3統合版） ===== */
+.maru9-card {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    margin: var(--space-lg) 0;
+    box-shadow: var(--shadow-md);
+    transition: var(--transition-normal);
+    box-sizing: border-box;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.maru9-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--color-primary);
+}
+
+.maru9-card__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--space-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.maru9-card__title i {
+    color: var(--color-primary);
+    font-size: 1.125rem;
+}
+
+/* ===== ユーティリティクラス ===== */
+.maru9-hidden {
+    display: none !important;
+}
+
+.maru9-empty-state {
+    padding: var(--space-2xl);
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-lg);
+    margin: var(--space-lg) 0;
+}
+
+/* ===== N3統合サイドバー対応（安定版レスポンシブ） ===== */
+@media (min-width: 1024px) {
+    /* N3システム標準レイアウト */
+    .kicho__container {
+        margin-left: 220px !important;
+        width: calc(100vw - 220px) !important;
+        max-width: calc(100vw - 220px) !important;
+    }
+    
+    /* サイドバー縮小時のみ調整 */
+    .sidebar-collapsed .kicho__container {
+        margin-left: 60px !important;
+        width: calc(100vw - 60px) !important;
+        max-width: calc(100vw - 60px) !important;
+    }
+    
+    .maru9-container {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}
+
+@media (max-width: 1023px) {
+    .kicho__container {
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    
+    .maru9-container {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}
+
+/* サイドバー状態対応（N3システム標準） */
+[data-sidebar="collapsed"] .kicho__container,
+.sidebar-collapsed .kicho__container {
+    margin-left: 60px !important;
+    width: calc(100vw - 60px) !important;
+    max-width: calc(100vw - 60px) !important;
+}
+
+[data-sidebar="expanded"] .kicho__container,
+.sidebar-expanded .kicho__container,
+body:not(.sidebar-collapsed):not(.sidebar-hidden) .kicho__container {
+    margin-left: 220px !important;
+    width: calc(100vw - 220px) !important;
+    max-width: calc(100vw - 220px) !important;
+}
+
+/* 例外的なフルスクリーンモード（明示的指定時のみ） */
+.sidebar-hidden.force-fullscreen .kicho__container {
+    margin-left: 0 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+}
+
+/* ===== レスポンシブ対応（右側切れ完全修正） =====
+@media (max-width: 1024px) {
+    .maru9-container {
+        margin: var(--space-lg) auto;
+        border-radius: var(--radius-lg);
+    }
+    
+    .maru9-status-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: var(--space-sm);
+    }
+    
+    .maru9-upload {
+        margin: var(--space-lg);
+        width: calc(100% - 2 * var(--space-lg));
+    }
+    
+    .maru9-card {
+        margin: var(--space-lg);
+        width: calc(100% - 2 * var(--space-lg));
+    }
+}
+
+@media (max-width: 768px) {
+    .maru9-dashboard {
+        padding: var(--space-md);
+    }
+    
+    .maru9-container {
+        margin: var(--space-sm) auto;
+        border-radius: var(--radius-md);
+    }
+    
+    .maru9-header {
+        padding: var(--space-lg);
+    }
+    
+    .maru9-header__title {
+        font-size: 1.5rem;
+    }
+    
+    .maru9-upload {
+        padding: var(--space-xl);
+        margin: var(--space-md);
+        width: calc(100% - 2 * var(--space-md));
+    }
+    
+    .maru9-upload__icon {
+        font-size: 2.5rem;
+    }
+    
+    .maru9-upload__title {
+        font-size: 1.25rem;
+    }
+    
+    .maru9-status-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-sm);
+    }
+    
+    .maru9-card {
+        padding: var(--space-lg);
+        margin: var(--space-md);
+        width: calc(100% - 2 * var(--space-md));
+    }
+    
+    .maru9-btn {
+        max-width: 100%;
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .maru9-dashboard {
+        padding: var(--space-sm);
+    }
+    
+    .maru9-container {
+        margin: 0 auto;
+        border-radius: var(--radius-sm);
+    }
+    
+    .maru9-header {
+        padding: var(--space-md);
+    }
+    
+    .maru9-header__title {
+        font-size: 1.25rem;
+    }
+    
+    .maru9-upload {
+        padding: var(--space-lg);
+        margin: var(--space-sm);
+        width: calc(100% - 2 * var(--space-sm));
+    }
+    
+    .maru9-upload__icon {
+        font-size: 2rem;
+    }
+    
+    .maru9-upload__title {
+        font-size: 1.125rem;
+    }
+    
+    .maru9-card {
+        padding: var(--space-md);
+        margin: var(--space-sm);
+        width: calc(100% - 2 * var(--space-sm));
+    }
+    
+    .maru9-status-item {
+        padding: var(--space-sm);
+        font-size: 0.75rem;
+    }
+    
+    .maru9-status-item i {
+        font-size: 1rem;
+    }
+}
+
+/* ===== 追加コンポーネント ===== */
+.maru9-progress {
+    margin-bottom: var(--space-xl);
+    background: var(--bg-secondary);
+    padding: var(--space-lg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+}
+
+.maru9-progress__text {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: var(--space-sm);
+    color: var(--text-primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.maru9-progress__bar {
+    width: 100%;
+    height: 12px;
+    background-color: var(--bg-tertiary);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    position: relative;
+}
+
+.maru9-progress__fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+    width: 0%;
+    transition: width 0.5s ease;
+    border-radius: var(--radius-full);
+    position: relative;
+}
+
+.maru9-progress__fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%);
+    animation: progress-shimmer 2s ease-in-out infinite;
+}
+
+@keyframes progress-shimmer {
+    0%, 100% { transform: translateX(-100%); }
+    50% { transform: translateX(100%); }
+}
+
+/* ===== データベースパネル（NAGANO-3統合版） ===== */
+.maru9-database {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+    border: 2px solid var(--color-success);
+    border-radius: var(--radius-xl);
+    padding: var(--space-xl);
+    box-shadow: var(--shadow-lg);
+    margin: var(--space-lg) 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+}
+
+.maru9-database__header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--space-lg);
+}
+
+.maru9-database__header i {
+    color: var(--color-success);
+    font-size: 1.5rem;
+}
+
+.maru9-database__stats {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-lg);
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-lg);
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+}
+
+.maru9-database__stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: var(--space-xs);
+}
+
+.maru9-database__stat-value--green {
+    color: var(--color-success);
+}
+
+.maru9-database__stat-value--blue {
+    color: var(--color-primary);
+}
+
+.maru9-database__stat-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* ===== グリッドレイアウト（NAGANO-3互換） ===== */
+.grid {
+    display: grid;
+}
+
+.grid-cols-1 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.gap-8 {
+    gap: 2rem;
+}
+
+@media (min-width: 1024px) {
+    .lg\:col-span-2 {
+        grid-column: span 2 / span 2;
+    }
+    
+    .lg\:col-span-1 {
+        grid-column: span 1 / span 1;
+    }
+    
+    .lg\:grid-cols-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+/* ===== 右側切れ防止・完全修正 ===== */
+.maru9-dashboard,
+.maru9-dashboard * {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.maru9-container,
+.maru9-upload,
+.maru9-card,
+.maru9-database {
+    overflow-x: hidden !important;
+    word-wrap: break-word !important;
+}
+
+/* ===== NAGANOメインコンテンツエリア統合 ===== */
+.main-content .maru9-dashboard {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.main-content .maru9-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+}
+
+/* ===== スクロールバー統一 ===== */
+.maru9-dashboard ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.maru9-dashboard ::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-full);
+}
+
+.maru9-dashboard ::-webkit-scrollbar-thumb {
+    background: var(--border-dark);
+    border-radius: var(--radius-full);
+}
+
+.maru9-dashboard ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-primary);
+}

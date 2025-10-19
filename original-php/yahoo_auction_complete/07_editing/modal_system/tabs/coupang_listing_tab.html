@@ -1,0 +1,221 @@
+<!-- Coupang 出品情報編集タブ（韓国） -->
+<div class="ilm-data-section">
+    <div class="ilm-section-header" style="background: linear-gradient(135deg, #ff6600, #ff3d00); color: white;">
+        <i class="fas fa-store"></i> Coupang出品設定（韓国）
+    </div>
+    
+    <div style="padding: 1rem;">
+        <!-- 重要な注意事項 -->
+        <div style="background: #fff3e0; padding: 1rem; border-radius: 6px; margin-bottom: 1rem; border-left: 4px solid #ff6600;">
+            <h5 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; color: #e65100;">
+                <i class="fas fa-exclamation-triangle"></i> 重要：韓国語入力必須
+            </h5>
+            <p style="margin: 0; font-size: 0.85rem; color: #6c757d;">
+                Coupangは韓国のマーケットプレイスです。商品名・説明は韓国語での入力が必須です。
+            </p>
+        </div>
+
+        <!-- 商品名 -->
+        <div class="form-row">
+            <label class="form-label">
+                상품명（商品名） <span style="color: var(--ilm-error);">*</span>
+            </label>
+            <textarea class="ilm-form-textarea" id="coupang-title" rows="2" maxlength="100"
+                      oninput="IntegratedListingModal.updateCharCounter(this, 'coupang-title-counter')"
+                      placeholder="상품명을 입력하세요 (100자 이내)"></textarea>
+            <div style="text-align: right; font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;" id="coupang-title-counter">0/100</div>
+        </div>
+
+        <!-- 카테고리 -->
+        <div class="form-row" style="margin-top: 1rem;">
+            <label class="form-label">
+                카테고리（カテゴリー） <span style="color: var(--ilm-error);">*</span>
+            </label>
+            <select class="ilm-form-select" id="coupang-category">
+                <option value="">카테고리 선택...</option>
+                <option value="toys">완구/취미 (おもちゃ・趣味)</option>
+                <option value="collectibles">수집품 (コレクター商品)</option>
+                <option value="books">도서 (書籍)</option>
+                <option value="electronics">가전/디지털 (家電・デジタル)</option>
+                <option value="fashion">패션의류 (ファッション)</option>
+                <option value="sports">스포츠/레저 (スポーツ・レジャー)</option>
+                <option value="beauty">뷰티 (ビューティー)</option>
+                <option value="food">식품 (食品)</option>
+            </select>
+        </div>
+
+        <!-- 가격（価格） -->
+        <div class="ilm-data-section" style="margin-top: 1rem;">
+            <div class="ilm-section-header" style="background: #e3f2fd; color: #1976d2;">
+                <i class="fas fa-won-sign"></i> 가격 설정（価格設定）
+            </div>
+            <div style="padding: 1rem;">
+                <div class="ilm-form-grid">
+                    <div class="form-row">
+                        <label class="form-label">
+                            판매가（販売価格） <span style="color: var(--ilm-error);">*</span>
+                        </label>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="number" class="ilm-form-input" id="coupang-price" min="0" step="10" placeholder="0" style="flex: 1;">
+                            <span style="font-weight: 600;">원 (KRW)</span>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label">정가（定価）</label>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="number" class="ilm-form-input" id="coupang-original-price" min="0" step="10" placeholder="원래 가격" style="flex: 1;">
+                            <span style="font-weight: 600;">원 (KRW)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 상품 설명（商品説明） -->
+        <div class="form-row" style="margin-top: 1rem;">
+            <label class="form-label">상품 설명（商品説明）</label>
+            <textarea class="ilm-form-textarea" id="coupang-description" rows="5" maxlength="2000"
+                      placeholder="상품에 대한 자세한 설명을 입력하세요"></textarea>
+            <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
+                2000자 이내
+            </div>
+        </div>
+
+        <!-- 브랜드・제조사 -->
+        <div class="ilm-data-section" style="margin-top: 1rem;">
+            <div class="ilm-section-header">
+                <i class="fas fa-building"></i> 브랜드・제조사 정보
+            </div>
+            <div style="padding: 1rem;">
+                <div class="ilm-form-grid">
+                    <div class="form-row">
+                        <label class="form-label">브랜드（ブランド）</label>
+                        <input type="text" class="ilm-form-input" id="coupang-brand" placeholder="브랜드명">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label">제조사（製造元）</label>
+                        <input type="text" class="ilm-form-input" id="coupang-manufacturer" placeholder="제조사명">
+                    </div>
+                </div>
+                
+                <div class="form-row" style="margin-top: 1rem;">
+                    <label class="form-label">원산지（原産地） <span style="color: var(--ilm-error);">*</span></label>
+                    <select class="ilm-form-select" id="coupang-origin">
+                        <option value="">선택...</option>
+                        <option value="kr">대한민국 (韓国)</option>
+                        <option value="jp">일본 (日本)</option>
+                        <option value="cn">중국 (中国)</option>
+                        <option value="us">미국 (アメリカ)</option>
+                        <option value="eu">유럽 (ヨーロッパ)</option>
+                        <option value="other">기타 (その他)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 상품 속성（商品仕様） -->
+        <div class="ilm-data-section" style="margin-top: 1rem;">
+            <div class="ilm-section-header">
+                <i class="fas fa-list"></i> 상품 속성（商品仕様）
+            </div>
+            <div style="padding: 1rem;">
+                <div class="form-row">
+                    <label class="form-label">상품 상태（商品状態）</label>
+                    <select class="ilm-form-select" id="coupang-condition">
+                        <option value="new">새 상품 (新品)</option>
+                        <option value="used" selected>중고 (中古)</option>
+                        <option value="refurbished">리퍼비시 (整備済み)</option>
+                    </select>
+                </div>
+                
+                <div class="form-row" style="margin-top: 1rem;">
+                    <label class="form-label">KC 인증 여부（KC認証）</label>
+                    <select class="ilm-form-select" id="coupang-kc-cert">
+                        <option value="none">해당없음 (該当なし)</option>
+                        <option value="required">인증 필요 (認証必要)</option>
+                        <option value="certified">인증 완료 (認証済み)</option>
+                    </select>
+                    <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
+                        韓国の安全認証制度
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 재고（在庫） -->
+        <div class="ilm-data-section" style="margin-top: 1rem;">
+            <div class="ilm-section-header">
+                <i class="fas fa-boxes"></i> 재고 관리（在庫管理）
+            </div>
+            <div style="padding: 1rem;">
+                <div class="ilm-form-grid">
+                    <div class="form-row">
+                        <label class="form-label">재고 수량（在庫数） <span style="color: var(--ilm-error);">*</span></label>
+                        <input type="number" class="ilm-form-input" id="coupang-stock" value="1" min="0">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label">SKU</label>
+                        <input type="text" class="ilm-form-input" id="coupang-sku" readonly style="background: #f8f9fa;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 배송 설정（配送設定） -->
+        <div class="ilm-data-section" style="margin-top: 1rem;">
+            <div class="ilm-section-header" style="background: #e8f5e9; color: #2e7d32;">
+                <i class="fas fa-truck"></i> 배송 설정（配送設定）
+            </div>
+            <div style="padding: 1rem;">
+                <div class="form-row">
+                    <label class="form-label">배송 유형（配送タイプ）</label>
+                    <select class="ilm-form-select" id="coupang-shipping-type">
+                        <option value="rocket">로켓배송 (ロケット配送)</option>
+                        <option value="wing">쿠팡윙 (クーパンウィング)</option>
+                        <option value="seller" selected>판매자 배송 (出品者配送)</option>
+                    </select>
+                    <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
+                        ロケット配送は最速配送オプション
+                    </div>
+                </div>
+                
+                <div class="form-row" style="margin-top: 1rem;">
+                    <label class="form-label">배송비（配送料）</label>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="number" class="ilm-form-input" id="coupang-shipping-fee" value="0" min="0" step="100" style="flex: 1;">
+                        <span>원</span>
+                    </div>
+                    <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
+                        0원 = 무료배송 (送料無料)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 반품 정책（返品ポリシー） -->
+        <div class="ilm-data-section" style="margin-top: 1rem;">
+            <div class="ilm-section-header">
+                <i class="fas fa-undo"></i> 반품 정책（返品ポリシー）
+            </div>
+            <div style="padding: 1rem;">
+                <div class="form-row">
+                    <label class="form-label">반품 가능 여부（返品可否）</label>
+                    <select class="ilm-form-select" id="coupang-return-policy">
+                        <option value="30days">30일 이내 반품 가능 (30日以内返品可)</option>
+                        <option value="14days">14일 이내 반품 가능 (14日以内返品可)</option>
+                        <option value="7days">7일 이내 반품 가능 (7日以内返品可)</option>
+                        <option value="no-return">반품 불가 (返品不可)</option>
+                    </select>
+                </div>
+                
+                <div class="form-row" style="margin-top: 1rem;">
+                    <label class="form-label">반품 배송비（返品送料）</label>
+                    <select class="ilm-form-select" id="coupang-return-fee">
+                        <option value="seller">판매자 부담 (出品者負担)</option>
+                        <option value="buyer" selected>구매자 부담 (購入者負担)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

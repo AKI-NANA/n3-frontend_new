@@ -1,0 +1,522 @@
+/* 
+ * NAGANO-3 v2.0 メインスタイル - N3準拠版
+ * N3ルール準拠：@importでコンポーネント分離・インラインCSS禁止
+ */
+
+/* ===== N3モーダルシステム読み込み（独自実装） ===== */
+@import url('components/n3_modal_system.css');
+
+/* ===== N3コアCSS読み込み（基礎システム） ===== */
+@import url('core/common.css');
+@import url('core/components.css');
+@import url('core/layout.css');
+@import url('core/layout_2.css');
+@import url('core/utilities.css');
+@import url('core/themes-pure.css');
+@import url('core/debug.css');
+@import url('core/extensions.css');
+@import url('core/loading_supplement.css');
+@import url('core/loading-supplement.css');
+
+/* ===== N3テンプレートCSS読み込み（UIコンポーネント） ===== */
+@import url('templates/sidebar.css');
+@import url('templates/header.css');
+@import url('templates/footer.css');
+@import url('templates/templates_coming_soon.css');
+
+/* ===== N3棚卸システム専用CSS読み込み ===== */
+@import url('pages/tanaoroshi_inline_complete.css');
+@import url('pages/tanaoroshi_inline_complete_data_sync_fixed.css');
+@import url('pages/tanaoroshi_inline_complete_fixed.css');
+@import url('pages/tanaoroshi_modal_emergency_fix.css');
+@import url('pages/tanaoroshi_modal_view_fixes.css');
+
+/* ===== N3モジュール別CSS読み込み（機能専用） ===== */
+@import url('modules/ebay_kanri_styles.css');
+@import url('universal_data_hub.css');
+
+/* ===== N3統合CSS読み込み（システム統合） ===== */
+/* @import url('components.css');
+@import url('layout.css');
+@import url('sidebar.css');
+@import url('sidebar-width-fix.css');
+@import url('nagano3_integration_files.css');
+@import url('tanaoroshi_n3_styles.css');
+@import url('unified_modal_system.css'); */
+
+/* ==== 緊急修正：ピンクグラデーション完全排除（全要素対象） ==== */
+/* 原因不明のピンクグラデーション（fa7bc3, b978f1, 62b5f0）を強制排除 */
+
+/* 🚨 特定ピンクグラデーションのみ除去（選択的除去） */
+/* 全要素への強制適用を停止、特定のピンクグラデーションのみターゲット */
+*[style*="fa7bc3"],
+*[style*="b978f1"], 
+*[style*="62b5f0"],
+*[style*="linear-gradient(90deg, #fa7bc3, #b978f1, #62b5f0)"] {
+    background-image: none !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: initial !important;
+    background-clip: initial !important;
+    text-fill-color: initial !important;
+}
+
+/* 🚨 ヘッダー・タイトル系の強制修正 */
+h1, h2, h3, h4, h5, h6,
+.uipm-modal-header h1,
+.uipm-modal-header h2,
+.uipm-modal-title,
+.modal-title,
+.n3-modal-title,
+.complete-modal-title {
+    background: transparent !important;
+    background-image: none !important;
+    color: var(--text-primary) !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: initial !important;
+    background-clip: initial !important;
+    text-fill-color: initial !important;
+}
+
+/* 🚨 ボタン系の強制修正 */
+button, .btn, 
+.btn-primary, .btn-secondary, .btn-success, .btn-warning, .btn-danger, .btn-info,
+.btn--primary, .btn--secondary, .btn--success, .btn--warning, .btn--danger, .btn--info,
+input[type="button"], input[type="submit"], input[type="reset"],
+.button, .action-btn {
+    /* ピンクグラデーション除去のみ - 背景色は保持 */
+    background-image: none !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: initial !important;
+    background-clip: initial !important;
+    text-fill-color: initial !important;
+    
+    /* 背景色は上書きしない - 元の色を保持 */
+}
+
+/* 🚨 モーダル・カード系の選択的修正 */
+/* ピンクグラデーションのみ除去、正常な背景色は保持 */
+.uipm-modal *[style*="fa7bc3"],
+.modal *[style*="fa7bc3"],
+.n3-modal *[style*="fa7bc3"],
+.uipm-modal *[style*="b978f1"],
+.modal *[style*="b978f1"],
+.n3-modal *[style*="b978f1"],
+.uipm-modal *[style*="62b5f0"],
+.modal *[style*="62b5f0"],
+.n3-modal *[style*="62b5f0"],
+.uipm-modal *[style*="linear-gradient"],
+.modal *[style*="linear-gradient"],
+.n3-modal *[style*="linear-gradient"] {
+    background-image: none !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: initial !important;
+}
+
+/* 🚨 フィルター・アクション系ボタンの強制修正 */
+.filter-tab-button, .view-btn, .action-btn,
+.csv-btn, .export-btn, .import-btn, .sync-btn {
+    background-image: none !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: initial !important;
+}
+
+/* 🚨 ヘッダー専用：完全なグレー背景強制 */
+.uipm-modal-header {
+    background: #f1f5f9 !important;
+    background-image: none !important;
+}
+
+/* 🚨 #top要素が存在する場合の強制修正 */
+#top, #top *, #top h1, #top h2 {
+    background: transparent !important;
+    background-image: none !important;
+    color: var(--text-primary) !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: initial !important;
+    background-clip: initial !important;
+    text-fill-color: initial !important;
+}
+
+/* 🚨 linear-gradient完全禁止 */
+*[style*="linear-gradient"],
+*[style*="fa7bc3"],
+*[style*="b978f1"],
+*[style*="62b5f0"] {
+    background: transparent !important;
+    background-image: none !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: initial !important;
+}
+
+/* 🚨 ピンクグラデーション色値の完全ブロック */
+*[style*="#fa7bc3"],
+*[style*="#b978f1"],
+*[style*="#62b5f0"],
+*[style*="rgba(250, 123, 195"],
+*[style*="rgba(185, 120, 241"],
+*[style*="rgba(98, 181, 240"] {
+    background: transparent !important;
+    background-image: none !important;
+    background-color: transparent !important;
+    color: var(--text-primary) !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: var(--text-primary) !important;
+}
+
+/* 🚨 特定インラインstyle属性のピンクグラデーション無効化 */
+/* 全インライン要素ではなく、問題のあるグラデーション色のみ対象 */
+*[style*="fa7bc3"],
+*[style*="b978f1"],
+*[style*="62b5f0"],
+*[style*="rgba(250, 123, 195"],
+*[style*="rgba(185, 120, 241"],
+*[style*="rgba(98, 181, 240"],
+*[style*="linear-gradient(90deg, #fa7bc3, #b978f1, #62b5f0)"] {
+    background-image: none !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: initial !important;
+}
+
+/* 🚨 JavaScriptで動的に付与されるスタイルをブロック */
+.js-pink-gradient,
+.dynamic-gradient,
+[class*="gradient"],
+[id*="gradient"] {
+    background: transparent !important;
+    background-image: none !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: initial !important;
+}
+
+/* 🚨 ボタンサイズ異常修正（レイアウトシフト防止） */
+/* ボタンのサイズを初期状態から固定 */
+button, .btn, 
+input[type="button"], input[type="submit"], input[type="reset"],
+.action-btn, .filter-btn, .export-btn, .import-btn {
+    /* サイズ固定 */
+    min-height: 40px !important;
+    height: auto !important;
+    min-width: 120px !important;
+    padding: 0.75rem 1.5rem !important;
+    
+    /* レイアウト安定化 */
+    box-sizing: border-box !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.5rem !important;
+    
+    /* トランジション禁止（サイズ変化防止） */
+    transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease !important;
+    transform: none !important;
+    animation: none !important;
+    
+    /* フォントサイズ固定 */
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+    line-height: 1.2 !important;
+    
+    /* 背景固定 */
+    background-image: none !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: initial !important;
+}
+
+/* 特定ボタンサイズ固定 */
+.view-btn, .filter-tab-button {
+    min-height: 42px !important;
+    padding: 0.75rem 1.25rem !important;
+    min-width: 100px !important;
+}
+
+.csv-btn, .sync-btn, .export-btn, .import-btn {
+    min-height: 44px !important;
+    padding: 0.875rem 1.75rem !important;
+    min-width: 140px !important;
+}
+
+/* 小さいボタンのサイズ固定 */
+.btn-sm, .btn--sm {
+    min-height: 32px !important;
+    padding: 0.5rem 1rem !important;
+    min-width: 80px !important;
+    font-size: 0.75rem !important;
+}
+
+/* 大きいボタンのサイズ固定 */
+.btn-lg, .btn--lg {
+    min-height: 48px !important;
+    padding: 1rem 2rem !important;
+    min-width: 160px !important;
+    font-size: 1rem !important;
+}
+
+/* 🚨 アイコンサイズ固定（ボタン内） */
+button i, .btn i, .action-btn i {
+    font-size: 0.875rem !important;
+    width: 1em !important;
+    height: 1em !important;
+    display: inline-block !important;
+    flex-shrink: 0 !important;
+}
+
+/* 🚨 ホバーエフェクトのサイズ変化禁止 */
+button:hover, .btn:hover, .action-btn:hover {
+    transform: none !important;
+    scale: none !important;
+    width: auto !important;
+    height: auto !important;
+    padding: 0.75rem 1.5rem !important; /* ホバー時もサイズ固定 */
+}
+
+/* 🚨 フォーカス時のサイズ変化禁止 */
+button:focus, .btn:focus, .action-btn:focus {
+    outline: 2px solid var(--color-primary) !important;
+    outline-offset: 2px !important;
+    transform: none !important;
+    scale: none !important;
+}
+
+/* 🚨 アクティブ時のサイズ変化禁止 */
+button:active, .btn:active, .action-btn:active {
+    transform: none !important;
+    scale: none !important;
+}
+
+/* ==== 元のN3システムCSS変数（続き） ==== */
+:root {
+    /* Color System */
+    --color-primary: #3b82f6;
+    --color-secondary: #8b5cf6;
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-danger: #ef4444;
+    --color-info: #06b6d4;
+
+    /* Background Colors */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8fafc;
+    --bg-tertiary: #f1f5f9;
+    --bg-hover: #f1f5f9;
+
+    /* Text Colors */
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --text-white: #ffffff;
+
+    /* Border Colors */
+    --border-color: #e2e8f0;
+    --border-light: #f1f5f9;
+
+    /* Spacing */
+    --space-xs: 0.25rem;
+    --space-sm: 0.5rem;
+    --space-md: 1rem;
+    --space-lg: 1.5rem;
+    --space-xl: 2rem;
+
+    /* Border Radius */
+    --radius-sm: 0.25rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-full: 9999px;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+    /* Typography */
+    --text-xs: 0.75rem;
+    --text-sm: 0.875rem;
+    --text-base: 1rem;
+    --text-lg: 1.125rem;
+    --text-xl: 1.25rem;
+    --text-2xl: 1.5rem;
+
+    /* Transitions */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.2s ease;
+
+    /* Z-index */
+    --z-dropdown: 1000;
+    --z-modal-backdrop: 1040;
+    --z-modal: 1050;
+    --z-tooltip: 1070;
+    
+    /* サイドバー専用変数 */
+    --sidebar-width: 220px;
+    --sidebar-collapsed: 60px;
+    --header-height: 80px;
+}
+
+/* ===== 基本リセット ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* ===== 🚨 アニメーション問題完全修正（N3準拠） ===== */
+*, *::before, *::after {
+    /* アニメーション完全禁止 */
+    animation: none !important;
+    transform: none !important;
+    
+    /* 必要最小限のトランジションのみ許可 */
+    transition: background-color 0.2s ease, 
+                color 0.2s ease, 
+                margin-left 0.3s ease, 
+                width 0.3s ease,
+                opacity 0.2s ease !important;
+}
+
+/* スピナー・ローディング完全禁止 */
+.loading-spinner,
+.spinner {
+    display: none !important;
+    animation: none !important;
+}
+
+/* ===== ユーティリティクラス ===== */
+.text-center {
+    text-align: center;
+}
+
+.text-right {
+    text-align: right;
+}
+
+/* マージン */
+.mb-0 { margin-bottom: 0; }
+.mb-1 { margin-bottom: var(--space-xs); }
+.mb-2 { margin-bottom: var(--space-sm); }
+.mb-3 { margin-bottom: var(--space-md); }
+.mb-4 { margin-bottom: var(--space-lg); }
+
+/* パディング */
+.p-1 { padding: var(--space-xs); }
+.p-2 { padding: var(--space-sm); }
+.p-3 { padding: var(--space-md); }
+.p-4 { padding: var(--space-lg); }
+
+/* ===== N3準拠：サイドバー連動制御システム（修正版） ===== */
+
+/* 🎯 サイドバートグル連動JavaScript制御用クラス */
+.js-sidebar-toggle-active {
+    /* JavaScriptからのクラス制御でトグル状態管理 */
+}
+
+/* 🎯 動的幅制御用クラス（JavaScript連動・修正版） */
+.js-width-full,
+body.sidebar-hidden .content,
+body.sidebar-hidden .main-content {
+    margin-left: 0 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+}
+
+.js-width-collapsed,
+body.sidebar-collapsed .content,
+body.sidebar-collapsed .main-content {
+    margin-left: var(--sidebar-collapsed) !important;
+    width: calc(100vw - var(--sidebar-collapsed)) !important;
+    max-width: calc(100vw - var(--sidebar-collapsed)) !important;
+}
+
+.js-width-normal,
+body:not(.sidebar-collapsed):not(.sidebar-hidden) .content,
+body:not(.sidebar-collapsed):not(.sidebar-hidden) .main-content {
+    margin-left: var(--sidebar-width) !important;
+    width: calc(100vw - var(--sidebar-width)) !important;
+    max-width: calc(100vw - var(--sidebar-width)) !important;
+}
+
+/* ===== デバッグ・開発用スタイル ===== */
+.debug-info {
+    background: #f3f4f6;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    font-family: monospace;
+    font-size: 0.875rem;
+    border: 1px solid #d1d5db;
+}
+
+.debug-info h4 {
+    margin: 0 0 0.5rem 0;
+    color: #374151;
+    font-size: 1rem;
+}
+
+.debug-info div {
+    margin-bottom: 0.25rem;
+    color: #6b7280;
+}
+
+.debug-info strong {
+    color: #111827;
+}
+
+/* ===== エラー表示 ===== */
+.error-container {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: var(--radius-md);
+    padding: var(--space-lg);
+    margin: var(--space-lg) 0;
+}
+
+.error-container h2 {
+    color: #dc2626;
+    margin-bottom: var(--space-md);
+}
+
+.error-container p {
+    color: #7f1d1d;
+    margin-bottom: var(--space-sm);
+}
+
+/* ===== レスポンシブ設計 ===== */
+@media (max-width: 768px) {
+    /* モバイル用サイドバー完全非表示対応 */
+    .js-mobile-sidebar-hidden .main-content {
+        margin-left: 0 !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+    }
+}
+
+/* ===== アクセシビリティ ===== */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ===== 印刷対応 ===== */
+@media print {
+    .sidebar,
+    .unified-sidebar,
+    .n3-status-indicator,
+    .loading-screen {
+        display: none !important;
+    }
+    
+    .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+    }
+    
+    .card {
+        box-shadow: none;
+        border: 1px solid #000;
+    }
+}

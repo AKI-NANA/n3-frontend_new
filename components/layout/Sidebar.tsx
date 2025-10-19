@@ -51,6 +51,7 @@ const navigationItems = [
       { text: "Yahoo!オークション", link: "/yahoo-auction-dashboard", icon: "globe", status: "ready" as const },
       { text: "メルカリ", link: "/mercari", icon: "shopping-cart", status: "ready" as const },
       { text: "eBay", link: "/ebay", icon: "globe", status: "ready" as const },
+      { text: "eBay API テスト", link: "/ebay-api-test", icon: "zap", status: "new" as const },
       { text: "一括出品", link: "/bulk-listing", icon: "list", status: "ready" as const },
     ],
   },
@@ -125,6 +126,14 @@ const navigationItems = [
       { text: "在庫回転率", link: "/analytics/inventory", icon: "trending-up", status: "ready" as const },
       { text: "価格トレンド", link: "/analytics/price-trends", icon: "bar-chart", status: "pending" as const },
       { text: "顧客分析", link: "/analytics/customers", icon: "users", status: "pending" as const },
+    ],
+  },
+  {
+    id: "research", label: "リサーチ", icon: "target",
+    submenu: [
+      { text: "eBay リサーチ", link: "/research/ebay-research", icon: "globe", status: "ready" as const },
+      { text: "市場リサーチ", link: "/research/market-research", icon: "trending-up", status: "ready" as const },
+      { text: "スコアリング", link: "/research/scoring", icon: "bar-chart", status: "ready" as const },
     ],
   },
   {

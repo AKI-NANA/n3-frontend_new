@@ -1,0 +1,516 @@
+<!-- 🆕 HTML-CSV統合システム専用JavaScript -->
+<script>
+// 🎯 HTML → CSV自動統合システム JavaScript
+let currentHTML = '';
+let productData = [];
+let processedCount = 0;
+let htmlProcessor = null;
+
+// HTMLテンプレート処理エンジンクラス
+class HTMLTemplateProcessor {
+    constructor() {
+        this.placeholders = [
+            'TITLE', 'PRICE', 'MAIN_IMAGE', 'BRAND', 'DESCRIPTION', 
+            'SPECIFICATIONS_TABLE', 'SHIPPING_INFO_HTML', 'SELLER_INFO_HTML',
+            'CONDITION', 'MODEL_NUMBER', 'COLOR', 'WEIGHT', 'DIMENSIONS',
+            'CATEGORY', 'UPC', 'EAN', 'SKU'
+        ];
+    }
+    
+    processTemplate(html, product) {
+        let processed = html;
+        
+        // シンプルな差し込み処理
+        processed = processed.replace(/{{TITLE}}/g, product.title || '');
+        processed = processed.replace(/{{PRICE}}/g, product.start_price || '0.00');
+        processed = processed.replace(/{{MAIN_IMAGE}}/g, product.pic_url || '');
+        processed = processed.replace(/{{BRAND}}/g, product.brand || '');
+        processed = processed.replace(/{{DESCRIPTION}}/g, product.description || '');
+        processed = processed.replace(/{{CONDITION}}/g, this.getConditionText(product.condition_id));
+        processed = processed.replace(/{{MODEL_NUMBER}}/g, product.model_number || '');
+        processed = processed.replace(/{{COLOR}}/g, product.color || '');
+        processed = processed.replace(/{{WEIGHT}}/g, product.weight_kg || '');
+        processed = processed.replace(/{{SKU}}/g, product.master_sku || '');
+        
+        // 特殊な差し込み処理
+        processed = processed.replace(/{{SPECIFICATIONS_TABLE}}/g, this.generateSpecTable(product));
+        processed = processed.replace(/{{SHIPPING_INFO_HTML}}/g, this.generateShippingInfo(product));
+        processed = processed.replace(/{{SELLER_INFO_HTML}}/g, this.generateSellerInfo(product));
+        
+        return processed;
+    }
+    
+    getConditionText(conditionId) {
+        const conditions = {
+            1000: 'New',
+            1500: 'New other',
+            2000: 'New with defects',
+            2500: 'Manufacturer refurbished',
+            3000: 'Used'
+        };
+        return conditions[conditionId] || 'Used';
+    }
+    
+    generateSpecTable(product) {
+        return `
+            <table class="specifications">
+                <tr><td>Brand</td><td>${product.brand || 'N/A'}</td></tr>
+                <tr><td>Condition</td><td>${this.getConditionText(product.condition_id)}</td></tr>
+                <tr><td>Weight</td><td>${product.weight_kg || 'N/A'} kg</td></tr>
+                <tr><td>SKU</td><td>${product.master_sku || 'N/A'}</td></tr>
+            </table>
+        `;
+    }
+    
+    generateShippingInfo(product) {
+        return `
+            <div class="shipping-info">
+                <h4>Shipping Information</h4>
+                <p>International Shipping: ${product.shipping_international_usd || '19.99'}</p>
+                <p>Processing Time: 1-3 business days</p>
+            </div>
+        `;
+    }
+    
+    generateSellerInfo(product) {
+        return `
+            <div class="seller-info">
+                <h4>Seller Information</h4>
+                <p>Trusted seller with 99% positive feedback</p>
+                <p>Fast and reliable shipping from Japan</p>
+            </div>
+        `;
+    }
+}
+
+// システム初期化
+if (typeof switchTab === 'function') {
+    const originalSwitchTab = switchTab;
+    switchTab = function(targetTab) {
+        if (targetTab === 'html-csv-integration') {
+            if (!htmlProcessor) {
+                htmlProcessor = new HTMLTemplateProcessor();
+                setTimeout(loadProductData, 100);
+                setTimeout(loadSavedTemplates, 200);
+            }
+        }
+        originalSwitchTab(targetTab);
+    };
+}
+
+// 主要関数の実装略
+function loadProductData() {
+    if (!document.getElementById('productsTableBody')) return;
+    fetch('yahoo_auction_content.php?action=get_scraped_products')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.data && data.data.length > 0) {
+                productData = data.data.map(item => ({
+                    master_sku: item.master_sku || 'AUTO-' + Date.now(),
+                    title: item.title || 'No Title',
+                    start_price: parseFloat(item.start_price || 0),
+                    brand: item.brand || 'Unknown',
+                    condition_id: item.condition_id || 1000,
+                    description: item.description || 'No description',
+                    pic_url: item.pic_url || 'https://via.placeholder.com/300x300',
+                    weight_kg: item.weight_kg || 0.5,
+                    html_content: '',
+                    html_status: 'empty'
+                }));
+            } else {
+                productData = [
+                    {
+                        master_sku: 'SAMPLE-001',
+                        title: 'Sample Product 1',
+                        start_price: 100.00,
+                        brand: 'Sample Brand',
+                        condition_id: 1000,
+                        description: 'Sample description',
+                        pic_url: 'https://via.placeholder.com/300x300',
+                        weight_kg: 0.5,
+                        html_content: '',
+                        html_status: 'empty'
+                    }
+                ];
+            }
+            displayProductTable(productData);
+            updateStats();
+        })
+        .catch(() => {
+            productData = [
+                {
+                    master_sku: 'SAMPLE-001',
+                    title: 'Sample Product 1',
+                    start_price: 100.00,
+                    brand: 'Sample Brand',
+                    condition_id: 1000,
+                    description: 'Sample description',
+                    pic_url: 'https://via.placeholder.com/300x300',
+                    weight_kg: 0.5,
+                    html_content: '',
+                    html_status: 'empty'
+                }
+            ];
+            displayProductTable(productData);
+            updateStats();
+        });
+}
+
+function displayProductTable(products) {
+    const tbody = document.getElementById('productsTableBody');
+    if (!tbody) return;
+    
+    if (!products || products.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="loading-cell">商品データがありません</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = products.map(product => `
+        <tr data-product-id="${product.master_sku}">
+            <td><input type="checkbox" class="product-checkbox" value="${product.master_sku}"></td>
+            <td><span class="status-badge status-pending">待機中</span></td>
+            <td>${product.master_sku}</td>
+            <td title="${product.title}">${product.title.substring(0, 30)}${product.title.length > 30 ? '...' : ''}</td>
+            <td>${product.start_price.toFixed(2)}</td>
+            <td>${product.brand}</td>
+            <td><span class="html-status html-empty">未生成</span></td>
+            <td>
+                <button class="btn btn-sm btn-primary" onclick="processProduct('${product.master_sku}')">
+                    <i class="fas fa-play"></i>
+                </button>
+                <button class="btn btn-sm btn-info" onclick="previewProduct('${product.master_sku}')">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function loadSavedTemplates() {
+    const select = document.getElementById('savedTemplateSelect');
+    if (!select) return;
+    
+    const templates = [
+        { id: 'premium', name: 'プレミアムテンプレート' },
+        { id: 'standard', name: 'スタンダードテンプレート' },
+        { id: 'minimal', name: 'ミニマルテンプレート' }
+    ];
+    
+    templates.forEach(template => {
+        const option = document.createElement('option');
+        option.value = template.id;
+        option.textContent = template.name;
+        select.appendChild(option);
+    });
+}
+
+function handleHTMLUpload(event) {
+    const file = event.target.files[0];
+    if (!file || !file.type.match(/text\/html/)) {
+        alert('HTMLファイルを選択してください');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        currentHTML = e.target.result;
+        showCurrentHTML();
+    };
+    reader.readAsText(file);
+}
+
+function handleHTMLDrop(event) {
+    event.preventDefault();
+    event.currentTarget.classList.remove('drag-over');
+    
+    const files = event.dataTransfer.files;
+    if (files.length > 0 && files[0].type.match(/text\/html/)) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            currentHTML = e.target.result;
+            showCurrentHTML();
+        };
+        reader.readAsText(files[0]);
+    }
+}
+
+function handleDragOver(event) {
+    event.preventDefault();
+    event.currentTarget.classList.add('drag-over');
+}
+
+function handleDragLeave(event) {
+    event.preventDefault();
+    event.currentTarget.classList.remove('drag-over');
+}
+
+function useDirectHTML() {
+    const htmlContent = document.getElementById('htmlDirectInput').value.trim();
+    if (!htmlContent) {
+        alert('HTMLが入力されていません');
+        return;
+    }
+    currentHTML = htmlContent;
+    showCurrentHTML();
+}
+
+function showCurrentHTML() {
+    const previewDiv = document.getElementById('currentHtmlPreview');
+    const codeElement = document.getElementById('htmlPreviewCode');
+    
+    if (previewDiv && codeElement && currentHTML) {
+        previewDiv.style.display = 'block';
+        codeElement.textContent = currentHTML;
+    }
+}
+
+function loadSelectedTemplate() {
+    const select = document.getElementById('savedTemplateSelect');
+    if (select && select.value) {
+        loadSavedTemplate(select.value);
+    } else {
+        alert('テンプレートを選択してください');
+    }
+}
+
+function loadSavedTemplate(templateId) {
+    const templates = {
+        'premium': '<div class="premium"><h1>{{TITLE}}</h1><div>${{PRICE}}</div><img src="{{MAIN_IMAGE}}"><p>{{DESCRIPTION}}</p></div>',
+        'standard': '<div class="standard"><h1>{{TITLE}}</h1><div>${{PRICE}}</div><img src="{{MAIN_IMAGE}}"><p>{{DESCRIPTION}}</p></div>',
+        'minimal': '<div class="minimal"><h1>{{TITLE}}</h1><div>${{PRICE}}</div><p>{{DESCRIPTION}}</p></div>'
+    };
+    
+    if (templates[templateId]) {
+        currentHTML = templates[templateId];
+        showCurrentHTML();
+    }
+}
+
+function processProduct(productId) {
+    if (!currentHTML) {
+        alert('HTMLテンプレートが設定されていません');
+        return;
+    }
+    
+    const product = productData.find(p => p.master_sku === productId);
+    if (!product) return;
+    
+    if (!htmlProcessor) {
+        htmlProcessor = new HTMLTemplateProcessor();
+    }
+    
+    try {
+        const generatedHTML = htmlProcessor.processTemplate(currentHTML, product);
+        product.html_content = generatedHTML;
+        product.html_status = 'ready';
+        
+        updateProductStatus(productId, 'completed');
+        updateProductHTMLStatus(productId, 'ready');
+        processedCount++;
+        updateStats();
+        
+    } catch (error) {
+        updateProductStatus(productId, 'error');
+    }
+}
+
+function processAllProducts() {
+    if (!currentHTML) {
+        alert('HTMLテンプレートが設定されていません');
+        return;
+    }
+    
+    if (confirm(`${productData.length}件の商品を一括処理しますか？`)) {
+        productData.forEach((product, index) => {
+            setTimeout(() => processProduct(product.master_sku), index * 100);
+        });
+    }
+}
+
+function previewProduct(productId) {
+    if (!currentHTML) {
+        alert('HTMLテンプレートが設定されていません');
+        return;
+    }
+    
+    const product = productData.find(p => p.master_sku === productId);
+    if (!product) return;
+    
+    if (!htmlProcessor) {
+        htmlProcessor = new HTMLTemplateProcessor();
+    }
+    
+    try {
+        const generatedHTML = htmlProcessor.processTemplate(currentHTML, product);
+        showPreviewModal(generatedHTML, productId);
+    } catch (error) {
+        alert('プレビュー生成エラー');
+    }
+}
+
+function showPreviewModal(html, productId) {
+    const modal = document.getElementById('previewModal');
+    const renderedPane = document.getElementById('previewRendered');
+    const sourcePane = document.getElementById('previewSourceCode');
+    
+    if (modal && renderedPane && sourcePane) {
+        renderedPane.innerHTML = html;
+        sourcePane.textContent = html;
+        modal.style.display = 'flex';
+        modal.dataset.productId = productId;
+    }
+}
+
+function closePreviewModal() {
+    const modal = document.getElementById('previewModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function switchPreviewTab(tabName) {
+    document.querySelectorAll('.preview-tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.preview-pane').forEach(pane => pane.classList.remove('active'));
+    
+    const targetTab = document.querySelector(`[data-tab="${tabName}"]`);
+    const targetPane = document.getElementById('preview' + tabName.charAt(0).toUpperCase() + tabName.slice(1));
+    
+    if (targetTab) targetTab.classList.add('active');
+    if (targetPane) targetPane.classList.add('active');
+}
+
+function confirmHTML() {
+    const modal = document.getElementById('previewModal');
+    const productId = modal ? modal.dataset.productId : null;
+    if (productId) processProduct(productId);
+    closePreviewModal();
+}
+
+function downloadUpdatedCSV() {
+    const csvData = productData.map(product => ({
+        master_sku: product.master_sku,
+        title: product.title,
+        start_price: product.start_price,
+        brand: product.brand,
+        ebay_description_html: product.html_content || '', // HTMLがここに入る！
+        html_template_id: 'uploaded_template',
+        condition_id: product.condition_id,
+        weight_kg: product.weight_kg,
+        pic_url: product.pic_url
+    }));
+    
+    const headers = Object.keys(csvData[0] || {});
+    const csvContent = [
+        headers.join(','),
+        ...csvData.map(row => 
+            headers.map(header => `"${(row[header] || '').toString().replace(/"/g, '""')}"`).join(',')
+        )
+    ].join('\n');
+    
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv; charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `products_with_html_${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function updateProductStatus(productId, status) {
+    const row = document.querySelector(`tr[data-product-id="${productId}"]`);
+    if (row) {
+        const statusCell = row.querySelector('.status-badge');
+        if (statusCell) {
+            statusCell.className = `status-badge status-${status}`;
+            statusCell.textContent = {
+                'pending': '待機中',
+                'processing': '処理中',
+                'completed': '完了',
+                'error': 'エラー'
+            }[status];
+        }
+    }
+}
+
+function updateProductHTMLStatus(productId, status) {
+    const row = document.querySelector(`tr[data-product-id="${productId}"]`);
+    if (row) {
+        const htmlStatusCell = row.querySelector('.html-status');
+        if (htmlStatusCell) {
+            htmlStatusCell.className = `html-status html-${status}`;
+            htmlStatusCell.textContent = {
+                'empty': '未生成',
+                'ready': 'HTML済',
+                'error': 'エラー'
+            }[status];
+        }
+    }
+}
+
+function updateStats() {
+    const elements = {
+        totalProducts: document.getElementById('totalProducts'),
+        processedProducts: document.getElementById('processedProducts'),
+        htmlGeneratedCount: document.getElementById('htmlGeneratedCount'),
+        errorCount: document.getElementById('errorCount')
+    };
+    
+    if (elements.totalProducts) elements.totalProducts.textContent = productData.length;
+    if (elements.processedProducts) elements.processedProducts.textContent = processedCount;
+    if (elements.htmlGeneratedCount) elements.htmlGeneratedCount.textContent = productData.filter(p => p.html_content).length;
+    if (elements.errorCount) elements.errorCount.textContent = 0;
+}
+
+function logMessage(message, type = 'info') {
+    const logContainer = document.getElementById('processingLog');
+    if (logContainer) {
+        const logEntry = document.createElement('div');
+        logEntry.className = `log-entry log-${type}`;
+        logEntry.innerHTML = `<span class="log-time">[${new Date().toLocaleTimeString()}]</span><span class="log-message">${message}</span>`;
+        logContainer.appendChild(logEntry);
+        logContainer.scrollTop = logContainer.scrollHeight;
+    }
+}
+
+function clearLog() {
+    const logContainer = document.getElementById('processingLog');
+    if (logContainer) logContainer.innerHTML = '';
+}
+
+function clearCurrentHTML() {
+    currentHTML = '';
+    const elements = {
+        htmlDirectInput: document.getElementById('htmlDirectInput'),
+        currentHtmlPreview: document.getElementById('currentHtmlPreview'),
+        savedTemplateSelect: document.getElementById('savedTemplateSelect')
+    };
+    
+    if (elements.htmlDirectInput) elements.htmlDirectInput.value = '';
+    if (elements.currentHtmlPreview) elements.currentHtmlPreview.style.display = 'none';
+    if (elements.savedTemplateSelect) elements.savedTemplateSelect.value = '';
+}
+
+function resetProcessing() {
+    if (confirm('処理状況をリセットしますか？')) {
+        processedCount = 0;
+        productData.forEach(product => {
+            product.html_content = '';
+            product.html_status = 'empty';
+        });
+        displayProductTable(productData);
+        updateStats();
+        clearLog();
+    }
+}
+
+function toggleAllProducts() {
+    const selectAll = document.getElementById('selectAllProducts');
+    const checkboxes = document.querySelectorAll('.product-checkbox');
+    
+    if (selectAll && checkboxes) {
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = selectAll.checked;
+        });
+    }
+}
+
+console.log('🎯 HTML → CSV自動統合システム初期化完了');
+</script>こちらです。インラインで記述しないこと

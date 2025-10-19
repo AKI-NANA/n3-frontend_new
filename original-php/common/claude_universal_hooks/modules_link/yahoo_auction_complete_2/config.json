@@ -1,0 +1,30 @@
+{
+    "database": {
+        "host": "localhost",
+        "port": 5432,
+        "database": "nagano3_db",
+        "user": "aritahiroaki",
+        "password": ""
+    },
+    "scraping": {
+        "max_concurrent_requests": 3,
+        "request_delay_seconds": 2,
+        "timeout_seconds": 30,
+        "retry_attempts": 3
+    },
+    "integration": {
+        "enable_duplicate_detection": true,
+        "auto_update_active_data": true,
+        "sync_to_tanaoroshi": true,
+        "sync_to_ebay_system": false
+    },
+    "api": {
+        "base_url": "http://localhost:8080/modules/yahoo_auction_tool",
+        "enable_cors": true,
+        "max_results_per_page": 50
+    },
+    "python": {
+        "virtual_environment": true,
+        "venv_path": "./venv"
+    }
+}

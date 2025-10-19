@@ -1,0 +1,472 @@
+/* eBayデータテストビューアー - 完全CSS */
+
+/* === 基本レイアウト === */
+.container {
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    background: #f8f9fa;
+    min-height: 100vh;
+}
+
+.header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.header h1 {
+    margin: 0 0 0.5rem 0;
+    font-size: 2.25rem;
+    font-weight: 700;
+}
+
+.header p {
+    margin: 0 0 1.5rem 0;
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+/* === ビュー切り替えボタン === */
+.view-switcher-container {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.view-switcher-btn {
+    padding: 0.75rem 1.5rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.view-switcher-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-2px);
+}
+
+.view-switcher-btn.active {
+    background: rgba(255, 255, 255, 0.9);
+    color: #667eea;
+    border-color: white;
+}
+
+/* === Excelビュー === */
+.n3-excel-wrapper {
+    background: white;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    margin: 0 1.5rem;
+}
+
+.n3-excel-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.n3-excel-table thead {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.n3-excel-table th,
+.n3-excel-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.n3-excel-table th {
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.n3-excel-table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.n3-excel-table tbody tr:hover {
+    background-color: #f3f4f6;
+}
+
+.n3-excel-table tbody tr:nth-child(even) {
+    background-color: #fafafa;
+}
+
+/* === セル特別スタイル === */
+.product-thumb {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 0.375rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.status-cell {
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+}
+
+.stock-input {
+    width: 80px;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    text-align: center;
+    font-size: 0.875rem;
+}
+
+.stock-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.action-btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+    background: #5a67d8;
+    transform: translateY(-1px);
+}
+
+/* === カードビュー === */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    padding: 1.5rem;
+}
+
+.product-card {
+    background: white;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    border: 1px solid #e5e7eb;
+}
+
+.product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
+}
+
+.card-image {
+    height: 200px;
+    overflow: hidden;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.card-content {
+    padding: 1.5rem;
+}
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 1rem;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.card-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.card-id {
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 0.875rem;
+    color: #6b7280;
+    background: #f3f4f6;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    display: inline-block;
+    width: fit-content;
+}
+
+.card-price {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #059669;
+}
+
+.card-status {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.375rem;
+    background: #ddd6fe;
+    color: #7c3aed;
+    width: fit-content;
+}
+
+.card-btn {
+    width: 100%;
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.card-btn:hover {
+    background: #5a67d8;
+    transform: translateY(-1px);
+}
+
+/* === JSON出力エリア === */
+.json-output-wrapper {
+    margin: 2rem 1.5rem;
+    background: white;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.json-output-wrapper h3 {
+    margin: 0 0 1rem 0;
+    color: #1f2937;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.json-display {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: #334155;
+    overflow-x: auto;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* === アラート・エラー表示 === */
+.alert {
+    padding: 1rem 1.5rem;
+    border-radius: 0.5rem;
+    margin: 1.5rem;
+    font-weight: 500;
+}
+
+.alert-error {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+/* === チェックボックス === */
+#master-checkbox,
+.item-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #667eea;
+}
+
+/* === レスポンシブ対応 === */
+@media (max-width: 768px) {
+    .header {
+        padding: 1.5rem 1rem;
+    }
+    
+    .header h1 {
+        font-size: 1.75rem;
+    }
+    
+    .view-switcher-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .view-switcher-btn {
+        width: 200px;
+        justify-content: center;
+    }
+    
+    .n3-excel-wrapper {
+        margin: 0 1rem;
+        overflow-x: auto;
+    }
+    
+    .card-grid {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+        gap: 1rem;
+    }
+    
+    .json-output-wrapper {
+        margin: 1rem;
+        padding: 1rem;
+    }
+}
+
+/* === モーダル基本スタイル === */
+.n3-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.n3-modal.active {
+    display: flex;
+}
+
+.n3-modal__container {
+    background: white;
+    border-radius: 0.75rem;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 20px 25px rgba(0, 0, 0, 0.25);
+}
+
+.n3-modal__header {
+    padding: 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.n3-modal__title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.n3-modal__close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s ease;
+}
+
+.n3-modal__close:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.n3-modal__body {
+    padding: 1.5rem;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.n3-modal__footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    background: #f9fafb;
+}
+
+.n3-btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+.n3-btn--primary {
+    background: #667eea;
+    color: white;
+}
+
+.n3-btn--primary:hover {
+    background: #5a67d8;
+}
+
+.n3-btn--secondary {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+.n3-btn--secondary:hover {
+    background: #e5e7eb;
+}
+
+/* === ユーティリティ === */
+.n3-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}

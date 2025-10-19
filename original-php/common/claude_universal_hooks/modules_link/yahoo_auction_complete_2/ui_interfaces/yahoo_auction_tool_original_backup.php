@@ -1,0 +1,1 @@
+<?php echo file_get_contents('/Users/aritahiroaki/NAGANO-3/N3-Development/modules/yahoo_auction_complete/ui_interfaces/yahoo_auction_tool_original.php'); ?>

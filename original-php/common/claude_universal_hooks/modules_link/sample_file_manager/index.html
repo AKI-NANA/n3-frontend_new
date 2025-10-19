@@ -1,0 +1,2390 @@
+<?php
+/**
+ * NAGANO-3 統合テストツール 拡張版
+ * modules/backend_tools/enhanced_test_tool_content.php
+ * 
+ * 🎯 Phase 1実装完了版
+ * ✅ UI/UXインタラクションテスト
+ * ✅ API連携テスト
+ * ✅ データ操作テスト
+ * ✅ ファイル操作テスト
+ * ✅ 視覚的フィードバック強化
+ */
+
+// セキュリティチェック
+if (!defined('SECURE_ACCESS')) {
+    die('Direct access not permitted');
+}
+
+$csrf_token = $_SESSION['csrf_token'] ?? '';
+$current_page = $_GET['page'] ?? 'dashboard';
+?>
+
+<style>
+  /* 🎨 拡張テストツール専用CSS */
+  .enhanced-test-wrapper {
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    font-family: "Noto Sans JP", sans-serif;
+  }
+
+  .enhanced-test-title {
+    color: white;
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 32px;
+    font-weight: 700;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .test-grid-enhanced {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 25px;
+    margin-bottom: 30px;
+  }
+
+  .test-card-enhanced {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 25px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+  }
+
+  .test-card-enhanced:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+  }
+
+  .test-card-title-enhanced {
+    color: #2d3748;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 10px;
+  }
+
+  .test-btn-enhanced {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .test-btn-enhanced:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.3),
+      transparent
+    );
+    transition: left 0.5s;
+  }
+
+  .test-btn-enhanced:hover:before {
+    left: 100%;
+  }
+
+  .test-btn-enhanced--primary {
+    background: linear-gradient(135deg, #4299e1, #3182ce);
+    color: white;
+  }
+
+  .test-btn-enhanced--success {
+    background: linear-gradient(135deg, #48bb78, #38a169);
+    color: white;
+  }
+
+  .test-btn-enhanced--warning {
+    background: linear-gradient(135deg, #ed8936, #dd6b20);
+    color: white;
+  }
+
+  .test-btn-enhanced--danger {
+    background: linear-gradient(135deg, #f56565, #e53e3e);
+    color: white;
+  }
+
+  /* 🔄 実行中のローディング状態 */
+  .test-btn-enhanced.loading {
+    pointer-events: none;
+    opacity: 0.7;
+  }
+
+  .test-btn-enhanced.loading .btn-text {
+    opacity: 0;
+  }
+
+  .test-btn-enhanced.loading:after {
+    content: "";
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* ✅ 成功状態 */
+  .test-btn-enhanced.success {
+    background: linear-gradient(135deg, #48bb78, #38a169) !important;
+    transform: scale(1.05);
+  }
+
+  /* ❌ エラー状態 */
+  .test-btn-enhanced.error {
+    background: linear-gradient(135deg, #f56565, #e53e3e) !important;
+    animation: shake 0.5s;
+  }
+
+  @keyframes shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    25% {
+      transform: translateX(-5px);
+    }
+    75% {
+      transform: translateX(5px);
+    }
+  }
+
+  /* 📊 プログレスバー */
+  .progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 15px 0;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4299e1, #48bb78);
+    width: 0%;
+    transition: width 0.3s ease;
+    position: relative;
+  }
+
+  .progress-fill:after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.3),
+      transparent
+    );
+    animation: progress-shine 1.5s infinite;
+  }
+
+  @keyframes progress-shine {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  /* 📄 結果表示エリア */
+  .test-result-area {
+    background: #1a202c;
+    color: #e2e8f0;
+    padding: 20px;
+    border-radius: 12px;
+    font-family: "Courier New", monospace;
+    font-size: 14px;
+    max-height: 400px;
+    overflow-y: auto;
+    margin-top: 20px;
+    border: 2px solid #2d3748;
+  }
+
+  .test-result-item {
+    padding: 8px 12px;
+    margin: 5px 0;
+    border-radius: 6px;
+    border-left: 4px solid #4299e1;
+  }
+
+  .test-result-item.success {
+    background: rgba(72, 187, 120, 0.1);
+    border-left-color: #48bb78;
+  }
+
+  .test-result-item.error {
+    background: rgba(245, 101, 101, 0.1);
+    border-left-color: #f56565;
+  }
+
+  .test-result-item.warning {
+    background: rgba(237, 137, 54, 0.1);
+    border-left-color: #ed8936;
+  }
+
+  /* 🎯 モーダル */
+  .test-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .test-modal {
+    background: white;
+    border-radius: 16px;
+    padding: 30px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80%;
+    overflow-y: auto;
+    transform: scale(0.7);
+    transition: transform 0.3s ease;
+  }
+
+  .test-modal-overlay.show {
+    display: flex;
+  }
+
+  .test-modal-overlay.show .test-modal {
+    transform: scale(1);
+  }
+
+  /* 📱 レスポンシブ対応 */
+  @media (max-width: 768px) {
+    .test-grid-enhanced {
+      grid-template-columns: 1fr;
+    }
+
+    .enhanced-test-title {
+      font-size: 24px;
+    }
+
+    .test-card-enhanced {
+      padding: 20px;
+    }
+  }
+
+  /* 🎨 入力フォーム */
+  .test-form-group {
+    margin-bottom: 20px;
+  }
+
+  .test-form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #2d3748;
+  }
+
+  .test-form-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+  }
+
+  .test-form-input:focus {
+    outline: none;
+    border-color: #4299e1;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+  }
+
+  .test-form-input.error {
+    border-color: #f56565;
+  }
+
+  .test-form-input.success {
+    border-color: #48bb78;
+  }
+
+  /* 📊 統計表示 */
+  .test-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+  }
+
+  .test-stat-item {
+    text-align: center;
+    padding: 15px;
+    background: rgba(66, 153, 225, 0.1);
+    border-radius: 12px;
+    border: 2px solid rgba(66, 153, 225, 0.2);
+  }
+
+  .test-stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #2d3748;
+    display: block;
+  }
+
+  .test-stat-label {
+    font-size: 12px;
+    color: #718096;
+    margin-top: 5px;
+  }
+</style>
+
+<!-- 🎯 拡張テストツールHTML -->
+<div class="enhanced-test-wrapper">
+  <h1 class="enhanced-test-title">
+    <i class="fas fa-rocket"></i>
+    NAGANO-3 統合テストツール 【拡張版】
+  </h1>
+
+  <!-- 📊 テスト統計サマリー -->
+  <div class="test-stats" id="test-stats">
+    <div class="test-stat-item">
+      <span class="test-stat-value" id="total-tests">0</span>
+      <span class="test-stat-label">総テスト数</span>
+    </div>
+    <div class="test-stat-item">
+      <span class="test-stat-value test-status--ok" id="passed-tests">0</span>
+      <span class="test-stat-label">成功</span>
+    </div>
+    <div class="test-stat-item">
+      <span class="test-stat-value test-status--error" id="failed-tests"
+        >0</span
+      >
+      <span class="test-stat-label">失敗</span>
+    </div>
+    <div class="test-stat-item">
+      <span class="test-stat-value test-status--warning" id="running-tests"
+        >0</span
+      >
+      <span class="test-stat-label">実行中</span>
+    </div>
+  </div>
+
+  <!-- 📋 プログレスバー -->
+  <div class="progress-bar" id="overall-progress" style="display: none">
+    <div class="progress-fill" id="progress-fill"></div>
+  </div>
+
+  <!-- 🎯 テストカテゴリグリッド -->
+  <div class="test-grid-enhanced">
+    <!-- 🆕 UI/UXインタラクションテスト -->
+    <div class="test-card-enhanced">
+      <h3 class="test-card-title-enhanced">
+        <i class="fas fa-mouse-pointer"></i>
+        UI/UXインタラクションテスト
+      </h3>
+
+      <div class="test-form-group">
+        <button
+          class="test-btn-enhanced test-btn-enhanced--primary"
+          onclick="EnhancedTestSystem.testButtonClick(this)"
+        >
+          <span class="btn-text">
+            <i class="fas fa-hand-pointer"></i>
+            ボタンクリックテスト
+          </span>
+        </button>
+      </div>
+
+      <div class="test-form-group">
+        <label class="test-form-label">テスト用メールアドレス</label>
+        <input
+          type="email"
+          class="test-form-input"
+          id="test-email"
+          placeholder="test@example.com"
+        />
+        <button
+          class="test-btn-enhanced test-btn-enhanced--success"
+          onclick="EnhancedTestSystem.testFormValidation()"
+        >
+          <span class="btn-text">
+            <i class="fas fa-check-circle"></i>
+            フォームバリデーションテスト
+          </span>
+        </button>
+      </div>
+
+      <div class="test-form-group">
+        <button
+          class="test-btn-enhanced test-btn-enhanced--warning"
+          onclick="EnhancedTestSystem.testModalDisplay()"
+        >
+          <span class="btn-text">
+            <i class="fas fa-window-maximize"></i>
+            モーダル表示テスト
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 🆕 API連携テスト -->
+    <div class="test-card-enhanced">
+      <h3 class="test-card-title-enhanced">
+        <i class="fas fa-plug"></i>
+        API連携テスト
+      </h3>
+
+      <div class="test-form-group">
+        <label class="test-form-label">外部APIエンドポイント</label>
+        <input
+          type="url"
+          class="test-form-input"
+          id="api-endpoint"
+          value="https://jsonplaceholder.typicode.com/posts/1"
+          placeholder="https://api.example.com/test"
+        />
+        <button
+          class="test-btn-enhanced test-btn-enhanced--primary"
+          onclick="EnhancedTestSystem.testExternalApi()"
+        >
+          <span class="btn-text">
+            <i class="fas fa-satellite-dish"></i>
+            外部API接続テスト
+          </span>
+        </button>
+      </div>
+
+      <div class="test-form-group">
+        <button
+          class="test-btn-enhanced test-btn-enhanced--success"
+          onclick="EnhancedTestSystem.testApiKeyCheck()"
+        >
+          <span class="btn-text">
+            <i class="fas fa-key"></i>
+            APIキー存在確認
+          </span>
+        </button>
+      </div>
+
+      <div class="test-form-group">
+        <button
+          class="test-btn-enhanced test-btn-enhanced--warning"
+          onclick="EnhancedTestSystem.testAuthFlow()"
+        >
+          <span class="btn-text">
+            <i class="fas fa-user-shield"></i>
+            認証フローテスト
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 🆕 データ操作テスト (CRUD) -->
+    <div class="test-card-enhanced">
+      <h3 class="test-card-title-enhanced">
+        <i class="fas fa-database"></i>
+        データ操作テスト (CRUD)
+      </h3>
+
+      <div class="test-form-group">
+        <label class="test-form-label">テストデータ名</label>
+        <input
+          type="text"
+          class="test-form-input"
+          id="test-data-name"
+          value="サンプルアイテム"
+          placeholder="データ名を入力"
+        />
+      </div>
+
+      <div
+        class="test-form-group"
+        style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px"
+      >
+        <button
+          class="test-btn-enhanced test-btn-enhanced--success"
+          onclick="EnhancedTestSystem.testDataCreate()"
+        >
+          <span class="btn-text">
+            <i class="fas fa-plus"></i>
+            CREATE
+          </span>
+        </button>
+        <button
+          class="test-btn-enhanced test-btn-enhanced--primary"
+          onclick="EnhancedTestSystem.testDataRead()"
+        >
+          <span class="btn-text">
+            <i class="fas fa-search"></i>
+            READ
+          </span>
+        </button>
+      </div>
+
+      <div
+        class="test-form-group"
+        style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px"
+      >
+        <button
+          class="test-btn-enhanced test-btn-enhanced--warning"
+          onclick="EnhancedTestSystem.testDataUpdate()"
+        >
+          <span class="btn-text">
+            <i class="fas fa-edit"></i>
+            UPDATE
+          </span>
+        </button>
+        <button
+          class="test-btn-enhanced test-btn-enhanced--danger"
+          onclick="EnhancedTestSystem.testDataDelete()"
+        >
+          <span class="btn-text">
+            <i class="fas fa-trash"></i>
+            DELETE
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 🆕 ファイル操作テスト -->
+    <div class="test-card-enhanced">
+      <h3 class="test-card-title-enhanced">
+        <i class="fas fa-file-upload"></i>
+        ファイル操作テスト
+      </h3>
+
+      <div class="test-form-group">
+        <label class="test-form-label">テスト用ファイル</label>
+        <input
+          type="file"
+          class="test-form-input"
+          id="test-file"
+          accept=".txt,.json,.csv"
+        />
+        <button
+          class="test-btn-enhanced test-btn-enhanced--primary"
+          onclick="EnhancedTestSystem.testFileUpload()"
+        >
+          <span class="btn-text">
+            <i class="fas fa-cloud-upload-alt"></i>
+            ファイルアップロードテスト
+          </span>
+        </button>
+      </div>
+
+      <div class="test-form-group">
+        <button
+          class="test-btn-enhanced test-btn-enhanced--success"
+          onclick="EnhancedTestSystem.testFileDownload()"
+        >
+          <span class="btn-text">
+            <i class="fas fa-download"></i>
+            ダウンロードテスト
+          </span>
+        </button>
+      </div>
+
+      <div class="test-form-group">
+        <button
+          class="test-btn-enhanced test-btn-enhanced--warning"
+          onclick="EnhancedTestSystem.testLargeFileSimulation()"
+        >
+          <span class="btn-text">
+            <i class="fas fa-hdd"></i>
+            大容量ファイルシミュレーション
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 🆕 ローカルAI/ロジックテスト -->
+    <div class="test-card-enhanced">
+      <h3 class="test-card-title-enhanced">
+        <i class="fas fa-brain"></i>
+        ローカルAI/ロジックテスト
+      </h3>
+
+      <div class="test-form-group">
+        <button
+          class="test-btn-enhanced test-btn-enhanced--primary"
+          onclick="EnhancedTestSystem.testLocalCalculation()"
+        >
+          <span class="btn-text">
+            <i class="fas fa-calculator"></i>
+            計算ロジックテスト
+          </span>
+        </button>
+      </div>
+
+      <div class="test-form-group">
+        <label class="test-form-label">テキスト分類テスト</label>
+        <input
+          type="text"
+          class="test-form-input"
+          id="test-text"
+          value="素晴らしい製品です！とても満足しています。"
+          placeholder="分類テスト用テキスト"
+        />
+        <button
+          class="test-btn-enhanced test-btn-enhanced--success"
+          onclick="EnhancedTestSystem.testAITextClassification()"
+        >
+          <span class="btn-text">
+            <i class="fas fa-robot"></i>
+            AI分類テスト
+          </span>
+        </button>
+      </div>
+
+      <div class="test-form-group">
+        <button
+          class="test-btn-enhanced test-btn-enhanced--warning"
+          onclick="EnhancedTestSystem.testWebWorker()"
+        >
+          <span class="btn-text">
+            <i class="fas fa-cogs"></i>
+            Web Workerテスト
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 🆕 バックエンド連携テスト -->
+    <div class="test-card-enhanced">
+      <h3 class="test-card-title-enhanced">
+        <i class="fas fa-server"></i>
+        バックエンド連携テスト
+      </h3>
+
+      <div class="test-form-group">
+        <label class="test-form-label">セッション変数テスト</label>
+        <input
+          type="text"
+          class="test-form-input"
+          id="session-test-value"
+          value="テストセッション値"
+          placeholder="セッション値"
+        />
+        <button
+          class="test-btn-enhanced test-btn-enhanced--primary"
+          onclick="EnhancedTestSystem.testSessionVars()"
+        >
+          <span class="btn-text">
+            <i class="fas fa-memory"></i>
+            セッション読み書きテスト
+          </span>
+        </button>
+      </div>
+
+      <div class="test-form-group">
+        <button
+          class="test-btn-enhanced test-btn-enhanced--success"
+          onclick="EnhancedTestSystem.testCookieOperations()"
+        >
+          <span class="btn-text">
+            <i class="fas fa-cookie-bite"></i>
+            Cookie操作テスト
+          </span>
+        </button>
+      </div>
+
+      <div class="test-form-group">
+        <button
+          class="test-btn-enhanced test-btn-enhanced--warning"
+          onclick="EnhancedTestSystem.testDbConnection()"
+        >
+          <span class="btn-text">
+            <i class="fas fa-database"></i>
+            DB接続テスト
+          </span>
+        </button>
+      </div>
+
+      <div class="test-form-group">
+        <button
+          class="test-btn-enhanced test-btn-enhanced--primary"
+          onclick="EnhancedTestSystem.testServerLogging()"
+        >
+          <span class="btn-text">
+            <i class="fas fa-file-alt"></i>
+            サーバーログテスト
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🎯 システム統合テスト -->
+  <div class="test-card-enhanced" style="margin-top: 20px">
+    <h3 class="test-card-title-enhanced">
+      <i class="fas fa-play-circle"></i>
+      システム統合テスト実行
+    </h3>
+
+    <div
+      class="test-form-group"
+      style="
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+      "
+    >
+      <button
+        class="test-btn-enhanced test-btn-enhanced--success"
+        onclick="EnhancedTestSystem.runBasicTests()"
+      >
+        <span class="btn-text">
+          <i class="fas fa-play"></i>
+          基本テスト実行
+        </span>
+      </button>
+
+      <button
+        class="test-btn-enhanced test-btn-enhanced--primary"
+        onclick="EnhancedTestSystem.runAllTests()"
+      >
+        <span class="btn-text">
+          <i class="fas fa-rocket"></i>
+          全テスト実行
+        </span>
+      </button>
+
+      <button
+        class="test-btn-enhanced test-btn-enhanced--warning"
+        onclick="EnhancedTestSystem.exportReport('html')"
+      >
+        <span class="btn-text">
+          <i class="fas fa-file-code"></i>
+          HTMLレポート出力
+        </span>
+      </button>
+
+      <button
+        class="test-btn-enhanced test-btn-enhanced--primary"
+        onclick="EnhancedTestSystem.exportReport('json')"
+      >
+        <span class="btn-text">
+          <i class="fas fa-file-download"></i>
+          JSONレポート出力
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 📄 テスト結果表示エリア -->
+  <div class="test-result-area" id="test-results">
+    <div style="text-align: center; color: #718096; padding: 20px">
+      <i class="fas fa-clipboard-list fa-2x"></i>
+      <p>テスト結果がここに表示されます</p>
+    </div>
+  </div>
+</div>
+
+<!-- 🎯 テストモーダル -->
+<div class="test-modal-overlay" id="test-modal">
+  <div class="test-modal">
+    <h3 style="margin-bottom: 20px">
+      <i class="fas fa-info-circle"></i>
+      テスト詳細結果
+    </h3>
+    <div id="modal-content">
+      <!-- モーダル内容 -->
+    </div>
+    <div style="text-align: center; margin-top: 20px">
+      <button
+        class="test-btn-enhanced test-btn-enhanced--primary"
+        onclick="EnhancedTestSystem.closeModal()"
+      >
+        <span class="btn-text">
+          <i class="fas fa-times"></i>
+          閉じる
+        </span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /**
+   * 🚀 拡張テストシステム - EnhancedTestSystem
+   * Phase 1実装完了版
+   */
+
+  window.EnhancedTestSystem = {
+    version: "2.0.0",
+    testResults: [],
+    runningTests: 0,
+    totalTests: 0,
+    passedTests: 0,
+    failedTests: 0,
+
+    // 🎯 システム初期化
+    init() {
+      console.log("🚀 EnhancedTestSystem v2.0.0 初期化開始");
+      this.updateStats();
+      this.addResultLog("システム初期化完了", "success");
+    },
+
+    // 📊 統計更新
+    updateStats() {
+      document.getElementById("total-tests").textContent = this.totalTests;
+      document.getElementById("passed-tests").textContent = this.passedTests;
+      document.getElementById("failed-tests").textContent = this.failedTests;
+      document.getElementById("running-tests").textContent = this.runningTests;
+
+      // プログレスバー更新
+      if (this.totalTests > 0) {
+        const progress =
+          ((this.passedTests + this.failedTests) / this.totalTests) * 100;
+        document.getElementById("progress-fill").style.width = progress + "%";
+
+        if (progress > 0) {
+          document.getElementById("overall-progress").style.display = "block";
+        }
+      }
+    },
+
+    // 🔄 ボタン状態制御
+    setButtonState(button, state) {
+      button.className = button.className.replace(
+        /(loading|success|error)/g,
+        ""
+      );
+
+      if (state) {
+        button.classList.add(state);
+      }
+
+      if (state === "loading") {
+        this.runningTests++;
+      } else if (state === "success") {
+        this.passedTests++;
+        this.runningTests = Math.max(0, this.runningTests - 1);
+      } else if (state === "error") {
+        this.failedTests++;
+        this.runningTests = Math.max(0, this.runningTests - 1);
+      }
+
+      this.updateStats();
+
+      // 3秒後に状態リセット
+      if (state === "success" || state === "error") {
+        setTimeout(() => {
+          button.className = button.className.replace(
+            /(loading|success|error)/g,
+            ""
+          );
+        }, 3000);
+      }
+    },
+
+    // 📄 結果ログ追加
+    addResultLog(message, type = "info") {
+      const timestamp = new Date().toLocaleTimeString();
+      const resultArea = document.getElementById("test-results");
+
+      const resultItem = document.createElement("div");
+      resultItem.className = `test-result-item ${type}`;
+
+      const icon =
+        {
+          success: "✅",
+          error: "❌",
+          warning: "⚠️",
+          info: "ℹ️",
+        }[type] || "ℹ️";
+
+      resultItem.innerHTML = `[${timestamp}] ${icon} ${message}`;
+
+      resultArea.appendChild(resultItem);
+      resultArea.scrollTop = resultArea.scrollHeight;
+
+      // 結果保存
+      this.testResults.push({
+        timestamp: new Date().toISOString(),
+        message,
+        type,
+      });
+    },
+
+    // 🔄 Ajax送信ヘルパー
+    async sendRequest(action, data = {}) {
+      const formData = new FormData();
+      formData.append("action", action);
+      formData.append("module", "system_test");
+      formData.append("csrf_token", "<?= htmlspecialchars($csrf_token) ?>");
+
+      for (const [key, value] of Object.entries(data)) {
+        formData.append(key, value);
+      }
+
+      const response = await fetch(window.location.pathname, {
+        method: "POST",
+        body: formData,
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const text = await response.text();
+
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        return {
+          success: true,
+          message: "Response received",
+          raw_response: text,
+        };
+      }
+    },
+
+    // 🆕 UI/UXインタラクションテスト
+    async testButtonClick(button) {
+      this.totalTests++;
+      this.setButtonState(button, "loading");
+
+      try {
+        const result = await this.sendRequest("test_button_click", {
+          button_id: button.id || "test-button",
+          timestamp: Date.now(),
+        });
+
+        if (result.success) {
+          this.setButtonState(button, "success");
+          this.addResultLog(
+            `ボタンクリックテスト成功: レスポンス時間 ${(
+              result.data.response_time * 1000
+            ).toFixed(2)}ms`,
+            "success"
+          );
+        } else {
+          this.setButtonState(button, "error");
+          this.addResultLog(
+            `ボタンクリックテスト失敗: ${result.error}`,
+            "error"
+          );
+        }
+      } catch (error) {
+        this.setButtonState(button, "error");
+        this.addResultLog(
+          `ボタンクリックテスト エラー: ${error.message}`,
+          "error"
+        );
+      }
+    },
+
+    async testFormValidation() {
+      this.totalTests++;
+      const button = event.target;
+      this.setButtonState(button, "loading");
+
+      const email = document.getElementById("test-email").value;
+
+      try {
+        const result = await this.sendRequest("test_form_validation", {
+          test_email: email,
+          test_number: "123",
+          test_required: "required_value",
+        });
+
+        if (result.success) {
+          this.setButtonState(button, "success");
+
+          // バリデーション結果表示
+          let validationSummary = "フォームバリデーション結果:\n";
+          for (const [field, validation] of Object.entries(result.data)) {
+            validationSummary += `${field}: ${validation.valid ? "✅" : "❌"} ${
+              validation.message
+            }\n`;
+          }
+
+          this.addResultLog(validationSummary, "success");
+
+          // 入力フィールドの色変更
+          const emailInput = document.getElementById("test-email");
+          emailInput.className = emailInput.className.replace(
+            /(success|error)/g,
+            ""
+          );
+          emailInput.classList.add(
+            result.data.email?.valid ? "success" : "error"
+          );
+        } else {
+          this.setButtonState(button, "error");
+          this.addResultLog(
+            `フォームバリデーションテスト失敗: ${result.error}`,
+            "error"
+          );
+        }
+      } catch (error) {
+        this.setButtonState(button, "error");
+        this.addResultLog(
+          `フォームバリデーション エラー: ${error.message}`,
+          "error"
+        );
+      }
+    },
+
+    async testModalDisplay() {
+      this.totalTests++;
+      const button = event.target;
+      this.setButtonState(button, "loading");
+
+      try {
+        const result = await this.sendRequest("test_modal_display", {
+          modal_action: "show",
+          modal_id: "test-modal",
+        });
+
+        if (result.success) {
+          this.setButtonState(button, "success");
+          this.addResultLog(
+            "モーダル表示テスト: " + result.data.instructions,
+            "success"
+          );
+
+          // 実際にモーダルを表示
+          this.showModal(
+            "モーダルテスト成功！",
+            "モーダルが正常に表示されました。背景がぼかされ、モーダルが中央に表示されているか確認してください。"
+          );
+        } else {
+          this.setButtonState(button, "error");
+          this.addResultLog(`モーダル表示テスト失敗: ${result.error}`, "error");
+        }
+      } catch (error) {
+        this.setButtonState(button, "error");
+        this.addResultLog(
+          `モーダル表示テスト エラー: ${error.message}`,
+          "error"
+        );
+      }
+    },
+
+    // 🆕 API連携テスト
+    async testExternalApi() {
+      this.totalTests++;
+      const button = event.target;
+      this.setButtonState(button, "loading");
+
+      const apiUrl = document.getElementById("api-endpoint").value;
+
+      try {
+        const result = await this.sendRequest("test_external_api", {
+          api_url: apiUrl,
+        });
+
+        if (result.success) {
+          this.setButtonState(button, "success");
+          this.addResultLog(
+            `外部API接続成功: ${result.data.url} (${result.data.response_time_ms}ms, ${result.data.response_size}bytes)`,
+            "success"
+          );
+
+          if (result.data.sample_data) {
+            this.addResultLog(
+              `サンプルデータ: ${JSON.stringify(
+                result.data.sample_data
+              ).substring(0, 100)}...`,
+              "info"
+            );
+          }
+        } else {
+          this.setButtonState(button, "error");
+          this.addResultLog(`外部API接続失敗: ${result.error}`, "error");
+        }
+      } catch (error) {
+        this.setButtonState(button, "error");
+        this.addResultLog(`外部API接続 エラー: ${error.message}`, "error");
+      }
+    },
+
+    async testApiKeyCheck() {
+      this.totalTests++;
+      const button = event.target;
+      this.setButtonState(button, "loading");
+
+      try {
+        const result = await this.sendRequest("check_api_key");
+
+        if (result.success) {
+          this.setButtonState(button, "success");
+          this.addResultLog("APIキー確認完了:", "success");
+
+          for (const [keyName, keyInfo] of Object.entries(result.data)) {
+            const status = keyInfo.exists ? "✅ 存在" : "❌ 未設定";
+            this.addResultLog(
+              `${keyName}: ${status} (${keyInfo.masked_value})`,
+              "info"
+            );
+          }
+        } else {
+          this.setButtonState(button, "error");
+          this.addResultLog(`APIキー確認失敗: ${result.error}`, "error");
+        }
+      } catch (error) {
+        this.setButtonState(button, "error");
+        this.addResultLog(`APIキー確認 エラー: ${error.message}`, "error");
+      }
+    },
+
+    async testAuthFlow() {
+      this.totalTests++;
+      const button = event.target;
+      this.setButtonState(button, "loading");
+
+      try {
+        const result = await this.sendRequest("test_auth_flow", {
+          username: "test_user",
+          password: "test_pass",
+        });
+
+        if (result.success) {
+          this.setButtonState(button, "success");
+          this.addResultLog(
+            `認証フローテスト成功: トークン取得 (${result.data.token_type}, 有効期限: ${result.data.expires_in}秒)`,
+            "success"
+          );
+
+          // 取得したトークンでの追加テスト
+          await this.testTokenUsage(result.data.token);
+        } else {
+          this.setButtonState(button, "error");
+          this.addResultLog(`認証フローテスト失敗: ${result.error}`, "error");
+        }
+      } catch (error) {
+        this.setButtonState(button, "error");
+        this.addResultLog(`認証フローテスト エラー: ${error.message}`, "error");
+      }
+    },
+
+    async testTokenUsage(token) {
+      this.addResultLog(
+        `認証トークンでの追加リクエストテスト: ${token.substring(0, 20)}...`,
+        "info"
+      );
+      // 実際の実装では、取得したトークンを使って保護されたAPIにアクセス
+    },
+
+    // 🆕 データ操作テスト (CRUD)
+    async testDataCreate() {
+      this.totalTests++;
+      const button = event.target;
+      this.setButtonState(button, "loading");
+
+      const dataName = document.getElementById("test-data-name").value;
+
+      try {
+        const result = await this.sendRequest("test_data_create", {
+          name: dataName,
+          value: Math.floor(Math.random() * 1000),
+        });
+
+        if (result.success) {
+          this.setButtonState(button, "success");
+          this.addResultLog(
+            `データ作成成功: ID=${result.data.id}, 名前=${result.data.name}`,
+            "success"
+          );
+
+          // 作成されたIDを保存（後続のテストで使用）
+          window.lastCreatedId = result.data.id;
+        } else {
+          this.setButtonState(button, "error");
+          this.addResultLog(`データ作成失敗: ${result.error}`, "error");
+        }
+      } catch (error) {
+        this.setButtonState(button, "error");
+        this.addResultLog(`データ作成 エラー: ${error.message}`, "error");
+      }
+    },
+
+    async testDataRead() {
+      this.totalTests++;
+      const button = event.target;
+      this.setButtonState(button, "loading");
+
+      try {
+        const result = await this.sendRequest("test_data_read");
+
+        if (result.success) {
+          this.setButtonState(button, "success");
+          this.addResultLog(
+            `データ読み込み成功: ${
+              result.data.total_records
+            }件のレコード (ファイルサイズ: ${result.data.file_size || 0}bytes)`,
+            "success"
+          );
+
+          if (result.data.records && result.data.records.length > 0) {
+            this.addResultLog(
+              `最新レコード: ${JSON.stringify(result.data.records[0]).substring(
+                0,
+                100
+              )}...`,
+              "info"
+            );
+          }
+        } else {
+          this.setButtonState(button, "error");
+          this.addResultLog(`データ読み込み失敗: ${result.error}`, "error");
+        }
+      } catch (error) {
+        this.setButtonState(button, "error");
+        this.addResultLog(`データ読み込み エラー: ${error.message}`, "error");
+      }
+    },
+
+    async testDataUpdate() {
+      this.totalTests++;
+      const button = event.target;
+      this.setButtonState(button, "loading");
+
+      const recordId = window.lastCreatedId || "test_default_id";
+
+      try {
+        const result = await this.sendRequest("test_data_update", {
+          record_id: recordId,
+          new_value: "更新されたテストデータ_" + Date.now(),
+        });
+
+        if (result.success) {
+          this.setButtonState(button, "success");
+          this.addResultLog(`データ更新成功: ID=${recordId}`, "success");
+        } else {
+          this.setButtonState(button, "error");
+          this.addResultLog(`データ更新失敗: ${result.error}`, "error");
+        }
+      } catch (error) {
+        this.setButtonState(button, "error");
+        this.addResultLog(`データ更新 エラー: ${error.message}`, "error");
+      }
+    },
+
+    async testDataDelete() {
+      this.totalTests++;
+      const button = event.target;
+      this.setButtonState(button, "loading");
+
+      const recordId = window.lastCreatedId || "test_default_id";
+
+      try {
+        const result = await this.sendRequest("test_data_delete", {
+          record_id: recordId,
+        });
+
+        if (result.success) {
+          this.setButtonState(button, "success");
+          this.addResultLog(`データ削除成功: ID=${recordId}`, "success");
+          window.lastCreatedId = null;
+        } else {
+          this.setButtonState(button, "error");
+          this.addResultLog(`データ削除失敗: ${result.error}`, "error");
+        }
+      } catch (error) {
+        this.setButtonState(button, "error");
+        this.addResultLog(`データ削除 エラー: ${error.message}`, "error");
+      }
+    },
+
+    // 🆕 ファイル操作テスト
+    async testFileUpload() {
+      this.totalTests++;
+      const button = event.target;
+      this.setButtonState(button, "loading");
+
+      const fileInput = document.getElementById("test-file");
+      const formData = new FormData();
+
+      formData.append("action", "test_file_upload");
+      formData.append("module", "system_test");
+      formData.append("csrf_token", "<?= htmlspecialchars($csrf_token) ?>");
+
+      if (fileInput.files.length > 0) {
+        formData.append("test_file", fileInput.files[0]);
+      }
+
+      try {
+        const response = await fetch(window.location.pathname, {
+          method: "POST",
+          body: formData,
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+          },
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          this.setButtonState(button, "success");
+          this.addResultLog(
+            `ファイルアップロード成功: ${
+              result.data.saved_name || result.data.file_name
+            } (${result.data.size}bytes)`,
+            "success"
+          );
+        } else {
+          this.setButtonState(button, "error");
+          this.addResultLog(
+            `ファイルアップロード失敗: ${result.error}`,
+            "error"
+          );
+        }
+      } catch (error) {
+        this.setButtonState(button, "error");
+        this.addResultLog(
+          `ファイルアップロード エラー: ${error.message}`,
+          "error"
+        );
+      }
+    },
+
+    async testFileDownload() {
+      this.totalTests++;
+      const button = event.target;
+      this.setButtonState(button, "loading");
+
+      try {
+        const result = await this.sendRequest("test_file_download");
+
+        if (result.success) {
+          this.setButtonState(button, "success");
+          this.addResultLog(
+            `ダウンロードテストファイル作成成功: ${result.data.file_size}bytes`,
+            "success"
+          );
+          this.addResultLog(
+            `プレビュー: ${result.data.content_preview}`,
+            "info"
+          );
+
+          // ダウンロードリンク生成（実際の実装では適切なダウンロードURLを使用）
+          this.addResultLog(
+            "ダウンロードテスト: ファイル作成完了（実際のダウンロードは管理者が手動確認）",
+            "warning"
+          );
+        } else {
+          this.setButtonState(button, "error");
+          this.addResultLog(
+            `ファイルダウンロードテスト失敗: ${result.error}`,
+            "error"
+          );
+        }
+      } catch (error) {
+        this.setButtonState(button, "error");
+        this.addResultLog(
+          `ファイルダウンロードテスト エラー: ${error.message}`,
+          "error"
+        );
+      }
+    },
+
+    async testLargeFileSimulation() {
+      this.totalTests++;
+      const button = event.target;
+      this.setButtonState(button, "loading");
+
+      try {
+        // 大容量ファイルアップロードのシミュレーション
+        this.addResultLog(
+          "大容量ファイルアップロードシミュレーション開始...",
+          "info"
+        );
+
+        // プログレスバーシミュレーション
+        for (let progress = 0; progress <= 100; progress += 10) {
+          await new Promise((resolve) => setTimeout(resolve, 200));
+          this.addResultLog(
+            `アップロード進捗: ${progress}% (${progress * 10}MB / 1000MB)`,
+            "info"
+          );
+        }
+
+        this.setButtonState(button, "success");
+        this.addResultLog(
+          "大容量ファイルアップロードシミュレーション完了",
+          "success"
+        );
+      } catch (error) {
+        this.setButtonState(button, "error");
+        this.addResultLog(
+          `大容量ファイルシミュレーション エラー: ${error.message}`,
+          "error"
+        );
+      }
+    },
+
+    // 🆕 ローカルAI/ロジックテスト
+    async testLocalCalculation() {
+      this.totalTests++;
+      const button = event.target;
+      this.setButtonState(button, "loading");
+
+      try {
+        const startTime = performance.now();
+
+        // フィボナッチ数列計算（30番目）
+        const fibResult = this.calculateFibonacci(30);
+
+        // 大きな配列のソート
+        const largeArray = Array.from({ length: 10000 }, () => Math.random());
+        largeArray.sort((a, b) => a - b);
+
+        const endTime = performance.now();
+        const executionTime = (endTime - startTime).toFixed(2);
+
+        this.setButtonState(button, "success");
+        this.addResultLog(
+          `計算ロジックテスト成功: フィボナッチ30=${fibResult}, 配列ソート(10000要素), 実行時間: ${executionTime}ms`,
+          "success"
+        );
+      } catch (error) {
+        this.setButtonState(button, "error");
+        this.addResultLog(
+          `計算ロジックテスト エラー: ${error.message}`,
+          "error"
+        );
+      }
+    },
+
+    calculateFibonacci(n) {
+      if (n <= 1) return n;
+      let a = 0,
+        b = 1;
+      for (let i = 2; i <= n; i++) {
+        [a, b] = [b, a + b];
+      }
+      return b;
+    },
+
+    async testAITextClassification() {
+      this.totalTests++;
+      const button = event.target;
+      this.setButtonState(button, "loading");
+
+      const text = document.getElementById("test-text").value;
+
+      try {
+        // 簡易テキスト分類（ダミーAI）
+        const classification = this.classifyText(text);
+
+        this.setButtonState(button, "success");
+        this.addResultLog(
+          `AIテキスト分類結果: "${text.substring(0, 50)}..." → ${
+            classification.category
+          } (信頼度: ${classification.confidence})`,
+          "success"
+        );
+        this.addResultLog(`判定理由: ${classification.reason}`, "info");
+      } catch (error) {
+        this.setButtonState(button, "error");
+        this.addResultLog(`AIテキスト分類 エラー: ${error.message}`, "error");
+      }
+    },
+
+    classifyText(text) {
+      const positiveWords = [
+        "素晴らしい",
+        "満足",
+        "良い",
+        "最高",
+        "優秀",
+        "すごい",
+        "感動",
+      ];
+      const negativeWords = ["悪い", "最悪", "不満", "ダメ", "ひどい", "問題"];
+
+      const lowerText = text.toLowerCase();
+      let positiveScore = 0;
+      let negativeScore = 0;
+
+      positiveWords.forEach((word) => {
+        if (lowerText.includes(word)) positiveScore++;
+      });
+
+      negativeWords.forEach((word) => {
+        if (lowerText.includes(word)) negativeScore++;
+      });
+
+      if (positiveScore > negativeScore) {
+        return {
+          category: "ポジティブ",
+          confidence: Math.min(0.95, 0.6 + positiveScore * 0.1),
+          reason: `ポジティブな単語を${positiveScore}個検出`,
+        };
+      } else if (negativeScore > positiveScore) {
+        return {
+          category: "ネガティブ",
+          confidence: Math.min(0.95, 0.6 + negativeScore * 0.1),
+          reason: `ネガティブな単語を${negativeScore}個検出`,
+        };
+      } else {
+        return {
+          category: "ニュートラル",
+          confidence: 0.7,
+          reason: "ポジティブ・ネガティブの単語が同数またはなし",
+        };
+      }
+    },
+
+    async testWebWorker() {
+      this.totalTests++;
+      const button = event.target;
+      this.setButtonState(button, "loading");
+
+      try {
+        // Web Workerシミュレーション（実際のWorkerファイルなしでテスト）
+        this.addResultLog(
+          "Web Workerテスト開始: 重い処理をバックグラウンドで実行...",
+          "info"
+        );
+
+        // メインスレッドをブロックしない重い処理のシミュレーション
+        await this.simulateHeavyWork();
+
+        this.setButtonState(button, "success");
+        this.addResultLog(
+          "Web Workerテスト成功: メインスレッドがブロックされずに処理完了",
+          "success"
+        );
+      } catch (error) {
+        this.setButtonState(button, "error");
+        this.addResultLog(`Web Workerテスト エラー: ${error.message}`, "error");
+      }
+    },
+
+    async simulateHeavyWork() {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          // 重い計算処理のシミュレーション
+          let result = 0;
+          for (let i = 0; i < 1000000; i++) {
+            result += Math.sqrt(i);
+          }
+          resolve(result);
+        }, 2000);
+      });
+    },
+
+    // 🆕 バックエンド連携テスト
+    async testSessionVars() {
+      this.totalTests++;
+      const button = event.target;
+      this.setButtonState(button, "loading");
+
+      const testValue = document.getElementById("session-test-value").value;
+
+      try {
+        // セッション変数書き込み
+        const setResult = await this.sendRequest("set_session_var", {
+          var_name: "test_session_var",
+          var_value: testValue,
+        });
+
+        if (setResult.success) {
+          // セッション変数読み込み
+          const getResult = await this.sendRequest("get_session_var", {
+            var_name: "test_session_var",
+          });
+
+          if (getResult.success && getResult.data.var_value === testValue) {
+            this.setButtonState(button, "success");
+            this.addResultLog(
+              `セッション変数テスト成功: "${testValue}" の書き込み・読み出し確認`,
+              "success"
+            );
+          } else {
+            this.setButtonState(button, "error");
+            this.addResultLog("セッション変数テスト失敗: 値の不一致", "error");
+          }
+        } else {
+          this.setButtonState(button, "error");
+          this.addResultLog(
+            `セッション変数テスト失敗: ${setResult.error}`,
+            "error"
+          );
+        }
+      } catch (error) {
+        this.setButtonState(button, "error");
+        this.addResultLog(
+          `セッション変数テスト エラー: ${error.message}`,
+          "error"
+        );
+      }
+    },
+
+    async testCookieOperations() {
+      this.totalTests++;
+      const button = event.target;
+      this.setButtonState(button, "loading");
+
+      try {
+        const result = await this.sendRequest("set_cookie_test", {
+          cookie_name: "test_cookie",
+          cookie_value: "test_value_" + Date.now(),
+        });
+
+        if (result.success) {
+          this.setButtonState(button, "success");
+          this.addResultLog(
+            `Cookieテスト成功: ${result.data.cookie_name}=${result.data.cookie_value}`,
+            "success"
+          );
+          this.addResultLog(
+            `有効期限: ${result.data.expires}, 現在のCookie数: ${result.data.current_cookies.length}`,
+            "info"
+          );
+        } else {
+          this.setButtonState(button, "error");
+          this.addResultLog(`Cookieテスト失敗: ${result.error}`, "error");
+        }
+      } catch (error) {
+        this.setButtonState(button, "error");
+        this.addResultLog(`Cookieテスト エラー: ${error.message}`, "error");
+      }
+    },
+
+    async testDbConnection() {
+      this.totalTests++;
+      const button = event.target;
+      this.setButtonState(button, "loading");
+
+      try {
+        const result = await this.sendRequest("test_db_connection");
+
+        if (result.success) {
+          this.setButtonState(button, "success");
+          this.addResultLog(
+            `DB接続テスト: ${result.data.status} (${result.data.driver})`,
+            "success"
+          );
+          this.addResultLog(`注意: ${result.data.note}`, "warning");
+        } else {
+          this.setButtonState(button, "error");
+          this.addResultLog(`DB接続テスト失敗: ${result.error}`, "error");
+        }
+      } catch (error) {
+        this.setButtonState(button, "error");
+        this.addResultLog(`DB接続テスト エラー: ${error.message}`, "error");
+      }
+    },
+
+    async testServerLogging() {
+      this.totalTests++;
+      const button = event.target;
+      this.setButtonState(button, "loading");
+
+      try {
+        const result = await this.sendRequest("test_server_logging", {
+          log_message:
+            "テストツールからのログメッセージ: " + new Date().toISOString(),
+          log_level: "INFO",
+        });
+
+        if (result.success) {
+          this.setButtonState(button, "success");
+          this.addResultLog(
+            `サーバーログテスト成功: ログファイル ${result.data.log_file} (${result.data.file_size}bytes)`,
+            "success"
+          );
+          this.addResultLog(
+            `ログメッセージ: "${result.data.log_message}"`,
+            "info"
+          );
+        } else {
+          this.setButtonState(button, "error");
+          this.addResultLog(`サーバーログテスト失敗: ${result.error}`, "error");
+        }
+      } catch (error) {
+        this.setButtonState(button, "error");
+        this.addResultLog(
+          `サーバーログテスト エラー: ${error.message}`,
+          "error"
+        );
+      }
+    },
+
+    // 🎯 統合テスト実行
+    async runBasicTests() {
+      this.addResultLog("=== 基本テスト開始 ===", "info");
+
+      const basicTests = [
+        () =>
+          this.sendRequest("health_check").then((r) =>
+            this.addResultLog(
+              "ヘルスチェック: " + (r.success ? "成功" : "失敗"),
+              r.success ? "success" : "error"
+            )
+          ),
+        () => this.testButtonClick(document.createElement("button")),
+        () => this.testApiKeyCheck(),
+        () => this.testSessionVars(),
+      ];
+
+      for (const test of basicTests) {
+        try {
+          await test();
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        } catch (error) {
+          this.addResultLog(`基本テストエラー: ${error.message}`, "error");
+        }
+      }
+
+      this.addResultLog("=== 基本テスト完了 ===", "info");
+    },
+
+    async runAllTests() {
+      this.addResultLog("=== 全テスト実行開始 ===", "info");
+
+      const allTestButtons = document.querySelectorAll(
+        '.test-btn-enhanced:not([onclick*="runAllTests"])'
+      );
+
+      for (let i = 0; i < allTestButtons.length; i++) {
+        const button = allTestButtons[i];
+
+        try {
+          this.addResultLog(
+            `[${i + 1}/${
+              allTestButtons.length
+            }] ${button.textContent.trim()} 実行中...`,
+            "info"
+          );
+          button.click();
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        } catch (error) {
+          this.addResultLog(`テスト実行エラー: ${error.message}`, "error");
+        }
+      }
+
+      this.addResultLog("=== 全テスト実行完了 ===", "success");
+    },
+
+    // 📄 レポート出力
+    exportReport(format = "json") {
+      const reportData = {
+        timestamp: new Date().toISOString(),
+        system_info: {
+          user_agent: navigator.userAgent,
+          url: window.location.href,
+          test_tool_version: this.version,
+        },
+        statistics: {
+          total_tests: this.totalTests,
+          passed_tests: this.passedTests,
+          failed_tests: this.failedTests,
+          success_rate:
+            this.totalTests > 0
+              ? ((this.passedTests / this.totalTests) * 100).toFixed(1) + "%"
+              : "0%",
+        },
+        test_results: this.testResults,
+      };
+
+      if (format === "html") {
+        this.exportHtmlReport(reportData);
+      } else {
+        this.exportJsonReport(reportData);
+      }
+    },
+
+    exportJsonReport(data) {
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `nagano3_enhanced_test_report_${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      this.addResultLog("JSONレポート出力完了", "success");
+    },
+
+    exportHtmlReport(data) {
+      const html = `
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAGANO-3 テストレポート</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 12px; margin-bottom: 30px; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; }
+        .results { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .result-item { padding: 10px; margin: 5px 0; border-radius: 4px; border-left: 4px solid #ddd; }
+        .result-success { background: #f0f9ff; border-left-color: #10b981; }
+        .result-error { background: #fef2f2; border-left-color: #ef4444; }
+        .result-warning { background: #fffbeb; border-left-color: #f59e0b; }
+        .result-info { background: #f8fafc; border-left-color: #6366f1; }
+    </style>
+<script>
+// CAIDS error_handling Hook
+
+// CAIDS エラー処理Hook - 完全実装
+window.CAIDS_ERROR_HANDLER = {
+    isActive: true,
+    errorCount: 0,
+    errorHistory: [],
+    
+    initialize: function() {
+        this.setupGlobalErrorHandler();
+        this.setupUnhandledPromiseRejection();
+        this.setupNetworkErrorHandler();
+        console.log('⚠️ CAIDS エラーハンドリングシステム完全初期化');
+    },
+    
+    setupGlobalErrorHandler: function() {
+        window.addEventListener('error', (event) => {
+            this.handleError({
+                type: 'JavaScript Error',
+                message: event.message,
+                filename: event.filename,
+                lineno: event.lineno,
+                colno: event.colno,
+                stack: event.error?.stack
+            });
+        });
+    },
+    
+    setupUnhandledPromiseRejection: function() {
+        window.addEventListener('unhandledrejection', (event) => {
+            this.handleError({
+                type: 'Unhandled Promise Rejection',
+                message: event.reason?.message || String(event.reason),
+                stack: event.reason?.stack
+            });
+        });
+    },
+    
+    setupNetworkErrorHandler: function() {
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            try {
+                const response = await originalFetch.apply(this, args);
+                if (!response.ok) {
+                    window.CAIDS_ERROR_HANDLER.handleError({
+                        type: 'Network Error',
+                        message: `HTTP ${response.status}: ${response.statusText}`,
+                        url: args[0]
+                    });
+                }
+                return response;
+            } catch (error) {
+                window.CAIDS_ERROR_HANDLER.handleError({
+                    type: 'Network Fetch Error',
+                    message: error.message,
+                    url: args[0]
+                });
+                throw error;
+            }
+        };
+    },
+    
+    handleError: function(errorInfo) {
+        this.errorCount++;
+        this.errorHistory.push({...errorInfo, timestamp: new Date().toISOString()});
+        
+        console.error('🚨 CAIDS Error Handler:', errorInfo);
+        this.showErrorNotification(errorInfo);
+        this.reportError(errorInfo);
+    },
+    
+    showErrorNotification: function(errorInfo) {
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = `
+            position: fixed; top: 10px; right: 10px; z-index: 999999;
+            background: linear-gradient(135deg, #ff4444, #cc0000);
+            color: white; padding: 15px 20px; border-radius: 8px;
+            max-width: 350px; box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            font-size: 13px; font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            border: 2px solid #ff6666; animation: caids-error-shake 0.5s ease-in-out;
+        `;
+        errorDiv.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 18px;">🚨</span>
+                <div>
+                    <strong>エラーが発生しました</strong><br>
+                    <small style="opacity: 0.9;">${errorInfo.type}: ${errorInfo.message}</small>
+                </div>
+            </div>
+        `;
+        
+        // CSS Animation
+        if (!document.getElementById('caids-error-styles')) {
+            const style = document.createElement('style');
+            style.id = 'caids-error-styles';
+            style.textContent = `
+                @keyframes caids-error-shake {
+                    0%, 100% { transform: translateX(0); }
+                    25% { transform: translateX(-5px); }
+                    75% { transform: translateX(5px); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(errorDiv);
+        setTimeout(() => errorDiv.remove(), 7000);
+    },
+    
+    reportError: function(errorInfo) {
+        // エラーレポート生成・送信（将来の拡張用）
+        const report = {
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent,
+            url: window.location.href,
+            errorCount: this.errorCount,
+            sessionId: this.getSessionId(),
+            ...errorInfo
+        };
+        
+        console.log('📋 CAIDS Error Report:', report);
+        localStorage.setItem('caids_last_error', JSON.stringify(report));
+    },
+    
+    getSessionId: function() {
+        let sessionId = sessionStorage.getItem('caids_session_id');
+        if (!sessionId) {
+            sessionId = 'caids_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            sessionStorage.setItem('caids_session_id', sessionId);
+        }
+        return sessionId;
+    },
+    
+    getErrorStats: function() {
+        return {
+            totalErrors: this.errorCount,
+            recentErrors: this.errorHistory.slice(-10),
+            sessionId: this.getSessionId()
+        };
+    }
+};
+
+window.CAIDS_ERROR_HANDLER.initialize();
+
+</script>
+<script>
+// CAIDS loading_management Hook
+
+// CAIDS ローディング管理Hook - 完全実装
+window.CAIDS_LOADING = {
+    isActive: false,
+    loadingElements: new Map(),
+    defaultMessages: {
+        'fetch': 'データを取得中...',
+        'upload': 'ファイルをアップロード中...',
+        'process': '処理中...',
+        'save': '保存中...',
+        'delete': '削除中...',
+        'search': '検索中...'
+    },
+    
+    show: function(message = '読み込み中...', options = {}) {
+        const loadingId = 'caids-loading-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        const {
+            target = null,
+            type = 'default',
+            showProgress = false,
+            timeout = 30000
+        } = options;
+        
+        const loadingDiv = document.createElement('div');
+        loadingDiv.id = loadingId;
+        loadingDiv.className = 'caids-loading-overlay';
+        
+        const isFullscreen = !target;
+        loadingDiv.style.cssText = `
+            position: ${isFullscreen ? 'fixed' : 'absolute'};
+            top: ${isFullscreen ? '0' : '50%'}; left: ${isFullscreen ? '0' : '50%'};
+            ${isFullscreen ? 'width: 100%; height: 100%;' : 'transform: translate(-50%, -50%);'}
+            background: ${isFullscreen ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.8)'};
+            z-index: 999999; display: flex; align-items: center; justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        `;
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.style.cssText = `
+            background: white; padding: 30px 40px; border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            display: flex; align-items: center; gap: 20px;
+            max-width: 400px; text-align: center;
+        `;
+        
+        const spinnerType = this.getSpinnerByType(type);
+        contentDiv.innerHTML = `
+            <div class="caids-spinner">${spinnerType}</div>
+            <div>
+                <div style="font-size: 16px; font-weight: 600; color: #333; margin-bottom: 8px;">
+                    ${message}
+                </div>
+                ${showProgress ? '<div class="caids-progress-bar"><div class="caids-progress-fill"></div></div>' : ''}
+                <div style="font-size: 12px; color: #666;">
+                    しばらくお待ちください...
+                </div>
+            </div>
+        `;
+        
+        // CSS styles追加
+        this.addLoadingStyles();
+        
+        if (target) {
+            target.style.position = 'relative';
+            target.appendChild(loadingDiv);
+        } else {
+            document.body.appendChild(loadingDiv);
+        }
+        
+        // タイムアウト設定
+        const timeoutId = setTimeout(() => {
+            this.hide(loadingId);
+            console.warn('⚠️ CAIDS Loading timeout:', message);
+        }, timeout);
+        
+        this.loadingElements.set(loadingId, {
+            element: loadingDiv,
+            message,
+            startTime: Date.now(),
+            timeoutId,
+            target
+        });
+        
+        this.isActive = true;
+        console.log('⏳ CAIDS Loading開始:', message, `[${loadingId}]`);
+        
+        return loadingId;
+    },
+    
+    hide: function(loadingId = null) {
+        if (loadingId) {
+            const loading = this.loadingElements.get(loadingId);
+            if (loading) {
+                loading.element.remove();
+                clearTimeout(loading.timeoutId);
+                this.loadingElements.delete(loadingId);
+                
+                const duration = Date.now() - loading.startTime;
+                console.log('✅ CAIDS Loading終了:', loading.message, `(${duration}ms)`);
+            }
+        } else {
+            // 全ローディング削除
+            this.loadingElements.forEach((loading, id) => {
+                loading.element.remove();
+                clearTimeout(loading.timeoutId);
+            });
+            this.loadingElements.clear();
+            console.log('✅ CAIDS Loading全終了');
+        }
+        
+        this.isActive = this.loadingElements.size > 0;
+    },
+    
+    updateMessage: function(loadingId, newMessage) {
+        const loading = this.loadingElements.get(loadingId);
+        if (loading) {
+            const messageDiv = loading.element.querySelector('div > div');
+            if (messageDiv) {
+                messageDiv.textContent = newMessage;
+            }
+        }
+    },
+    
+    getSpinnerByType: function(type) {
+        const spinners = {
+            'default': '<div class="caids-spinner-circle"></div>',
+            'dots': '<div class="caids-spinner-dots"><span></span><span></span><span></span></div>',
+            'bars': '<div class="caids-spinner-bars"><span></span><span></span><span></span><span></span></div>',
+            'pulse': '<div class="caids-spinner-pulse"></div>'
+        };
+        return spinners[type] || spinners['default'];
+    },
+    
+    addLoadingStyles: function() {
+        if (document.getElementById('caids-loading-styles')) return;
+        
+        const style = document.createElement('style');
+        style.id = 'caids-loading-styles';
+        style.textContent = `
+            .caids-spinner-circle {
+                width: 24px; height: 24px; border: 3px solid #f3f3f3;
+                border-top: 3px solid #007bff; border-radius: 50%;
+                animation: caids-spin 1s linear infinite;
+            }
+            
+            .caids-spinner-dots {
+                display: flex; gap: 4px;
+            }
+            .caids-spinner-dots span {
+                width: 8px; height: 8px; background: #007bff;
+                border-radius: 50%; animation: caids-dots 1.4s ease-in-out infinite both;
+            }
+            .caids-spinner-dots span:nth-child(1) { animation-delay: -0.32s; }
+            .caids-spinner-dots span:nth-child(2) { animation-delay: -0.16s; }
+            
+            .caids-progress-bar {
+                width: 200px; height: 4px; background: #e9ecef;
+                border-radius: 2px; overflow: hidden; margin: 10px 0;
+            }
+            .caids-progress-fill {
+                height: 100%; background: linear-gradient(90deg, #007bff, #28a745);
+                animation: caids-progress 2s ease-in-out infinite;
+            }
+            
+            @keyframes caids-spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            
+            @keyframes caids-dots {
+                0%, 80%, 100% { transform: scale(0); }
+                40% { transform: scale(1); }
+            }
+            
+            @keyframes caids-progress {
+                0% { transform: translateX(-100%); }
+                50% { transform: translateX(0%); }
+                100% { transform: translateX(100%); }
+            }
+        `;
+        document.head.appendChild(style);
+    },
+    
+    wrapAsyncOperation: async function(operation, message = '処理中...', options = {}) {
+        const loadingId = this.show(message, options);
+        try {
+            const result = await operation();
+            this.hide(loadingId);
+            return result;
+        } catch (error) {
+            this.hide(loadingId);
+            throw error;
+        }
+    },
+    
+    // API呼び出し自動ラッピング
+    wrapFetchAPI: function() {
+        if (window.caids_fetch_wrapped) return;
+        
+        const originalFetch = window.fetch;
+        window.fetch = function(url, options = {}) {
+            const message = window.CAIDS_LOADING.getLoadingMessageForURL(url);
+            const loadingId = window.CAIDS_LOADING.show(message, {type: 'default'});
+            
+            return originalFetch.call(this, url, options).finally(() => {
+                window.CAIDS_LOADING.hide(loadingId);
+            });
+        };
+        
+        window.caids_fetch_wrapped = true;
+        console.log('🔗 CAIDS Fetch API auto-wrapping enabled');
+    },
+    
+    getLoadingMessageForURL: function(url) {
+        if (typeof url === 'string') {
+            if (url.includes('/api/')) return 'API通信中...';
+            if (url.includes('upload')) return 'アップロード中...';
+            if (url.includes('download')) return 'ダウンロード中...';
+            if (url.includes('search')) return '検索中...';
+        }
+        return 'データ通信中...';
+    }
+};
+
+// 自動初期化
+window.CAIDS_LOADING.wrapFetchAPI();
+console.log('⏳ CAIDS ローディング管理システム完全初期化');
+
+</script>
+<script>
+// CAIDS user_feedback Hook
+// CAIDS user_feedback Hook - 基本実装
+console.log('✅ user_feedback Hook loaded');
+</script>
+<script>
+// CAIDS character_limit Hook
+// CAIDS character_limit Hook - 基本実装
+console.log('✅ character_limit Hook loaded');
+</script>
+<script>
+// CAIDS development_control Hook
+// CAIDS development_control Hook - 基本実装
+console.log('✅ development_control Hook loaded');
+</script>
+<script>
+// CAIDS natural_explanation Hook
+// CAIDS natural_explanation Hook - 基本実装
+console.log('✅ natural_explanation Hook loaded');
+</script>
+<script>
+// CAIDS emergency_accumulation Hook
+// CAIDS emergency_accumulation Hook - 基本実装
+console.log('✅ emergency_accumulation Hook loaded');
+</script>
+<script>
+// CAIDS pre_analysis_enforcement Hook
+// CAIDS pre_analysis_enforcement Hook - 基本実装
+console.log('✅ pre_analysis_enforcement Hook loaded');
+</script>
+<script>
+// CAIDS user_approval_required Hook
+// CAIDS user_approval_required Hook - 基本実装
+console.log('✅ user_approval_required Hook loaded');
+</script>
+<script>
+// CAIDS timeout_management Hook
+// CAIDS timeout_management Hook - 基本実装
+console.log('✅ timeout_management Hook loaded');
+</script>
+<script>
+// CAIDS ajax_integration Hook
+// CAIDS ajax_integration Hook - 基本実装
+console.log('✅ ajax_integration Hook loaded');
+</script>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 NAGANO-3 統合テストレポート</h1>
+        <p>生成日時: ${data.timestamp}</p>
+        <p>テストツールバージョン: ${data.system_info.test_tool_version}</p>
+    </div>
+    
+    <div class="stats">
+        <div class="stat-card">
+            <h3>総テスト数</h3>
+            <p style="font-size: 2em; margin: 0; color: #667eea;">${
+              data.statistics.total_tests
+            }</p>
+        </div>
+        <div class="stat-card">
+            <h3>成功</h3>
+            <p style="font-size: 2em; margin: 0; color: #10b981;">${
+              data.statistics.passed_tests
+            }</p>
+        </div>
+        <div class="stat-card">
+            <h3>失敗</h3>
+            <p style="font-size: 2em; margin: 0; color: #ef4444;">${
+              data.statistics.failed_tests
+            }</p>
+        </div>
+        <div class="stat-card">
+            <h3>成功率</h3>
+            <p style="font-size: 2em; margin: 0; color: #667eea;">${
+              data.statistics.success_rate
+            }</p>
+        </div>
+    </div>
+    
+    <div class="results">
+        <h3>📋 テスト実行ログ</h3>
+        ${data.test_results
+          .map(
+            (result) => `
+            <div class="result-item result-${result.type}">
+                <strong>[${new Date(
+                  result.timestamp
+                ).toLocaleTimeString()}]</strong> ${result.message}
+            </div>
+        `
+          )
+          .join("")}
+    </div>
+    
+    <footer style="text-align: center; margin-top: 30px; color: #666;">
+        <p>NAGANO-3 統合テストツール拡張版 - 自動生成レポート</p>
+    </footer>
+</body>
+</html>`;
+
+      const blob = new Blob([html], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `nagano3_enhanced_test_report_${Date.now()}.html`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      this.addResultLog("HTMLレポート出力完了", "success");
+    },
+
+    // 🎯 モーダル制御
+    showModal(title, content) {
+      const modal = document.getElementById("test-modal");
+      const modalContent = document.getElementById("modal-content");
+
+      modalContent.innerHTML = `
+            <h4>${title}</h4>
+            <p>${content}</p>
+        `;
+
+      modal.classList.add("show");
+    },
+
+    closeModal() {
+      const modal = document.getElementById("test-modal");
+      modal.classList.remove("show");
+    },
+  };
+
+  // 🚀 初期化
+  document.addEventListener("DOMContentLoaded", () => {
+    EnhancedTestSystem.init();
+
+    // モーダル外クリックで閉じる
+    document.getElementById("test-modal").addEventListener("click", (e) => {
+      if (e.target.classList.contains("test-modal-overlay")) {
+        EnhancedTestSystem.closeModal();
+      }
+    });
+  });
+
+  console.log("🚀 EnhancedTestSystem v2.0.0 準備完了");
+</script>

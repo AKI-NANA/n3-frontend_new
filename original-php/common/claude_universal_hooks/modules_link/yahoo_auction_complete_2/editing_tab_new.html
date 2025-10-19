@@ -1,0 +1,740 @@
+<!-- データ編集タブ - 完全リニューアル版 -->
+<div id="editing" class="tab-content fade-in">
+    <div class="section">
+        <div class="section-header">
+            <i class="fas fa-edit"></i>
+            <h3 class="section-title">商品データ編集システム</h3>
+            <div style="margin-left: auto; display: flex; gap: 8px; align-items: center;">
+                <!-- 検索ボックス -->
+                <div class="search-container">
+                    <input type="text" id="editingSearchInput" placeholder="商品名・SKU・カテゴリで検索..." 
+                           style="padding: 8px 12px; border: 1px solid #e1e5e9; border-radius: 6px; font-size: 14px; width: 250px;">
+                    <button class="btn btn-primary" onclick="searchEditingData()" style="padding: 8px 12px;">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                
+                <!-- アクションボタン -->
+                <button class="btn btn-info" onclick="loadEditingData()" style="padding: 8px 12px;">
+                    <i class="fas fa-sync"></i> 更新
+                </button>
+                <button class="btn btn-success" onclick="downloadEditingCSV()" style="padding: 8px 12px;">
+                    <i class="fas fa-download"></i> CSV出力
+                </button>
+                <button class="btn btn-warning" onclick="showBulkEditModal()" style="padding: 8px 12px;">
+                    <i class="fas fa-edit"></i> 一括編集
+                </button>
+            </div>
+        </div>
+        
+        <!-- フィルターバー -->
+        <div class="filter-bar" style="background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <div class="filter-group">
+                <label style="font-size: 12px; color: #6b7280; margin-right: 4px;">状態:</label>
+                <select id="statusFilter" onchange="applyFilters()" style="padding: 4px 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 13px;">
+                    <option value="">全て</option>
+                    <option value="Active">有効</option>
+                    <option value="Inactive">無効</option>
+                    <option value="Pending">保留中</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label style="font-size: 12px; color: #6b7280; margin-right: 4px;">カテゴリ:</label>
+                <select id="categoryFilter" onchange="applyFilters()" style="padding: 4px 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 13px;">
+                    <option value="">全カテゴリ</option>
+                    <option value="Electronics">エレクトロニクス</option>
+                    <option value="Fashion">ファッション</option>
+                    <option value="Home">ホーム・ガーデン</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label style="font-size: 12px; color: #6b7280; margin-right: 4px;">価格帯:</label>
+                <select id="priceFilter" onchange="applyFilters()" style="padding: 4px 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 13px;">
+                    <option value="">全て</option>
+                    <option value="0-50">$0-50</option>
+                    <option value="50-100">$50-100</option>
+                    <option value="100+">$100+</option>
+                </select>
+            </div>
+            
+            <div class="filter-actions" style="margin-left: auto;">
+                <button class="btn btn-secondary btn-sm" onclick="clearAllFilters()" style="padding: 4px 8px; font-size: 12px;">
+                    <i class="fas fa-times"></i> フィルタークリア
+                </button>
+            </div>
+        </div>
+        
+        <!-- 一括操作バー -->
+        <div class="bulk-actions-bar" id="bulkActionsBar" style="background: #fff3cd; border: 1px solid #ffc107; padding: 12px; border-radius: 8px; margin-bottom: 16px; display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="selection-info">
+                    <i class="fas fa-check-square" style="color: #ffc107;"></i>
+                    <span id="selectedItemsCount">0</span>件を選択中
+                </div>
+                <div class="bulk-buttons" style="display: flex; gap: 8px;">
+                    <button class="btn btn-success btn-sm" onclick="bulkApprove()">
+                        <i class="fas fa-check"></i> 一括承認
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="bulkDelete()">
+                        <i class="fas fa-trash"></i> 一括削除
+                    </button>
+                    <button class="btn btn-warning btn-sm" onclick="bulkExport()">
+                        <i class="fas fa-download"></i> 選択をCSV出力
+                    </button>
+                    <button class="btn btn-secondary btn-sm" onclick="clearSelection()">
+                        <i class="fas fa-times"></i> 選択解除
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- スタイリッシュなデータテーブル -->
+        <div class="data-table-container" style="background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+            <table class="data-table modern-table" id="editingTable">
+                <thead style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <tr>
+                        <th style="width: 40px; padding: 12px 8px;">
+                            <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()" 
+                                   style="width: 16px; height: 16px; accent-color: white;">
+                        </th>
+                        <th style="width: 80px; padding: 12px 8px; font-size: 13px; font-weight: 600;">画像</th>
+                        <th style="width: 100px; padding: 12px 8px; font-size: 13px; font-weight: 600;">SKU</th>
+                        <th style="width: 300px; padding: 12px 8px; font-size: 13px; font-weight: 600;">商品名</th>
+                        <th style="width: 120px; padding: 12px 8px; font-size: 13px; font-weight: 600;">カテゴリ</th>
+                        <th style="width: 80px; padding: 12px 8px; font-size: 13px; font-weight: 600;">価格</th>
+                        <th style="width: 80px; padding: 12px 8px; font-size: 13px; font-weight: 600;">在庫</th>
+                        <th style="width: 80px; padding: 12px 8px; font-size: 13px; font-weight: 600;">状態</th>
+                        <th style="width: 100px; padding: 12px 8px; font-size: 13px; font-weight: 600;">更新日</th>
+                        <th style="width: 120px; padding: 12px 8px; font-size: 13px; font-weight: 600;">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="editingTableBody">
+                    <!-- 初期データローディング表示 -->
+                    <tr>
+                        <td colspan="10" style="text-align: center; padding: 40px;">
+                            <div class="loading-state">
+                                <div class="loading-spinner" style="width: 32px; height: 32px; border: 3px solid #f3f4f6; border-top: 3px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>
+                                <p style="color: #6b7280; font-size: 14px; margin: 0;">商品データを読み込み中...</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ページネーション -->
+        <div class="pagination-container" style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding: 16px 0;">
+            <div class="pagination-info" style="font-size: 14px; color: #6b7280;">
+                <span id="paginationInfo">1-20 of 644 items</span>
+            </div>
+            <div class="pagination-controls" style="display: flex; gap: 8px; align-items: center;">
+                <button class="btn btn-secondary btn-sm" onclick="changePage(-1)" id="prevPageBtn">
+                    <i class="fas fa-chevron-left"></i> 前へ
+                </button>
+                <div class="page-numbers" id="pageNumbers" style="display: flex; gap: 4px;">
+                    <!-- ページ番号は動的生成 -->
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="changePage(1)" id="nextPageBtn">
+                    次へ <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 商品編集モーダル -->
+<div id="editProductModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; margin: -20px -20px 20px -20px;">
+            <h2 class="modal-title" style="margin: 0; display: flex; align-items: center; gap: 12px;">
+                <i class="fas fa-edit"></i>
+                商品編集
+            </h2>
+            <button class="modal-close" onclick="closeEditModal()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">&times;</button>
+        </div>
+        
+        <div class="modal-body">
+            <form id="editProductForm">
+                <div class="form-grid" style="display: grid; grid-template-columns: 300px 1fr; gap: 24px;">
+                    <!-- 左側：画像とメタ情報 -->
+                    <div class="product-meta">
+                        <div class="product-image-section" style="margin-bottom: 20px;">
+                            <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #374151;">商品画像</label>
+                            <div class="image-preview" style="width: 100%; height: 200px; border: 2px dashed #d1d5db; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #f9fafb;">
+                                <img id="editProductImage" style="max-width: 100%; max-height: 100%; object-fit: cover; border-radius: 6px; display: none;">
+                                <div id="noImagePlaceholder" style="text-align: center; color: #6b7280;">
+                                    <i class="fas fa-image" style="font-size: 32px; margin-bottom: 8px;"></i>
+                                    <p style="margin: 0; font-size: 14px;">画像なし</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="meta-info">
+                            <div class="form-group" style="margin-bottom: 16px;">
+                                <label style="display: block; font-weight: 600; margin-bottom: 4px; color: #374151; font-size: 13px;">商品ID</label>
+                                <input type="text" id="editItemId" readonly style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; background: #f9fafb; font-size: 14px;">
+                            </div>
+                            
+                            <div class="form-group" style="margin-bottom: 16px;">
+                                <label style="display: block; font-weight: 600; margin-bottom: 4px; color: #374151; font-size: 13px;">SKU</label>
+                                <input type="text" id="editSku" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+                            </div>
+                            
+                            <div class="form-group" style="margin-bottom: 16px;">
+                                <label style="display: block; font-weight: 600; margin-bottom: 4px; color: #374151; font-size: 13px;">状態</label>
+                                <select id="editStatus" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+                                    <option value="Active">有効</option>
+                                    <option value="Inactive">無効</option>
+                                    <option value="Pending">保留中</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 右側：商品詳細 -->
+                    <div class="product-details">
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #374151;">商品名</label>
+                            <input type="text" id="editTitle" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 16px; font-weight: 500;">
+                        </div>
+                        
+                        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                            <div class="form-group">
+                                <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #374151; font-size: 13px;">価格 (USD)</label>
+                                <input type="number" id="editPrice" step="0.01" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #374151; font-size: 13px;">在庫数</label>
+                                <input type="number" id="editStock" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #374151; font-size: 13px;">重量 (lbs)</label>
+                                <input type="number" id="editWeight" step="0.1" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #374151;">カテゴリ</label>
+                            <select id="editCategory" style="width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+                                <option value="">カテゴリを選択</option>
+                                <option value="Electronics">エレクトロニクス</option>
+                                <option value="Fashion">ファッション</option>
+                                <option value="Home">ホーム・ガーデン</option>
+                                <option value="Sports">スポーツ・アウトドア</option>
+                                <option value="Books">本・メディア</option>
+                                <option value="Other">その他</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #374151;">商品説明</label>
+                            <textarea id="editDescription" rows="4" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; resize: vertical;"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #374151;">タグ（カンマ区切り）</label>
+                            <input type="text" id="editTags" placeholder="タグ1, タグ2, タグ3" style="width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <div class="modal-footer" style="display: flex; justify-content: space-between; gap: 12px; padding-top: 24px; border-top: 1px solid #e5e7eb; margin-top: 24px;">
+            <div>
+                <button class="btn btn-danger" onclick="deleteProduct()" style="padding: 10px 20px;">
+                    <i class="fas fa-trash"></i> 削除
+                </button>
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn btn-secondary" onclick="closeEditModal()" style="padding: 10px 20px;">
+                    キャンセル
+                </button>
+                <button class="btn btn-success" onclick="saveProduct()" style="padding: 10px 20px;">
+                    <i class="fas fa-save"></i> 保存
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* 編集タブ専用スタイル */
+.modern-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.modern-table tbody tr {
+    border-bottom: 1px solid #f3f4f6;
+    transition: all 0.2s ease;
+    height: 56px; /* エクセル風の高さ制限 */
+}
+
+.modern-table tbody tr:hover {
+    background-color: #f8fafc;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.modern-table td {
+    padding: 8px;
+    vertical-align: middle;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.product-thumbnail {
+    width: 48px;
+    height: 36px;
+    object-fit: cover;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.product-thumbnail:hover {
+    transform: scale(1.1);
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-active { background: #dcfce7; color: #166534; }
+.status-inactive { background: #fee2e2; color: #991b1b; }
+.status-pending { background: #fef3c7; color: #92400e; }
+
+.btn-sm {
+    padding: 4px 8px;
+    font-size: 12px;
+    border-radius: 4px;
+}
+
+.edit-btn {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.2s ease;
+}
+
+.edit-btn:hover {
+    background: #2563eb;
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    width: 90%;
+    max-width: 900px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .form-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .modern-table {
+        font-size: 12px;
+    }
+    
+    .modern-table td {
+        padding: 6px 4px;
+    }
+}
+</style>
+
+<script>
+// 編集タブ用JavaScript関数
+let editingData = [];
+let currentPage = 1;
+let itemsPerPage = 20;
+let totalItems = 0;
+let selectedItems = new Set();
+
+// データ読み込み
+function loadEditingData() {
+    showLoadingState();
+    
+    // 実際のデータを取得（この例ではサンプルデータ）
+    setTimeout(() => {
+        editingData = generateSampleData();
+        renderEditingTable();
+        updatePagination();
+    }, 1000);
+}
+
+// サンプルデータ生成
+function generateSampleData() {
+    const sampleData = [];
+    const categories = ['Electronics', 'Fashion', 'Home', 'Sports', 'Books'];
+    const statuses = ['Active', 'Inactive', 'Pending'];
+    
+    for (let i = 1; i <= 644; i++) {
+        sampleData.push({
+            id: `ITEM_${String(i).padStart(4, '0')}`,
+            sku: `SKU-${String(i).padStart(4, '0')}`,
+            title: `Sample Product ${i} - High Quality Item`,
+            category: categories[Math.floor(Math.random() * categories.length)],
+            price: (Math.random() * 200 + 10).toFixed(2),
+            stock: Math.floor(Math.random() * 100),
+            status: statuses[Math.floor(Math.random() * statuses.length)],
+            image: Math.random() > 0.3 ? `https://picsum.photos/100/75?random=${i}` : null,
+            updated: new Date(2025, 8, Math.floor(Math.random() * 11) + 1).toISOString().split('T')[0],
+            description: `This is a sample description for product ${i}.`,
+            weight: (Math.random() * 5 + 0.1).toFixed(1),
+            tags: ['tag1', 'tag2', 'tag3'].join(', ')
+        });
+    }
+    
+    return sampleData;
+}
+
+// テーブル描画
+function renderEditingTable() {
+    const tbody = document.getElementById('editingTableBody');
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const pageData = editingData.slice(start, end);
+    
+    tbody.innerHTML = pageData.map(item => `
+        <tr>
+            <td>
+                <input type="checkbox" class="item-checkbox" data-id="${item.id}" 
+                       onchange="toggleItemSelection('${item.id}')"
+                       ${selectedItems.has(item.id) ? 'checked' : ''}>
+            </td>
+            <td>
+                ${item.image ? 
+                    `<img src="${item.image}" class="product-thumbnail" onclick="showImageModal('${item.image}')" onerror="this.style.display='none'">` : 
+                    `<div style="width: 48px; height: 36px; background: #f3f4f6; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #9ca3af;">No Image</div>`
+                }
+            </td>
+            <td style="font-family: monospace; font-size: 12px; color: #6b7280;">${item.sku}</td>
+            <td style="font-weight: 500; color: #374151; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.title}">${item.title}</td>
+            <td><span style="background: #e5e7eb; color: #374151; padding: 2px 6px; border-radius: 12px; font-size: 11px;">${item.category}</span></td>
+            <td style="font-weight: 600; color: #059669;">$${item.price}</td>
+            <td style="text-align: center; ${item.stock < 10 ? 'color: #dc2626; font-weight: 600;' : ''}">${item.stock}</td>
+            <td><span class="status-badge status-${item.status.toLowerCase()}">${item.status}</span></td>
+            <td style="font-size: 12px; color: #6b7280;">${item.updated}</td>
+            <td>
+                <button class="edit-btn" onclick="editProduct('${item.id}')">
+                    <i class="fas fa-edit"></i> 編集
+                </button>
+            </td>
+        </tr>
+    `).join('');
+    
+    totalItems = editingData.length;
+    updateSelectionInfo();
+}
+
+// 商品編集モーダル
+function editProduct(itemId) {
+    const item = editingData.find(i => i.id === itemId);
+    if (!item) return;
+    
+    // フォームに値を設定
+    document.getElementById('editItemId').value = item.id;
+    document.getElementById('editSku').value = item.sku;
+    document.getElementById('editTitle').value = item.title;
+    document.getElementById('editCategory').value = item.category;
+    document.getElementById('editPrice').value = item.price;
+    document.getElementById('editStock').value = item.stock;
+    document.getElementById('editStatus').value = item.status;
+    document.getElementById('editDescription').value = item.description || '';
+    document.getElementById('editWeight').value = item.weight || '';
+    document.getElementById('editTags').value = item.tags || '';
+    
+    // 画像表示
+    const imgElement = document.getElementById('editProductImage');
+    const placeholder = document.getElementById('noImagePlaceholder');
+    if (item.image) {
+        imgElement.src = item.image;
+        imgElement.style.display = 'block';
+        placeholder.style.display = 'none';
+    } else {
+        imgElement.style.display = 'none';
+        placeholder.style.display = 'block';
+    }
+    
+    // モーダル表示
+    document.getElementById('editProductModal').style.display = 'flex';
+}
+
+// モーダル閉じる
+function closeEditModal() {
+    document.getElementById('editProductModal').style.display = 'none';
+}
+
+// 商品保存
+function saveProduct() {
+    const itemId = document.getElementById('editItemId').value;
+    const updatedData = {
+        sku: document.getElementById('editSku').value,
+        title: document.getElementById('editTitle').value,
+        category: document.getElementById('editCategory').value,
+        price: document.getElementById('editPrice').value,
+        stock: document.getElementById('editStock').value,
+        status: document.getElementById('editStatus').value,
+        description: document.getElementById('editDescription').value,
+        weight: document.getElementById('editWeight').value,
+        tags: document.getElementById('editTags').value
+    };
+    
+    // データ更新
+    const itemIndex = editingData.findIndex(item => item.id === itemId);
+    if (itemIndex !== -1) {
+        Object.assign(editingData[itemIndex], updatedData);
+        renderEditingTable();
+        closeEditModal();
+        
+        // 成功メッセージ
+        showNotification('商品が正常に更新されました', 'success');
+    }
+}
+
+// 商品削除
+function deleteProduct() {
+    if (confirm('この商品を削除しますか？この操作は取り消せません。')) {
+        const itemId = document.getElementById('editItemId').value;
+        editingData = editingData.filter(item => item.id !== itemId);
+        renderEditingTable();
+        updatePagination();
+        closeEditModal();
+        
+        showNotification('商品が削除されました', 'success');
+    }
+}
+
+// 選択管理
+function toggleItemSelection(itemId) {
+    if (selectedItems.has(itemId)) {
+        selectedItems.delete(itemId);
+    } else {
+        selectedItems.add(itemId);
+    }
+    updateSelectionInfo();
+}
+
+function toggleSelectAll() {
+    const checkbox = document.getElementById('selectAllCheckbox');
+    const checkboxes = document.querySelectorAll('.item-checkbox');
+    
+    checkboxes.forEach(cb => {
+        cb.checked = checkbox.checked;
+        const itemId = cb.dataset.id;
+        if (checkbox.checked) {
+            selectedItems.add(itemId);
+        } else {
+            selectedItems.delete(itemId);
+        }
+    });
+    
+    updateSelectionInfo();
+}
+
+function updateSelectionInfo() {
+    const count = selectedItems.size;
+    document.getElementById('selectedItemsCount').textContent = count;
+    document.getElementById('bulkActionsBar').style.display = count > 0 ? 'block' : 'none';
+}
+
+// CSV出力
+function downloadEditingCSV() {
+    const data = selectedItems.size > 0 ? 
+        editingData.filter(item => selectedItems.has(item.id)) : 
+        editingData;
+    
+    const csv = convertToCSV(data);
+    downloadCSV(csv, 'product_data.csv');
+    
+    showNotification(`${data.length}件のデータをCSV出力しました`, 'success');
+}
+
+function convertToCSV(data) {
+    const headers = ['ID', 'SKU', 'Title', 'Category', 'Price', 'Stock', 'Status', 'Updated'];
+    const rows = data.map(item => [
+        item.id, item.sku, item.title, item.category, 
+        item.price, item.stock, item.status, item.updated
+    ]);
+    
+    return [headers, ...rows].map(row => 
+        row.map(field => `"${field}"`).join(',')
+    ).join('\n');
+}
+
+function downloadCSV(csv, filename) {
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+// 通知表示
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed; top: 20px; right: 20px; z-index: 9999;
+        padding: 12px 20px; border-radius: 8px; color: white; font-weight: 500;
+        background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        transform: translateX(100%); transition: transform 0.3s ease;
+    `;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => notification.style.transform = 'translateX(0)', 100);
+    setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => document.body.removeChild(notification), 300);
+    }, 3000);
+}
+
+// ページネーション
+function updatePagination() {
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const start = (currentPage - 1) * itemsPerPage + 1;
+    const end = Math.min(currentPage * itemsPerPage, totalItems);
+    
+    document.getElementById('paginationInfo').textContent = `${start}-${end} of ${totalItems} items`;
+    
+    // ページ番号生成
+    const pageNumbers = document.getElementById('pageNumbers');
+    pageNumbers.innerHTML = '';
+    
+    for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+        const pageBtn = document.createElement('button');
+        pageBtn.textContent = i;
+        pageBtn.style.cssText = `
+            padding: 6px 10px; border: 1px solid #d1d5db; background: ${i === currentPage ? '#3b82f6' : 'white'};
+            color: ${i === currentPage ? 'white' : '#374151'}; border-radius: 4px; cursor: pointer; font-size: 13px;
+        `;
+        pageBtn.onclick = () => goToPage(i);
+        pageNumbers.appendChild(pageBtn);
+    }
+    
+    // 前後ボタンの状態
+    document.getElementById('prevPageBtn').disabled = currentPage === 1;
+    document.getElementById('nextPageBtn').disabled = currentPage === totalPages;
+}
+
+function changePage(direction) {
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const newPage = currentPage + direction;
+    
+    if (newPage >= 1 && newPage <= totalPages) {
+        currentPage = newPage;
+        renderEditingTable();
+        updatePagination();
+    }
+}
+
+function goToPage(page) {
+    currentPage = page;
+    renderEditingTable();
+    updatePagination();
+}
+
+// ローディング状態
+function showLoadingState() {
+    document.getElementById('editingTableBody').innerHTML = `
+        <tr>
+            <td colspan="10" style="text-align: center; padding: 40px;">
+                <div class="loading-spinner" style="width: 32px; height: 32px; border: 3px solid #f3f4f6; border-top: 3px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>
+                <p style="color: #6b7280; font-size: 14px; margin: 0;">商品データを読み込み中...</p>
+            </td>
+        </tr>
+    `;
+}
+
+// 初期化
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('editingTable')) {
+        loadEditingData();
+    }
+});
+
+// 検索・フィルター関数（placeholder）
+function searchEditingData() {
+    const query = document.getElementById('editingSearchInput').value;
+    console.log('検索実行:', query);
+    // 実装予定
+}
+
+function applyFilters() {
+    console.log('フィルター適用');
+    // 実装予定
+}
+
+function clearAllFilters() {
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('categoryFilter').value = '';
+    document.getElementById('priceFilter').value = '';
+    document.getElementById('editingSearchInput').value = '';
+    // 実装予定
+}
+
+// 一括操作関数（placeholder）
+function bulkApprove() { console.log('一括承認'); }
+function bulkDelete() { console.log('一括削除'); }
+function bulkExport() { downloadEditingCSV(); }
+function clearSelection() { 
+    selectedItems.clear();
+    document.querySelectorAll('.item-checkbox').forEach(cb => cb.checked = false);
+    document.getElementById('selectAllCheckbox').checked = false;
+    updateSelectionInfo();
+}
+
+function showBulkEditModal() { console.log('一括編集モーダル'); }
+function showImageModal(imageUrl) {
+    window.open(imageUrl, '_blank', 'width=800,height=600');
+}
+</script>

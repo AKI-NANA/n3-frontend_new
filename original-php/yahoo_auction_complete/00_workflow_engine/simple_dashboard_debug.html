@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>簡易ダッシュボード - デバッグ用</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status-box {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #ccc;
+        }
+        .success { border-left-color: #4caf50; background: #e8f5e8; }
+        .error { border-left-color: #f44336; background: #ffebee; }
+        .warning { border-left-color: #ff9800; background: #fff3e0; }
+        .info { border-left-color: #2196f3; background: #e3f2fd; }
+        button {
+            background: #2196f3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #1976d2; }
+        #log {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 簡易ダッシュボード - デバッグ用</h1>
+        
+        <div class="status-box info">
+            <strong>目的:</strong> ダッシュボードがくるくる回る問題を特定するための簡易版です
+        </div>
+
+        <!-- 接続状態表示 -->
+        <div id="connectionStatus" class="status-box warning">
+            <strong>接続状態:</strong> 確認中...
+        </div>
+
+        <!-- 制御ボタン -->
+        <div>
+            <button onclick="testAPI()">API接続テスト</button>
+            <button onclick="testWorkflows()">ワークフロー取得テスト</button>
+            <button onclick="testSSE()">SSE接続テスト</button>
+            <button onclick="clearLog()">ログクリア</button>
+        </div>
+
+        <!-- 統計表示 -->
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0;">
+            <div class="status-box">
+                <h3>処理中</h3>
+                <div id="processingCount" style="font-size: 2em; font-weight: bold;">0</div>
+            </div>
+            <div class="status-box">
+                <h3>承認済み</h3>
+                <div id="approvedCount" style="font-size: 2em; font-weight: bold;">0</div>
+            </div>
+            <div class="status-box">
+                <h3>完了</h3>
+                <div id="completedCount" style="font-size: 2em; font-weight: bold;">0</div>
+            </div>
+            <div class="status-box">
+                <h3>エラー</h3>
+                <div id="failedCount" style="font-size: 2em; font-weight: bold;">0</div>
+            </div>
+        </div>
+
+        <!-- ワークフロー一覧 -->
+        <h2>アクティブワークフロー</h2>
+        <div id="workflowList">
+            <div class="status-box">ワークフローを読み込み中...</div>
+        </div>
+
+        <!-- ログ表示 -->
+        <h2>デバッグログ</h2>
+        <div id="log"></div>
+    </div>
+
+    <script>
+        let eventSource = null;
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            log('🚀 簡易ダッシュボード初期化開始');
+            testAPI();
+        });
+
+        // ログ出力
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${time}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        // ログクリア
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        // API接続テスト
+        async function testAPI() {
+            log('🔄 API接続テストを開始...');
+            
+            try {
+                const response = await fetch('integrated_workflow_engine_8080.php?action=health_check');
+                log(`📡 HTTP Status: ${response.status}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                log(`📄 Response Data: ${JSON.stringify(data)}`);
+                
+                if (data.success) {
+                    updateConnectionStatus('success', 'API接続成功: ' + data.message);
+                    log('✅ API接続成功');
+                } else {
+                    updateConnectionStatus('error', 'API失敗: ' + data.message);
+                    log('❌ API失敗');
+                }
+                
+            } catch (error) {
+                log(`❌ API接続エラー: ${error.message}`);
+                updateConnectionStatus('error', 'API接続エラー: ' + error.message);
+            }
+        }
+
+        // ワークフロー取得テスト
+        async function testWorkflows() {
+            log('🔄 ワークフロー取得テストを開始...');
+            
+            try {
+                const response = await fetch('integrated_workflow_engine_8080.php?action=get_active_workflows');
+                log(`📡 Workflow HTTP Status: ${response.status}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                log(`📄 Workflow Data: ${JSON.stringify(data)}`);
+                
+                if (data.success) {
+                    log(`✅ ワークフロー取得成功: ${data.count}件`);
+                    displayWorkflows(data.data || []);
+                    updateStats(data.data || []);
+                } else {
+                    log(`❌ ワークフロー取得失敗: ${data.message}`);
+                }
+                
+            } catch (error) {
+                log(`❌ ワークフロー取得エラー: ${error.message}`);
+            }
+        }
+
+        // SSE接続テスト
+        function testSSE() {
+            log('🔄 SSE接続テストを開始...');
+            
+            if (eventSource) {
+                eventSource.close();
+                log('🔌 既存のSSE接続を閉じました');
+            }
+            
+            try {
+                eventSource = new EventSource('server_sent_events_8080.php?action=dashboard&client_id=debug_' + Date.now());
+                
+                eventSource.onopen = function(event) {
+                    log('🔗 SSE接続が開かれました');
+                };
+                
+                eventSource.onmessage = function(event) {
+                    log(`📨 SSEメッセージ受信: ${event.data}`);
+                };
+                
+                eventSource.onerror = function(event) {
+                    log('❌ SSE接続エラーが発生しました');
+                };
+                
+                // 10秒後にSSE接続を閉じる
+                setTimeout(() => {
+                    if (eventSource) {
+                        eventSource.close();
+                        log('⏰ SSE接続を閉じました（10秒経過）');
+                    }
+                }, 10000);
+                
+            } catch (error) {
+                log(`❌ SSE初期化エラー: ${error.message}`);
+            }
+        }
+
+        // 接続状態更新
+        function updateConnectionStatus(type, message) {
+            const statusDiv = document.getElementById('connectionStatus');
+            statusDiv.className = `status-box ${type}`;
+            statusDiv.innerHTML = `<strong>接続状態:</strong> ${message}`;
+        }
+
+        // 統計更新
+        function updateStats(workflows) {
+            const stats = {
+                processing: 0,
+                approved: 0,
+                completed: 0,
+                failed: 0
+            };
+            
+            workflows.forEach(wf => {
+                switch (wf.status) {
+                    case 'processing':
+                    case 'started':
+                        stats.processing++;
+                        break;
+                    case 'approved':
+                        stats.approved++;
+                        break;
+                    case 'completed':
+                    case 'listed':
+                        stats.completed++;
+                        break;
+                    case 'failed':
+                        stats.failed++;
+                        break;
+                }
+            });
+            
+            document.getElementById('processingCount').textContent = stats.processing;
+            document.getElementById('approvedCount').textContent = stats.approved;
+            document.getElementById('completedCount').textContent = stats.completed;
+            document.getElementById('failedCount').textContent = stats.failed;
+            
+            log(`📊 統計更新: 処理中${stats.processing}, 承認済み${stats.approved}, 完了${stats.completed}, エラー${stats.failed}`);
+        }
+
+        // ワークフロー表示
+        function displayWorkflows(workflows) {
+            const listDiv = document.getElementById('workflowList');
+            
+            if (workflows.length === 0) {
+                listDiv.innerHTML = '<div class="status-box info">ワークフローデータがありません</div>';
+                return;
+            }
+            
+            let html = `<table>
+                <tr><th>ID</th><th>Yahoo ID</th><th>Status</th><th>Step</th><th>Created</th></tr>`;
+            
+            workflows.forEach(wf => {
+                html += `<tr>
+                    <td>${wf.id}</td>
+                    <td>${wf.yahoo_auction_id || '不明'}</td>
+                    <td>${wf.status}</td>
+                    <td>${wf.current_step}/9</td>
+                    <td>${new Date(wf.created_at).toLocaleString()}</td>
+                </tr>`;
+            });
+            
+            html += '</table>';
+            listDiv.innerHTML = html;
+            
+            log(`📋 ワークフロー表示完了: ${workflows.length}件`);
+        }
+
+        // エラーハンドリング
+        window.addEventListener('error', function(event) {
+            log(`🚨 JavaScriptエラー: ${event.message} at ${event.filename}:${event.lineno}`);
+        });
+
+        window.addEventListener('unhandledrejection', function(event) {
+            log(`🚨 未処理のPromiseエラー: ${event.reason}`);
+        });
+    </script>
+</body>
+</html>

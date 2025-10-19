@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>多モール在庫管理システム | NAGANO-3</title>
+
+    <!-- Font Awesome -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+
+    <!-- Google Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* ===== NAGANO-3統一CSS変数（既存システム準拠） ===== */
+      :root {
+        --bg-primary: #f8fafc;
+        --bg-secondary: #ffffff;
+        --bg-tertiary: #f1f5f9;
+        --bg-hover: #e2e8f0;
+        --bg-active: #cbd5e1;
+
+        --text-primary: #1e293b;
+        --text-secondary: #475569;
+        --text-tertiary: #64748b;
+        --text-muted: #94a3b8;
+        --text-white: #ffffff;
+
+        --border-color: #e2e8f0;
+        --border-light: #f1f5f9;
+        --border-dark: #cbd5e1;
+
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+          0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+          0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+        --color-primary: #3b82f6;
+        --color-secondary: #6366f1;
+        --color-success: #10b981;
+        --color-warning: #f59e0b;
+        --color-danger: #ef4444;
+        --color-info: #06b6d4;
+
+        --radius-md: 0.5rem;
+        --radius-lg: 0.75rem;
+        --radius-xl: 1rem;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        margin: 0;
+        padding: 0;
+        line-height: 1.6;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 1.5rem;
+      }
+
+      /* ===== 全体レイアウト ===== */
+      .header {
+        text-align: center;
+        margin-bottom: 1.5rem;
+        padding: 1rem 0;
+      }
+
+      .header h1 {
+        font-size: 1.75rem;
+        margin-bottom: 0.25rem;
+      }
+
+      .header p {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+      }
+
+      /* ===== 統計カードセクション ===== */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+
+      .stat-card {
+        background-color: var(--bg-secondary);
+        padding: 1rem;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        text-align: center;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-md);
+      }
+
+      .stat-card h3 {
+        font-size: 0.9rem;
+        color: var(--text-tertiary);
+        margin-bottom: 0.25rem;
+      }
+
+      .stat-card .stat-value {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--color-primary);
+      }
+
+      .stat-card .stat-value-usd {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--color-success);
+      }
+
+      /* ===== 折りたたみ可能なセクション ===== */
+      .collapsible-section {
+        background-color: var(--bg-secondary);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--border-color);
+      }
+
+      .collapsible-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        cursor: pointer;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .collapsible-header:hover {
+        background-color: var(--bg-tertiary);
+      }
+
+      .collapsible-header h2 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+      }
+
+      .collapsible-header .icon {
+        transition: transform 0.3s ease;
+      }
+
+      .collapsible-header.closed .icon {
+        transform: rotate(-90deg);
+      }
+
+      .collapsible-content {
+        display: none;
+        padding: 1rem;
+      }
+
+      .collapsible-section.open .collapsible-content {
+        display: block;
+      }
+
+      /* ===== フィルターセクション ===== */
+      .filter-section {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: flex-end;
+      }
+
+      .filter-group {
+        display: flex;
+        flex-direction: column;
+        min-width: 150px;
+      }
+
+      .filter-group label {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.25rem;
+      }
+
+      .filter-group select,
+      .filter-group input {
+        padding: 0.5rem;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        background-color: var(--bg-tertiary);
+      }
+
+      .filter-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: auto;
+      }
+
+      /* ===== ビュー切り替え＆アクションボタン ===== */
+      .actions-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+      }
+
+      .view-switcher {
+        display: flex;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+      }
+
+      .view-switcher button {
+        padding: 0.5rem 1rem;
+        background-color: var(--bg-secondary);
+        color: var(--text-secondary);
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.2s ease, color 0.2s ease;
+      }
+
+      .view-switcher button.active {
+        background-color: var(--color-primary);
+        color: var(--text-white);
+      }
+
+      .bulk-actions {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .btn {
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius-md);
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s ease, transform 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: 1px solid transparent;
+      }
+
+      .btn-primary {
+        background-color: var(--color-primary);
+        color: var(--text-white);
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .btn-secondary {
+        background-color: var(--bg-tertiary);
+        color: var(--text-secondary);
+        border-color: var(--border-color);
+      }
+
+      .btn-secondary:hover {
+        transform: translateY(-1px);
+        background-color: var(--bg-hover);
+      }
+
+      /* ===== Excelビュー ===== */
+      .excel-table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: var(--bg-secondary);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .excel-table th,
+      .excel-table td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid var(--border-light);
+        text-align: left;
+      }
+
+      .excel-table thead th {
+        background-color: var(--bg-tertiary);
+        color: var(--text-secondary);
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+      }
+
+      /* ===== カードビュー ===== */
+      .card-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1rem;
+      }
+
+      .product-card {
+        position: relative;
+        background-color: var(--bg-secondary);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        cursor: pointer;
+      }
+
+      .product-card:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-md);
+      }
+
+      .card-image-wrapper {
+        position: relative;
+        width: 100%;
+        padding-bottom: 100%; /* 1:1のアスペクト比を維持 */
+        overflow: hidden;
+      }
+
+      .card-image {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .card-info {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        padding: 0.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        background: rgba(0, 0, 0, 0.4);
+        color: var(--text-white);
+        font-size: 0.85rem;
+        backdrop-filter: blur(2px);
+      }
+
+      .card-icon {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        padding: 0.25rem 0.5rem;
+        border-radius: 9999px;
+        font-weight: 600;
+      }
+
+      .card-price {
+        background: var(--color-success);
+        color: var(--text-white);
+        padding: 0.25rem 0.5rem;
+        border-radius: 9999px;
+        font-weight: 600;
+      }
+
+      .card-content {
+        padding: 0.75rem;
+      }
+
+      .card-title {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .card-details {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.8rem;
+        color: var(--text-tertiary);
+      }
+
+      /* ===== モーダル ===== */
+      .modal {
+        display: none; /* デフォルトで非表示 */
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        justify-content: center;
+        align-items: center;
+        animation: fadeIn 0.3s ease;
+      }
+
+      .modal--active {
+        display: flex;
+      }
+
+      .modal-content {
+        background-color: var(--bg-secondary);
+        padding: 2rem;
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-lg);
+        width: 90%;
+        max-width: 800px;
+        position: relative;
+        animation: slideIn 0.3s ease;
+      }
+
+      .modal-close {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        color: var(--text-secondary);
+        font-size: 1.5rem;
+        cursor: pointer;
+      }
+
+      .modal-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border-light);
+        padding-bottom: 1rem;
+      }
+
+      .modal-header img {
+        width: 100px;
+        height: 100px;
+        border-radius: var(--radius-md);
+        object-fit: cover;
+      }
+
+      .modal-details-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+      }
+
+      .detail-item {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .detail-item label {
+        font-size: 0.8rem;
+        color: var(--text-tertiary);
+        margin-bottom: 0.25rem;
+      }
+
+      .detail-item .value {
+        font-size: 1rem;
+        font-weight: 500;
+        word-break: break-all;
+      }
+
+      /* ===== キーフレームアニメーション ===== */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateY(20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      /* ===== レスポンシブ対応 ===== */
+      @media (max-width: 768px) {
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .filter-section {
+          flex-direction: column;
+        }
+
+        .filter-group {
+          width: 100%;
+        }
+
+        .actions-bar {
+          flex-direction: column;
+          gap: 1rem;
+          align-items: stretch;
+        }
+
+        .bulk-actions {
+          justify-content: stretch;
+        }
+
+        .bulk-actions .btn {
+          flex: 1;
+        }
+
+        .modal-content {
+          width: 95%;
+          padding: 1rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- 多モール在庫管理システム -->
+      <div class="header">
+        <h1>多モール在庫管理システム</h1>
+        <p>
+          eBay×2 + メルカリ + Yahoo + Amazon + 実在庫 + スプレッドシート統合管理
+        </p>
+      </div>
+
+      <!-- 統計セクション -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>出品中商品数</h3>
+          <span class="stat-value">342</span>
+          <p class="stat-source">EBAY ACCOUNT 1</p>
+        </div>
+        <div class="stat-card">
+          <h3>出品中商品数</h3>
+          <span class="stat-value">187</span>
+          <p class="stat-source">EBAY ACCOUNT 2</p>
+        </div>
+        <div class="stat-card">
+          <h3>出品中商品数</h3>
+          <span class="stat-value">156</span>
+          <p class="stat-source">メルカリ</p>
+        </div>
+        <div class="stat-card">
+          <h3>総棚卸し商品数</h3>
+          <span class="stat-value">1,284</span>
+          <p class="stat-source">実在庫</p>
+        </div>
+        <div class="stat-card">
+          <h3>未出品商品</h3>
+          <span class="stat-value">89</span>
+          <p class="stat-source">YAHOO仕入れ</p>
+        </div>
+        <div class="stat-card">
+          <h3>未出品商品</h3>
+          <span class="stat-value">67</span>
+          <p class="stat-source">AMAZON仕入れ</p>
+        </div>
+        <div class="stat-card">
+          <h3>総在庫価値（USD）</h3>
+          <span class="stat-value-usd">$127.5K</span>
+          <p class="stat-source">合計棚卸し資産</p>
+        </div>
+      </div>
+
+      <!-- フィルターセクション（デフォルトで閉じる） -->
+      <div class="collapsible-section" id="filter-section">
+        <div
+          class="collapsible-header"
+          onclick="toggleCollapsible('filter-section')"
+        >
+          <h2><i class="fas fa-filter"></i> フィルター</h2>
+          <span class="icon"><i class="fas fa-chevron-down"></i></span>
+        </div>
+        <div class="collapsible-content">
+          <div class="filter-section">
+            <div class="filter-group">
+              <label for="filter-category">カテゴリー</label>
+              <select id="filter-category">
+                <option value="">すべて</option>
+                <option value="electronics">電子機器</option>
+                <option value="fashion">ファッション</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label for="filter-status">ステータス</label>
+              <select id="filter-status">
+                <option value="">すべて</option>
+                <option value="active">出品中</option>
+                <option value="sold">売却済み</option>
+                <option value="draft">下書き</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label for="filter-stock">在庫数</label>
+              <select id="filter-stock">
+                <option value="">すべて</option>
+                <option value="low">低在庫</option>
+                <option value="high">高在庫</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label for="search-input">キーワード検索</label>
+              <input
+                type="text"
+                id="search-input"
+                placeholder="商品ID, 商品名..."
+              />
+            </div>
+            <div class="filter-actions">
+              <button class="btn btn-primary" onclick="applyFilters()">
+                <i class="fas fa-search"></i> 検索
+              </button>
+              <button class="btn btn-secondary" onclick="resetFilters()">
+                <i class="fas fa-sync"></i> リセット
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- セット品セクション（デフォルトで閉じる） -->
+      <div class="collapsible-section" id="sets-section">
+        <div
+          class="collapsible-header"
+          onclick="toggleCollapsible('sets-section')"
+        >
+          <h2><i class="fas fa-box-open"></i> セット品</h2>
+          <span class="icon"><i class="fas fa-chevron-down"></i></span>
+        </div>
+        <div class="collapsible-content">
+          <p>このセクションはセット品を管理します。</p>
+          <div style="margin-top: 1rem">
+            <button class="btn btn-primary" onclick="createSetFromSelected()">
+              <i class="fas fa-plus-square"></i> 選択商品からセット品作成
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ビュー切り替え＆一括アクションバー -->
+      <div class="actions-bar">
+        <div class="view-switcher" id="view-switcher">
+          <button id="card-view-btn" class="active">
+            <i class="fas fa-th-large"></i> カードビュー
+          </button>
+          <button id="excel-view-btn">
+            <i class="fas fa-table"></i> Excelビュー
+          </button>
+        </div>
+        <div class="bulk-actions">
+          <button class="btn btn-primary" onclick="deleteSelected()">
+            <i class="fas fa-trash-alt"></i> 選択削除
+          </button>
+          <button class="btn btn-secondary" onclick="exportToCSV()">
+            <i class="fas fa-file-csv"></i> CSV出力
+          </button>
+        </div>
+      </div>
+
+      <!-- 商品リスト -->
+      <div id="product-list">
+        <!-- カードビュー -->
+        <div id="card-container" class="card-container"></div>
+
+        <!-- Excelビュー（デフォルトで非表示） -->
+        <div id="excel-container" style="display: none">
+          <table class="excel-table">
+            <thead>
+              <tr>
+                <th>
+                  <input
+                    type="checkbox"
+                    onclick="toggleAllCheckboxes(this.checked)"
+                  />
+                </th>
+                <th>画像</th>
+                <th>商品名</th>
+                <th>価格</th>
+                <th>在庫</th>
+                <th>ステータス</th>
+                <th>最終更新</th>
+                <th>プラットフォーム</th>
+                <th>ID</th>
+                <th>アクション</th>
+              </tr>
+            </thead>
+            <tbody id="excel-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 商品詳細モーダル -->
+      <div id="product-modal" class="modal">
+        <div class="modal-content">
+          <span class="modal-close" onclick="closeModal()">&times;</span>
+          <div class="modal-header">
+            <img id="modal-image" src="" alt="商品画像" />
+            <div>
+              <h2 id="modal-title" style="margin-bottom: 0.25rem"></h2>
+              <span id="modal-platform-icon"></span>
+            </div>
+          </div>
+          <div class="modal-details-grid" id="modal-details">
+            <!-- 詳細情報がここに動的に追加される -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ダミーデータ
+      const dummyProducts = [
+        {
+          id: "p001",
+          title: "ビンテージ一眼レフカメラ - ブラック",
+          image: "https://placehold.co/400x400/10b981/ffffff?text=Camera",
+          price: 299.99,
+          stock: 5,
+          status: "出品中",
+          last_updated: "2023-10-26",
+          platform: "eBay",
+          asin: "B0C1H4J5",
+        },
+        {
+          id: "p002",
+          title: "デザイナーズレザーウォレット",
+          image: "https://placehold.co/400x400/6366f1/ffffff?text=Wallet",
+          price: 89.5,
+          stock: 12,
+          status: "出品中",
+          last_updated: "2023-10-25",
+          platform: "Mercari",
+          asin: "B0C1H4J6",
+        },
+        {
+          id: "p003",
+          title: "ワイヤレスノイズキャンセリングヘッドホン",
+          image: "https://placehold.co/400x400/3b82f6/ffffff?text=Headphones",
+          price: 149.0,
+          stock: 2,
+          status: "低在庫",
+          last_updated: "2023-10-24",
+          platform: "Yahoo",
+          asin: "B0C1H4J7",
+        },
+        {
+          id: "p004",
+          title: "電動歯ブラシ替えブラシ 4個セット",
+          image: "https://placehold.co/400x400/f59e0b/ffffff?text=Brush+Heads",
+          price: 24.99,
+          stock: 50,
+          status: "出品中",
+          last_updated: "2023-10-23",
+          platform: "Amazon",
+          asin: "B0C1H4J8",
+        },
+        {
+          id: "p005",
+          title: "ステンレス製サーモマグ",
+          image: "https://placehold.co/400x400/ef4444/ffffff?text=Mug",
+          price: 19.99,
+          stock: 15,
+          status: "実在庫",
+          last_updated: "2023-10-22",
+          platform: "実在庫",
+          asin: "B0C1H4J9",
+        },
+        {
+          id: "p006",
+          title: "ポータブルBluetoothスピーカー",
+          image: "https://placehold.co/400x400/06b6d4/ffffff?text=Speaker",
+          price: 75.0,
+          stock: 8,
+          status: "出品中",
+          last_updated: "2023-10-21",
+          platform: "eBay",
+          asin: "B0C1H4J10",
+        },
+        {
+          id: "p007",
+          title: "オーガニックコットンTシャツ",
+          image: "https://placehold.co/400x400/10b981/ffffff?text=T-shirt",
+          price: 35.0,
+          stock: 25,
+          status: "出品中",
+          last_updated: "2023-10-20",
+          platform: "Mercari",
+          asin: "B0C1H4J11",
+        },
+        {
+          id: "p008",
+          title: "USB-Cハブ 多機能アダプター",
+          image: "https://placehold.co/400x400/6366f1/ffffff?text=USB+Hub",
+          price: 45.0,
+          stock: 3,
+          status: "出品中",
+          last_updated: "2023-10-19",
+          platform: "Yahoo",
+          asin: "B0C1H4J12",
+        },
+        {
+          id: "p009",
+          title: "スマートフォン用防水ケース",
+          image: "https://placehold.co/400x400/3b82f6/ffffff?text=Case",
+          price: 15.0,
+          stock: 40,
+          status: "出品中",
+          last_updated: "2023-10-18",
+          platform: "Amazon",
+          asin: "B0C1H4J13",
+        },
+        {
+          id: "p010",
+          title: "ミニマリストバックパック",
+          image: "https://placehold.co/400x400/f59e0b/ffffff?text=Backpack",
+          price: 60.0,
+          stock: 7,
+          status: "実在庫",
+          last_updated: "2023-10-17",
+          platform: "実在庫",
+          asin: "B0C1H4J14",
+        },
+        {
+          id: "p011",
+          title: "ビンテージ一眼レフカメラ - ブラック",
+          image: "https://placehold.co/400x400/10b981/ffffff?text=Camera",
+          price: 299.99,
+          stock: 5,
+          status: "出品中",
+          last_updated: "2023-10-26",
+          platform: "eBay",
+          asin: "B0C1H4J5",
+        },
+        {
+          id: "p012",
+          title: "デザイナーズレザーウォレット",
+          image: "https://placehold.co/400x400/6366f1/ffffff?text=Wallet",
+          price: 89.5,
+          stock: 12,
+          status: "出品中",
+          last_updated: "2023-10-25",
+          platform: "Mercari",
+          asin: "B0C1H4J6",
+        },
+        {
+          id: "p013",
+          title: "ワイヤレスノイズキャンセリングヘッドホン",
+          image: "https://placehold.co/400x400/3b82f6/ffffff?text=Headphones",
+          price: 149.0,
+          stock: 2,
+          status: "低在庫",
+          last_updated: "2023-10-24",
+          platform: "Yahoo",
+          asin: "B0C1H4J7",
+        },
+        {
+          id: "p014",
+          title: "電動歯ブラシ替えブラシ 4個セット",
+          image: "https://placehold.co/400x400/f59e0b/ffffff?text=Brush+Heads",
+          price: 24.99,
+          stock: 50,
+          status: "出品中",
+          last_updated: "2023-10-23",
+          platform: "Amazon",
+          asin: "B0C1H4J8",
+        },
+        {
+          id: "p015",
+          title: "ステンレス製サーモマグ",
+          image: "https://placehold.co/400x400/ef4444/ffffff?text=Mug",
+          price: 19.99,
+          stock: 15,
+          status: "実在庫",
+          last_updated: "2023-10-22",
+          platform: "実在庫",
+          asin: "B0C1H4J9",
+        },
+        {
+          id: "p016",
+          title: "ポータブルBluetoothスピーカー",
+          image: "https://placehold.co/400x400/06b6d4/ffffff?text=Speaker",
+          price: 75.0,
+          stock: 8,
+          status: "出品中",
+          last_updated: "2023-10-21",
+          platform: "eBay",
+          asin: "B0C1H4J10",
+        },
+        {
+          id: "p017",
+          title: "オーガニックコットンTシャツ",
+          image: "https://placehold.co/400x400/10b981/ffffff?text=T-shirt",
+          price: 35.0,
+          stock: 25,
+          status: "出品中",
+          last_updated: "2023-10-20",
+          platform: "Mercari",
+          asin: "B0C1H4J11",
+        },
+        {
+          id: "p018",
+          title: "USB-Cハブ 多機能アダプター",
+          image: "https://placehold.co/400x400/6366f1/ffffff?text=USB+Hub",
+          price: 45.0,
+          stock: 3,
+          status: "出品中",
+          last_updated: "2023-10-19",
+          platform: "Yahoo",
+          asin: "B0C1H4J12",
+        },
+        {
+          id: "p019",
+          title: "スマートフォン用防水ケース",
+          image: "https://placehold.co/400x400/3b82f6/ffffff?text=Case",
+          price: 15.0,
+          stock: 40,
+          status: "出品中",
+          last_updated: "2023-10-18",
+          platform: "Amazon",
+          asin: "B0C1H4J13",
+        },
+        {
+          id: "p020",
+          title: "ミニマリストバックパック",
+          image: "https://placehold.co/400x400/f59e0b/ffffff?text=Backpack",
+          price: 60.0,
+          stock: 7,
+          status: "実在庫",
+          last_updated: "2023-10-17",
+          platform: "実在庫",
+          asin: "B0C1H4J14",
+        },
+        {
+          id: "p021",
+          title: "ビンテージ一眼レフカメラ - ブラック",
+          image: "https://placehold.co/400x400/10b981/ffffff?text=Camera",
+          price: 299.99,
+          stock: 5,
+          status: "出品中",
+          last_updated: "2023-10-26",
+          platform: "eBay",
+          asin: "B0C1H4J5",
+        },
+        {
+          id: "p022",
+          title: "デザイナーズレザーウォレット",
+          image: "https://placehold.co/400x400/6366f1/ffffff?text=Wallet",
+          price: 89.5,
+          stock: 12,
+          status: "出品中",
+          last_updated: "2023-10-25",
+          platform: "Mercari",
+          asin: "B0C1H4J6",
+        },
+        {
+          id: "p023",
+          title: "ワイヤレスノイズキャンセリングヘッドホン",
+          image: "https://placehold.co/400x400/3b82f6/ffffff?text=Headphones",
+          price: 149.0,
+          stock: 2,
+          status: "低在庫",
+          last_updated: "2023-10-24",
+          platform: "Yahoo",
+          asin: "B0C1H4J7",
+        },
+        {
+          id: "p024",
+          title: "電動歯ブラシ替えブラシ 4個セット",
+          image: "https://placehold.co/400x400/f59e0b/ffffff?text=Brush+Heads",
+          price: 24.99,
+          stock: 50,
+          status: "出品中",
+          last_updated: "2023-10-23",
+          platform: "Amazon",
+          asin: "B0C1H4J8",
+        },
+        {
+          id: "p025",
+          title: "ステンレス製サーモマグ",
+          image: "https://placehold.co/400x400/ef4444/ffffff?text=Mug",
+          price: 19.99,
+          stock: 15,
+          status: "実在庫",
+          last_updated: "2023-10-22",
+          platform: "実在庫",
+          asin: "B0C1H4J9",
+        },
+        {
+          id: "p026",
+          title: "ポータブルBluetoothスピーカー",
+          image: "https://placehold.co/400x400/06b6d4/ffffff?text=Speaker",
+          price: 75.0,
+          stock: 8,
+          status: "出品中",
+          last_updated: "2023-10-21",
+          platform: "eBay",
+          asin: "B0C1H4J10",
+        },
+        {
+          id: "p027",
+          title: "オーガニックコットンTシャツ",
+          image: "https://placehold.co/400x400/10b981/ffffff?text=T-shirt",
+          price: 35.0,
+          stock: 25,
+          status: "出品中",
+          last_updated: "2023-10-20",
+          platform: "Mercari",
+          asin: "B0C1H4J11",
+        },
+        {
+          id: "p028",
+          title: "USB-Cハブ 多機能アダプター",
+          image: "https://placehold.co/400x400/6366f1/ffffff?text=USB+Hub",
+          price: 45.0,
+          stock: 3,
+          status: "出品中",
+          last_updated: "2023-10-19",
+          platform: "Yahoo",
+          asin: "B0C1H4J12",
+        },
+        {
+          id: "p029",
+          title: "スマートフォン用防水ケース",
+          image: "https://placehold.co/400x400/3b82f6/ffffff?text=Case",
+          price: 15.0,
+          stock: 40,
+          status: "出品中",
+          last_updated: "2023-10-18",
+          platform: "Amazon",
+          asin: "B0C1H4J13",
+        },
+        {
+          id: "p030",
+          title: "ミニマリストバックパック",
+          image: "https://placehold.co/400x400/f59e0b/ffffff?text=Backpack",
+          price: 60.0,
+          stock: 7,
+          status: "実在庫",
+          last_updated: "2023-10-17",
+          platform: "実在庫",
+          asin: "B0C1H4J14",
+        },
+      ];
+
+      // 全商品データ
+      let allProducts = [...dummyProducts];
+
+      // ページロード時の初期表示
+      document.addEventListener("DOMContentLoaded", () => {
+        renderProducts("card");
+
+        // ビュー切り替えボタンのイベントリスナー
+        document
+          .getElementById("card-view-btn")
+          .addEventListener("click", () => renderProducts("card"));
+        document
+          .getElementById("excel-view-btn")
+          .addEventListener("click", () => renderProducts("excel"));
+      });
+
+      // 商品をレンダリングする関数
+      function renderProducts(viewMode) {
+        const cardContainer = document.getElementById("card-container");
+        const excelContainer = document.getElementById("excel-container");
+        const excelTbody = document.getElementById("excel-tbody");
+
+        if (viewMode === "card") {
+          cardContainer.style.display = "grid";
+          excelContainer.style.display = "none";
+          document.getElementById("card-view-btn").classList.add("active");
+          document.getElementById("excel-view-btn").classList.remove("active");
+
+          cardContainer.innerHTML = "";
+          allProducts.forEach((product) => {
+            cardContainer.innerHTML += createCardHtml(product);
+          });
+        } else {
+          // Excelビュー
+          cardContainer.style.display = "none";
+          excelContainer.style.display = "block";
+          document.getElementById("card-view-btn").classList.remove("active");
+          document.getElementById("excel-view-btn").classList.add("active");
+
+          excelTbody.innerHTML = "";
+          allProducts.forEach((product) => {
+            excelTbody.innerHTML += createExcelRowHtml(product);
+          });
+        }
+      }
+
+      // カードHTML生成
+      function createCardHtml(product) {
+        const platformIcon = getPlatformIcon(product.platform);
+        return `
+                <div class="product-card" onclick="openProductModal('${
+                  product.id
+                }')">
+                    <div class="card-image-wrapper">
+                        <img src="${product.image}" alt="${
+          product.title
+        }" class="card-image">
+                        <div class="card-info">
+                            <span class="card-icon"><i class="${platformIcon}"></i></span>
+                            <span class="card-price">$${product.price.toFixed(
+                              2
+                            )}</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">${product.title}</div>
+                        <div class="card-details">
+                            <span>在庫: ${product.stock}</span>
+                            <span>ID: ${product.id}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+      }
+
+      // Excel行HTML生成
+      function createExcelRowHtml(product) {
+        const platformIcon = getPlatformIcon(product.platform);
+        return `
+                <tr>
+                    <td><input type="checkbox" class="excel-checkbox" data-id="${
+                      product.id
+                    }"></td>
+                    <td><img src="${product.image}" alt="${
+          product.title
+        }" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover;"></td>
+                    <td>${product.title}</td>
+                    <td>$${product.price.toFixed(2)}</td>
+                    <td>${product.stock}</td>
+                    <td>${product.status}</td>
+                    <td>${product.last_updated}</td>
+                    <td><i class="${platformIcon}"></i> ${product.platform}</td>
+                    <td>${product.id}</td>
+                    <td>
+                        <button class="btn btn-secondary" onclick="openProductModal('${
+                          product.id
+                        }')"><i class="fas fa-edit"></i></button>
+                    </td>
+                </tr>
+            `;
+      }
+
+      // プラットフォームに応じたFont Awesomeアイコンを取得
+      function getPlatformIcon(platform) {
+        switch (platform) {
+          case "eBay":
+            return "fab fa-ebay";
+          case "Mercari":
+            return "fas fa-store";
+          case "Yahoo":
+            return "fas fa-shopping-basket";
+          case "Amazon":
+            return "fab fa-amazon";
+          case "実在庫":
+            return "fas fa-warehouse";
+          default:
+            return "fas fa-globe";
+        }
+      }
+
+      // モーダルを開く
+      function openProductModal(productId) {
+        const product = allProducts.find((p) => p.id === productId);
+        if (!product) return;
+
+        document.getElementById("modal-image").src = product.image;
+        document.getElementById("modal-title").textContent = product.title;
+        document.getElementById(
+          "modal-platform-icon"
+        ).innerHTML = `<i class="${getPlatformIcon(product.platform)}"></i> ${
+          product.platform
+        }`;
+
+        const detailsHtml = `
+                <div class="detail-item">
+                    <label>ID</label>
+                    <span class="value">${product.id}</span>
+                </div>
+                <div class="detail-item">
+                    <label>価格 (USD)</label>
+                    <span class="value">$${product.price.toFixed(2)}</span>
+                </div>
+                <div class="detail-item">
+                    <label>在庫数</label>
+                    <span class="value">${product.stock}</span>
+                </div>
+                <div class="detail-item">
+                    <label>ステータス</label>
+                    <span class="value">${product.status}</span>
+                </div>
+                <div class="detail-item">
+                    <label>最終更新</label>
+                    <span class="value">${product.last_updated}</span>
+                </div>
+                <div class="detail-item">
+                    <label>ASIN / SKW</label>
+                    <span class="value">${product.asin}</span>
+                </div>
+                <div class="detail-item" style="grid-column: 1 / -1;">
+                    <label>説明</label>
+                    <span class="value">この商品は高品質な${
+                      product.platform
+                    }からの商品です。</span>
+                </div>
+            `;
+        document.getElementById("modal-details").innerHTML = detailsHtml;
+
+        document.getElementById("product-modal").classList.add("modal--active");
+      }
+
+      // モーダルを閉じる
+      function closeModal() {
+        document
+          .getElementById("product-modal")
+          .classList.remove("modal--active");
+      }
+
+      // 折りたたみセクションの開閉
+      function toggleCollapsible(sectionId) {
+        const section = document.getElementById(sectionId);
+        section.classList.toggle("open");
+      }
+
+      // フィルター適用
+      function applyFilters() {
+        // フィルターロジックは今後実装
+        showNotification("フィルターが適用されました。", "info");
+      }
+
+      // フィルターリセット
+      function resetFilters() {
+        document.getElementById("filter-category").value = "";
+        document.getElementById("filter-status").value = "";
+        document.getElementById("filter-stock").value = "";
+        document.getElementById("search-input").value = "";
+        showNotification("フィルターがリセットされました。", "info");
+      }
+
+      // 選択商品からセット品作成（ダミー関数）
+      function createSetFromSelected() {
+        showNotification(
+          "選択商品からセット品を作成します。（実装予定）",
+          "success"
+        );
+      }
+
+      // 選択商品削除（ダミー関数）
+      function deleteSelected() {
+        showNotification("選択した商品を削除します。（実装予定）", "danger");
+      }
+
+      // CSV出力（ダミー関数）
+      function exportToCSV() {
+        showNotification("CSVをダウンロードします。（実装予定）", "info");
+      }
+
+      // 全チェックボックスの切り替え
+      function toggleAllCheckboxes(checked) {
+        document
+          .querySelectorAll(".excel-checkbox")
+          .forEach((cb) => (cb.checked = checked));
+      }
+
+      // 通知システム (alertの代わりに)
+      function showNotification(message, type = "info") {
+        const notification = document.createElement("div");
+        notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 20px;
+                border-radius: 6px;
+                color: white;
+                font-weight: 500;
+                z-index: 10000;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+                max-width: 300px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            `;
+
+        const colors = {
+          success: "#10b981",
+          error: "#ef4444",
+          info: "#3b82f6",
+        };
+
+        notification.style.background = colors[type] || colors.info;
+        notification.textContent = message;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+          notification.style.opacity = "1";
+        }, 10);
+
+        setTimeout(() => {
+          notification.style.opacity = "0";
+          setTimeout(() => {
+            if (notification.parentNode) {
+              notification.remove();
+            }
+          }, 300);
+        }, 3000);
+      }
+    </script>
+  </body>
+</html>

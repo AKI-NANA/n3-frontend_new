@@ -1,0 +1,889 @@
+<!-- 🎨 オリジナルHTML保存UI（差し込みワード対応） -->
+<div id="html-editor" class="tab-content fade-in">
+    <div class="section">
+        <div class="section-header">
+            <i class="fas fa-code"></i>
+            <h3 class="section-title">HTML編集・保存システム</h3>
+            <div style="margin-left: auto; display: flex; gap: var(--space-sm);">
+                <button class="btn btn-success" onclick="saveHTMLTemplate()">
+                    <i class="fas fa-save"></i> 保存
+                </button>
+                <button class="btn btn-info" onclick="previewHTMLWithData()">
+                    <i class="fas fa-eye"></i> プレビュー
+                </button>
+                <button class="btn btn-warning" onclick="showInsertWords()">
+                    <i class="fas fa-list"></i> 差し込みワード
+                </button>
+            </div>
+        </div>
+
+        <!-- テンプレート管理バー -->
+        <div class="template-management-bar">
+            <div class="template-selector">
+                <label class="form-label">
+                    <i class="fas fa-folder-open"></i>
+                    保存済みHTML:
+                </label>
+                <select id="savedTemplateSelect" class="form-select" onchange="loadSavedHTML(this.value)">
+                    <option value="">新規作成</option>
+                    <!-- 保存済みHTMLリスト（JavaScript で動的生成） -->
+                </select>
+            </div>
+            
+            <div class="template-name-input">
+                <label class="form-label">HTML名:</label>
+                <input type="text" id="templateNameInput" class="form-input" placeholder="マイHTMLテンプレート" style="width: 200px;">
+            </div>
+        </div>
+
+        <!-- 差し込みワード参照パネル -->
+        <div class="insert-words-panel" id="insertWordsPanel" style="display: none;">
+            <div class="panel-header">
+                <h4><i class="fas fa-tags"></i> 差し込みワード一覧（クリックで挿入）</h4>
+                <button class="panel-close" onclick="hideInsertWords()">×</button>
+            </div>
+            
+            <div class="words-categories">
+                <div class="words-category">
+                    <h5>📦 基本商品情報</h5>
+                    <div class="words-grid">
+                        <span class="word-item" onclick="insertWord('{{TITLE}}')" title="商品タイトル">{{TITLE}}</span>
+                        <span class="word-item" onclick="insertWord('{{PRICE}}')" title="販売価格($99.99形式)">{{PRICE}}</span>
+                        <span class="word-item" onclick="insertWord('{{BRAND}}')" title="ブランド名">{{BRAND}}</span>
+                        <span class="word-item" onclick="insertWord('{{CONDITION}}')" title="商品状態(New/Used等)">{{CONDITION}}</span>
+                        <span class="word-item" onclick="insertWord('{{DESCRIPTION}}')" title="商品説明文">{{DESCRIPTION}}</span>
+                        <span class="word-item" onclick="insertWord('{{SKU}}')" title="eBay SKU">{{SKU}}</span>
+                    </div>
+                </div>
+
+                <div class="words-category">
+                    <h5>🖼️ 画像関連</h5>
+                    <div class="words-grid">
+                        <span class="word-item" onclick="insertWord('{{MAIN_IMAGE}}')" title="メイン画像URL">{{MAIN_IMAGE}}</span>
+                        <span class="word-item" onclick="insertWord('{{IMAGE_1}}')" title="追加画像1">{{IMAGE_1}}</span>
+                        <span class="word-item" onclick="insertWord('{{IMAGE_2}}')" title="追加画像2">{{IMAGE_2}}</span>
+                        <span class="word-item" onclick="insertWord('{{IMAGE_3}}')" title="追加画像3">{{IMAGE_3}}</span>
+                        <span class="word-item" onclick="insertWord('{{IMAGE_GALLERY_HTML}}')" title="画像ギャラリー(自動生成HTML)">{{IMAGE_GALLERY_HTML}}</span>
+                    </div>
+                </div>
+
+                <div class="words-category">
+                    <h5>📋 商品詳細・仕様</h5>
+                    <div class="words-grid">
+                        <span class="word-item" onclick="insertWord('{{MODEL_NUMBER}}')" title="型番・モデル番号">{{MODEL_NUMBER}}</span>
+                        <span class="word-item" onclick="insertWord('{{COLOR}}')" title="色">{{COLOR}}</span>
+                        <span class="word-item" onclick="insertWord('{{WEIGHT}}')" title="重量(0.5 kg形式)">{{WEIGHT}}</span>
+                        <span class="word-item" onclick="insertWord('{{DIMENSIONS}}')" title="寸法(15.0 x 7.5 x 1.0 cm形式)">{{DIMENSIONS}}</span>
+                        <span class="word-item" onclick="insertWord('{{SPECIFICATIONS_TABLE}}')" title="仕様表(自動生成テーブル)">{{SPECIFICATIONS_TABLE}}</span>
+                        <span class="word-item" onclick="insertWord('{{UPC}}')" title="UPCコード">{{UPC}}</span>
+                    </div>
+                </div>
+
+                <div class="words-category">
+                    <h5>🚚 配送・価格情報</h5>
+                    <div class="words-grid">
+                        <span class="word-item" onclick="insertWord('{{SHIPPING_COST}}')" title="送料($25.00形式)">{{SHIPPING_COST}}</span>
+                        <span class="word-item" onclick="insertWord('{{SHIPPING_INFO_HTML}}')" title="配送情報(自動生成HTML)">{{SHIPPING_INFO_HTML}}</span>
+                        <span class="word-item" onclick="insertWord('{{FREE_SHIPPING}}')" title="送料無料表示(送料0の場合のみ)">{{FREE_SHIPPING}}</span>
+                        <span class="word-item" onclick="insertWord('{{PROFIT_MARGIN}}')" title="利益率(25.5%形式)">{{PROFIT_MARGIN}}</span>
+                        <span class="word-item" onclick="insertWord('{{ORIGINAL_PRICE_JPY}}')" title="元価格(日本円)">{{ORIGINAL_PRICE_JPY}}</span>
+                    </div>
+                </div>
+
+                <div class="words-category">
+                    <h5>🏪 販売者・ポリシー情報</h5>
+                    <div class="words-grid">
+                        <span class="word-item" onclick="insertWord('{{SELLER_INFO_HTML}}')" title="販売者情報(自動生成HTML)">{{SELLER_INFO_HTML}}</span>
+                        <span class="word-item" onclick="insertWord('{{RETURN_POLICY_HTML}}')" title="返品ポリシー(自動生成HTML)">{{RETURN_POLICY_HTML}}</span>
+                        <span class="word-item" onclick="insertWord('{{WARRANTY_HTML}}')" title="保証情報(自動生成HTML)">{{WARRANTY_HTML}}</span>
+                    </div>
+                </div>
+
+                <div class="words-category">
+                    <h5>📅 日時・地域情報</h5>
+                    <div class="words-grid">
+                        <span class="word-item" onclick="insertWord('{{CURRENT_DATE}}')" title="現在日付(2025-09-11形式)">{{CURRENT_DATE}}</span>
+                        <span class="word-item" onclick="insertWord('{{LOCATION}}')" title="発送元地域(Japan)">{{LOCATION}}</span>
+                        <span class="word-item" onclick="insertWord('{{CURRENCY_SYMBOL}}')" title="通貨記号($)">{{CURRENCY_SYMBOL}}</span>
+                        <span class="word-item" onclick="insertWord('{{COUNTRY_FLAG}}')" title="国旗絵文字(🇯🇵)">{{COUNTRY_FLAG}}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="usage-example">
+                <h5>💡 使用例</h5>
+                <pre><code>&lt;div class="product-listing"&gt;
+    &lt;h1&gt;{{TITLE}}&lt;/h1&gt;
+    &lt;div class="price"&gt;${{PRICE}}&lt;/div&gt;
+    &lt;img src="{{MAIN_IMAGE}}" alt="{{TITLE}}"&gt;
+    &lt;p&gt;{{DESCRIPTION}}&lt;/p&gt;
+    &lt;div class="specs"&gt;{{SPECIFICATIONS_TABLE}}&lt;/div&gt;
+    &lt;div class="shipping"&gt;{{SHIPPING_INFO_HTML}}&lt;/div&gt;
+&lt;/div&gt;</code></pre>
+            </div>
+        </div>
+
+        <!-- HTMLエディター -->
+        <div class="html-editor-container">
+            <div class="editor-header">
+                <div class="editor-info">
+                    <span class="editor-label">オリジナルHTML編集</span>
+                    <span class="editor-hint">差し込みワードを使って自由にHTMLを作成してください</span>
+                </div>
+                <div class="editor-actions">
+                    <button class="btn btn-sm btn-secondary" onclick="clearEditor()">
+                        <i class="fas fa-eraser"></i> クリア
+                    </button>
+                    <button class="btn btn-sm btn-info" onclick="formatHTML()">
+                        <i class="fas fa-magic"></i> 整形
+                    </button>
+                </div>
+            </div>
+            
+            <textarea 
+                id="htmlEditor" 
+                class="html-editor-textarea" 
+                placeholder="オリジナルHTMLをここに入力してください...
+
+例:
+<div class='my-product'>
+    <h1>{{TITLE}}</h1>
+    <div class='price-display'>${{PRICE}}</div>
+    <img src='{{MAIN_IMAGE}}' alt='{{TITLE}}' style='width: 100%; max-width: 500px;'>
+    <div class='description'>{{DESCRIPTION}}</div>
+    <div class='specifications'>{{SPECIFICATIONS_TABLE}}</div>
+    <div class='shipping-info'>{{SHIPPING_INFO_HTML}}</div>
+</div>
+
+<style>
+.my-product {
+    max-width: 800px;
+    margin: 0 auto;
+    font-family: Arial, sans-serif;
+}
+.price-display {
+    font-size: 2rem;
+    color: #0066cc;
+    font-weight: bold;
+}
+</style>"></textarea>
+        </div>
+
+        <!-- プレビューエリア -->
+        <div class="preview-section" id="previewSection" style="display: none;">
+            <div class="preview-header">
+                <h4><i class="fas fa-eye"></i> プレビュー（サンプルデータ使用）</h4>
+                <div class="preview-controls">
+                    <select id="sampleDataSelect" onchange="updatePreviewWithSample()">
+                        <option value="iphone">iPhone 15 Pro サンプル</option>
+                        <option value="camera">デジタルカメラ サンプル</option>
+                        <option value="watch">腕時計 サンプル</option>
+                    </select>
+                    <button class="btn btn-sm btn-primary" onclick="updatePreviewWithSample()">
+                        <i class="fas fa-refresh"></i> 更新
+                    </button>
+                    <button class="btn btn-sm btn-secondary" onclick="hidePreview()">
+                        <i class="fas fa-times"></i> 閉じる
+                    </button>
+                </div>
+            </div>
+            <div class="preview-frame" id="previewFrame">
+                <!-- プレビュー内容がここに表示される -->
+            </div>
+        </div>
+
+        <!-- 保存済みHTML一覧 -->
+        <div class="saved-html-list">
+            <div class="section-header">
+                <h4><i class="fas fa-folder"></i> 保存済みHTML一覧</h4>
+                <button class="btn btn-sm btn-primary" onclick="refreshHTMLList()">
+                    <i class="fas fa-sync"></i> 更新
+                </button>
+            </div>
+            
+            <div class="html-list-container" id="htmlListContainer">
+                <div class="loading-placeholder">保存済みHTMLを読み込み中...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 🎨 専用CSS -->
+<style>
+/* === テンプレート管理バー === */
+.template-management-bar {
+    background: var(--bg-tertiary, #f1f5f9);
+    padding: var(--space-md, 1rem);
+    border-radius: var(--radius-lg, 0.5rem);
+    margin-bottom: var(--space-lg, 1.5rem);
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg, 1.5rem);
+    flex-wrap: wrap;
+}
+
+.template-selector {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm, 0.5rem);
+}
+
+.template-name-input {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm, 0.5rem);
+}
+
+/* === 差し込みワードパネル === */
+.insert-words-panel {
+    background: var(--bg-secondary, #ffffff);
+    border: 2px solid var(--color-primary, #3b82f6);
+    border-radius: var(--radius-lg, 0.5rem);
+    margin-bottom: var(--space-lg, 1.5rem);
+    box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.panel-header {
+    background: var(--color-primary, #3b82f6);
+    color: white;
+    padding: var(--space-md, 1rem);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.panel-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+}
+
+.panel-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.words-categories {
+    padding: var(--space-md, 1rem);
+    display: grid;
+    gap: var(--space-lg, 1.5rem);
+}
+
+.words-category h5 {
+    color: var(--color-primary, #3b82f6);
+    font-size: 0.875rem;
+    font-weight: 700;
+    margin-bottom: var(--space-sm, 0.5rem);
+    padding-bottom: var(--space-xs, 0.25rem);
+    border-bottom: 2px solid var(--color-primary, #3b82f6);
+}
+
+.words-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: var(--space-xs, 0.25rem);
+}
+
+.word-item {
+    background: var(--bg-tertiary, #f1f5f9);
+    border: 1px solid var(--border-color, #e2e8f0);
+    padding: var(--space-xs, 0.25rem) var(--space-sm, 0.5rem);
+    border-radius: var(--radius-sm, 0.25rem);
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    color: var(--color-primary, #3b82f6);
+    font-weight: 600;
+}
+
+.word-item:hover {
+    background: var(--color-primary, #3b82f6);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+}
+
+.usage-example {
+    background: var(--bg-tertiary, #f1f5f9);
+    padding: var(--space-md, 1rem);
+    border-top: 1px solid var(--border-color, #e2e8f0);
+}
+
+.usage-example h5 {
+    margin-bottom: var(--space-sm, 0.5rem);
+    color: var(--text-primary, #1e293b);
+}
+
+.usage-example pre {
+    background: var(--bg-secondary, #ffffff);
+    padding: var(--space-sm, 0.5rem);
+    border-radius: var(--radius-sm, 0.25rem);
+    border: 1px solid var(--border-color, #e2e8f0);
+    overflow-x: auto;
+    font-size: 0.75rem;
+    line-height: 1.4;
+}
+
+/* === HTMLエディター === */
+.html-editor-container {
+    background: var(--bg-secondary, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-lg, 0.5rem);
+    overflow: hidden;
+    margin-bottom: var(--space-lg, 1.5rem);
+}
+
+.editor-header {
+    background: var(--bg-tertiary, #f1f5f9);
+    padding: var(--space-md, 1rem);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+
+.editor-label {
+    font-weight: 600;
+    color: var(--text-primary, #1e293b);
+}
+
+.editor-hint {
+    font-size: 0.75rem;
+    color: var(--text-secondary, #475569);
+    margin-left: var(--space-sm, 0.5rem);
+}
+
+.editor-actions {
+    display: flex;
+    gap: var(--space-xs, 0.25rem);
+}
+
+.html-editor-textarea {
+    width: 100%;
+    height: 400px;
+    border: none;
+    background: var(--bg-secondary, #ffffff);
+    color: var(--text-primary, #1e293b);
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    resize: vertical;
+    padding: var(--space-md, 1rem);
+    outline: none;
+}
+
+/* === プレビューセクション === */
+.preview-section {
+    background: var(--bg-secondary, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-lg, 0.5rem);
+    overflow: hidden;
+    margin-bottom: var(--space-lg, 1.5rem);
+}
+
+.preview-header {
+    background: var(--bg-tertiary, #f1f5f9);
+    padding: var(--space-md, 1rem);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+
+.preview-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm, 0.5rem);
+}
+
+.preview-frame {
+    padding: var(--space-md, 1rem);
+    min-height: 300px;
+    background: white;
+    overflow-y: auto;
+    max-height: 500px;
+}
+
+/* === 保存済みHTML一覧 === */
+.saved-html-list {
+    background: var(--bg-tertiary, #f1f5f9);
+    border-radius: var(--radius-lg, 0.5rem);
+    padding: var(--space-lg, 1.5rem);
+}
+
+.html-list-container {
+    margin-top: var(--space-md, 1rem);
+}
+
+.html-item {
+    background: var(--bg-secondary, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-md, 0.375rem);
+    padding: var(--space-md, 1rem);
+    margin-bottom: var(--space-sm, 0.5rem);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.html-item:hover {
+    border-color: var(--color-primary, #3b82f6);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+}
+
+.html-item-info h5 {
+    margin: 0 0 var(--space-xs, 0.25rem) 0;
+    color: var(--text-primary, #1e293b);
+    font-size: 0.875rem;
+}
+
+.html-item-info p {
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--text-secondary, #475569);
+}
+
+.html-item-actions {
+    display: flex;
+    gap: var(--space-xs, 0.25rem);
+}
+
+.html-item-actions button {
+    padding: 0.25rem 0.5rem;
+    border: none;
+    background: var(--bg-tertiary, #f1f5f9);
+    color: var(--text-secondary, #475569);
+    border-radius: var(--radius-sm, 0.25rem);
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.html-item-actions button:hover {
+    background: var(--color-primary, #3b82f6);
+    color: white;
+}
+
+/* === フォーム要素 === */
+.form-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary, #1e293b);
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs, 0.25rem);
+    margin: 0;
+}
+
+.form-input, .form-select {
+    padding: 0.5rem;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-sm, 0.25rem);
+    background: var(--bg-secondary, #ffffff);
+    font-size: 0.875rem;
+    color: var(--text-primary, #1e293b);
+    transition: all 0.2s ease;
+}
+
+.form-input:focus, .form-select:focus {
+    outline: none;
+    border-color: var(--color-primary, #3b82f6);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+}
+
+.loading-placeholder {
+    text-align: center;
+    color: var(--text-muted, #64748b);
+    font-style: italic;
+    padding: var(--space-xl, 2rem);
+}
+
+/* === レスポンシブ === */
+@media (max-width: 768px) {
+    .template-management-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-md, 1rem);
+    }
+    
+    .words-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
+    
+    .html-editor-textarea {
+        height: 300px;
+    }
+    
+    .html-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-sm, 0.5rem);
+    }
+    
+    .html-item-actions {
+        justify-content: center;
+    }
+}
+</style>
+
+<script>
+// 🎨 オリジナルHTML保存システム JavaScript
+let currentHTMLId = null;
+let htmlProcessor = null;
+
+// システム初期化
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🎨 オリジナルHTML保存システム初期化中...');
+    
+    // HTMLProcessor初期化
+    if (typeof HTMLTemplateProcessor !== 'undefined') {
+        htmlProcessor = new HTMLTemplateProcessor();
+        console.log('✅ HTMLProcessor 初期化完了');
+    }
+    
+    // 保存済みHTML読み込み
+    loadHTMLList();
+});
+
+// 差し込みワードパネル表示
+function showInsertWords() {
+    const panel = document.getElementById('insertWordsPanel');
+    panel.style.display = 'block';
+    console.log('📋 差し込みワードパネルを表示しました');
+}
+
+// 差し込みワードパネル非表示
+function hideInsertWords() {
+    const panel = document.getElementById('insertWordsPanel');
+    panel.style.display = 'none';
+}
+
+// ワード挿入
+function insertWord(word) {
+    const editor = document.getElementById('htmlEditor');
+    const startPos = editor.selectionStart;
+    const endPos = editor.selectionEnd;
+    const currentValue = editor.value;
+    
+    const newValue = currentValue.substring(0, startPos) + word + currentValue.substring(endPos);
+    editor.value = newValue;
+    
+    // カーソル位置を変数の後に移動
+    const newCursorPos = startPos + word.length;
+    editor.setSelectionRange(newCursorPos, newCursorPos);
+    editor.focus();
+    
+    console.log(`📝 ワード ${word} を挿入しました`);
+    
+    // 成功フィードバック
+    const wordElement = event.target;
+    const originalBg = wordElement.style.background;
+    wordElement.style.background = '#10b981';
+    wordElement.style.color = 'white';
+    setTimeout(() => {
+        wordElement.style.background = '';
+        wordElement.style.color = '';
+    }, 300);
+}
+
+// HTMLテンプレート保存
+function saveHTMLTemplate() {
+    const htmlContent = document.getElementById('htmlEditor').value;
+    const templateName = document.getElementById('templateNameInput').value.trim();
+    
+    if (!htmlContent.trim()) {
+        alert('保存するHTMLが入力されていません');
+        return;
+    }
+    
+    const finalTemplateName = templateName || `HTML_${new Date().getTime()}`;
+    
+    const templateData = {
+        template_id: currentHTMLId || finalTemplateName,
+        name: finalTemplateName,
+        description: `オリジナルHTML - ${new Date().toLocaleDateString()}`,
+        html_content: htmlContent,
+        category: 'original'
+    };
+    
+    // APIで保存
+    const formData = new FormData();
+    formData.append('action', 'save_html_template');
+    formData.append('template_id', templateData.template_id);
+    formData.append('name', templateData.name);
+    formData.append('description', templateData.description);
+    formData.append('html_content', templateData.html_content);
+    formData.append('category', templateData.category);
+    
+    fetch('database_csv_handler_ebay_complete_v2.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('✅ HTMLが保存されました');
+            currentHTMLId = templateData.template_id;
+            loadHTMLList(); // 一覧更新
+        } else {
+            alert('❌ 保存に失敗しました: ' + (data.error || '不明なエラー'));
+        }
+    })
+    .catch(error => {
+        console.error('保存エラー:', error);
+        alert('❌ 保存に失敗しました');
+    });
+}
+
+// プレビュー表示
+function previewHTMLWithData() {
+    const htmlContent = document.getElementById('htmlEditor').value;
+    
+    if (!htmlContent.trim()) {
+        alert('プレビューするHTMLが入力されていません');
+        return;
+    }
+    
+    document.getElementById('previewSection').style.display = 'block';
+    updatePreviewWithSample();
+}
+
+// サンプルデータでプレビュー更新
+function updatePreviewWithSample() {
+    const htmlContent = document.getElementById('htmlEditor').value;
+    const sampleType = document.getElementById('sampleDataSelect').value;
+    
+    if (!htmlProcessor) {
+        document.getElementById('previewFrame').innerHTML = '<p>HTMLProcessor が初期化されていません</p>';
+        return;
+    }
+    
+    // サンプルデータ取得
+    const sampleData = getSampleData(sampleType);
+    
+    try {
+        // HTML生成
+        const processedHtml = htmlProcessor.processTemplate(htmlContent, sampleData);
+        document.getElementById('previewFrame').innerHTML = processedHtml;
+        console.log('🔄 プレビューを更新しました');
+    } catch (error) {
+        console.error('プレビュー生成エラー:', error);
+        document.getElementById('previewFrame').innerHTML = `<p style="color: red;">プレビュー生成エラー: ${error.message}</p>`;
+    }
+}
+
+// サンプルデータ取得
+function getSampleData(type) {
+    const samples = {
+        iphone: {
+            title: 'iPhone 15 Pro 128GB Natural Titanium Unlocked',
+            start_price: 650.00,
+            brand: 'Apple',
+            condition_id: 1000,
+            description: 'Brand new iPhone 15 Pro in Natural Titanium. Factory unlocked, works with any carrier worldwide.',
+            pic_url: 'https://via.placeholder.com/500x500/333/fff?text=iPhone+15+Pro',
+            mpn: 'A2848',
+            color: 'Natural Titanium',
+            weight_kg: 0.187,
+            shipping_international_usd: 25.00
+        },
+        camera: {
+            title: 'Canon EOS R6 Mark II Mirrorless Camera',
+            start_price: 1200.00,
+            brand: 'Canon',
+            condition_id: 1000,
+            description: 'Professional mirrorless camera with advanced features.',
+            pic_url: 'https://via.placeholder.com/500x500/222/fff?text=Canon+R6',
+            weight_kg: 0.588,
+            shipping_international_usd: 35.00
+        },
+        watch: {
+            title: 'Rolex Submariner Date Black Dial',
+            start_price: 8500.00,
+            brand: 'Rolex',
+            condition_id: 3000,
+            description: 'Authentic Rolex Submariner with box and papers.',
+            pic_url: 'https://via.placeholder.com/500x500/000/fff?text=Rolex',
+            weight_kg: 0.15,
+            shipping_international_usd: 50.00
+        }
+    };
+    
+    return samples[type] || samples.iphone;
+}
+
+// プレビュー非表示
+function hidePreview() {
+    document.getElementById('previewSection').style.display = 'none';
+}
+
+// エディタークリア
+function clearEditor() {
+    if (confirm('HTMLエディターの内容をクリアしますか？')) {
+        document.getElementById('htmlEditor').value = '';
+        document.getElementById('templateNameInput').value = '';
+        currentHTMLId = null;
+    }
+}
+
+// HTML整形（簡易版）
+function formatHTML() {
+    const editor = document.getElementById('htmlEditor');
+    let html = editor.value;
+    
+    // 簡易HTML整形
+    html = html.replace(/></g, '>\n<');
+    html = html.replace(/\n\s*\n/g, '\n');
+    
+    editor.value = html;
+    console.log('🎨 HTMLを整形しました');
+}
+
+// 保存済みHTML一覧読み込み
+function loadHTMLList() {
+    fetch('database_csv_handler_ebay_complete_v2.php?action=get_all_templates')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayHTMLList(data.data);
+                updateSavedTemplateSelect(data.data);
+            } else {
+                console.error('HTML読み込みエラー:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('HTML読み込みエラー:', error);
+        });
+}
+
+// HTML一覧表示
+function displayHTMLList(htmlList) {
+    const container = document.getElementById('htmlListContainer');
+    
+    if (!htmlList || htmlList.length === 0) {
+        container.innerHTML = '<div class="loading-placeholder">保存済みHTMLがありません</div>';
+        return;
+    }
+    
+    const htmlItems = htmlList.map(html => `
+        <div class="html-item" onclick="loadHTMLById('${html.template_id}')">
+            <div class="html-item-info">
+                <h5>${html.name || html.template_id}</h5>
+                <p>${html.description || 'HTMLテンプレート'} - 更新: ${new Date(html.updated_at || html.created_at).toLocaleDateString()}</p>
+            </div>
+            <div class="html-item-actions">
+                <button onclick="event.stopPropagation(); loadHTMLById('${html.template_id}')">読込</button>
+                <button onclick="event.stopPropagation(); deleteHTML('${html.template_id}')">削除</button>
+            </div>
+        </div>
+    `).join('');
+    
+    container.innerHTML = htmlItems;
+}
+
+// セレクトボックス更新
+function updateSavedTemplateSelect(htmlList) {
+    const select = document.getElementById('savedTemplateSelect');
+    
+    // 既存オプションをクリア（最初の「新規作成」は保持）
+    while (select.children.length > 1) {
+        select.removeChild(select.lastChild);
+    }
+    
+    // 保存済みHTMLを追加
+    htmlList.forEach(html => {
+        const option = document.createElement('option');
+        option.value = html.template_id;
+        option.textContent = html.name || html.template_id;
+        select.appendChild(option);
+    });
+}
+
+// HTML読み込み
+function loadHTMLById(templateId) {
+    fetch(`database_csv_handler_ebay_complete_v2.php?action=get_html_template&template_id=${encodeURIComponent(templateId)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.data) {
+                document.getElementById('htmlEditor').value = data.data.html_content || '';
+                document.getElementById('templateNameInput').value = data.data.name || '';
+                currentHTMLId = templateId;
+                console.log(`📄 HTML "${templateId}" を読み込みました`);
+            } else {
+                alert('❌ HTMLの読み込みに失敗しました');
+            }
+        })
+        .catch(error => {
+            console.error('HTML読み込みエラー:', error);
+            alert('❌ HTMLの読み込みに失敗しました');
+        });
+}
+
+// セレクトボックスからHTML読み込み
+function loadSavedHTML(templateId) {
+    if (templateId) {
+        loadHTMLById(templateId);
+    } else {
+        // 新規作成
+        clearEditor();
+    }
+}
+
+// HTML削除
+function deleteHTML(templateId) {
+    if (confirm('このHTMLを削除しますか？')) {
+        const formData = new FormData();
+        formData.append('action', 'delete_html_template');
+        formData.append('template_id', templateId);
+        
+        fetch('database_csv_handler_ebay_complete_v2.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ HTMLが削除されました');
+                loadHTMLList();
+            } else {
+                alert('❌ 削除に失敗しました: ' + (data.error || '不明なエラー'));
+            }
+        })
+        .catch(error => {
+            console.error('削除エラー:', error);
+            alert('❌ 削除に失敗しました');
+        });
+    }
+}
+
+// HTML一覧更新
+function refreshHTMLList() {
+    loadHTMLList();
+    console.log('🔄 HTML一覧を更新しました');
+}
+
+console.log('🎨 オリジナルHTML保存システム初期化完了');
+</script>

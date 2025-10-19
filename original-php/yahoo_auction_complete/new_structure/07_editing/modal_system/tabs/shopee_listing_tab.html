@@ -1,0 +1,192 @@
+<!-- Shopee 出品情報編集タブ（7カ国対応） -->
+<div class="ilm-data-section">
+    <div class="ilm-section-header" style="background: linear-gradient(135deg, #ee4d2d, #f05837); color: white;">
+        <i class="fas fa-shopping-bag"></i> Shopee出品設定（7カ国対応）
+    </div>
+    
+    <div style="padding: 1rem;">
+        <!-- 国選択 -->
+        <div class="form-row" style="margin-bottom: 1.5rem;">
+            <label class="form-label">
+                対象国 <span style="color: var(--ilm-error);">*</span>
+            </label>
+            <select class="ilm-form-select" id="shopee-country" onchange="IntegratedListingModal.updateShopeeCountrySettings(this.value)">
+                <option value="">国を選択...</option>
+                <option value="sg">🇸🇬 シンガポール (Singapore)</option>
+                <option value="my">🇲🇾 マレーシア (Malaysia)</option>
+                <option value="th">🇹🇭 タイ (Thailand)</option>
+                <option value="tw">🇹🇼 台湾 (Taiwan)</option>
+                <option value="ph">🇵🇭 フィリピン (Philippines)</option>
+                <option value="vn">🇻🇳 ベトナム (Vietnam)</option>
+                <option value="id">🇮🇩 インドネシア (Indonesia)</option>
+            </select>
+            <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
+                各国の言語・通貨で出品設定が変わります
+            </div>
+        </div>
+
+        <!-- 国別設定詳細 -->
+        <div id="shopee-country-details" style="background: #fff3e0; padding: 1rem; border-radius: 6px; margin-bottom: 1rem; display: none;">
+            <h5 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; color: #e65100;">
+                <i class="fas fa-info-circle"></i> <span id="shopee-country-name">国名</span> 設定情報
+            </h5>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.85rem;">
+                <div><strong>言語:</strong> <span id="shopee-language">-</span></div>
+                <div><strong>通貨:</strong> <span id="shopee-currency">-</span></div>
+                <div><strong>配送業者:</strong> <span id="shopee-logistics">-</span></div>
+                <div><strong>手数料:</strong> <span id="shopee-fee">-</span></div>
+            </div>
+        </div>
+
+        <!-- 商品タイトル -->
+        <div class="form-row">
+            <label class="form-label">
+                商品名 <span style="color: var(--ilm-error);">*</span>
+                <span style="font-size: 0.75rem; color: #6c757d;">(各国言語で入力)</span>
+            </label>
+            <textarea class="ilm-form-textarea" id="shopee-title" rows="2" maxlength="120" 
+                      oninput="IntegratedListingModal.updateCharCounter(this, 'shopee-title-counter')"
+                      placeholder="商品名を入力（120文字以内）"></textarea>
+            <div style="display: flex; justify-content: space-between; margin-top: 0.25rem;">
+                <div style="font-size: 0.75rem; color: #6c757d;">
+                    検索されやすいキーワードを含めてください
+                </div>
+                <div style="font-size: 0.75rem; color: #6c757d;" id="shopee-title-counter">0/120</div>
+            </div>
+        </div>
+
+        <!-- 価格設定 -->
+        <div class="ilm-data-section" style="margin-top: 1rem;">
+            <div class="ilm-section-header" style="background: #e3f2fd; color: #1976d2; border-left: 4px solid #1976d2;">
+                <i class="fas fa-tag"></i> 価格設定
+            </div>
+            <div style="padding: 1rem;">
+                <div class="ilm-form-grid">
+                    <div class="form-row">
+                        <label class="form-label">
+                            販売価格 <span style="color: var(--ilm-error);">*</span>
+                        </label>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="number" class="ilm-form-input" id="shopee-price" min="0" step="0.01" placeholder="0.00" style="flex: 1;">
+                            <span style="font-weight: 600; color: #6c757d;" id="shopee-currency-symbol">-</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <label class="form-label">定価（オプション）</label>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="number" class="ilm-form-input" id="shopee-original-price" min="0" step="0.01" placeholder="元の価格" style="flex: 1;">
+                            <span style="font-weight: 600; color: #6c757d;" id="shopee-currency-symbol-2">-</span>
+                        </div>
+                        <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
+                            割引表示に使用
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- カテゴリー -->
+        <div class="form-row" style="margin-top: 1rem;">
+            <label class="form-label">
+                カテゴリー <span style="color: var(--ilm-error);">*</span>
+            </label>
+            <select class="ilm-form-select" id="shopee-category">
+                <option value="">カテゴリを選択...</option>
+                <option value="toys_games">おもちゃ・ゲーム</option>
+                <option value="hobbies_books">趣味・本・雑誌</option>
+                <option value="collectibles">コレクター商品</option>
+                <option value="electronics">家電・AV機器</option>
+                <option value="fashion">ファッション</option>
+            </select>
+            <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
+                カテゴリは国ごとに異なります
+            </div>
+        </div>
+
+        <!-- 商品説明 -->
+        <div class="form-row" style="margin-top: 1rem;">
+            <label class="form-label">商品説明</label>
+            <textarea class="ilm-form-textarea" id="shopee-description" rows="5" maxlength="3000"
+                      placeholder="商品の詳細な説明を入力してください"></textarea>
+            <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
+                3000文字以内
+            </div>
+        </div>
+
+        <!-- 在庫・SKU -->
+        <div class="ilm-form-grid" style="margin-top: 1rem;">
+            <div class="form-row">
+                <label class="form-label">在庫数 <span style="color: var(--ilm-error);">*</span></label>
+                <input type="number" class="ilm-form-input" id="shopee-stock" value="1" min="0">
+            </div>
+            
+            <div class="form-row">
+                <label class="form-label">SKU</label>
+                <input type="text" class="ilm-form-input" id="shopee-sku" readonly style="background: #f8f9fa;">
+            </div>
+        </div>
+
+        <!-- ブランド・商品仕様 -->
+        <div class="ilm-data-section" style="margin-top: 1rem;">
+            <div class="ilm-section-header">
+                <i class="fas fa-tags"></i> ブランド・商品仕様
+            </div>
+            <div style="padding: 1rem;">
+                <div class="ilm-form-grid">
+                    <div class="form-row">
+                        <label class="form-label">ブランド</label>
+                        <input type="text" class="ilm-form-input" id="shopee-brand" placeholder="ブランド名">
+                    </div>
+                    
+                    <div class="form-row">
+                        <label class="form-label">商品状態</label>
+                        <select class="ilm-form-select" id="shopee-condition">
+                            <option value="new">新品</option>
+                            <option value="used" selected>中古</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row" style="margin-top: 1rem;">
+                    <label class="form-label">商品属性（Attributes）</label>
+                    <textarea class="ilm-form-textarea" id="shopee-attributes" rows="3"
+                              placeholder="例: Color=Red■Size=M■Material=Cotton（■で区切る）"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- 配送設定 -->
+        <div class="ilm-data-section" style="margin-top: 1rem;">
+            <div class="ilm-section-header" style="background: #e8f5e9; color: #2e7d32; border-left: 4px solid #4caf50;">
+                <i class="fas fa-shipping-fast"></i> 配送設定
+            </div>
+            <div style="padding: 1rem;">
+                <div class="ilm-form-grid">
+                    <div class="form-row">
+                        <label class="form-label">重量 (g)</label>
+                        <input type="number" class="ilm-form-input" id="shopee-weight" min="0" placeholder="グラム">
+                    </div>
+                    
+                    <div class="form-row">
+                        <label class="form-label">配送元倉庫</label>
+                        <select class="ilm-form-select" id="shopee-warehouse">
+                            <option value="default">デフォルト倉庫</option>
+                            <option value="warehouse1">倉庫1</option>
+                            <option value="warehouse2">倉庫2</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row" style="margin-top: 1rem;">
+                    <label class="form-label">配送業者</label>
+                    <select class="ilm-form-select" id="shopee-logistics">
+                        <option value="standard">Shopee Standard Delivery</option>
+                        <option value="express">Shopee Express</option>
+                        <option value="economy">Economy Delivery</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

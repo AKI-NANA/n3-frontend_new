@@ -1,0 +1,185 @@
+/* 送料計算候補表示用スタイル */
+.shipping-candidate-card {
+    background: var(--bg-secondary, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-lg, 0.5rem);
+    padding: var(--space-md, 1rem);
+    transition: all 0.2s ease;
+    margin-bottom: var(--space-sm, 0.75rem);
+}
+
+.shipping-candidate-card:hover {
+    box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+    transform: translateY(-2px);
+}
+
+.shipping-candidate-card.recommended {
+    border-color: var(--color-success, #10b981);
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.candidate-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-sm, 0.75rem);
+}
+
+.candidate-rank {
+    background: var(--color-primary, #3b82f6);
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--text-xs, 0.75rem);
+    font-weight: 700;
+}
+
+.candidate-carrier {
+    font-weight: 600;
+    color: var(--text-primary, #1e293b);
+    font-size: var(--text-sm, 0.875rem);
+}
+
+.recommended-badge {
+    background: var(--color-success, #10b981);
+    color: white;
+    padding: var(--space-xs, 0.25rem) var(--space-sm, 0.75rem);
+    border-radius: var(--radius-sm, 0.25rem);
+    font-size: var(--text-xs, 0.75rem);
+    font-weight: 600;
+}
+
+.candidate-service {
+    font-size: var(--text-sm, 0.875rem);
+    color: var(--text-secondary, #475569);
+    margin-bottom: var(--space-sm, 0.75rem);
+}
+
+.candidate-price {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-xs, 0.25rem);
+    margin-bottom: var(--space-sm, 0.75rem);
+}
+
+.price-amount {
+    font-size: var(--text-xl, 1.25rem);
+    font-weight: 700;
+    color: var(--color-success, #10b981);
+}
+
+.price-label {
+    font-size: var(--text-sm, 0.875rem);
+    color: var(--text-muted, #64748b);
+}
+
+.candidate-delivery {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs, 0.25rem);
+    margin-bottom: var(--space-sm, 0.75rem);
+    font-size: var(--text-sm, 0.875rem);
+    color: var(--text-secondary, #475569);
+}
+
+.candidate-details {
+    margin-bottom: var(--space-md, 1rem);
+    font-size: var(--text-xs, 0.75rem);
+    color: var(--text-muted, #64748b);
+}
+
+.btn-sm {
+    padding: var(--space-xs, 0.25rem) var(--space-sm, 0.75rem);
+    font-size: var(--text-xs, 0.75rem);
+    border-radius: var(--radius-sm, 0.25rem);
+}
+
+/* チェック結果スタイル */
+.check-result-success {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: #166534;
+    padding: var(--space-sm, 0.75rem);
+    border-radius: var(--radius-md, 0.375rem);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm, 0.75rem);
+}
+
+.check-result-warning {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #991b1b;
+    padding: var(--space-sm, 0.75rem);
+    border-radius: var(--radius-md, 0.375rem);
+}
+
+.result-placeholder {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #1e40af;
+    padding: var(--space-sm, 0.75rem);
+    border-radius: var(--radius-md, 0.375rem);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm, 0.75rem);
+}
+
+/* カテゴリーバッジ */
+.category-badge {
+    padding: var(--space-xs, 0.25rem) var(--space-sm, 0.75rem);
+    border-radius: var(--radius-sm, 0.25rem);
+    font-size: var(--text-xs, 0.75rem);
+    font-weight: 600;
+}
+
+.category-brand { background: #fee2e2; color: #991b1b; }
+.category-一般 { background: #e0e7ff; color: #3730a3; }
+.category-安全 { background: #fef3c7; color: #92400e; }
+.category-メディア { background: #ecfdf5; color: #166534; }
+.category-価格 { background: #f3e8ff; color: #7c2d12; }
+
+/* 優先度バッジ */
+.priority-badge {
+    padding: var(--space-xs, 0.25rem) var(--space-sm, 0.75rem);
+    border-radius: var(--radius-sm, 0.25rem);
+    font-size: var(--text-xs, 0.75rem);
+    font-weight: 600;
+}
+
+.priority-high { background: #fee2e2; color: #991b1b; }
+.priority-medium { background: #fef3c7; color: #92400e; }
+.priority-low { background: #ecfdf5; color: #166534; }
+
+/* ステータスバッジ */
+.status-badge {
+    padding: var(--space-xs, 0.25rem) var(--space-sm, 0.75rem);
+    border-radius: var(--radius-sm, 0.25rem);
+    font-size: var(--text-xs, 0.75rem);
+    font-weight: 600;
+}
+
+.status-active { background: #ecfdf5; color: #166534; }
+.status-inactive { background: #f1f5f9; color: #475569; }
+
+/* 小さなボタン */
+.btn-sm.btn-warning {
+    background: var(--color-warning, #f59e0b);
+    color: white;
+    border: none;
+}
+
+.btn-sm.btn-danger {
+    background: var(--color-danger, #ef4444);
+    color: white;
+    border: none;
+}
+
+.btn-sm:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+}

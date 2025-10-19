@@ -1,0 +1,133 @@
+<!-- Amazon Global 配送・在庫タブ -->
+<div class="ilm-data-section">
+    <div class="ilm-section-header" style="background: linear-gradient(135deg, #ff9900, #ff6600); color: white;">
+        <i class="fas fa-shipping-fast"></i> Amazon Global配送・在庫設定
+    </div>
+    
+    <div style="padding: 1rem;">
+        <!-- フルフィルメント詳細 -->
+        <div class="ilm-data-section">
+            <div class="ilm-section-header">
+                <i class="fas fa-warehouse"></i> フルフィルメント設定
+            </div>
+            <div style="padding: 1rem;">
+                <div class="form-row">
+                    <label class="form-label">配送方法</label>
+                    <select class="ilm-form-select" id="amazon-global-fulfillment-method" onchange="IntegratedListingModal.updateAmazonGlobalFulfillment(this.value)">
+                        <option value="fba">FBA（Fulfillment by Amazon）</option>
+                        <option value="fbm" selected>FBM（Fulfilled by Merchant - 自己配送）</option>
+                    </select>
+                </div>
+
+                <!-- FBA設定 -->
+                <div id="amazon-global-fba-settings" style="margin-top: 1rem; padding: 1rem; background: #e8f5e9; border-radius: 6px; display: none;">
+                    <h5 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; color: #2e7d32;">
+                        <i class="fas fa-box"></i> FBA設定
+                    </h5>
+                    <div class="form-row">
+                        <label class="form-label">FBA倉庫</label>
+                        <select class="ilm-form-select">
+                            <option value="auto">自動割り当て</option>
+                            <option value="specific">特定倉庫指定</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- FBM設定 -->
+                <div id="amazon-global-fbm-settings" style="margin-top: 1rem; padding: 1rem; background: #e3f2fd; border-radius: 6px;">
+                    <h5 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; color: #1976d2;">
+                        <i class="fas fa-truck"></i> 自己配送設定
+                    </h5>
+                    <div class="form-row">
+                        <label class="form-label">配送テンプレート</label>
+                        <select class="ilm-form-select" id="amazon-global-shipping-template">
+                            <option value="standard">Standard Shipping</option>
+                            <option value="expedited">Expedited Shipping</option>
+                            <option value="priority">Priority Shipping</option>
+                            <option value="international">International Shipping</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- パッケージサイズ・重量 -->
+        <div class="ilm-data-section" style="margin-top: 1rem;">
+            <div class="ilm-section-header">
+                <i class="fas fa-box"></i> パッケージ情報
+            </div>
+            <div style="padding: 1rem;">
+                <div class="ilm-form-grid" style="grid-template-columns: repeat(4, 1fr);">
+                    <div class="form-row">
+                        <label class="form-label">長さ (inches)</label>
+                        <input type="number" class="ilm-form-input" id="amazon-global-length" min="0" step="0.1">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label">幅 (inches)</label>
+                        <input type="number" class="ilm-form-input" id="amazon-global-width" min="0" step="0.1">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label">高さ (inches)</label>
+                        <input type="number" class="ilm-form-input" id="amazon-global-height" min="0" step="0.1">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label">重量 (lbs)</label>
+                        <input type="number" class="ilm-form-input" id="amazon-global-weight" min="0" step="0.01">
+                    </div>
+                </div>
+                <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.5rem;">
+                    ※ 国によって単位が異なります（メートル法/インペリアル法）
+                </div>
+            </div>
+        </div>
+
+        <!-- 配送オプション -->
+        <div class="ilm-data-section" style="margin-top: 1rem;">
+            <div class="ilm-section-header">
+                <i class="fas fa-globe"></i> 国際配送設定
+            </div>
+            <div style="padding: 1rem;">
+                <div class="form-row">
+                    <label class="form-label">配送対象地域</label>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <label style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" checked> 国内のみ
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox"> 国際配送可能
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-row" style="margin-top: 1rem;">
+                    <label class="form-label">処理時間（発送まで）</label>
+                    <select class="ilm-form-select" id="amazon-global-handling-time">
+                        <option value="1">1営業日</option>
+                        <option value="2" selected>2営業日</option>
+                        <option value="3">3営業日</option>
+                        <option value="5">5営業日</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 在庫管理 -->
+        <div class="ilm-data-section" style="margin-top: 1rem;">
+            <div class="ilm-section-header">
+                <i class="fas fa-boxes"></i> 在庫管理
+            </div>
+            <div style="padding: 1rem;">
+                <div class="ilm-form-grid">
+                    <div class="form-row">
+                        <label class="form-label">現在の在庫数</label>
+                        <input type="number" class="ilm-form-input" id="amazon-global-current-stock" value="1" min="0">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label">SKU</label>
+                        <input type="text" class="ilm-form-input" id="amazon-global-sku" readonly style="background: #f8f9fa;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

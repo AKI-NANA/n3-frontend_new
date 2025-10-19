@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>送料計算システム - マルチアクセス確認</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
+        .status { padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .link-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; margin: 20px 0; }
+        .link-card { background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6; }
+        .btn { display: inline-block; padding: 12px 24px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; margin: 8px; font-weight: 600; }
+        .btn:hover { background: #0056b3; }
+        .btn-success { background: #28a745; }
+        .btn-warning { background: #ffc107; color: #212529; }
+        .btn-danger { background: #dc3545; }
+        .test-section { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚢 送料計算システム - マルチアクセス確認</h1>
+        
+        <div class="status success">
+            ✅ <strong>重要:</strong> このページが表示されれば、ファイルアクセスは正常です
+        </div>
+
+        <div class="status info">
+            📍 <strong>現在の状況:</strong> ファイルは正常に作成済み、サーバーパスの問題のみ
+        </div>
+
+        <h2>🌐 アクセス方法（推奨順）</h2>
+        
+        <div class="link-grid">
+            <!-- 方法1: 直接ファイルアクセス -->
+            <div class="link-card">
+                <h3>📁 方法1: 直接ファイルアクセス（最確実）</h3>
+                <p><strong>即座利用可能・サーバー不要</strong></p>
+                <p>ブラウザのアドレスバーに以下をコピー&ペースト:</p>
+                <textarea readonly style="width: 100%; height: 60px; font-size: 11px;">file:///Users/aritahiroaki/NAGANO-3/N3-Development/modules/yahoo_auction_complete/new_structure/09_shipping/complete_4layer_shipping_ui.html</textarea>
+                <a href="file:///Users/aritahiroaki/NAGANO-3/N3-Development/modules/yahoo_auction_complete/new_structure/09_shipping/complete_4layer_shipping_ui.html" class="btn btn-success">📂 直接アクセス</a>
+            </div>
+
+            <!-- 方法2: 専用サーバー -->
+            <div class="link-card">
+                <h3>🚀 方法2: 送料システム専用サーバー</h3>
+                <p><strong>新ポート8085で確実起動</strong></p>
+                <div class="test-section">
+                    <p><strong>起動コマンド:</strong></p>
+                    <code>cd /Users/aritahiroaki/NAGANO-3/N3-Development/modules/yahoo_auction_complete/new_structure/09_shipping/<br>
+                    ./start_emergency_server.sh</code>
+                </div>
+                <a href="http://localhost:8085/complete_4layer_shipping_ui.html" class="btn" target="_blank">🌐 ポート8085でアクセス</a>
+                <a href="http://localhost:8080/complete_4layer_shipping_ui.html" class="btn btn-warning" target="_blank">🌐 ポート8080でアクセス</a>
+            </div>
+
+            <!-- 方法3: メインサーバー -->
+            <div class="link-card">
+                <h3>🏠 方法3: メインサーバー経由</h3>
+                <p><strong>統合システム経由</strong></p>
+                <div class="test-section">
+                    <p><strong>問題:</strong> パス解決が必要</p>
+                    <code>http://localhost:8080/new_structure/09_shipping/</code>
+                </div>
+                <a href="http://localhost:8080/new_structure/09_shipping/complete_4layer_shipping_ui.html" class="btn btn-danger" target="_blank">❌ メインサーバー（要修正）</a>
+            </div>
+        </div>
+
+        <h2>📊 利用可能なシステム</h2>
+        
+        <div class="link-grid">
+            <div class="link-card">
+                <h4>🎯 完全版4層選択システム</h4>
+                <p>国→配送会社→配送業者→サービス→料金</p>
+                <a href="complete_4layer_shipping_ui.html" class="btn">アクセス</a>
+            </div>
+            
+            <div class="link-card">
+                <h4>🏢 配送会社別独立マトリックス</h4>
+                <p>ゾーン体系の矛盾解決版</p>
+                <a href="carrier_separated_matrix.html" class="btn">アクセス</a>
+            </div>
+            
+            <div class="link-card">
+                <h4>🌍 ゾーン管理UI</h4>
+                <p>全配送会社のゾーン可視化</p>
+                <a href="zone_management_ui.html" class="btn">アクセス</a>
+            </div>
+            
+            <div class="link-card">
+                <h4>✅ ゾーン確認（簡易版）</h4>
+                <p>軽量版の確認UI</p>
+                <a href="zone_check_simple.html" class="btn">アクセス</a>
+            </div>
+        </div>
+
+        <h2>🛠️ システム機能確認</h2>
+        
+        <div class="test-section">
+            <h3>✅ 完全実装済み機能</h3>
+            <ul>
+                <li><strong>11カ国対応:</strong> 🇺🇸🇬🇧🇩🇪🇸🇬🇭🇰🇦🇺🇨🇦🇲🇽🇮🇱🇮🇹🇨🇭</li>
+                <li><strong>3配送会社:</strong> eLogi, CPass, 日本郵便</li>
+                <li><strong>8配送業者:</strong> UPS, DHL, FedEx, SpeedPAK, EMS, 小型包装物, 書状書留</li>
+                <li><strong>17サービス:</strong> 各業者の全サービス対応</li>
+                <li><strong>料金計算:</strong> 重量別マトリックス（0.5kg～5.0kg）</li>
+                <li><strong>対応外表示:</strong> CPassの国別対応状況自動判定</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h3>🎯 解決された矛盾問題</h3>
+            <p><strong>従来の問題:</strong> 異なるゾーン体系（eLogi:Zone1, EMS:第4地帯, CPass:USA対応）を同じ表に混在表示</p>
+            <p><strong>解決方法:</strong> 配送会社別独立マトリックス + 4層選択システム</p>
+            <p><strong>結果:</strong> ユーザーが混乱せず、料金根拠が明確な使いやすいUI</p>
+        </div>
+
+        <h2>📋 実行状況</h2>
+        <div id="system-status">
+            <p>JavaScript が有効な場合、リアルタイム状況を表示...</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const statusDiv = document.getElementById('system-status');
+            
+            const currentUrl = window.location.href;
+            const currentHost = window.location.host;
+            
+            let statusHtml = `
+                <div class="status info">
+                    <strong>現在のアクセス情報:</strong><br>
+                    URL: ${currentUrl}<br>
+                    ホスト: ${currentHost || 'ローカルファイル'}
+                </div>
+            `;
+            
+            if (currentHost === 'localhost:8085') {
+                statusHtml += `
+                    <div class="status success">
+                        ✅ <strong>専用サーバー（ポート8085）接続成功</strong><br>
+                        完全版4層選択システムに正常アクセス可能です。
+                    </div>
+                `;
+            } else if (currentHost === 'localhost:8080') {
+                statusHtml += `
+                    <div class="status success">
+                        ✅ <strong>送料専用サーバー（ポート8080）接続成功</strong><br>
+                        送料計算システムに正常アクセス可能です。
+                    </div>
+                `;
+            } else if (currentHost === 'localhost:8080') {
+                statusHtml += `
+                    <div class="status warning">
+                        ⚠️ <strong>メインサーバー接続 - パス要確認</strong><br>
+                        統合システム経由ですが、パス問題の可能性があります。
+                    </div>
+                `;
+            } else {
+                statusHtml += `
+                    <div class="status success">
+                        ✅ <strong>直接ファイルアクセス</strong><br>
+                        file:// プロトコルでローカルファイルに直接アクセス中。<br>
+                        すべての機能が利用可能です。
+                    </div>
+                `;
+            }
+            
+            statusDiv.innerHTML = statusHtml;
+        });
+
+        // リンクテスト機能
+        function testLink(url, elementId) {
+            fetch(url)
+                .then(response => {
+                    const statusElement = document.getElementById(elementId);
+                    if (response.ok) {
+                        statusElement.innerHTML = '<span style="color: green;">✅ アクセス可能</span>';
+                    } else {
+                        statusElement.innerHTML = '<span style="color: red;">❌ アクセス不可</span>';
+                    }
+                })
+                .catch(error => {
+                    const statusElement = document.getElementById(elementId);
+                    statusElement.innerHTML = '<span style="color: red;">❌ 接続エラー</span>';
+                });
+        }
+    </script>
+</body>
+</html>

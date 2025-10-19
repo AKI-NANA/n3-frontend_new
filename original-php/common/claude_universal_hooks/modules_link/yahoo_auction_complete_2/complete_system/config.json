@@ -1,0 +1,22 @@
+{
+    "api_port": 5001,
+    "frontend_port": 8080,
+    "database": {
+        "host": "localhost",
+        "database": "nagano3_db",
+        "user": "nagano3_user",
+        "password": "secure_password_2025"
+    },
+    "exchange_api": {
+        "enabled": true,
+        "providers": [
+            "exchangerate-api.com",
+            "fixer.io"
+        ]
+    },
+    "safety_settings": {
+        "default_margin_percent": 5.0,
+        "update_frequency_hours": 6,
+        "volatility_threshold": 3.0
+    }
+}

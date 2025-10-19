@@ -1,0 +1,17 @@
+/*
+ * Yahoo Auction Tool - Shipping Calculation Tab Styles
+ * -------------------------------------------------------------
+ * Styles for the calculation matrix and related UI.
+ * -------------------------------------------------------------
+ */
+.calculation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-md);
+}
+.calculation-card {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+}

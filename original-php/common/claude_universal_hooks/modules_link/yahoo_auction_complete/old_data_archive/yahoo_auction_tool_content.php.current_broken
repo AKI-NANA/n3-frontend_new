@@ -1,0 +1,1016 @@
+<?php
+/**
+ * Yahoo Auction Tool - 緊急修復版
+ * データベース統合・商品承認システム・フィルター管理・在庫管理 統合版
+ * スクレイピングシステム修復対応
+ * 作成日: 2025-09-12
+ */
+
+// エラーレポート設定
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// データベースクエリハンドラー読み込み
+require_once __DIR__ . '/database_query_handler.php';
+
+// セッション開始
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+// CSRF対策
+if (!isset($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+// ユーザーアクションの処理
+$action = $_POST['action'] ?? $_GET['action'] ?? '';
+$response = null;
+
+// JSONレスポンス用のヘッダー設定関数
+function sendJsonResponse($data) {
+    header('Content-Type: application/json');
+    echo json_encode($data);
+    exit;
+}
+
+switch ($action) {
+    // スクレイピング処理（APIサーバー連携）
+    case 'scrape':
+        $url = $_POST['url'] ?? '';
+        if ($url) {
+            $result = executeScrapingWithAPI($url);
+            sendJsonResponse($result);
+        } else {
+            $response = generateApiResponse('scrape', [], false, 'URLが指定されていません');
+            sendJsonResponse($response);
+        }
+        break;
+        
+    // サーバー接続確認
+    case 'test_connection':
+        $connection = checkScrapingServerConnection();
+        sendJsonResponse($connection);
+        break;
+        
+    // 承認待ち商品データ取得
+    case 'get_approval_queue':
+        $filters = $_GET['filters'] ?? [];
+        $data = getApprovalQueueData($filters);
+        $response = generateApiResponse('get_approval_queue', $data, true);
+        sendJsonResponse($response);
+        break;
+        
+    // 商品検索
+    case 'search_products':
+        $query = $_GET['query'] ?? '';
+        $filters = $_GET['filters'] ?? [];
+        $data = searchProducts($query, $filters);
+        $response = generateApiResponse('search_products', $data, true);
+        sendJsonResponse($response);
+        break;
+        
+    // ダッシュボード統計取得
+    case 'get_dashboard_stats':
+        $data = getDashboardStats();
+        $response = generateApiResponse('get_dashboard_stats', $data, true);
+        sendJsonResponse($response);
+        break;
+        
+    // 禁止キーワード管理
+    case 'get_prohibited_keywords':
+        $data = getProhibitedKeywords();
+        $response = generateApiResponse('get_prohibited_keywords', $data, true);
+        sendJsonResponse($response);
+        break;
+        
+    case 'check_title':
+        $title = $_POST['title'] ?? '';
+        if (empty($title)) {
+            $response = generateApiResponse('check_title', [], false, 'タイトルが指定されていません');
+        } else {
+            $result = checkTitleForProhibitedKeywords($title);
+            $response = generateApiResponse('check_title', $result, true);
+        }
+        sendJsonResponse($response);
+        break;
+        
+    // === Phase 1 新機能: CSV出力・入力・送料計算 ===
+    
+    // CSV出力
+    case 'export_csv':
+        $filters = $_POST['filters'] ?? [];
+        $type = $_POST['type'] ?? 'all';
+        if (is_string($filters)) {
+            $filters = json_decode($filters, true) ?? [];
+        }
+        $result = handleCSVExport($filters, $type);
+        sendJsonResponse($result);
+        break;
+        
+    // CSV入力
+    case 'import_csv':
+        if (!isset($_FILES['csvFile']) || $_FILES['csvFile']['error'] !== UPLOAD_ERR_OK) {
+            $response = generateApiResponse('import_csv', [], false, 'CSVファイルがアップロードされていません');
+            sendJsonResponse($response);
+            break;
+        }
+        
+        $uploadedFile = $_FILES['csvFile']['tmp_name'];
+        $options = $_POST['options'] ?? [];
+        if (is_string($options)) {
+            $options = json_decode($options, true) ?? [];
+        }
+        $result = handleCSVImport($uploadedFile, $options);
+        sendJsonResponse($result);
+        break;
+        
+    // 送料・利益計算
+    case 'calculate_profit':
+        $product_id = $_POST['product_id'] ?? '';
+        $options = $_POST['options'] ?? [];
+        if (is_string($options)) {
+            $options = json_decode($options, true) ?? [];
+        }
+        
+        if (empty($product_id)) {
+            $response = generateApiResponse('calculate_profit', [], false, '商品IDが指定されていません');
+        } else {
+            $result = handleProfitCalculation($product_id, $options);
+            $response = generateApiResponse('calculate_profit', $result, $result['success'] ?? false);
+        }
+        sendJsonResponse($response);
+        break;
+        
+    // 送料候補計算
+    case 'calculate_shipping':
+        $weight = $_POST['weight'] ?? 0;
+        $dimensions = $_POST['dimensions'] ?? '20,15,10';
+        $country = $_POST['country'] ?? 'US';
+        
+        if (empty($weight) || $weight <= 0) {
+            $response = generateApiResponse('calculate_shipping', [], false, '重量が指定されていません');
+        } else {
+            $result = handleShippingCalculation($weight, $dimensions, $country);
+            $response = generateApiResponse('calculate_shipping', $result, $result['success'] ?? false);
+        }
+        sendJsonResponse($response);
+        break;
+        
+    default:
+        // 通常のページ表示
+        break;
+}
+
+// ダッシュボード統計取得
+$dashboard_stats = getDashboardStats();
+
+?>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Yahoo→eBay統合ワークフロー（スクレイピング修復版）</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #1e40af;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --info-color: #0ea5e9;
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f1f5f9;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --border-color: #e2e8f0;
+            --space-xs: 0.25rem;
+            --space-sm: 0.5rem;
+            --space-md: 1rem;
+            --space-lg: 1.5rem;
+            --space-xl: 2rem;
+            --radius-sm: 0.25rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--space-lg);
+        }
+
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: var(--space-xl);
+        }
+
+        .dashboard-header h1 {
+            color: var(--primary-color);
+            font-size: 2rem;
+            margin-bottom: var(--space-sm);
+        }
+
+        .dashboard-header p {
+            color: var(--text-secondary);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-md);
+            margin-bottom: var(--space-xl);
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            padding: var(--space-lg);
+            border-radius: var(--radius-lg);
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .section {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            margin-bottom: var(--space-lg);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-lg);
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-md);
+        }
+
+        .form-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .form-input {
+            padding: var(--space-sm);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-xs);
+            padding: var(--space-sm) var(--space-md);
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(30, 64, 175, 0.3);
+        }
+
+        .btn-success { background: var(--success-color); }
+        .btn-warning { background: var(--warning-color); }
+        .btn-danger { background: var(--danger-color); }
+        .btn-info { background: var(--info-color); }
+
+        .notification {
+            padding: var(--space-md);
+            border-radius: var(--radius-md);
+            margin: var(--space-md) 0;
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .notification.success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #86efac;
+        }
+
+        .notification.error {
+            background: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #fca5a5;
+        }
+
+        .notification.warning {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fbbf24;
+        }
+
+        .notification.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+
+        .system-status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--space-md);
+            margin-top: var(--space-lg);
+        }
+
+        .status-item {
+            background: var(--bg-tertiary);
+            padding: var(--space-md);
+            border-radius: var(--radius-md);
+        }
+
+        .status-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-xs);
+        }
+
+        .status-value {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .log-section {
+            background: var(--bg-tertiary);
+            padding: var(--space-md);
+            border-radius: var(--radius-md);
+            margin-top: var(--space-lg);
+        }
+
+        .log-entry {
+            font-family: monospace;
+            font-size: 0.75rem;
+            padding: var(--space-xs);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .log-timestamp {
+            color: var(--text-muted);
+        }
+
+        .log-level {
+            font-weight: 600;
+            padding: 0 var(--space-xs);
+        }
+
+        .log-level.info { color: var(--info-color); }
+        .log-level.success { color: var(--success-color); }
+        .log-level.warning { color: var(--warning-color); }
+        .log-level.error { color: var(--danger-color); }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="dashboard-header">
+            <h1><i class="fas fa-sync-alt"></i> Yahoo→eBay統合ワークフロー（修復版）</h1>
+            <p>スクレイピングシステム緊急修復版 - APIサーバー連携対応</p>
+        </div>
+
+        <!-- 統計カード -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalRecords"><?= number_format($dashboard_stats['total_records'] ?? 0) ?></div>
+                <div class="stat-label">総データ数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="scrapedCount"><?= number_format($dashboard_stats['scraped_count'] ?? 0) ?></div>
+                <div class="stat-label">スクレイピング済み</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="calculatedCount"><?= number_format($dashboard_stats['calculated_count'] ?? 0) ?></div>
+                <div class="stat-label">計算済み</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="readyCount"><?= number_format($dashboard_stats['ready_count'] ?? 0) ?></div>
+                <div class="stat-label">出品準備完了</div>
+            </div>
+        </div>
+
+        <!-- APIサーバー接続確認 -->
+        <div class="section">
+            <div class="section-header">
+                <i class="fas fa-server"></i>
+                <h3 class="section-title">APIサーバー接続状態</h3>
+            </div>
+            <div id="serverStatus" class="notification info">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>APIサーバー接続確認中...</span>
+            </div>
+        </div>
+
+        <!-- スクレイピングテスト -->
+        <div class="section">
+            <div class="section-header">
+                <i class="fas fa-download"></i>
+                <h3 class="section-title">Yahoo オークションデータ取得</h3>
+            </div>
+
+            <form onsubmit="testScraping(event)">
+                <div class="form-group">
+                    <label class="form-label">Yahoo オークション URL</label>
+                    <input type="url" id="scrapingUrl" class="form-input" 
+                           placeholder="https://auctions.yahoo.co.jp/jp/auction/xxxxx"
+                           value="https://auctions.yahoo.co.jp/jp/auction/b1198242011">
+                </div>
+
+                <div style="display: flex; gap: var(--space-sm);">
+                    <button type="submit" class="btn">
+                        <i class="fas fa-play"></i> スクレイピング実行
+                    </button>
+                    <button type="button" class="btn btn-info" onclick="testConnection()">
+                        <i class="fas fa-link"></i> 接続テスト
+                    </button>
+                </div>
+            </form>
+
+            <div id="scrapingResult" style="margin-top: var(--space-md);"></div>
+        </div>
+        
+        <!-- CSV出力・入力機能（Phase 1新機能） -->
+        <div class="section">
+            <div class="section-header">
+                <i class="fas fa-file-csv"></i>
+                <h3 class="section-title">CSV出力・入力システム</h3>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
+                <!-- CSV出力 -->
+                <div>
+                    <h4 style="margin-bottom: var(--space-sm);">📥 eBay出品用CSV出力</h4>
+                    <div class="form-group">
+                        <label class="form-label">出力タイプ</label>
+                        <select id="csvExportType" class="form-input">
+                            <option value="all">全データ</option>
+                            <option value="yahoo_only">Yahoo限定</option>
+                            <option value="high_value">高価格商品（50USD以上）</option>
+                            <option value="category_specific">カテゴリ指定</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="categoryFilter" style="display: none;">
+                        <label class="form-label">カテゴリ</label>
+                        <input type="text" id="csvFilterCategory" class="form-input" placeholder="エレクトロニクス">
+                    </div>
+                    
+                    <button class="btn btn-success" onclick="exportToCSV()">
+                        <i class="fas fa-download"></i> CSV出力
+                    </button>
+                    
+                    <div id="csvExportResult" style="margin-top: var(--space-sm);"></div>
+                </div>
+                
+                <!-- CSV入力 -->
+                <div>
+                    <h4 style="margin-bottom: var(--space-sm);">📤 編集済みCSV取り込み</h4>
+                    <form id="csvImportForm" onsubmit="importFromCSV(event)">
+                        <div class="form-group">
+                            <label class="form-label">CSVファイル</label>
+                            <input type="file" id="csvImportFile" class="form-input" accept=".csv" required>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-info">
+                            <i class="fas fa-upload"></i> CSV取り込み
+                        </button>
+                    </form>
+                    
+                    <div id="csvImportResult" style="margin-top: var(--space-sm);"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 送料・利益計算システム（Phase 1新機能） -->
+        <div class="section">
+            <div class="section-header">
+                <i class="fas fa-calculator"></i>
+                <h3 class="section-title">送料・利益計算システム</h3>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
+                <!-- 計算パラメータ -->
+                <div>
+                    <h4 style="margin-bottom: var(--space-sm);">📊 計算パラメータ</h4>
+                    
+                    <div class="form-group">
+                        <label class="form-label">商品ID（計算対象）</label>
+                        <input type="text" id="calcProductId" class="form-input" placeholder="例: b1198242011">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">販売価格（USD）</label>
+                        <input type="number" id="calcSellingPrice" class="form-input" placeholder="29.99" step="0.01">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">重量（kg）</label>
+                        <input type="number" id="calcWeight" class="form-input" placeholder="0.5" step="0.1">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">サイズ（長さ,幅,高さ cm）</label>
+                        <input type="text" id="calcDimensions" class="form-input" placeholder="20,15,10">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">配送先国</label>
+                        <select id="calcCountry" class="form-input">
+                            <option value="US">アメリカ</option>
+                            <option value="CA">カナダ</option>
+                            <option value="AU">オーストラリア</option>
+                            <option value="GB">イギリス</option>
+                            <option value="DE">ドイツ</option>
+                        </select>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="calculateProfit()">
+                        <i class="fas fa-chart-line"></i> 利益計算実行
+                    </button>
+                </div>
+                
+                <!-- 計算結果 -->
+                <div>
+                    <h4 style="margin-bottom: var(--space-sm);">💰 計算結果</h4>
+                    <div id="profitCalculationResult">
+                        <div class="notification info">
+                            <i class="fas fa-info-circle"></i>
+                            <span>左側のパラメータを入力して「利益計算実行」ボタンを押してください</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- システム状態表示 -->
+        <div class="system-status">
+            <div class="status-item">
+                <div class="status-label">データベース接続</div>
+                <div class="status-value" id="dbStatus">確認中...</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">APIサーバー</div>
+                <div class="status-value" id="apiStatus">確認中...</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">最終更新</div>
+                <div class="status-value" id="lastUpdate"><?= date('Y-m-d H:i:s') ?></div>
+            </div>
+        </div>
+
+        <!-- ログセクション -->
+        <div class="log-section">
+            <h4 style="color: var(--info-color); margin-bottom: var(--space-sm);">
+                <i class="fas fa-history"></i> システムログ
+            </h4>
+            <div id="logSection">
+                <div class="log-entry">
+                    <span class="log-timestamp">[<?= date('H:i:s') ?>]</span>
+                    <span class="log-level info">INFO</span>
+                    <span>スクレイピング修復版システムが起動しました。</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // グローバル設定
+        const API_BASE_URL = window.location.pathname;
+        const CSRF_TOKEN = '<?= htmlspecialchars($_SESSION['csrf_token']); ?>';
+
+        // システム初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Yahoo Auction Tool 修復版 初期化開始');
+            
+            // APIサーバー接続確認
+            testConnection();
+            
+            addLogEntry('info', 'システム初期化完了');
+        });
+
+        // APIサーバー接続テスト
+        async function testConnection() {
+            const statusDiv = document.getElementById('serverStatus');
+            const apiStatusDiv = document.getElementById('apiStatus');
+            
+            try {
+                statusDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>接続確認中...</span>';
+                
+                const response = await fetch('http://localhost:5002/health', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+                const data = await response.json();
+                
+                if (data.status === 'healthy') {
+                    statusDiv.className = 'notification success';
+                    statusDiv.innerHTML = `<i class="fas fa-check-circle"></i> <span>APIサーバー接続成功 (ポート: ${data.port}, DB: ${data.database})</span>`;
+                    apiStatusDiv.textContent = '接続済み';
+                    addLogEntry('success', `APIサーバー接続成功: ${data.status}, セッション: ${data.session_id}`);
+                } else {
+                    statusDiv.className = 'notification error';
+                    statusDiv.innerHTML = `<i class="fas fa-times-circle"></i> <span>APIサーバー接続失敗: HTTPエラー ${response.status}</span>`;
+                    apiStatusDiv.textContent = '接続失敗';
+                    addLogEntry('error', `APIサーバー接続失敗: HTTP ${response.status}`);
+                }
+            } catch (error) {
+                statusDiv.className = 'notification error';
+                statusDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <span>接続テストエラー: ${error.message}</span>`;
+                apiStatusDiv.textContent = 'エラー';
+                addLogEntry('error', `接続テストエラー: ${error.message}`);
+            }
+        }
+
+        // スクレイピングテスト
+        async function testScraping(event) {
+            event.preventDefault();
+            
+            const url = document.getElementById('scrapingUrl').value;
+            const resultDiv = document.getElementById('scrapingResult');
+            
+            if (!url) {
+                showNotification('error', 'URLを入力してください。');
+                return;
+            }
+            
+            try {
+                resultDiv.innerHTML = '<div class="notification info"><i class="fas fa-spinner fa-spin"></i> <span>スクレイピング実行中...</span></div>';
+                addLogEntry('info', `スクレイピング開始: ${url}`);
+                
+                const postData = {
+                    urls: [url],
+                    options: {
+                        save_to_db: true,
+                        extract_images: true,
+                        convert_currency: true
+                    }
+                };
+                
+                const response = await fetch('http://localhost:5002/api/scrape_yahoo', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(postData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="notification success">
+                            <i class="fas fa-check-circle"></i>
+                            <div>
+                                <strong>スクレイピング成功!</strong><br>
+                                ${data.message}<br>
+                                取得データ数: ${data.data?.success_count || 1}件<br>
+                                <small>データはAPIサーバーのデータベースに保存されました</small>
+                            </div>
+                        </div>
+                    `;
+                    addLogEntry('success', `スクレイピング成功: ${data.data?.success_count || 1}件取得`);
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="notification error">
+                            <i class="fas fa-times-circle"></i>
+                            <div>
+                                <strong>スクレイピング失敗</strong><br>
+                                ${data.error || 'エラーが発生しました'}
+                            </div>
+                        </div>
+                    `;
+                    addLogEntry('error', `スクレイピング失敗: ${data.error}`);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="notification error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>
+                            <strong>システムエラー</strong><br>
+                            ${error.message}
+                        </div>
+                    </div>
+                `;
+                addLogEntry('error', `システムエラー: ${error.message}`);
+            }
+        }
+
+        // 通知表示
+        function showNotification(type, message) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `<i class="fas fa-info-circle"></i> <span>${message}</span>`;
+            
+            document.querySelector('.container').insertBefore(notification, document.querySelector('.stats-grid'));
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+
+        // ログエントリ追加
+        function addLogEntry(level, message) {
+            const logSection = document.getElementById('logSection');
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            
+            const timestamp = new Date().toLocaleTimeString('ja-JP');
+            
+            logEntry.innerHTML = `
+                <span class="log-timestamp">[${timestamp}]</span>
+                <span class="log-level ${level}">${level.toUpperCase()}</span>
+                <span>${message}</span>
+            `;
+            
+            logSection.insertBefore(logEntry, logSection.firstChild);
+            
+            // ログが多くなりすぎないよう制限
+            const entries = logSection.querySelectorAll('.log-entry');
+            if (entries.length > 20) {
+                entries[entries.length - 1].remove();
+            }
+        }
+
+        // データベース状態確認
+        const dbStatusDiv = document.getElementById('dbStatus');
+        dbStatusDiv.textContent = '<?= $dashboard_stats ? "接続済み" : "接続失敗" ?>';
+        
+        // *** Phase 1新機能: CSV・計算機能 ***
+        
+        // CSV出力タイプ変更時の処理
+        const csvExportType = document.getElementById('csvExportType');
+        if (csvExportType) {
+            csvExportType.addEventListener('change', function() {
+                const categoryFilter = document.getElementById('categoryFilter');
+                if (this.value === 'category_specific') {
+                    categoryFilter.style.display = 'block';
+                } else {
+                    categoryFilter.style.display = 'none';
+                }
+            });
+        }
+    });
+        
+    // CSV出力実行
+    async function exportToCSV() {
+        const type = document.getElementById('csvExportType').value;
+        const category = document.getElementById('csvFilterCategory').value;
+        const resultDiv = document.getElementById('csvExportResult');
+        
+        const filters = type === 'category_specific' ? { category: category } : {};
+        
+        try {
+            resultDiv.innerHTML = '<div class="notification info"><i class="fas fa-spinner fa-spin"></i> CSV出力中...</div>';
+            
+            const formData = new FormData();
+            formData.append('action', 'export_csv');
+            formData.append('type', type);
+            formData.append('filters', JSON.stringify(filters));
+            
+            const response = await fetch(API_BASE_URL, {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                resultDiv.innerHTML = `
+                    <div class="notification success">
+                        <i class="fas fa-check-circle"></i>
+                        <div>
+                            <strong>CSV出力完了!</strong><br>
+                            ${result.message}<br>
+                            出力件数: ${result.count}件<br>
+                            <a href="${result.download_url}" target="_blank" class="btn btn-sm btn-secondary">
+                                <i class="fas fa-download"></i> ダウンロード
+                            </a>
+                        </div>
+                    </div>
+                `;
+                addLogEntry('success', `CSV出力完了: ${result.count}件`);
+            } else {
+                resultDiv.innerHTML = `
+                    <div class="notification error">
+                        <i class="fas fa-times-circle"></i>
+                        <div><strong>CSV出力失敗</strong><br>${result.message}</div>
+                    </div>
+                `;
+                addLogEntry('error', `CSV出力失敗: ${result.message}`);
+            }
+        } catch (error) {
+            resultDiv.innerHTML = `
+                <div class="notification error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div><strong>システムエラー</strong><br>${error.message}</div>
+                </div>
+            `;
+            addLogEntry('error', `CSV出力エラー: ${error.message}`);
+        }
+    }
+    
+    // CSV入力実行
+    async function importFromCSV(event) {
+        event.preventDefault();
+        
+        const fileInput = document.getElementById('csvImportFile');
+        const file = fileInput.files[0];
+        const resultDiv = document.getElementById('csvImportResult');
+        
+        if (!file) {
+            resultDiv.innerHTML = '<div class="notification error"><i class="fas fa-times-circle"></i> CSVファイルを選択してください</div>';
+            return;
+        }
+        
+        try {
+            resultDiv.innerHTML = '<div class="notification info"><i class="fas fa-spinner fa-spin"></i> CSV取り込み中...</div>';
+            
+            const formData = new FormData();
+            formData.append('action', 'import_csv');
+            formData.append('csvFile', file);
+            formData.append('options', JSON.stringify({}));
+            
+            const response = await fetch(API_BASE_URL, {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                resultDiv.innerHTML = `
+                    <div class="notification success">
+                        <i class="fas fa-check-circle"></i>
+                        <div>
+                            <strong>CSV取り込み完了!</strong><br>
+                            ${result.message}<br>
+                            処理件数: ${result.processed}件<br>
+                            ${result.error_count > 0 ? `エラー: ${result.error_count}件` : ''}
+                        </div>
+                    </div>
+                `;
+                addLogEntry('success', `CSV取り込み完了: ${result.processed}件`);
+            } else {
+                resultDiv.innerHTML = `
+                    <div class="notification error">
+                        <i class="fas fa-times-circle"></i>
+                        <div><strong>CSV取り込み失敗</strong><br>${result.message}</div>
+                    </div>
+                `;
+                addLogEntry('error', `CSV取り込み失敗: ${result.message}`);
+            }
+        } catch (error) {
+            resultDiv.innerHTML = `
+                <div class="notification error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div><strong>システムエラー</strong><br>${error.message}</div>
+                </div>
+            `;
+            addLogEntry('error', `CSV取り込みエラー: ${error.message}`);
+        }
+    }
+    
+    // 利益計算実行
+    async function calculateProfit() {
+        const productId = document.getElementById('calcProductId')?.value;
+        const sellingPrice = document.getElementById('calcSellingPrice')?.value;
+        const weight = document.getElementById('calcWeight')?.value;
+        const dimensions = document.getElementById('calcDimensions')?.value;
+        const country = document.getElementById('calcCountry')?.value;
+        const resultDiv = document.getElementById('profitCalculationResult');
+        
+        if (!productId) {
+            resultDiv.innerHTML = '<div class="notification error"><i class="fas fa-times-circle"></i> 商品IDを入力してください</div>';
+            return;
+        }
+        
+        try {
+            resultDiv.innerHTML = '<div class="notification info"><i class="fas fa-spinner fa-spin"></i> 利益計算中...</div>';
+            
+            const formData = new FormData();
+            formData.append('action', 'calculate_profit');
+            formData.append('product_id', productId);
+            formData.append('options', JSON.stringify({
+                selling_price_usd: sellingPrice,
+                weight_kg: weight,
+                dimensions: dimensions ? dimensions.split(',') : ['20','15','10'],
+                destination_country: country
+            }));
+            
+            const response = await fetch(API_BASE_URL, {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success && result.data?.success) {
+                const calc = result.data;
+                const profitColor = calc.profit_margin_percent >= 30 ? '#10b981' : 
+                                  calc.profit_margin_percent >= 20 ? '#f59e0b' : '#ef4444';
+                
+                resultDiv.innerHTML = `
+                    <div class="notification success">
+                        <i class="fas fa-check-circle"></i>
+                        <div><strong>利益計算完了</strong></div>
+                    </div>
+                    
+                    <div style="background: var(--bg-tertiary); padding: var(--space-md); border-radius: var(--radius-md); margin-top: var(--space-sm);">
+                        <h5>📊 計算結果サマリー</h5>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); margin-top: var(--space-sm);">
+                            <div><strong>仕入価格:</strong> ¥${calc.purchase_price_jpy ? calc.purchase_price_jpy.toLocaleString() : '0'}</div>
+                            <div><strong>販売価格:</strong> ${calc.selling_price_usd}</div>
+                            <div><strong>総コスト:</strong> ${calc.total_cost_usd}</div>
+                            <div style="color: ${profitColor};"><strong>利益:</strong> ${calc.profit_usd}</div>
+                        </div>
+                        <div style="margin-top: var(--space-sm); padding: var(--space-sm); background: ${profitColor}; color: white; border-radius: var(--radius-sm); text-align: center;">
+                            <strong>利益率: ${calc.profit_margin_percent}%</strong><br>
+                            <small>${calc.recommendation?.message || '計算完了'}</small>
+                        </div>
+                    </div>
+                `;
+                
+                addLogEntry('success', `利益計算完了: 利益率${calc.profit_margin_percent}%`);
+            } else {
+                resultDiv.innerHTML = `
+                    <div class="notification error">
+                        <i class="fas fa-times-circle"></i>
+                        <div><strong>利益計算失敗</strong><br>${result.data?.error || result.message}</div>
+                    </div>
+                `;
+                addLogEntry('error', `利益計算失敗: ${result.data?.error}`);
+            }
+        } catch (error) {
+            resultDiv.innerHTML = `
+                <div class="notification error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div><strong>システムエラー</strong><br>${error.message}</div>
+                </div>
+            `;
+            addLogEntry('error', `利益計算エラー: ${error.message}`);
+        }
+    }
+    </script>
+</body>
+</html>

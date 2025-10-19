@@ -1,0 +1,37 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/scripts/main_hooks_executor.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  },
+  "system_info": {
+    "version": "1.0.0",
+    "created": "2025-01-15",
+    "description": "完全自動化Hooksシステム - Claude Code統合設定",
+    "auto_execution": true,
+    "log_enabled": true,
+    "error_handling": "continue"
+  },
+  "execution_settings": {
+    "max_hooks_per_session": 10,
+    "timeout_per_hook": 30,
+    "parallel_execution": false,
+    "skip_on_error": false,
+    "log_level": "info"
+  },
+  "project_detection": {
+    "enable_auto_detection": true,
+    "detection_timeout": 10,
+    "fallback_to_generic": true,
+    "cache_detection_results": true
+  }
+}

@@ -1,697 +1,552 @@
-// app/approval/page.tsx
 'use client'
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 import { 
-  Check, X, RefreshCw, AlertTriangle, ExternalLink, Edit,
-  Shield, Ban, Globe, DollarSign, TrendingUp, Package
+  CheckCircle2, 
+  XCircle, 
+  AlertTriangle,
+  Loader2,
+  Info,
+  TrendingUp,
+  DollarSign
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-
-interface FilterStatus {
-  vero_filter?: boolean
-  vero_detected?: string[]
-  export_filter?: boolean
-  export_detected?: string[]
-  patent_filter?: boolean
-  patent_detected?: string[]
-  mall_filter?: boolean
-  mall_detected?: string[]
-}
+import Image from 'next/image'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog"
 
 interface Product {
-  id: string
-  item_id?: string
+  id: number
+  source_item_id: string
+  sku: string | null
   title: string
-  description?: string
-  sku?: string
-  
-  // 価格情報
-  acquired_price_jpy?: number
-  ddp_price_usd?: number
-  ddu_price_usd?: number
-  shipping_cost_usd?: number
-  
-  // 利益情報
-  profit_margin?: number
-  profit_amount_usd?: number
-  sm_profit_margin?: number
-  
-  // 競合情報
-  competitor_lowest_price?: number
-  
-  // 在庫・状態
-  stock_quantity?: number
-  condition?: string
-  
-  // カテゴリ・画像
-  category_name?: string
-  image_urls?: string[]
-  image_count?: number
-  
-  // フィルター結果
-  filter_status?: FilterStatus
-  
-  // 承認状態
-  ready_to_list?: boolean
-  approval_status?: 'approved' | 'pending' | 'rejected'
-  
-  // その他
-  created_at?: string
-  updated_at?: string
+  english_title: string | null
+  price_jpy: number | null
+  price_usd: number | null
+  scraped_data: any
+  ebay_api_data: any
+  listing_data: any
+  status: string | null
+  approval_status?: string | null
+  ai_confidence_score?: number | null
+  profit_margin?: number | null
+  profit_amount_usd?: number | null
+  export_filter_status?: boolean | null
+  patent_filter_status?: boolean | null
+  mall_filter_status?: boolean | null
+  final_judgment?: string | null
+  sm_lowest_price?: number | null
+  sm_average_price?: number | null
+  sm_competitor_count?: number | null
+  current_stock?: number | null
+  target_marketplaces?: string[]
+  listing_priority?: string
+  created_at: string
+  updated_at: string
 }
 
-interface MissingFields {
-  required: string[]
-  optional: string[]
+interface MarketplaceOption {
+  id: string
+  label: string
+  marketplace: string
+  account: string
 }
 
 export default function ApprovalPage() {
   const [products, setProducts] = useState<Product[]>([])
-  const [completeProducts, setCompleteProducts] = useState<Product[]>([])
-  const [incompleteProducts, setIncompleteProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [showApprovalDialog, setShowApprovalDialog] = useState(false)
+  const [selectedMarketplaces, setSelectedMarketplaces] = useState<Set<string>>(new Set())
+  const [priority, setPriority] = useState<'high' | 'medium' | 'low'>('medium')
 
   const supabase = createClient()
 
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ message, type })
-    setTimeout(() => setToast(null), 3000)
-  }
-
-  // 必須フィールドのチェック
-  const checkMissingFields = (product: Product): MissingFields => {
-    const required: string[] = []
-    const optional: string[] = []
-
-    // 必須項目チェック
-    if (!product.title) required.push('商品タイトル')
-    if (!product.acquired_price_jpy && !product.ddp_price_usd) required.push('仕入価格')
-    if (!product.image_urls || product.image_urls.length === 0) required.push('商品画像')
-    if (!product.category_name) required.push('カテゴリ')
-    if (!product.stock_quantity) required.push('在庫数')
-    if (!product.condition) required.push('商品状態')
-
-    // 推奨項目チェック
-    if (!product.description) optional.push('商品説明')
-    if (!product.sku) optional.push('SKU')
-    if (!product.shipping_cost_usd) optional.push('送料')
-    if (product.profit_margin === undefined || product.profit_margin === null) optional.push('利益率')
-    if (!product.competitor_lowest_price) optional.push('競合最安値')
-
-    return { required, optional }
-  }
-
-  // データ完全性チェック
-  const isDataComplete = (product: Product): boolean => {
-    const missing = checkMissingFields(product)
-    return missing.required.length === 0
-  }
-
-  // フィルター警告があるかチェック
-  const hasFilterWarnings = (product: Product): boolean => {
-    const fs = product.filter_status
-    if (!fs) return false
-    
-    return fs.vero_filter === false || 
-           fs.export_filter === false || 
-           fs.patent_filter === false || 
-           fs.mall_filter === false
-  }
-
-  // 商品データ読み込み
-  const loadProducts = async () => {
-    try {
-      setLoading(true)
-      
-      // まずproductsテーブルから取得を試みる
-      const { data: productsData, error: productsError } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      // productsテーブルにデータがない場合、items_dataテーブルも試す
-      if (!productsData || productsData.length === 0) {
-        const { data: itemsData, error: itemsError } = await supabase
-          .from('items_data')
-          .select('*')
-          .order('created_at', { ascending: false })
-
-        if (itemsError) {
-          console.error('items_data取得エラー:', itemsError)
-        } else if (itemsData && itemsData.length > 0) {
-          setProducts(itemsData as Product[])
-          categorizeProducts(itemsData as Product[])
-          setLoading(false)
-          return
-        }
-      }
-
-      if (productsError) throw productsError
-
-      if (productsData && productsData.length > 0) {
-        setProducts(productsData as Product[])
-        categorizeProducts(productsData as Product[])
-      } else {
-        // データがない場合はダミーデータを表示
-        const dummyProducts = createDummyProducts()
-        setProducts(dummyProducts)
-        categorizeProducts(dummyProducts)
-      }
-    } catch (error: any) {
-      console.error('データ取得エラー:', error)
-      showToast(error.message || 'データ取得に失敗しました', 'error')
-      
-      // エラー時もダミーデータを表示
-      const dummyProducts = createDummyProducts()
-      setProducts(dummyProducts)
-      categorizeProducts(dummyProducts)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // ダミーデータ作成（データがない場合の表示用）
-  const createDummyProducts = (): Product[] => {
-    return [
-      // データ完全な商品例
-      {
-        id: 'dummy-1',
-        item_id: 'ITEM-001',
-        title: 'ソニー ワイヤレスヘッドホン WH-1000XM4',
-        description: '業界最高クラスのノイズキャンセリング機能搭載',
-        sku: 'SKU-SONY-WH1000XM4',
-        acquired_price_jpy: 25000,
-        ddp_price_usd: 299,
-        ddu_price_usd: 279,
-        shipping_cost_usd: 15,
-        profit_margin: 28.5,
-        profit_amount_usd: 85,
-        sm_profit_margin: 25.2,
-        competitor_lowest_price: 320,
-        stock_quantity: 5,
-        condition: 'new',
-        category_name: 'Electronics > Headphones',
-        image_urls: ['https://placehold.co/400x400/4a90e2/white?text=Sony+WH-1000XM4'],
-        image_count: 1,
-        filter_status: {
-          vero_filter: true,
-          export_filter: true,
-          patent_filter: true,
-          mall_filter: true,
-        },
-        ready_to_list: true,
-        approval_status: 'pending',
-        created_at: new Date().toISOString(),
-      },
-      // VeROフィルター引っかかり例
-      {
-        id: 'dummy-2',
-        item_id: 'ITEM-002',
-        title: 'ルイヴィトン風 ハンドバッグ',
-        description: 'ルイヴィトンスタイルのバッグ',
-        sku: 'SKU-BAG-LV-001',
-        acquired_price_jpy: 8000,
-        ddp_price_usd: 120,
-        profit_margin: 35.0,
-        stock_quantity: 3,
-        condition: 'new',
-        category_name: 'Fashion > Bags',
-        image_urls: ['https://placehold.co/400x400/e74c3c/white?text=VeRO+Warning'],
-        image_count: 1,
-        filter_status: {
-          vero_filter: false,
-          vero_detected: ['ルイヴィトン', 'Louis Vuitton'],
-          export_filter: true,
-          patent_filter: true,
-          mall_filter: true,
-        },
-        ready_to_list: false,
-        approval_status: 'rejected',
-        created_at: new Date().toISOString(),
-      },
-      // データ不足例
-      {
-        id: 'dummy-3',
-        item_id: 'ITEM-003',
-        title: 'ノーブランド ウォッチ',
-        // description なし
-        // sku なし
-        acquired_price_jpy: 1500,
-        // 送料なし、利益率なし、競合価格なし
-        stock_quantity: 10,
-        condition: 'new',
-        // category_name なし
-        // image_urls なし
-        filter_status: {
-          export_filter: true,
-          patent_filter: true,
-        },
-        ready_to_list: false,
-        approval_status: 'pending',
-        created_at: new Date().toISOString(),
-      },
-      // 輸出禁止フィルター引っかかり例
-      {
-        id: 'dummy-4',
-        item_id: 'ITEM-004',
-        title: '希少動物の牙を使用した工芸品',
-        description: '象牙を使用した伝統工芸品',
-        sku: 'SKU-IVORY-001',
-        acquired_price_jpy: 50000,
-        stock_quantity: 1,
-        condition: 'used',
-        category_name: 'Collectibles > Art',
-        image_urls: ['https://placehold.co/400x400/e67e22/white?text=Export+Prohibited'],
-        image_count: 1,
-        filter_status: {
-          vero_filter: true,
-          export_filter: false,
-          export_detected: ['象牙', 'ivory'],
-          patent_filter: true,
-          mall_filter: true,
-        },
-        ready_to_list: false,
-        approval_status: 'rejected',
-        created_at: new Date().toISOString(),
-      },
-    ]
-  }
-
-  // 商品を完全/不完全に分類
-  const categorizeProducts = (allProducts: Product[]) => {
-    const complete: Product[] = []
-    const incomplete: Product[] = []
-
-    allProducts.forEach(product => {
-      if (isDataComplete(product)) {
-        complete.push(product)
-      } else {
-        incomplete.push(product)
-      }
-    })
-
-    setCompleteProducts(complete)
-    setIncompleteProducts(incomplete)
-  }
+  const marketplaceOptions: MarketplaceOption[] = [
+    { id: 'ebay_main', label: 'eBay (Main)', marketplace: 'ebay', account: 'main' },
+    { id: 'ebay_sub1', label: 'eBay (Sub1)', marketplace: 'ebay', account: 'sub1' },
+    { id: 'yahoo_main', label: 'Yahoo (Main)', marketplace: 'yahoo', account: 'main' },
+    { id: 'mercari_main', label: 'Mercari (Main)', marketplace: 'mercari', account: 'main' }
+  ]
 
   useEffect(() => {
     loadProducts()
   }, [])
 
-  // 一括承認
-  const handleBulkApprove = async () => {
+  async function loadProducts() {
+    try {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('yahoo_scraped_products')
+        .select('*')
+        .order('updated_at', { ascending: false })
+        .limit(200)
+
+      if (error) throw error
+      setProducts(data || [])
+    } catch (error) {
+      console.error('データ取得エラー:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const isDataComplete = (product: Product) => {
+    return !!(
+      product.title &&
+      product.price_jpy &&
+      product.sku &&
+      product.export_filter_status !== null &&
+      product.patent_filter_status !== null &&
+      product.mall_filter_status !== null
+    )
+  }
+
+  const filteredProducts = products.filter(product => {
+    if (filterStatus === 'pending') return !product.approval_status || product.approval_status === 'pending'
+    if (filterStatus === 'approved') return product.approval_status === 'approved'
+    if (filterStatus === 'rejected') return product.approval_status === 'rejected'
+    return true
+  })
+
+  const stats = {
+    total: products.length,
+    pending: products.filter(p => !p.approval_status || p.approval_status === 'pending').length,
+    approved: products.filter(p => p.approval_status === 'approved').length,
+    rejected: products.filter(p => p.approval_status === 'rejected').length,
+    complete: products.filter(p => isDataComplete(p)).length,
+    incomplete: products.filter(p => !isDataComplete(p)).length
+  }
+
+  const getImageUrl = (product: Product) => {
+    if (product.scraped_data?.images?.[0]) return product.scraped_data.images[0]
+    if (product.ebay_api_data?.images?.[0]) return product.ebay_api_data.images[0]
+    if (product.listing_data?.images?.[0]) return product.listing_data.images[0]
+    return `https://placehold.co/400x400/1a1a1a/white?text=${encodeURIComponent(product.title.substring(0, 15))}`
+  }
+
+  const getCondition = (product: Product) => {
+    return product.scraped_data?.condition || product.listing_data?.condition || '不明'
+  }
+
+  const getCategory = (product: Product) => {
+    return product.scraped_data?.category || product.ebay_api_data?.category || '未分類'
+  }
+
+  const toggleSelect = (id: number) => {
+    const newSelected = new Set(selectedIds)
+    newSelected.has(id) ? newSelected.delete(id) : newSelected.add(id)
+    setSelectedIds(newSelected)
+  }
+
+  const toggleMarketplace = (marketplaceId: string) => {
+    const newSelected = new Set(selectedMarketplaces)
+    newSelected.has(marketplaceId) ? newSelected.delete(marketplaceId) : newSelected.add(marketplaceId)
+    setSelectedMarketplaces(newSelected)
+  }
+
+  const selectAllMarketplaces = () => {
+    setSelectedMarketplaces(new Set(marketplaceOptions.map(m => m.id)))
+  }
+
+  const openApprovalDialog = () => {
     if (selectedIds.size === 0) {
-      showToast('商品を選択してください', 'error')
+      alert('商品を選択してください')
+      return
+    }
+    setSelectedMarketplaces(new Set(['ebay_main'])) // デフォルト
+    setPriority('medium')
+    setShowApprovalDialog(true)
+  }
+
+  const bulkApprove = async () => {
+    if (selectedMarketplaces.size === 0) {
+      alert('出品先を選択してください')
       return
     }
 
     try {
-      const { error } = await supabase
-        .from('products')
-        .update({ 
-          approval_status: 'approved',
-          ready_to_list: true 
-        })
-        .in('id', Array.from(selectedIds))
-
-      if (error) throw error
-
-      showToast(`${selectedIds.size}件を承認しました`)
+      const targetMarketplaces = Array.from(selectedMarketplaces)
+      
+      await Promise.all(Array.from(selectedIds).map(id => 
+        supabase.from('yahoo_scraped_products').update({ 
+          approval_status: 'approved', 
+          approved_at: new Date().toISOString(),
+          status: 'ready_to_list',
+          target_marketplaces: targetMarketplaces,
+          listing_priority: priority
+        }).eq('id', id)
+      ))
+      
+      alert(`${selectedIds.size}件を承認しました。\n出品先: ${targetMarketplaces.join(', ')}\n優先度: ${priority}`)
       setSelectedIds(new Set())
-      await loadProducts()
-    } catch (error: any) {
-      showToast(error.message || '承認に失敗しました', 'error')
+      setShowApprovalDialog(false)
+      loadProducts()
+    } catch (error) {
+      console.error('承認エラー:', error)
+      alert('承認に失敗しました')
     }
   }
 
-  // 選択トグル
-  const toggleSelect = (id: string) => {
-    const newSelected = new Set(selectedIds)
-    if (newSelected.has(id)) {
-      newSelected.delete(id)
-    } else {
-      newSelected.add(id)
+  const bulkReject = async () => {
+    if (selectedIds.size === 0 || !confirm(`${selectedIds.size}件を否認しますか?`)) return
+    try {
+      await Promise.all(Array.from(selectedIds).map(id => 
+        supabase.from('yahoo_scraped_products').update({ 
+          approval_status: 'rejected',
+          status: 'rejected'
+        }).eq('id', id)
+      ))
+      alert(`${selectedIds.size}件を否認しました`)
+      setSelectedIds(new Set())
+      loadProducts()
+    } catch (error) {
+      alert('否認に失敗しました')
     }
-    setSelectedIds(newSelected)
+  }
+
+  const bulkUnapprove = async () => {
+    if (selectedIds.size === 0 || !confirm(`${selectedIds.size}件の承認を取り消しますか?\nスケジュールからも削除されます。`)) return
+    try {
+      await Promise.all(Array.from(selectedIds).map(id => 
+        supabase.from('yahoo_scraped_products').update({ 
+          approval_status: 'pending',
+          status: 'pending'
+        }).eq('id', id)
+      ))
+      alert(`${selectedIds.size}件の承認を取り消しました`)
+      setSelectedIds(new Set())
+      loadProducts()
+    } catch (error) {
+      alert('承認取り消しに失敗しました')
+    }
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-          <div className="text-lg font-semibold text-slate-700">読み込み中...</div>
-        </div>
-      </div>
-    )
+    return <div className="flex items-center justify-center min-h-screen"><Loader2 className="w-8 h-8 animate-spin" /></div>
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
-      <div className="max-w-[1800px] mx-auto">
-        {/* ヘッダー */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-            商品承認システム
-          </h1>
-          <p className="text-slate-600">
-            フィルターを通過した商品を確認し、出品を承認します
-          </p>
-        </div>
-
-        {/* 統計サマリー */}
-        <div className="grid grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-3xl font-bold text-slate-800">{products.length}</div>
-                <div className="text-sm text-slate-500 mt-1">総商品数</div>
-              </div>
-              <Package className="w-10 h-10 text-blue-500 opacity-20" />
-            </div>
-          </div>
-          <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-6 shadow-sm text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-3xl font-bold">{completeProducts.length}</div>
-                <div className="text-sm opacity-90 mt-1">データ完全</div>
-              </div>
-              <Check className="w-10 h-10 opacity-30" />
-            </div>
-          </div>
-          <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-6 shadow-sm text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-3xl font-bold">{incompleteProducts.length}</div>
-                <div className="text-sm opacity-90 mt-1">データ不足</div>
-              </div>
-              <AlertTriangle className="w-10 h-10 opacity-30" />
-            </div>
-          </div>
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-3xl font-bold text-blue-600">{selectedIds.size}</div>
-                <div className="text-sm text-slate-500 mt-1">選択中</div>
-              </div>
-              <Check className="w-10 h-10 text-blue-500 opacity-20" />
-            </div>
-          </div>
-        </div>
-
-        {/* アクションバー */}
-        {selectedIds.size > 0 && (
-          <div className="bg-white rounded-xl p-4 mb-6 shadow-lg border-2 border-blue-500 sticky top-4 z-40">
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-medium text-slate-700">
-                {selectedIds.size}件選択中
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleBulkApprove}
-                  className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
-                >
-                  <Check className="w-4 h-4 mr-2" />
-                  一括承認して出品へ
-                </Button>
-                <Button
-                  onClick={() => setSelectedIds(new Set())}
-                  variant="outline"
-                >
-                  選択解除
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* データ完全グループ */}
-        <div className="mb-12">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg p-2">
-              <Check className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-slate-800">データ完全 - 承認可能</h2>
-              <p className="text-sm text-slate-500">すべての必須項目が揃っている商品</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {completeProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                isSelected={selectedIds.has(product.id)}
-                onToggleSelect={toggleSelect}
-                isComplete={true}
-              />
-            ))}
-          </div>
-
-          {completeProducts.length === 0 && (
-            <div className="text-center py-12 text-slate-400">
-              <Check className="w-16 h-16 mx-auto mb-4 opacity-20" />
-              <p>データが完全な商品はまだありません</p>
-            </div>
-          )}
-        </div>
-
-        {/* データ不足グループ */}
+    <div className="container mx-auto px-4 py-6 space-y-4">
+      {/* ヘッダー */}
+      <div className="flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-3 mb-6">
-            <div className="bg-gradient-to-r from-amber-500 to-orange-600 rounded-lg p-2">
-              <AlertTriangle className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-slate-800">データ不足 - 要編集</h2>
-              <p className="text-sm text-slate-500">必須項目が不足している商品</p>
-            </div>
-          </div>
+          <h1 className="text-2xl font-bold">商品承認システム</h1>
+          <p className="text-sm text-muted-foreground">フィルター確認・AI判定・モール選択・承認ワークフロー</p>
+        </div>
+        <Button onClick={loadProducts} variant="outline" size="sm">
+          <Loader2 className="w-4 h-4 mr-2" />更新
+        </Button>
+      </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {incompleteProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                isSelected={false}
-                onToggleSelect={() => {}}
-                isComplete={false}
-                missingFields={checkMissingFields(product)}
-              />
-            ))}
+      {/* 統計バー */}
+      <div className="flex gap-2 overflow-x-auto pb-2">
+        {[
+          { label: '全商品', value: stats.total, color: 'bg-gray-100 text-gray-900' },
+          { label: '承認待ち', value: stats.pending, color: 'bg-yellow-100 text-yellow-900' },
+          { label: '承認済み', value: stats.approved, color: 'bg-green-100 text-green-900' },
+          { label: '否認済み', value: stats.rejected, color: 'bg-red-100 text-red-900' },
+          { label: 'データ完全', value: stats.complete, color: 'bg-blue-100 text-blue-900' },
+          { label: 'データ不足', value: stats.incomplete, color: 'bg-orange-100 text-orange-900' }
+        ].map((stat, i) => (
+          <div key={i} className={`px-4 py-2 rounded-lg ${stat.color} whitespace-nowrap cursor-pointer hover:opacity-80`}
+            onClick={() => {
+              if (stat.label === '承認待ち') setFilterStatus('pending')
+              else if (stat.label === '承認済み') setFilterStatus('approved')
+              else if (stat.label === '否認済み') setFilterStatus('rejected')
+              else setFilterStatus('all')
+            }}
+          >
+            <div className="text-xs font-medium">{stat.label}</div>
+            <div className="text-xl font-bold">{stat.value}</div>
           </div>
+        ))}
+      </div>
 
-          {incompleteProducts.length === 0 && (
-            <div className="text-center py-12 text-slate-400">
-              <Package className="w-16 h-16 mx-auto mb-4 opacity-20" />
-              <p>データ不足の商品はありません</p>
-            </div>
-          )}
+      {/* コントロールバー */}
+      <div className="flex flex-wrap gap-2 items-center justify-between bg-card p-4 rounded-lg border">
+        <div className="flex gap-2">
+          {(['all', 'pending', 'approved', 'rejected'] as const).map(f => (
+            <Button key={f} variant={filterStatus === f ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus(f)}>
+              {f === 'all' ? 'すべて' : f === 'pending' ? '承認待ち' : f === 'approved' ? '承認済み' : '否認済み'}
+            </Button>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setSelectedIds(new Set(filteredProducts.map(p => p.id)))}>全選択</Button>
+          <Button variant="outline" size="sm" onClick={() => setSelectedIds(new Set())}>解除 ({selectedIds.size})</Button>
+          <Button variant="default" size="sm" onClick={openApprovalDialog} disabled={selectedIds.size === 0} className="bg-green-600 hover:bg-green-700">
+            <CheckCircle2 className="w-4 h-4 mr-1" />承認 ({selectedIds.size})
+          </Button>
+          <Button variant="destructive" size="sm" onClick={bulkReject} disabled={selectedIds.size === 0}>
+            <XCircle className="w-4 h-4 mr-1" />否認
+          </Button>
+          <Button variant="outline" size="sm" onClick={bulkUnapprove} disabled={selectedIds.size === 0} className="border-orange-500 text-orange-600 hover:bg-orange-50">
+            <AlertTriangle className="w-4 h-4 mr-1" />承認取消
+          </Button>
         </div>
       </div>
 
-      {/* トースト通知 */}
-      {toast && (
-        <div className={`fixed bottom-8 right-8 px-6 py-4 rounded-lg shadow-2xl text-white z-50 animate-in slide-in-from-right ${
-          toast.type === 'error' 
-            ? 'bg-gradient-to-r from-red-500 to-rose-600' 
-            : 'bg-gradient-to-r from-green-500 to-emerald-600'
-        }`}>
-          <div className="flex items-center gap-3">
-            {toast.type === 'error' ? (
-              <X className="w-5 h-5" />
-            ) : (
-              <Check className="w-5 h-5" />
-            )}
-            <span className="font-medium">{toast.message}</span>
-          </div>
+      {/* 商品グリッド */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+        {filteredProducts.map(product => {
+          const dataComplete = isDataComplete(product)
+          const aiScore = product.ai_confidence_score || 0
+          const condition = getCondition(product)
+          const isNew = condition === '新品' || condition === 'new' || condition === 'New'
+          
+          return (
+            <Card 
+              key={product.id}
+              className={`group hover:shadow-xl transition-all cursor-pointer ${
+                selectedIds.has(product.id) ? 'ring-2 ring-primary' : ''
+              }`}
+              onClick={() => toggleSelect(product.id)}
+            >
+              <div className="relative">
+                <div className="relative aspect-square bg-gray-50 overflow-hidden">
+                  <Image src={getImageUrl(product)} alt={product.title} fill className="object-contain p-2 group-hover:scale-105 transition-transform" unoptimized />
+                  
+                  <div className="absolute top-2 left-2 z-10" onClick={(e) => e.stopPropagation()}>
+                    <Checkbox checked={selectedIds.has(product.id)} onCheckedChange={() => toggleSelect(product.id)} className="bg-white border-2 shadow-sm" />
+                  </div>
+                  
+                  {aiScore > 0 && (
+                    <div className="absolute top-2 right-2">
+                      <Badge className={`${aiScore >= 80 ? 'bg-green-500' : aiScore >= 50 ? 'bg-yellow-500' : 'bg-red-500'} text-white font-bold shadow-lg text-xs px-1.5 py-0.5`}>
+                        {aiScore}
+                      </Badge>
+                    </div>
+                  )}
+                  
+                  <div className="absolute bottom-2 left-2">
+                    <Badge className={`${isNew ? 'bg-blue-500' : 'bg-orange-500'} text-white text-xs px-1.5 py-0.5`}>
+                      {isNew ? '新品' : '中古'}
+                    </Badge>
+                  </div>
+
+                  {!dataComplete && (
+                    <div className="absolute bottom-2 right-2">
+                      <Badge variant="destructive" className="bg-orange-500 px-1 py-0"><AlertTriangle className="w-3 h-3" /></Badge>
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-2 space-y-1">
+                  <p className="text-[9px] text-muted-foreground truncate">{product.sku || product.source_item_id}</p>
+                  <h3 className="text-[10px] font-medium line-clamp-2 leading-tight min-h-[28px]">{product.title}</h3>
+                  <p className="text-[9px] text-muted-foreground truncate">{getCategory(product)}</p>
+
+                  <div className="space-y-0.5 pt-1 border-t">
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-[9px] text-muted-foreground">仕入</span>
+                      <span className="text-xs font-bold">¥{product.price_jpy?.toLocaleString() || '---'}</span>
+                    </div>
+                    {product.price_usd && (
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-[9px] text-muted-foreground">販売</span>
+                        <span className="text-xs font-bold text-blue-600">${product.price_usd.toFixed(2)}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {product.profit_amount_usd && product.profit_amount_usd > 0 && (
+                    <div className="bg-green-50 rounded p-1.5 space-y-0.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-0.5">
+                          <DollarSign className="w-2.5 h-2.5 text-green-600" />
+                          <span className="text-[9px] font-medium text-green-900">純利益</span>
+                        </div>
+                        <span className="text-xs font-bold text-green-700">${product.profit_amount_usd.toFixed(2)}</span>
+                      </div>
+                      {product.profit_margin && (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-0.5">
+                            <TrendingUp className="w-2.5 h-2.5 text-green-600" />
+                            <span className="text-[9px] font-medium text-green-900">利益率</span>
+                          </div>
+                          <span className="text-[10px] font-bold text-green-700">{product.profit_margin.toFixed(1)}%</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {product.sm_lowest_price && (
+                    <div className="text-[9px] space-y-0.5 pt-1 border-t">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">SM最安</span>
+                        <span className="font-semibold">${product.sm_lowest_price.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-0.5 pt-1" title="輸出/特許/モール">
+                    <div className={`flex-1 h-1 rounded ${product.export_filter_status ? 'bg-green-500' : 'bg-red-500'}`} />
+                    <div className={`flex-1 h-1 rounded ${product.patent_filter_status ? 'bg-green-500' : 'bg-red-500'}`} />
+                    <div className={`flex-1 h-1 rounded ${product.mall_filter_status ? 'bg-green-500' : 'bg-red-500'}`} />
+                  </div>
+
+                  <div className="flex gap-1 pt-1">
+                    {product.approval_status === 'approved' && <Badge className="flex-1 justify-center bg-green-500 text-[9px] py-0">承認済</Badge>}
+                    {product.approval_status === 'rejected' && <Badge className="flex-1 justify-center bg-red-500 text-[9px] py-0">否認済</Badge>}
+                    {(!product.approval_status || product.approval_status === 'pending') && <Badge variant="outline" className="flex-1 justify-center text-[9px] py-0">承認待ち</Badge>}
+                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={(e) => { e.stopPropagation(); setSelectedProduct(product); }}>
+                      <Info className="w-3 h-3" />
+                    </Button>
+                  </div>
+
+                  {/* 出品先表示 */}
+                  {product.target_marketplaces && product.target_marketplaces.length > 0 && (
+                    <div className="text-[8px] text-muted-foreground truncate pt-1 border-t">
+                      {product.target_marketplaces.join(', ')}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
+          )
+        })}
+      </div>
+
+      {filteredProducts.length === 0 && (
+        <div className="text-center py-12 bg-card rounded-lg border">
+          <p className="text-muted-foreground">該当する商品がありません</p>
         </div>
       )}
-    </div>
-  )
-}
 
-// 商品カードコンポーネント
-function ProductCard({ 
-  product, 
-  isSelected, 
-  onToggleSelect, 
-  isComplete,
-  missingFields 
-}: { 
-  product: Product
-  isSelected: boolean
-  onToggleSelect: (id: string) => void
-  isComplete: boolean
-  missingFields?: MissingFields
-}) {
-  const fs = product.filter_status || {}
-  const hasFilterWarnings = fs.vero_filter === false || fs.export_filter === false || 
-                           fs.patent_filter === false || fs.mall_filter === false
-
-  return (
-    <div
-      className={`relative rounded-xl overflow-hidden shadow-lg transition-all hover:shadow-2xl cursor-pointer
-        ${isSelected ? 'ring-4 ring-blue-500' : 'ring-1 ring-slate-200'}
-        ${!isComplete ? 'opacity-75' : ''}
-      `}
-      onClick={() => isComplete && onToggleSelect(product.id)}
-      style={{
-        backgroundImage: product.image_urls && product.image_urls[0] 
-          ? `url(${product.image_urls[0]})` 
-          : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }}
-    >
-      {/* オーバーレイ */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
-
-      {/* コンテンツ */}
-      <div className="relative h-[400px] p-5 flex flex-col">
-        {/* 上部: チェックボックスとバッジ */}
-        <div className="flex items-start justify-between mb-auto">
-          {isComplete && (
-            <div 
-              className="bg-white rounded-lg p-1 shadow-lg"
-              onClick={(e) => {
-                e.stopPropagation()
-                onToggleSelect(product.id)
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={isSelected}
-                onChange={() => {}}
-                className="w-5 h-5 rounded cursor-pointer"
-              />
+      {/* 承認ダイアログ */}
+      <Dialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>出品先とモール選択</DialogTitle>
+            <DialogDescription>
+              {selectedIds.size}件の商品を承認します。出品先を選択してください。
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* モール選択 */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-semibold">出品先モール</Label>
+                <Button variant="link" size="sm" onClick={selectAllMarketplaces}>全選択</Button>
+              </div>
+              <div className="space-y-2 border rounded-lg p-3">
+                {marketplaceOptions.map(option => (
+                  <div key={option.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={option.id}
+                      checked={selectedMarketplaces.has(option.id)}
+                      onCheckedChange={() => toggleMarketplace(option.id)}
+                    />
+                    <label htmlFor={option.id} className="text-sm cursor-pointer flex-1">
+                      {option.label}
+                    </label>
+                  </div>
+                ))}
+              </div>
             </div>
-          )}
 
-          <div className="flex flex-col gap-2 ml-auto">
-            {/* フィルター警告バッジ */}
-            {fs.vero_filter === false && (
-              <div className="bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg">
-                <Shield className="w-3 h-3" />
-                VeRO
+            {/* 優先度選択 */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">出品優先度</Label>
+              <div className="flex gap-2">
+                {['high', 'medium', 'low'].map(p => (
+                  <Button
+                    key={p}
+                    variant={priority === p ? 'default' : 'outline'}
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => setPriority(p as any)}
+                  >
+                    {p === 'high' ? '高' : p === 'medium' ? '中' : '低'}
+                  </Button>
+                ))}
               </div>
-            )}
-            {fs.export_filter === false && (
-              <div className="bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg">
-                <Ban className="w-3 h-3" />
-                輸出禁止
-              </div>
-            )}
-            {fs.patent_filter === false && (
-              <div className="bg-amber-600 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg">
-                <AlertTriangle className="w-3 h-3" />
-                パテント
-              </div>
-            )}
-            {fs.mall_filter === false && (
-              <div className="bg-orange-600 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg">
-                <Globe className="w-3 h-3" />
-                モール制限
-              </div>
-            )}
+            </div>
 
-            {/* 承認ステータス */}
-            {isComplete && !hasFilterWarnings && (
-              <div className="bg-green-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
-                承認可能
-              </div>
-            )}
+            {/* 選択サマリー */}
+            <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg space-y-1 text-sm">
+              <p><strong>商品数:</strong> {selectedIds.size}件</p>
+              <p><strong>出品先:</strong> {selectedMarketplaces.size}モール</p>
+              <p><strong>優先度:</strong> {priority === 'high' ? '高' : priority === 'medium' ? '中' : '低'}</p>
+            </div>
           </div>
-        </div>
 
-        {/* 下部: 商品情報 */}
-        <div className="space-y-3">
-          {/* タイトル */}
-          <h3 className="text-white font-bold text-lg line-clamp-2 drop-shadow-lg">
-            {product.title || '商品名なし'}
-          </h3>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowApprovalDialog(false)}>
+              キャンセル
+            </Button>
+            <Button onClick={bulkApprove} className="bg-green-600 hover:bg-green-700">
+              <CheckCircle2 className="w-4 h-4 mr-2" />
+              承認して出品待ちリストへ
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-          {/* 価格・利益情報 */}
-          {isComplete ? (
-            <div className="grid grid-cols-2 gap-2">
-              <div className="bg-white/20 backdrop-blur-md rounded-lg p-2 border border-white/30">
-                <div className="text-white/80 text-xs mb-1">販売価格</div>
-                <div className="text-white font-bold text-lg">
-                  ${product.ddp_price_usd || product.ddu_price_usd || '---'}
-                </div>
-              </div>
-              <div className="bg-white/20 backdrop-blur-md rounded-lg p-2 border border-white/30">
-                <div className="text-white/80 text-xs mb-1">利益率</div>
-                <div className={`font-bold text-lg ${
-                  (product.profit_margin || 0) >= 20 ? 'text-green-300' :
-                  (product.profit_margin || 0) >= 10 ? 'text-yellow-300' :
-                  'text-red-300'
-                }`}>
-                  {product.profit_margin?.toFixed(1) || '---'}%
-                </div>
-              </div>
-              <div className="bg-white/20 backdrop-blur-md rounded-lg p-2 border border-white/30">
-                <div className="text-white/80 text-xs mb-1">競合最安</div>
-                <div className="text-white font-bold">
-                  ${product.competitor_lowest_price || '---'}
-                </div>
-              </div>
-              <div className="bg-white/20 backdrop-blur-md rounded-lg p-2 border border-white/30">
-                <div className="text-white/80 text-xs mb-1">利益額</div>
-                <div className="text-green-300 font-bold">
-                  ${product.profit_amount_usd || '---'}
-                </div>
-              </div>
-            </div>
-          ) : (
-            /* データ不足表示 */
-            <div className="bg-red-500/90 backdrop-blur-md rounded-lg p-4 border-2 border-red-300">
-              <div className="flex items-center gap-2 mb-3">
-                <AlertTriangle className="w-5 h-5 text-white" />
-                <div className="text-white font-bold">データ不足</div>
-              </div>
-              
-              {missingFields && missingFields.required.length > 0 && (
-                <div className="mb-3">
-                  <div className="text-white text-xs font-semibold mb-1">必須項目:</div>
-                  <div className="space-y-1">
-                    {missingFields.required.map((field, idx) => (
-                      <div key={idx} className="text-white text-xs flex items-center gap-1">
-                        <X className="w-3 h-3" />
-                        {field}
-                      </div>
-                    ))}
+      {/* 詳細モーダル */}
+      <Dialog open={!!selectedProduct} onOpenChange={() => setSelectedProduct(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>商品詳細情報</DialogTitle></DialogHeader>
+          {selectedProduct && (
+            <div className="space-y-4 text-sm">
+              <div className="grid grid-cols-2 gap-4">
+                <div><p className="font-semibold mb-2">基本情報</p>
+                  <div className="space-y-1 text-xs">
+                    <p><span className="text-muted-foreground">SKU:</span> {selectedProduct.sku || '未設定'}</p>
+                    <p><span className="text-muted-foreground">状態:</span> {getCondition(selectedProduct)}</p>
+                    <p><span className="text-muted-foreground">カテゴリー:</span> {getCategory(selectedProduct)}</p>
+                    <p><span className="text-muted-foreground">在庫:</span> {selectedProduct.current_stock || 0}</p>
                   </div>
                 </div>
-              )}
-
-              <a
-                href={`/tools/editing?id=${product.id}`}
-                className="flex items-center justify-center gap-2 bg-white text-red-600 px-4 py-2 rounded-lg font-bold text-sm hover:bg-red-50 transition-colors"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Edit className="w-4 h-4" />
-                データ編集へ
-              </a>
+                <div><p className="font-semibold mb-2">価格・利益</p>
+                  <div className="space-y-1 text-xs">
+                    <p><span className="text-muted-foreground">仕入:</span> ¥{selectedProduct.price_jpy?.toLocaleString() || '---'}</p>
+                    <p><span className="text-muted-foreground">販売:</span> ${selectedProduct.price_usd?.toFixed(2) || '---'}</p>
+                    <p><span className="text-muted-foreground">純利益:</span> ${selectedProduct.profit_amount_usd?.toFixed(2) || '---'}</p>
+                    <p><span className="text-muted-foreground">利益率:</span> {selectedProduct.profit_margin?.toFixed(1) || '---'}%</p>
+                  </div>
+                </div>
+                <div><p className="font-semibold mb-2">フィルター</p>
+                  <div className="space-y-1 text-xs">
+                    <p><span className="text-muted-foreground">輸出:</span> {selectedProduct.export_filter_status ? '✓ OK' : '✗ NG'}</p>
+                    <p><span className="text-muted-foreground">特許:</span> {selectedProduct.patent_filter_status ? '✓ OK' : '✗ NG'}</p>
+                    <p><span className="text-muted-foreground">モール:</span> {selectedProduct.mall_filter_status ? '✓ OK' : '✗ NG'}</p>
+                    <p><span className="text-muted-foreground">最終判定:</span> {selectedProduct.final_judgment || '---'}</p>
+                  </div>
+                </div>
+                <div><p className="font-semibold mb-2">競合分析 (SM)</p>
+                  <div className="space-y-1 text-xs">
+                    <p><span className="text-muted-foreground">最安値:</span> ${selectedProduct.sm_lowest_price?.toFixed(2) || '---'}</p>
+                    <p><span className="text-muted-foreground">平均:</span> ${selectedProduct.sm_average_price?.toFixed(2) || '---'}</p>
+                    <p><span className="text-muted-foreground">競合数:</span> {selectedProduct.sm_competitor_count || '---'}</p>
+                    <p><span className="text-muted-foreground">AIスコア:</span> {selectedProduct.ai_confidence_score || '---'}点</p>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <p className="font-semibold mb-1">タイトル</p>
+                <p className="text-xs">{selectedProduct.title}</p>
+                {selectedProduct.english_title && <p className="text-xs text-muted-foreground mt-1">{selectedProduct.english_title}</p>}
+              </div>
             </div>
           )}
-
-          {/* SKU・在庫 */}
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-white/70">
-              SKU: {product.sku || '未設定'}
-            </span>
-            <span className="text-white/70">
-              在庫: {product.stock_quantity || 0}個
-            </span>
-          </div>
-        </div>
-      </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

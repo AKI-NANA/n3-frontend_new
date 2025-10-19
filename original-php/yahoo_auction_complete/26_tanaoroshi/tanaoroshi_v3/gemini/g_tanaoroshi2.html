@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>高度な製品管理システム</title>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f1f5f9;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 2rem;
+        color: #1e293b;
+      }
+
+      /* Tabs */
+      .tabs {
+        display: flex;
+        background-color: #e2e8f0;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        overflow: hidden;
+      }
+      .tab {
+        flex-grow: 1;
+        padding: 0.75rem 1.5rem;
+        text-align: center;
+        cursor: pointer;
+        font-weight: 500;
+        color: #475569;
+        transition: background-color 0.2s, color 0.2s;
+        border-radius: 8px;
+      }
+      .tab:hover {
+        background-color: #cbd5e1;
+      }
+      .tab.active {
+        background-color: #3b82f6;
+        color: white;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+          0 2px 4px -2px rgb(0 0 0 / 0.1);
+        z-index: 1;
+      }
+
+      /* Control Panel */
+      .control-panel {
+        background-color: white;
+        padding: 1rem;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1rem;
+      }
+
+      .control-panel-group {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+      }
+
+      .control-panel label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #475569;
+      }
+
+      .control-panel select,
+      .control-panel input[type="text"] {
+        border: 1px solid #e2e8f0;
+        padding: 0.5rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        background-color: #f8fafc;
+        min-width: 150px;
+      }
+
+      /* Excel View */
+      .excel-table-container {
+        overflow-x: auto;
+        background-color: white;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+      .excel-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        white-space: nowrap;
+      }
+      .excel-table thead tr {
+        background-color: #f1f5f9;
+        text-align: left;
+      }
+      .excel-table th,
+      .excel-table td {
+        padding: 0.25rem 0.5rem; /* Reduced padding */
+        font-size: 0.875rem;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      .excel-table th {
+        font-weight: 600;
+        color: #475569;
+        position: sticky;
+        top: 0;
+        background-color: #f1f5f9;
+      }
+      .excel-table td {
+        color: #334155;
+        vertical-align: middle;
+        height: 40px; /* Fixed row height */
+      }
+      .excel-table td:first-child {
+        padding-left: 1rem;
+      }
+      .excel-table td:last-child {
+        padding-right: 1rem;
+      }
+      .excel-table tbody tr:hover {
+        background-color: #f8fafc;
+      }
+      .excel-table input[type="text"] {
+        width: 80px;
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        padding: 0.25rem;
+        text-align: right;
+        background-color: #fafafa;
+      }
+      .excel-table .product-thumb {
+        width: 32px;
+        height: 32px;
+        object-fit: contain;
+        border-radius: 4px;
+        border: 1px solid #e2e8f0;
+      }
+
+      /* Card View */
+      .card-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+      }
+      .product-card {
+        background-color: white;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+      .product-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      .card-image {
+        width: 100%;
+        height: 200px;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: #e2e8f0;
+      }
+      .card-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .card-content {
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+      }
+      .card-title {
+        font-weight: 600;
+        font-size: 1rem;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .card-details {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.875rem;
+        color: #64748b;
+        margin-bottom: 1rem;
+      }
+      .card-btn {
+        background-color: #3b82f6;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-weight: 500;
+        transition: background-color 0.2s;
+        width: 100%;
+        text-align: center;
+      }
+      .card-btn:hover {
+        background-color: #2563eb;
+      }
+
+      /* Utility classes from previous files */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+      }
+      .btn-primary {
+        background-color: #3b82f6;
+        color: white;
+      }
+      .btn-primary:hover {
+        background-color: #2563eb;
+      }
+      .btn-secondary {
+        background-color: #f1f5f9;
+        color: #475569;
+        border-color: #cbd5e1;
+      }
+      .btn-secondary:hover {
+        background-color: #e2e8f0;
+      }
+      .status-badge {
+        padding: 0.2rem 0.5rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+      }
+      .status-green {
+        background-color: #d1fae5;
+        color: #065f46;
+      }
+      .status-red {
+        background-color: #fee2e2;
+        color: #991b1b;
+      }
+      .status-yellow {
+        background-color: #fef9c3;
+        color: #92400e;
+      }
+      .status-gray {
+        background-color: #e5e7eb;
+        color: #4b5563;
+      }
+      .flex-center {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .flex-end {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+      }
+      .gap-2 {
+        gap: 0.5rem;
+      }
+      .hidden {
+        display: none;
+      }
+
+      /* Modal */
+      .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+      }
+      .modal-content {
+        background-color: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        max-width: 500px;
+        width: 90%;
+        transform: scale(0.95);
+        opacity: 0;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+      }
+      .modal.is-active .modal-content {
+        transform: scale(1);
+        opacity: 1;
+      }
+
+      /* Notifications */
+      #notification-container {
+        position: fixed;
+        bottom: 1rem;
+        right: 1rem;
+        z-index: 2000;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .notification {
+        padding: 0.75rem 1rem;
+        border-radius: 6px;
+        color: white;
+        font-weight: 500;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.3s ease-out;
+        max-width: 300px;
+      }
+      .notification.show {
+        opacity: 1;
+        transform: translateX(0);
+      }
+      .notification.success {
+        background-color: #10b981;
+      }
+      .notification.info {
+        background-color: #3b82f6;
+      }
+      .notification.warning {
+        background-color: #f59e0b;
+      }
+      .notification.error {
+        background-color: #ef4444;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50">
+    <div class="container">
+      <header class="header">
+        <h1 class="text-3xl font-bold mb-2">
+          <i class="fas fa-cubes"></i> 高度な製品管理システム
+        </h1>
+        <p class="text-gray-600">
+          製品一覧、セット品登録、学習ログを管理します
+        </p>
+      </header>
+
+      <nav class="tabs" role="tablist">
+        <div
+          id="tab-products"
+          class="tab active"
+          role="tab"
+          aria-controls="products-view"
+          data-tab="products"
+        >
+          <i class="fas fa-list-ul"></i> 製品一覧
+        </div>
+        <div
+          id="tab-sets"
+          class="tab"
+          role="tab"
+          aria-controls="sets-view"
+          data-tab="sets"
+        >
+          <i class="fas fa-box-open"></i> セット品登録
+        </div>
+        <div
+          id="tab-logs"
+          class="tab"
+          role="tab"
+          aria-controls="logs-view"
+          data-tab="logs"
+        >
+          <i class="fas fa-chart-line"></i> 学習ログ
+        </div>
+      </nav>
+
+      <!-- Main Content Area -->
+      <main>
+        <!-- 製品一覧タブ -->
+        <div id="products-view" class="tab-content">
+          <div class="control-panel">
+            <div class="control-panel-group">
+              <!-- ビュー切り替え -->
+              <div class="flex items-center gap-2 mr-4">
+                <i class="fas fa-eye text-gray-500"></i>
+                <button id="view-excel" class="btn btn-secondary active">
+                  <i class="fas fa-table"></i> エクセルビュー
+                </button>
+                <button id="view-card" class="btn btn-secondary">
+                  <i class="fas fa-th-large"></i> カードビュー
+                </button>
+              </div>
+
+              <!-- フィルターと検索 -->
+              <div class="flex-grow flex items-center gap-2">
+                <i class="fas fa-search text-gray-500"></i>
+                <input
+                  type="text"
+                  id="search-input"
+                  placeholder="キーワード検索..."
+                  class="flex-grow"
+                />
+              </div>
+              <div class="flex items-center gap-2">
+                <label for="filter-status">ステータス:</label>
+                <select id="filter-status">
+                  <option value="all">すべて</option>
+                  <option value="出品中">出品中</option>
+                  <option value="未出品">未出品</option>
+                  <option value="一時停止">一時停止</option>
+                </select>
+              </div>
+              <div class="flex items-center gap-2">
+                <label for="filter-condition">状態:</label>
+                <select id="filter-condition">
+                  <option value="all">すべて</option>
+                  <option value="新品">新品</option>
+                  <option value="中古">中古</option>
+                  <option value="ジャンク">ジャンク</option>
+                </select>
+              </div>
+              <button id="reset-filters" class="btn btn-secondary">
+                <i class="fas fa-sync"></i> リセット
+              </button>
+            </div>
+          </div>
+
+          <!-- 製品一覧コンテンツ -->
+          <div id="excel-view" class="excel-table-container">
+            <table class="excel-table">
+              <thead>
+                <tr>
+                  <th><input type="checkbox" id="master-checkbox" /></th>
+                  <th>画像</th>
+                  <th>SKU/ASIN</th>
+                  <th>商品名</th>
+                  <th>価格</th>
+                  <th>在庫数</th>
+                  <th>ステータス</th>
+                  <th>状態</th>
+                  <th>アクション</th>
+                </tr>
+              </thead>
+              <tbody id="excel-tbody">
+                <!-- JSがここにデータを挿入 -->
+              </tbody>
+            </table>
+          </div>
+
+          <div id="card-view" class="card-container hidden">
+            <!-- JSがここにカードを挿入 -->
+          </div>
+        </div>
+
+        <!-- セット品登録タブ -->
+        <div id="sets-view" class="tab-content hidden">
+          <div class="bg-white p-6 rounded-xl shadow-sm">
+            <h2
+              class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2"
+            >
+              <i class="fas fa-box"></i> セット品登録
+            </h2>
+            <p class="text-gray-600 mb-4">
+              製品一覧から選択した商品を組み合わせて、新しいセット品として登録します。
+            </p>
+            <div id="selected-for-set" class="flex flex-wrap gap-2 mb-4">
+              <span class="text-sm text-gray-500"
+                >選択された商品がここに表示されます...</span
+              >
+            </div>
+            <div class="flex gap-4">
+              <input
+                type="text"
+                id="set-name-input"
+                placeholder="セット品名を入力"
+                class="flex-grow p-2 border rounded-md"
+              />
+              <button id="register-set-btn" class="btn btn-primary">
+                <i class="fas fa-plus"></i> セット品として登録
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 学習ログタブ -->
+        <div id="logs-view" class="tab-content hidden">
+          <div class="bg-white p-6 rounded-xl shadow-sm">
+            <h2
+              class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2"
+            >
+              <i class="fas fa-history"></i> 学習ログ
+            </h2>
+            <p class="text-gray-600 mb-4">
+              AIによる自動最適化やフィルターの利用履歴、ブロックされたキーワードのログなどを確認できます。
+            </p>
+            <div
+              class="h-64 flex justify-center items-center text-gray-400 border-2 border-dashed border-gray-200 rounded-lg"
+            >
+              <p>
+                <i class="fas fa-info-circle mr-2"></i>
+                学習ログの表示は現在開発中です
+              </p>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- モーダルウィンドウ -->
+    <div id="modal" class="modal hidden">
+      <div class="modal-content">
+        <h2 id="modal-title" class="text-2xl font-bold mb-4"></h2>
+        <div id="modal-body"></div>
+        <div class="flex justify-end mt-4">
+          <button onclick="closeModal()" class="btn btn-secondary">
+            閉じる
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 通知コンテナ -->
+    <div id="notification-container"></div>
+
+    <script>
+      // --- データと状態管理 ---
+      let allProducts = [];
+      let selectedProducts = [];
+      let currentView = "excel";
+
+      // モックデータ (JSONの代わりに直接定義)
+      const MOCK_DATA = [
+        {
+          id: "SKU-001",
+          asin: "B01M29X32E",
+          title: "ビンテージ革製ハンドバッグ",
+          price: 120.5,
+          stock: 5,
+          status: "出品中",
+          condition: "中古",
+          image: "https://placehold.co/100x100/3b82f6/ffffff?text=BAG",
+        },
+        {
+          id: "SKU-002",
+          asin: "B07JVF12E5",
+          title: "高性能ワイヤレスイヤホン",
+          price: 85.0,
+          stock: 0,
+          status: "一時停止",
+          condition: "新品",
+          image: "https://placehold.co/100x100/10b981/ffffff?text=EARPHONE",
+        },
+        {
+          id: "SKU-003",
+          asin: "B08F2B7D9S",
+          title: "4K対応スマートTV",
+          price: 550.99,
+          stock: 1,
+          status: "出品中",
+          condition: "新品",
+          image: "https://placehold.co/100x100/f59e0b/ffffff?text=TV",
+        },
+        {
+          id: "SKU-004",
+          asin: "B09G3F1H5K",
+          title: "アンティーク木製椅子",
+          price: 250.0,
+          stock: 12,
+          status: "出品中",
+          condition: "ジャンク",
+          image: "https://placehold.co/100x100/64748b/ffffff?text=CHAIR",
+        },
+        {
+          id: "SKU-005",
+          asin: "B08R3C4Q6S",
+          title: "ヴィンテージカメラ",
+          price: 420.0,
+          stock: 0,
+          status: "未出品",
+          condition: "中古",
+          image: "https://placehold.co/100x100/94a3b8/ffffff?text=CAMERA",
+        },
+        {
+          id: "SKU-006",
+          asin: "B09L7G4J8F",
+          title: "ポータブル充電器",
+          price: 29.99,
+          stock: 20,
+          status: "出品中",
+          condition: "新品",
+          image: "https://placehold.co/100x100/3b82f6/ffffff?text=POWER",
+        },
+        {
+          id: "SKU-007",
+          asin: "B07M2V5P4E",
+          title: "電動歯ブラシセット",
+          price: 75.0,
+          stock: 0,
+          status: "一時停止",
+          condition: "新品",
+          image: "https://placehold.co/100x100/10b981/ffffff?text=TOOTHBRUSH",
+        },
+        {
+          id: "SKU-008",
+          asin: "B08X5H3Q2C",
+          title: "高性能コーヒーメーカー",
+          price: 150.0,
+          stock: 8,
+          status: "出品中",
+          condition: "新品",
+          image: "https://placehold.co/100x100/f59e0b/ffffff?text=COFFEE",
+        },
+        {
+          id: "SKU-009",
+          asin: "B09K1L9P2M",
+          title: "スマートウォッチ",
+          price: 199.5,
+          stock: 3,
+          status: "出品中",
+          condition: "中古",
+          image: "https://placehold.co/100x100/64748b/ffffff?text=WATCH",
+        },
+        {
+          id: "SKU-010",
+          asin: "B07Q8W4T2S",
+          title: "ヴィンテージレコードプレーヤー",
+          price: 300.0,
+          stock: 0,
+          status: "未出品",
+          condition: "中古",
+          image: "https://placehold.co/100x100/94a3b8/ffffff?text=PLAYER",
+        },
+      ];
+
+      // --- UI要素取得 ---
+      const tabs = document.querySelectorAll(".tab");
+      const tabContents = document.querySelectorAll(".tab-content");
+      const viewButtons = document.querySelectorAll("#view-excel, #view-card");
+      const excelView = document.getElementById("excel-view");
+      const cardView = document.getElementById("card-view");
+      const excelTbody = document.getElementById("excel-tbody");
+      const cardContainer = document.getElementById("card-container");
+      const searchInput = document.getElementById("search-input");
+      const filterStatus = document.getElementById("filter-status");
+      const filterCondition = document.getElementById("filter-condition");
+      const masterCheckbox = document.getElementById("master-checkbox");
+      const selectedForSetContainer =
+        document.getElementById("selected-for-set");
+
+      // --- イベントリスナー ---
+      document.addEventListener("DOMContentLoaded", () => {
+        loadProducts();
+        setupEventListeners();
+      });
+
+      function setupEventListeners() {
+        // タブ切り替え
+        tabs.forEach((tab) => {
+          tab.addEventListener("click", () => switchTab(tab.dataset.tab));
+        });
+
+        // ビュー切り替え
+        viewButtons.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            viewButtons.forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            currentView = btn.id === "view-excel" ? "excel" : "card";
+            renderProducts(allProducts);
+          });
+        });
+
+        // フィルター・検索
+        searchInput.addEventListener("input", applyFilters);
+        filterStatus.addEventListener("change", applyFilters);
+        filterCondition.addEventListener("change", applyFilters);
+        document
+          .getElementById("reset-filters")
+          .addEventListener("click", resetFilters);
+
+        // 全選択チェックボックス
+        masterCheckbox.addEventListener("change", (e) => {
+          document.querySelectorAll(".item-checkbox").forEach((cb) => {
+            cb.checked = e.target.checked;
+            updateRowHighlight(cb);
+          });
+          updateSelectedProducts();
+        });
+
+        // セット品登録ボタン
+        document
+          .getElementById("register-set-btn")
+          .addEventListener("click", registerSetProduct);
+      }
+
+      // --- 関数群 ---
+
+      // 初期データ読み込み
+      function loadProducts() {
+        // 実際はAPIからデータを取得する
+        allProducts = MOCK_DATA;
+        renderProducts(allProducts);
+        showNotification("製品データを読み込みました。", "success");
+      }
+
+      // フィルター適用
+      function applyFilters() {
+        const query = searchInput.value.toLowerCase();
+        const status = filterStatus.value;
+        const condition = filterCondition.value;
+
+        const filteredProducts = allProducts.filter((product) => {
+          const matchesSearch =
+            product.title.toLowerCase().includes(query) ||
+            product.id.toLowerCase().includes(query) ||
+            product.asin.toLowerCase().includes(query);
+          const matchesStatus = status === "all" || product.status === status;
+          const matchesCondition =
+            condition === "all" || product.condition === condition;
+
+          return matchesSearch && matchesStatus && matchesCondition;
+        });
+        renderProducts(filteredProducts);
+      }
+
+      // フィルターリセット
+      function resetFilters() {
+        searchInput.value = "";
+        filterStatus.value = "all";
+        filterCondition.value = "all";
+        applyFilters();
+        showNotification("フィルターをリセットしました", "info");
+      }
+
+      // 製品一覧のレンダリング
+      function renderProducts(products) {
+        excelTbody.innerHTML = "";
+        cardContainer.innerHTML = "";
+
+        if (currentView === "excel") {
+          excelView.classList.remove("hidden");
+          cardView.classList.add("hidden");
+
+          products.forEach((product, index) => {
+            const row = document.createElement("tr");
+            const statusClass = getStatusClass(product.status);
+            row.innerHTML = `
+                        <td><input type="checkbox" class="item-checkbox" data-index="${index}"></td>
+                        <td><img src="${product.image}" alt="${
+              product.title
+            }" class="product-thumb"></td>
+                        <td>${product.id}<br>${product.asin}</td>
+                        <td>${product.title}</td>
+                        <td>$${product.price.toFixed(2)}</td>
+                        <td><input type="number" value="${
+                          product.stock
+                        }" onchange="updateStock(${index}, this.value)"></td>
+                        <td><span class="status-badge ${statusClass}">${
+              product.status
+            }</span></td>
+                        <td>${product.condition}</td>
+                        <td>
+                            <button onclick="viewDetails(${index})" class="text-blue-500 hover:text-blue-700"><i class="fas fa-edit"></i></button>
+                        </td>
+                    `;
+            excelTbody.appendChild(row);
+          });
+        } else {
+          // Card View
+          excelView.classList.add("hidden");
+          cardView.classList.remove("hidden");
+
+          products.forEach((product, index) => {
+            const statusClass = getStatusClass(product.status);
+            const card = document.createElement("div");
+            card.className = "product-card";
+            card.innerHTML = `
+                        <div class="card-image"><img src="${
+                          product.image
+                        }" alt="${
+              product.title
+            }" onerror="this.onerror=null;this.src='https://placehold.co/400x200/e2e8f0/ffffff?text=NO+IMAGE';"></div>
+                        <div class="card-content">
+                            <h3 class="card-title">${product.title}</h3>
+                            <div class="card-details">
+                                <span>SKU: ${product.id}</span>
+                                <span>ASIN: ${product.asin}</span>
+                            </div>
+                            <div class="card-details">
+                                <span class="font-bold text-gray-800">$${product.price.toFixed(
+                                  2
+                                )}</span>
+                                <span class="status-badge ${statusClass}">${
+              product.status
+            }</span>
+                            </div>
+                            <div class="card-details mb-4">
+                                <span>在庫: ${product.stock}</span>
+                                <span>状態: ${product.condition}</span>
+                            </div>
+                            <button onclick="viewDetails(${index})" class="card-btn">
+                                <i class="fas fa-info-circle"></i> 詳細
+                            </button>
+                        </div>
+                    `;
+            cardContainer.appendChild(card);
+          });
+        }
+      }
+
+      function getStatusClass(status) {
+        switch (status) {
+          case "出品中":
+            return "status-green";
+          case "一時停止":
+            return "status-yellow";
+          case "未出品":
+            return "status-gray";
+          default:
+            return "";
+        }
+      }
+
+      // 在庫数更新（デモ）
+      function updateStock(index, value) {
+        const product = allProducts[index];
+        const oldValue = product.stock;
+        const newValue = parseInt(value, 10);
+
+        if (isNaN(newValue) || newValue < 0) {
+          showNotification("在庫数は0以上の整数で入力してください", "error");
+          renderProducts(allProducts); // 元の状態に戻す
+          return;
+        }
+
+        product.stock = newValue;
+        showNotification(
+          `${product.id} の在庫数を ${oldValue} から ${newValue} に更新しました`,
+          "success"
+        );
+      }
+
+      // タブ切り替え
+      function switchTab(tabId) {
+        tabs.forEach((tab) => tab.classList.remove("active"));
+        tabContents.forEach((content) => content.classList.add("hidden"));
+
+        document.getElementById(`tab-${tabId}`).classList.add("active");
+        document.getElementById(`${tabId}-view`).classList.remove("hidden");
+      }
+
+      // 詳細表示モーダル
+      function viewDetails(index) {
+        const product = allProducts[index];
+        openModal(
+          `製品詳細: ${product.title}`,
+          `
+                <div class="space-y-4 text-sm text-gray-700">
+                    <div><strong>SKU/ASIN:</strong> ${product.id} / ${
+            product.asin
+          }</div>
+                    <div><strong>価格:</strong> $${product.price.toFixed(
+                      2
+                    )}</div>
+                    <div><strong>在庫数:</strong> ${product.stock}</div>
+                    <div><strong>ステータス:</strong> <span class="status-badge ${getStatusClass(
+                      product.status
+                    )}">${product.status}</span></div>
+                    <div><strong>状態:</strong> ${product.condition}</div>
+                </div>
+                `
+        );
+      }
+
+      // モーダル制御
+      function openModal(title, content) {
+        const modal = document.getElementById("modal");
+        document.getElementById("modal-title").textContent = title;
+        document.getElementById("modal-body").innerHTML = content;
+        modal.classList.remove("hidden");
+        setTimeout(() => modal.classList.add("is-active"), 10);
+      }
+
+      function closeModal() {
+        const modal = document.getElementById("modal");
+        modal.classList.remove("is-active");
+        setTimeout(() => modal.classList.add("hidden"), 300);
+      }
+
+      // 通知システム
+      function showNotification(message, type = "info") {
+        const container = document.getElementById("notification-container");
+        const notification = document.createElement("div");
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+
+        container.appendChild(notification);
+
+        setTimeout(() => {
+          notification.classList.add("show");
+        }, 10);
+
+        setTimeout(() => {
+          notification.classList.remove("show");
+          setTimeout(() => {
+            notification.remove();
+          }, 300);
+        }, 5000);
+      }
+
+      // 個別チェックボックスの状態更新とセット品リスト
+      document.addEventListener("change", (e) => {
+        if (e.target.classList.contains("item-checkbox")) {
+          updateSelectedProducts();
+        }
+      });
+
+      function updateSelectedProducts() {
+        const checkboxes = document.querySelectorAll(".item-checkbox");
+        const checkedProducts = [];
+        const selectedSetList = [];
+
+        checkboxes.forEach((cb, index) => {
+          if (cb.checked) {
+            checkedProducts.push(allProducts[index]);
+            selectedSetList.push(allProducts[index].id);
+          }
+          updateRowHighlight(cb);
+        });
+
+        selectedProducts = checkedProducts;
+
+        if (selectedSetList.length > 0) {
+          selectedForSetContainer.innerHTML = selectedSetList
+            .map(
+              (id) => `
+                    <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                        ${id}
+                    </span>
+                `
+            )
+            .join("");
+        } else {
+          selectedForSetContainer.innerHTML =
+            '<span class="text-sm text-gray-500">選択された商品がここに表示されます...</span>';
+        }
+      }
+
+      function updateRowHighlight(checkbox) {
+        const row = checkbox.closest("tr");
+        if (row) {
+          row.style.backgroundColor = checkbox.checked ? "#e0f2fe" : "";
+        }
+      }
+
+      // セット品登録（デモ）
+      function registerSetProduct() {
+        const setName = document.getElementById("set-name-input").value;
+        if (selectedProducts.length === 0) {
+          showNotification(
+            "セット品として登録する商品を1つ以上選択してください",
+            "warning"
+          );
+          return;
+        }
+        if (!setName) {
+          showNotification("セット品名を入力してください", "warning");
+          return;
+        }
+
+        // 実際はAPIを呼び出して登録する
+        const setProductData = {
+          name: setName,
+          items: selectedProducts.map((p) => p.id),
+          count: selectedProducts.length,
+        };
+
+        console.log("セット品登録データ:", setProductData);
+        showNotification(
+          `「${setName}」を含むセット品を登録しました！ (${selectedProducts.length}商品)`,
+          "success"
+        );
+
+        // UIをリセット
+        document.getElementById("set-name-input").value = "";
+        document.querySelectorAll(".item-checkbox").forEach((cb) => {
+          cb.checked = false;
+          updateRowHighlight(cb);
+        });
+        updateSelectedProducts();
+      }
+    </script>
+  </body>
+</html>

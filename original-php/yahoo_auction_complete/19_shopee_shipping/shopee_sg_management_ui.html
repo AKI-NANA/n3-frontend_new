@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🇸🇬 Shopee シンガポール専用管理システム</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --shopee-primary: #ee4d2d;
+            --shopee-secondary: #ff6600;
+            --singapore-blue: #003f5c;
+            --singapore-red: #ed2939;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --border-color: #e2e8f0;
+            --radius-md: 0.375rem;
+            --radius-lg: 0.5rem;
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --space-sm: 0.5rem;
+            --space-md: 1rem;
+            --space-lg: 1.5rem;
+            --space-xl: 2rem;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: var(--space-lg);
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--shopee-primary), var(--singapore-blue));
+            color: white;
+            padding: var(--space-xl);
+            border-radius: var(--radius-lg);
+            margin-bottom: var(--space-lg);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '🇸🇬';
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            font-size: 8rem;
+            opacity: 0.1;
+            transform: rotate(15deg);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: var(--space-sm);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-lg);
+            margin-bottom: var(--space-xl);
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            padding: var(--space-lg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--shopee-primary);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-md);
+        }
+
+        .stat-title {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .stat-icon {
+            font-size: 1.5rem;
+            color: var(--shopee-primary);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--text-primary);
+            margin-bottom: var(--space-sm);
+        }
+
+        .stat-change {
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .stat-change.positive {
+            color: var(--success-color);
+        }
+
+        .stat-change.negative {
+            color: var(--danger-color);
+        }
+
+        .section {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+            margin-bottom: var(--space-lg);
+            box-shadow: var(--shadow-md);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            margin-bottom: var(--space-lg);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--space-lg);
+            margin-bottom: var(--space-lg);
+        }
+
+        .form-group {
+            margin-bottom: var(--space-md);
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: var(--space-sm);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: var(--space-md);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--shopee-primary);
+        }
+
+        .btn {
+            background: var(--shopee-primary);
+            color: white;
+            border: none;
+            padding: var(--space-md) var(--space-lg);
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .btn:hover {
+            background: var(--shopee-secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(238, 77, 45, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--singapore-blue);
+        }
+
+        .btn-secondary:hover {
+            background: #004d73;
+        }
+
+        .btn-success {
+            background: var(--success-color);
+        }
+
+        .btn-warning {
+            background: var(--warning-color);
+        }
+
+        .shipping-rates-table {
+            overflow-x: auto;
+            margin-top: var(--space-lg);
+        }
+
+        .rates-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+        }
+
+        .rates-table th {
+            background: var(--shopee-primary);
+            color: white;
+            padding: var(--space-md);
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .rates-table td {
+            padding: var(--space-md);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .rates-table tr:hover {
+            background: var(--bg-primary);
+        }
+
+        .weight-range {
+            font-weight: 600;
+            color: var(--singapore-blue);
+        }
+
+        .price-sgd {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .price-jpy {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .seller-benefit {
+            background: var(--success-color);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .profit-calculator {
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+            border: 2px solid var(--shopee-primary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+        }
+
+        .calculator-result {
+            background: white;
+            border-radius: var(--radius-md);
+            padding: var(--space-lg);
+            margin-top: var(--space-lg);
+            box-shadow: var(--shadow-md);
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-md);
+            margin-bottom: var(--space-lg);
+        }
+
+        .result-item {
+            text-align: center;
+            padding: var(--space-md);
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+        }
+
+        .result-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+
+        .result-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .recommendation-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-top: var(--space-sm);
+        }
+
+        .recommendation-excellent {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .recommendation-good {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        .recommendation-poor {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .exchange-rate-widget {
+            background: var(--singapore-blue);
+            color: white;
+            padding: var(--space-lg);
+            border-radius: var(--radius-md);
+            text-align: center;
+        }
+
+        .exchange-rate-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: var(--space-sm) 0;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .notification {
+            padding: var(--space-md);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-md);
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .notification.info {
+            background: #dbeafe;
+            border: 1px solid #93c5fd;
+            color: #1e40af;
+        }
+
+        .notification.success {
+            background: #d1fae5;
+            border: 1px solid #6ee7b7;
+            color: #065f46;
+        }
+
+        @media (max-width: 768px) {
+            .form-grid, .result-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-store"></i> Shopee シンガポール管理システム</h1>
+            <p>送料計算・利益分析・推奨システム - Phase 1 完全実装版</p>
+        </div>
+
+        <!-- 統計情報 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">現在の為替レート</span>
+                    <i class="fas fa-exchange-alt stat-icon"></i>
+                </div>
+                <div class="stat-value" id="exchange-rate">1 SGD = ¥115.00</div>
+                <div class="stat-change positive" id="rate-change">+0.5% (24h)</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">送料データ完成度</span>
+                    <i class="fas fa-shipping-fast stat-icon"></i>
+                </div>
+                <div class="stat-value">100%</div>
+                <div class="stat-change positive">9重量区分完備</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">平均セラー利益</span>
+                    <i class="fas fa-coins stat-icon"></i>
+                </div>
+                <div class="stat-value" id="avg-benefit">¥158</div>
+                <div class="stat-change positive">送料差額利益</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">推奨度スコア</span>
+                    <i class="fas fa-star stat-icon"></i>
+                </div>
+                <div class="stat-value" id="recommendation-score">85点</div>
+                <div class="stat-change positive">高推奨レベル</div>
+            </div>
+        </div>
+
+        <!-- 為替レート管理 -->
+        <div class="section">
+            <h2 class="section-title">
+                <i class="fas fa-money-bill-wave"></i>
+                為替レート管理
+            </h2>
+
+            <div class="form-grid">
+                <div class="exchange-rate-widget">
+                    <div>現在レート</div>
+                    <div class="exchange-rate-value">1 SGD = ¥<span id="current-rate">115.00</span></div>
+                    <div style="font-size: 0.8rem; opacity: 0.8;">最終更新: <span id="last-updated">2025-09-18 14:30</span></div>
+                </div>
+
+                <div>
+                    <label class="form-label">新しい為替レート</label>
+                    <div style="display: flex; gap: var(--space-sm);">
+                        <input type="number" class="form-input" id="new-rate" placeholder="115.00" step="0.0001" min="0">
+                        <button class="btn" onclick="updateExchangeRate()">
+                            <i class="fas fa-sync-alt"></i>
+                            更新
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 送料一覧 -->
+        <div class="section">
+            <h2 class="section-title">
+                <i class="fas fa-table"></i>
+                シンガポール SLS 送料一覧
+            </h2>
+
+            <div class="shipping-rates-table">
+                <table class="rates-table">
+                    <thead>
+                        <tr>
+                            <th>重量範囲</th>
+                            <th>ESF（購入者支払い）</th>
+                            <th>実額（セラー負担）</th>
+                            <th>セラー利益</th>
+                            <th>配送日数</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="shipping-rates-tbody">
+                        <!-- JavaScriptで動的生成 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <button class="btn btn-secondary" onclick="refreshShippingRates()">
+                <i class="fas fa-refresh"></i>
+                送料データ更新
+            </button>
+        </div>
+
+        <!-- 利益計算器 -->
+        <div class="section">
+            <h2 class="section-title">
+                <i class="fas fa-calculator"></i>
+                シンガポール利益計算器
+            </h2>
+
+            <div class="profit-calculator">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-yen-sign"></i> Yahoo購入価格（円）
+                        </label>
+                        <input type="number" class="form-input" id="yahoo-price" placeholder="3000" min="0">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-weight"></i> 商品重量（グラム）
+                        </label>
+                        <input type="number" class="form-input" id="product-weight" placeholder="500" min="1" max="30000">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-tag"></i> Shopee販売価格（円）
+                        </label>
+                        <input type="number" class="form-input" id="selling-price" placeholder="8000" min="0">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-map-marker-alt"></i> 配送ゾーン
+                        </label>
+                        <select class="form-select" id="delivery-zone">
+                            <option value="A">Zone A - Metropolitan Singapore</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="btn btn-success" onclick="calculateProfit()" style="width: 100%;">
+                    <i class="fas fa-chart-line"></i>
+                    利益計算実行
+                </button>
+
+                <div id="profit-result" class="calculator-result" style="display: none;">
+                    <!-- 結果表示エリア -->
+                </div>
+            </div>
+        </div>
+
+        <!-- システム管理 -->
+        <div class="section">
+            <h2 class="section-title">
+                <i class="fas fa-cogs"></i>
+                システム管理
+            </h2>
+
+            <div class="form-grid">
+                <div>
+                    <h4>データ管理</h4>
+                    <button class="btn btn-warning" onclick="exportSingaporeData()">
+                        <i class="fas fa-download"></i>
+                        データエクスポート
+                    </button>
+                </div>
+
+                <div>
+                    <h4>次のフェーズ</h4>
+                    <button class="btn btn-secondary" onclick="preparePhilippines()">
+                        <i class="fas fa-flag"></i>
+                        🇵🇭 フィリピン準備
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 送料データ（デモ用）
+        const shippingRatesData = [
+            { weightRange: '1g - 250g', esfSGD: 3.60, actualSGD: 2.23, esfJPY: 414, actualJPY: 256, days: '5-8' },
+            { weightRange: '251g - 500g', esfSGD: 4.20, actualSGD: 2.65, esfJPY: 483, actualJPY: 305, days: '5-8' },
+            { weightRange: '501g - 1000g', esfSGD: 4.80, actualSGD: 3.10, esfJPY: 552, actualJPY: 357, days: '5-8' },
+            { weightRange: '1001g - 2000g', esfSGD: 6.40, actualSGD: 4.20, esfJPY: 736, actualJPY: 483, days: '6-9' },
+            { weightRange: '2001g - 3000g', esfSGD: 8.60, actualSGD: 5.70, esfJPY: 989, actualJPY: 656, days: '6-9' },
+            { weightRange: '3001g - 5000g', esfSGD: 12.80, actualSGD: 8.50, esfJPY: 1472, actualJPY: 978, days: '7-10' },
+            { weightRange: '5001g - 10000g', esfSGD: 20.40, actualSGD: 13.60, esfJPY: 2346, actualJPY: 1564, days: '8-12' },
+            { weightRange: '10001g - 20000g', esfSGD: 35.20, actualSGD: 23.50, esfJPY: 4048, actualJPY: 2703, days: '10-14' },
+            { weightRange: '20001g - 30000g', esfSGD: 52.80, actualSGD: 35.20, esfJPY: 6072, actualJPY: 4048, days: '12-16' }
+        ];
+
+        // 送料テーブル生成
+        function generateShippingRatesTable() {
+            const tbody = document.getElementById('shipping-rates-tbody');
+            tbody.innerHTML = shippingRatesData.map(rate => {
+                const benefit = rate.esfJPY - rate.actualJPY;
+                return `
+                    <tr>
+                        <td class="weight-range">${rate.weightRange}</td>
+                        <td>
+                            <div class="price-sgd">S$${rate.esfSGD}</div>
+                            <div class="price-jpy">¥${rate.esfJPY}</div>
+                        </td>
+                        <td>
+                            <div class="price-sgd">S$${rate.actualSGD}</div>
+                            <div class="price-jpy">¥${rate.actualJPY}</div>
+                        </td>
+                        <td>
+                            <span class="seller-benefit">+¥${benefit}</span>
+                        </td>
+                        <td>${rate.days}日</td>
+                        <td>
+                            <button class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;" onclick="editRate('${rate.weightRange}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // 利益計算
+        async function calculateProfit() {
+            const yahooPrice = parseFloat(document.getElementById('yahoo-price').value);
+            const weight = parseInt(document.getElementById('product-weight').value);
+            const sellingPrice = parseFloat(document.getElementById('selling-price').value);
+            const zone = document.getElementById('delivery-zone').value;
+
+            if (!yahooPrice || !weight || !sellingPrice) {
+                alert('すべての項目を入力してください');
+                return;
+            }
+
+            // ローディング表示
+            const btn = document.querySelector('button[onclick="calculateProfit()"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<div class="loading"></div> 計算中...';
+            btn.disabled = true;
+
+            try {
+                // 実装時はAPIコール
+                // const response = await fetch('/api/calculate_singapore_profit', { ... });
+                
+                // デモ計算
+                const result = calculateDemoProfit(yahooPrice, weight, sellingPrice);
+                displayProfitResult(result);
+
+            } catch (error) {
+                console.error('計算エラー:', error);
+                alert('計算エラーが発生しました');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // デモ利益計算
+        function calculateDemoProfit(yahooPrice, weight, sellingPrice) {
+            // 送料データ検索
+            const shippingRate = shippingRatesData.find(rate => {
+                const [from, to] = rate.weightRange.split(' - ').map(w => parseInt(w.replace(/[^\d]/g, '')));
+                return weight >= from && weight <= to;
+            }) || shippingRatesData[2]; // デフォルト
+
+            // 手数料計算
+            const commission = sellingPrice * 0.055; // 5.5%
+            const paymentFee = sellingPrice * 0.029; // 2.9%
+            const withdrawalFee = sellingPrice * 0.005; // 0.5%
+            const totalFees = commission + paymentFee + withdrawalFee;
+
+            // 利益計算
+            const grossProfit = sellingPrice - yahooPrice;
+            const shippingBenefit = shippingRate.esfJPY - shippingRate.actualJPY;
+            const netProfit = grossProfit - totalFees + shippingBenefit;
+            const profitMargin = (netProfit / sellingPrice) * 100;
+            const roi = (netProfit / yahooPrice) * 100;
+
+            // 推奨スコア計算
+            let score = 50;
+            if (profitMargin >= 30) score += 25;
+            else if (profitMargin >= 20) score += 20;
+            else if (profitMargin >= 15) score += 15;
+            else if (profitMargin >= 10) score += 10;
+            else if (profitMargin < 0) score -= 30;
+
+            if (shippingBenefit >= 200) score += 15;
+            else if (shippingBenefit >= 150) score += 12;
+            else if (shippingBenefit >= 100) score += 8;
+            else if (shippingBenefit >= 50) score += 5;
+
+            if (roi >= 50) score += 10;
+            else if (roi >= 30) score += 8;
+            else if (roi >= 20) score += 5;
+            else if (roi < 0) score -= 20;
+
+            score = Math.max(0, Math.min(100, score));
+
+            return {
+                shippingESF: shippingRate.esfJPY,
+                shippingActual: shippingRate.actualJPY,
+                shippingBenefit: shippingBenefit,
+                commission: commission,
+                totalFees: totalFees,
+                grossProfit: grossProfit,
+                netProfit: netProfit,
+                profitMargin: profitMargin,
+                roi: roi,
+                score: score,
+                weightRange: shippingRate.weightRange
+            };
+        }
+
+        // 結果表示
+        function displayProfitResult(result) {
+            const resultDiv = document.getElementById('profit-result');
+            
+            let recommendationClass, recommendationText;
+            if (result.score >= 80) {
+                recommendationClass = 'recommendation-excellent';
+                recommendationText = '強く推奨';
+            } else if (result.score >= 60) {
+                recommendationClass = 'recommendation-good';
+                recommendationText = '推奨';
+            } else {
+                recommendationClass = 'recommendation-poor';
+                recommendationText = '要検討';
+            }
+
+            resultDiv.innerHTML = `
+                <h4>🇸🇬 シンガポール利益計算結果</h4>
+                
+                <div class="result-grid">
+                    <div class="result-item">
+                        <div class="result-label">送料（購入者負担）</div>
+                        <div class="result-value">¥${Math.round(result.shippingESF)}</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">送料（セラー負担）</div>
+                        <div class="result-value">¥${Math.round(result.shippingActual)}</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">送料差額利益</div>
+                        <div class="result-value" style="color: var(--success-color);">+¥${Math.round(result.shippingBenefit)}</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">Shopee手数料</div>
+                        <div class="result-value">¥${Math.round(result.totalFees)}</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">最終利益</div>
+                        <div class="result-value" style="color: ${result.netProfit > 0 ? 'var(--success-color)' : 'var(--danger-color)'};">¥${Math.round(result.netProfit)}</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">利益率</div>
+                        <div class="result-value">${result.profitMargin.toFixed(1)}%</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">ROI</div>
+                        <div class="result-value">${result.roi.toFixed(1)}%</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">推奨スコア</div>
+                        <div class="result-value">${result.score}点</div>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: var(--space-lg);">
+                    <span class="recommendation-badge ${recommendationClass}">
+                        ${recommendationText}（${result.score}点）
+                    </span>
+                    <div style="margin-top: var(--space-sm); color: var(--text-secondary);">
+                        適用送料区分: ${result.weightRange}
+                    </div>
+                </div>
+            `;
+
+            resultDiv.style.display = 'block';
+        }
+
+        // 為替レート更新
+        async function updateExchangeRate() {
+            const newRate = parseFloat(document.getElementById('new-rate').value);
+            
+            if (!newRate || newRate <= 0) {
+                alert('有効な為替レートを入力してください');
+                return;
+            }
+
+            try {
+                // 実装時はAPIコール
+                // await fetch('/api/update_exchange_rate', { ... });
+                
+                // デモ更新
+                document.getElementById('current-rate').textContent = newRate.toFixed(4);
+                document.getElementById('exchange-rate').textContent = `1 SGD = ¥${newRate.toFixed(2)}`;
+                document.getElementById('last-updated').textContent = new Date().toLocaleString('ja-JP');
+                
+                alert(`為替レートを 1 SGD = ¥${newRate.toFixed(2)} に更新しました`);
+                
+                // 送料テーブル再生成（レート変更反映）
+                generateShippingRatesTable();
+                
+            } catch (error) {
+                console.error('更新エラー:', error);
+                alert('為替レート更新に失敗しました');
+            }
+        }
+
+        // その他の機能
+        function refreshShippingRates() {
+            generateShippingRatesTable();
+            alert('送料データを更新しました');
+        }
+
+        function editRate(weightRange) {
+            alert(`${weightRange} の料金編集機能は開発中です`);
+        }
+
+        function exportSingaporeData() {
+            alert('シンガポールデータのエクスポート機能は開発中です');
+        }
+
+        function preparePhilippines() {
+            if (confirm('フィリピン（PH）の実装準備を開始しますか？\nシンガポールのデータ検証完了後に実行することを推奨します。')) {
+                alert('🇵🇭 Phase 2: フィリピン実装準備開始\n\n次の手順:\n1. フィリピン送料データ収集\n2. PHP為替レート設定\n3. ゾーン設定（Metro Manila/Provincial）');
+            }
+        }
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            generateShippingRatesTable();
+            console.log('🇸🇬 Shopee シンガポール管理システム初期化完了');
+        });
+    </script>
+</body>
+</html>

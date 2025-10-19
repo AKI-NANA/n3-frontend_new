@@ -1,0 +1,769 @@
+# 🪝 NAGANO-3 汎用hooks実装フェーズ - 中身のhooks完全作成
+
+## 🎯 **前提条件（完成済みシステム）**
+
+### ✅ **既に完成している基盤ツール**
+- **自動ディレクトリ検出・管理システム** ✅ 完成済み
+- **自然言語指示書解析エンジン** ✅ 完成済み  
+- **統合Hooks生成・実行システム** ✅ 完成済み
+- **統合実行制御システム** ✅ 完成済み
+
+### 🎯 **現在のフェーズ：中身のhooks汎用部分を全て作成**
+
+## 📊 **ナレッジベース技術仕様マップ（hooks作成用）**
+
+#### **✅ JavaScript/Frontend技術仕様（完備）**
+- **JavaScript エラー防止・開発指示書**: 312行（エラーパターン完全対応）
+- **03-PHPとJavaScript連携**: 797行（PHP-JS統合技術）
+- **NAGANO3-CSS・JS統合管理システム**: 997行（統合管理システム）
+- **01-CSS・画面デザインルール**: 1,411行（BEM完全準拠）
+- **02-PHPとCSS連携方法**: 584行（CSS統合技術）
+
+**合計**: 4,101行の詳細技術仕様
+
+#### **✅ Python/Backend技術仕様（完備）**
+- **01-API作成の基本テンプレート**: API実装パターン完全版
+- **02-データベース設計**: PostgreSQL完全仕様
+- **06-Inventoryモジュール完全テンプレート**: 実装例完備
+- **07-既存データ矛盾解消**: 統合技術完備
+- **多数のPython開発指示書**: 20+ ファイル
+
+**合計**: 15,000行以上の実装仕様
+
+#### **✅ セキュリティ・認証仕様（完備）**
+- **SECURITY_セキュリティ実装完全基準書**: 1,936行
+- **01-JWT認証システム**: 1,384行
+- **02-セキュリティ完全実装**: 2,177行
+
+**合計**: 5,497行のセキュリティ仕様
+
+#### **✅ テスト・品質保証仕様（完備）**
+- **01-テスト自動化システム**: 1,481行
+- **02-テストコード自動生成**: 1,933行
+- **06-TEST_テスト・品質保証完全手順書**: 3,198行
+
+**合計**: 6,612行の品質保証仕様
+
+#### **✅ 国際化・多言語仕様（完備）**
+- **I18N_国際化・多言語対応完全実装指示書**: 2,585行
+- **03-多言語・国際化対応**: 463行
+
+**合計**: 3,048行の国際化仕様
+
+#### **✅ 環境構築・運用仕様（完備）**
+- **D-ENV_環境構築・デプロイ完全手順書**: 1,229行
+- **🛠️ 段階的VPSデバッグシステム開発指示書**: 979行
+- **02-Docker環境設定**: Docker完全仕様
+
+**合計**: 3,000行以上の運用仕様
+
+## 🎯 **作成対象：190種類の汎用hooks中身**
+
+### **🔧 1. JavaScript/Frontend検証hooks（35種類）**
+
+#### **A. JavaScript品質検証hooks**
+```python
+class JavaScriptValidationHooks:
+    """JavaScript コード品質・エラー防止hooks"""
+    
+    def validate_es6_syntax(self, code_content: str) -> Dict[str, Any]:
+        """ES6+モダンJavaScript構文検証"""
+        validation_result = {
+            'syntax_compliance': self._check_es6_compliance(code_content),
+            'async_await_usage': self._validate_async_patterns(code_content),
+            'arrow_function_usage': self._check_arrow_functions(code_content),
+            'destructuring_usage': self._validate_destructuring(code_content),
+            'template_literals': self._check_template_literals(code_content)
+        }
+        return validation_result
+    
+    def detect_javascript_conflicts(self, project_files: List[str]) -> Dict[str, Any]:
+        """JavaScript競合・重複検出（312行仕様ベース）"""
+        conflict_analysis = {
+            'global_variable_conflicts': self._scan_global_conflicts(project_files),
+            'function_name_duplicates': self._detect_function_duplicates(project_files),
+            'jquery_conflicts': self._check_jquery_conflicts(project_files),
+            'event_listener_overlaps': self._detect_event_conflicts(project_files),
+            'namespace_violations': self._check_namespace_compliance(project_files)
+        }
+        return conflict_analysis
+    
+    def validate_php_js_integration(self, php_files: List[str], js_files: List[str]) -> Dict[str, Any]:
+        """PHP-JavaScript連携検証（797行仕様ベース）"""
+        integration_check = {
+            'ajax_endpoint_consistency': self._verify_ajax_endpoints(php_files, js_files),
+            'csrf_token_handling': self._check_csrf_implementation(php_files, js_files),
+            'data_binding_validation': self._validate_data_binding(php_files, js_files),
+            'error_handling_consistency': self._check_error_handling(php_files, js_files)
+        }
+        return integration_check
+```
+
+#### **B. CSS/HTML品質hooks**
+```python
+class CSSHTMLValidationHooks:
+    """CSS・HTML品質検証hooks（1,411行仕様ベース）"""
+    
+    def validate_bem_compliance(self, css_content: str, html_content: str) -> Dict[str, Any]:
+        """BEM完全準拠検証"""
+        bem_analysis = {
+            'block_element_modifier_structure': self._analyze_bem_structure(css_content),
+            'naming_convention_compliance': self._check_naming_rules(css_content),
+            'html_css_consistency': self._verify_html_css_match(html_content, css_content),
+            'japanese_romaji_compliance': self._check_business_layer_naming(css_content)
+        }
+        return bem_analysis
+    
+    def validate_responsive_design(self, css_content: str) -> Dict[str, Any]:
+        """レスポンシブデザイン検証"""
+        responsive_check = {
+            'mobile_first_compliance': self._check_mobile_first(css_content),
+            'breakpoint_consistency': self._validate_breakpoints(css_content),
+            'grid_flexbox_usage': self._analyze_layout_methods(css_content),
+            'media_query_optimization': self._optimize_media_queries(css_content)
+        }
+        return responsive_check
+    
+    def validate_accessibility(self, html_content: str, css_content: str) -> Dict[str, Any]:
+        """アクセシビリティ検証"""
+        accessibility_analysis = {
+            'semantic_html_compliance': self._check_semantic_html(html_content),
+            'aria_attributes_validation': self._validate_aria_attributes(html_content),
+            'color_contrast_check': self._analyze_color_contrast(css_content),
+            'keyboard_navigation_support': self._check_keyboard_support(html_content),
+            'screen_reader_compatibility': self._validate_screen_reader(html_content)
+        }
+        return accessibility_analysis
+```
+
+### **🐍 2. Python/Backend品質hooks（40種類）**
+
+#### **A. FastAPI品質検証hooks**
+```python
+class FastAPIValidationHooks:
+    """FastAPI品質検証hooks（15,000行以上仕様ベース）"""
+    
+    def validate_three_layer_architecture(self, module_path: str) -> Dict[str, Any]:
+        """3層アーキテクチャ（Router-Service-Repository）検証"""
+        architecture_check = {
+            'router_layer_compliance': self._check_router_implementation(module_path),
+            'service_layer_validation': self._validate_service_layer(module_path),
+            'repository_layer_check': self._verify_repository_pattern(module_path),
+            'dependency_injection_compliance': self._check_di_implementation(module_path),
+            'base_class_inheritance': self._validate_base_inheritance(module_path)
+        }
+        return architecture_check
+    
+    def validate_api_response_format(self, api_endpoints: List[str]) -> Dict[str, Any]:
+        """統一APIレスポンス形式検証"""
+        response_validation = {
+            'unified_format_compliance': self._check_response_format(api_endpoints),
+            'status_field_validation': self._validate_status_field(api_endpoints),
+            'message_field_consistency': self._check_message_field(api_endpoints),
+            'data_field_structure': self._validate_data_structure(api_endpoints),
+            'timestamp_field_presence': self._check_timestamp_field(api_endpoints),
+            'error_response_standardization': self._validate_error_responses(api_endpoints)
+        }
+        return response_validation
+    
+    def validate_async_implementation(self, python_files: List[str]) -> Dict[str, Any]:
+        """非同期処理実装検証"""
+        async_check = {
+            'async_await_compliance': self._check_async_patterns(python_files),
+            'sqlalchemy_async_usage': self._validate_async_sqlalchemy(python_files),
+            'session_management': self._check_async_sessions(python_files),
+            'performance_optimization': self._analyze_async_performance(python_files)
+        }
+        return async_check
+```
+
+#### **B. データベース品質hooks**
+```python
+class DatabaseValidationHooks:
+    """データベース品質検証hooks（6,000行以上仕様ベース）"""
+    
+    def validate_postgresql_optimization(self, schema_files: List[str]) -> Dict[str, Any]:
+        """PostgreSQL最適化検証"""
+        optimization_check = {
+            'index_design_validation': self._validate_index_strategy(schema_files),
+            'query_performance_analysis': self._analyze_query_performance(schema_files),
+            'constraint_compliance': self._check_database_constraints(schema_files),
+            'foreign_key_integrity': self._validate_foreign_keys(schema_files),
+            'multi_tenant_isolation': self._check_tenant_separation(schema_files)
+        }
+        return optimization_check
+    
+    def validate_migration_safety(self, migration_files: List[str]) -> Dict[str, Any]:
+        """マイグレーション安全性検証"""
+        migration_validation = {
+            'rollback_safety': self._check_rollback_capability(migration_files),
+            'data_loss_prevention': self._validate_data_preservation(migration_files),
+            'schema_consistency': self._check_schema_integrity(migration_files),
+            'performance_impact': self._analyze_migration_performance(migration_files)
+        }
+        return migration_validation
+    
+    def validate_connection_management(self, connection_configs: List[str]) -> Dict[str, Any]:
+        """接続管理検証"""
+        connection_check = {
+            'pool_configuration': self._validate_connection_pool(connection_configs),
+            'timeout_settings': self._check_timeout_configuration(connection_configs),
+            'retry_mechanism': self._validate_retry_logic(connection_configs),
+            'resource_cleanup': self._check_resource_management(connection_configs)
+        }
+        return connection_check
+```
+
+### **🔒 3. セキュリティ検証hooks（20種類）**
+
+#### **A. 認証・認可hooks**
+```python
+class SecurityValidationHooks:
+    """セキュリティ検証hooks（5,497行仕様ベース）"""
+    
+    def validate_jwt_implementation(self, auth_files: List[str]) -> Dict[str, Any]:
+        """JWT + Redis認証システム検証"""
+        jwt_validation = {
+            'token_generation_security': self._validate_jwt_generation(auth_files),
+            'redis_session_management': self._check_redis_sessions(auth_files),
+            'token_expiration_handling': self._validate_token_expiry(auth_files),
+            'refresh_token_security': self._check_refresh_mechanism(auth_files),
+            'blacklist_functionality': self._validate_token_blacklist(auth_files)
+        }
+        return jwt_validation
+    
+    def validate_csrf_protection(self, web_files: List[str]) -> Dict[str, Any]:
+        """CSRF攻撃防止検証"""
+        csrf_validation = {
+            'token_implementation': self._check_csrf_tokens(web_files),
+            'form_protection': self._validate_form_csrf(web_files),
+            'ajax_csrf_handling': self._check_ajax_csrf(web_files),
+            'token_rotation': self._validate_token_rotation(web_files)
+        }
+        return csrf_validation
+    
+    def validate_xss_prevention(self, template_files: List[str]) -> Dict[str, Any]:
+        """XSS攻撃防止検証"""
+        xss_validation = {
+            'input_sanitization': self._check_input_sanitization(template_files),
+            'output_escaping': self._validate_output_escaping(template_files),
+            'content_security_policy': self._check_csp_implementation(template_files),
+            'dangerous_functions_usage': self._scan_dangerous_functions(template_files)
+        }
+        return xss_validation
+```
+
+#### **B. データ暗号化hooks**
+```python
+class EncryptionValidationHooks:
+    """データ暗号化検証hooks"""
+    
+    def validate_data_encryption(self, data_files: List[str]) -> Dict[str, Any]:
+        """データ暗号化検証（AES-256-GCM）"""
+        encryption_check = {
+            'algorithm_compliance': self._check_encryption_algorithm(data_files),
+            'key_management': self._validate_key_management(data_files),
+            'sensitive_data_handling': self._check_sensitive_data(data_files),
+            'encryption_at_rest': self._validate_storage_encryption(data_files),
+            'encryption_in_transit': self._check_transmission_encryption(data_files)
+        }
+        return encryption_check
+    
+    def validate_password_security(self, auth_files: List[str]) -> Dict[str, Any]:
+        """パスワードセキュリティ検証"""
+        password_validation = {
+            'hashing_algorithm': self._check_password_hashing(auth_files),
+            'salt_usage': self._validate_salt_implementation(auth_files),
+            'password_policy': self._check_password_requirements(auth_files),
+            'brute_force_protection': self._validate_brute_force_prevention(auth_files)
+        }
+        return password_validation
+```
+
+### **🧪 4. テスト・品質保証hooks（30種類）**
+
+#### **A. 自動テスト生成hooks**
+```python
+class TestAutomationHooks:
+    """テスト自動化hooks（6,612行仕様ベース）"""
+    
+    def generate_pytest_tests(self, module_structure: Dict[str, Any]) -> Dict[str, Any]:
+        """pytest自動テスト生成"""
+        test_generation = {
+            'unit_test_creation': self._generate_unit_tests(module_structure),
+            'integration_test_creation': self._generate_integration_tests(module_structure),
+            'fixture_generation': self._create_test_fixtures(module_structure),
+            'mock_generation': self._generate_mock_objects(module_structure),
+            'parametrized_tests': self._create_parametrized_tests(module_structure)
+        }
+        return test_generation
+    
+    def validate_test_coverage(self, source_files: List[str], test_files: List[str]) -> Dict[str, Any]:
+        """テストカバレッジ検証"""
+        coverage_analysis = {
+            'line_coverage_percentage': self._calculate_line_coverage(source_files, test_files),
+            'branch_coverage_analysis': self._analyze_branch_coverage(source_files, test_files),
+            'function_coverage_check': self._check_function_coverage(source_files, test_files),
+            'uncovered_code_detection': self._identify_uncovered_code(source_files, test_files),
+            'coverage_improvement_suggestions': self._suggest_coverage_improvements(source_files, test_files)
+        }
+        return coverage_analysis
+    
+    def validate_test_quality(self, test_files: List[str]) -> Dict[str, Any]:
+        """テスト品質検証"""
+        quality_check = {
+            'test_naming_compliance': self._check_test_naming(test_files),
+            'assertion_quality': self._validate_assertions(test_files),
+            'test_isolation': self._check_test_isolation(test_files),
+            'test_maintainability': self._analyze_test_maintainability(test_files),
+            'async_test_validation': self._validate_async_tests(test_files)
+        }
+        return quality_check
+```
+
+#### **B. パフォーマンス測定hooks**
+```python
+class PerformanceValidationHooks:
+    """パフォーマンス測定hooks"""
+    
+    def validate_api_performance(self, api_endpoints: List[str]) -> Dict[str, Any]:
+        """API パフォーマンス検証"""
+        performance_check = {
+            'response_time_analysis': self._measure_response_times(api_endpoints),
+            'throughput_measurement': self._measure_api_throughput(api_endpoints),
+            'memory_usage_analysis': self._analyze_memory_consumption(api_endpoints),
+            'database_query_optimization': self._analyze_query_performance(api_endpoints),
+            'bottleneck_identification': self._identify_performance_bottlenecks(api_endpoints)
+        }
+        return performance_check
+    
+    def validate_frontend_performance(self, frontend_files: List[str]) -> Dict[str, Any]:
+        """フロントエンド パフォーマンス検証"""
+        frontend_performance = {
+            'load_time_analysis': self._measure_page_load_times(frontend_files),
+            'resource_optimization': self._analyze_resource_usage(frontend_files),
+            'javascript_performance': self._measure_js_execution_time(frontend_files),
+            'css_optimization': self._analyze_css_performance(frontend_files),
+            'image_optimization': self._check_image_optimization(frontend_files)
+        }
+        return frontend_performance
+```
+
+### **🌍 5. 国際化・多言語hooks（15種類）**
+
+#### **A. 多言語対応hooks**
+```python
+class InternationalizationHooks:
+    """国際化・多言語対応hooks（3,048行仕様ベース）"""
+    
+    def validate_i18n_implementation(self, translation_files: List[str]) -> Dict[str, Any]:
+        """多言語実装検証"""
+        i18n_validation = {
+            'translation_completeness': self._check_translation_completeness(translation_files),
+            'locale_support_validation': self._validate_locale_support(translation_files),
+            'text_encoding_check': self._validate_text_encoding(translation_files),
+            'pluralization_handling': self._check_pluralization_rules(translation_files),
+            'context_aware_translation': self._validate_context_translation(translation_files)
+        }
+        return i18n_validation
+    
+    def validate_date_currency_formatting(self, locale_files: List[str]) -> Dict[str, Any]:
+        """日付・通貨フォーマット検証"""
+        formatting_validation = {
+            'date_format_compliance': self._validate_date_formats(locale_files),
+            'currency_format_validation': self._check_currency_formats(locale_files),
+            'number_format_check': self._validate_number_formats(locale_files),
+            'timezone_handling': self._check_timezone_support(locale_files),
+            'calendar_system_support': self._validate_calendar_systems(locale_files)
+        }
+        return formatting_validation
+    
+    def validate_rtl_support(self, ui_files: List[str]) -> Dict[str, Any]:
+        """右から左記述言語対応検証"""
+        rtl_validation = {
+            'layout_direction_support': self._check_rtl_layout(ui_files),
+            'text_alignment_validation': self._validate_text_alignment(ui_files),
+            'icon_mirroring_check': self._check_icon_mirroring(ui_files),
+            'navigation_flow_validation': self._validate_navigation_flow(ui_files)
+        }
+        return rtl_validation
+```
+
+### **🚀 6. 運用・デプロイhooks（25種類）**
+
+#### **A. 環境管理hooks**
+```python
+class DeploymentValidationHooks:
+    """デプロイ・運用検証hooks（3,000行以上仕様ベース）"""
+    
+    def validate_docker_implementation(self, docker_files: List[str]) -> Dict[str, Any]:
+        """Docker実装検証"""
+        docker_validation = {
+            'dockerfile_optimization': self._validate_dockerfile(docker_files),
+            'multi_stage_build_check': self._check_multi_stage_builds(docker_files),
+            'security_best_practices': self._validate_docker_security(docker_files),
+            'image_size_optimization': self._analyze_image_size(docker_files),
+            'container_health_checks': self._validate_health_checks(docker_files)
+        }
+        return docker_validation
+    
+    def validate_vps_configuration(self, config_files: List[str]) -> Dict[str, Any]:
+        """VPS環境設定検証"""
+        vps_validation = {
+            'nginx_configuration': self._validate_nginx_config(config_files),
+            'ssl_certificate_setup': self._check_ssl_configuration(config_files),
+            'firewall_rules_validation': self._validate_firewall_setup(config_files),
+            'monitoring_setup_check': self._check_monitoring_configuration(config_files),
+            'backup_system_validation': self._validate_backup_setup(config_files)
+        }
+        return vps_validation
+    
+    def validate_cicd_pipeline(self, pipeline_files: List[str]) -> Dict[str, Any]:
+        """CI/CD パイプライン検証"""
+        cicd_validation = {
+            'build_process_validation': self._validate_build_steps(pipeline_files),
+            'test_automation_check': self._check_automated_testing(pipeline_files),
+            'deployment_strategy': self._validate_deployment_strategy(pipeline_files),
+            'rollback_capability': self._check_rollback_mechanism(pipeline_files),
+            'security_scanning': self._validate_security_scans(pipeline_files)
+        }
+        return cicd_validation
+```
+
+#### **B. 監視・ログhooks**
+```python
+class MonitoringValidationHooks:
+    """監視・ログ検証hooks"""
+    
+    def validate_logging_implementation(self, log_config_files: List[str]) -> Dict[str, Any]:
+        """ログ実装検証"""
+        logging_validation = {
+            'log_level_configuration': self._validate_log_levels(log_config_files),
+            'structured_logging_check': self._check_structured_logging(log_config_files),
+            'log_rotation_validation': self._validate_log_rotation(log_config_files),
+            'sensitive_data_filtering': self._check_data_filtering(log_config_files),
+            'log_aggregation_setup': self._validate_log_aggregation(log_config_files)
+        }
+        return logging_validation
+    
+    def validate_monitoring_setup(self, monitoring_configs: List[str]) -> Dict[str, Any]:
+        """監視システム検証"""
+        monitoring_validation = {
+            'metrics_collection': self._validate_metrics_collection(monitoring_configs),
+            'alerting_rules': self._check_alerting_configuration(monitoring_configs),
+            'dashboard_setup': self._validate_dashboard_config(monitoring_configs),
+            'health_check_endpoints': self._check_health_endpoints(monitoring_configs),
+            'performance_thresholds': self._validate_performance_thresholds(monitoring_configs)
+        }
+        return monitoring_validation
+```
+
+## 🎯 **汎用hooks実装戦略**
+
+### **📋 実装優先順位（フェーズ別）**
+
+#### **Phase 1: 高頻度使用hooks（40種類）- 2週間**
+```python
+priority_1_hooks = {
+    'javascript_validation': ['ES6構文検証', 'PHP-JS連携検証', '競合検出'],
+    'css_validation': ['BEM準拠検証', 'レスポンシブ検証', 'アクセシビリティ'],
+    'fastapi_validation': ['3層アーキテクチャ', 'APIレスポンス形式', '非同期実装'],
+    'security_validation': ['JWT認証', 'CSRF防止', 'XSS防止'],
+    'database_validation': ['PostgreSQL最適化', 'マイグレーション安全性']
+}
+```
+
+#### **Phase 2: 重要品質hooks（60種類）- 3週間**
+```python
+priority_2_hooks = {
+    'test_automation': ['pytest自動生成', 'カバレッジ検証', 'テスト品質'],
+    'performance_validation': ['API性能', 'フロントエンド性能', 'ボトルネック特定'],
+    'encryption_validation': ['データ暗号化', 'パスワードセキュリティ'],
+    'deployment_validation': ['Docker実装', 'VPS設定', 'CI/CD パイプライン'],
+    'monitoring_validation': ['ログ実装', '監視システム', 'アラート設定']
+}
+```
+
+#### **Phase 3: 専門特化hooks（90種類）- 4週間**
+```python
+priority_3_hooks = {
+    'i18n_validation': ['多言語実装', '日付通貨フォーマット', 'RTL対応'],
+    'advanced_security': ['監査ログ', 'コンプライアンス', '脅威検出'],
+    'advanced_performance': ['負荷テスト', 'メモリ最適化', 'キャッシュ戦略'],
+    'advanced_deployment': ['クラスタ管理', '自動スケーリング', '災害復旧'],
+    'code_quality': ['静的解析', 'コード複雑度', 'リファクタリング提案']
+}
+```
+
+### **🔧 各hooks実装パターン**
+
+#### **共通実装構造**
+```python
+class BaseValidationHook:
+    """全hookの基底クラス"""
+    
+    def __init__(self, config: Dict[str, Any]):
+        self.config = config
+        self.validation_results = {}
+        self.auto_fix_suggestions = []
+        
+    def execute_validation(self, target_files: List[str]) -> Dict[str, Any]:
+        """検証実行（共通インターフェース）"""
+        return {
+            'hook_name': self.__class__.__name__,
+            'validation_status': 'passed|failed|warning',
+            'findings': [],
+            'auto_fix_suggestions': [],
+            'compliance_score': 0.0,  # 0.0-1.0
+            'execution_time': 0.0,
+            'recommendations': []
+        }
+    
+    def apply_auto_fix(self, findings: List[Dict]) -> Dict[str, Any]:
+        """自動修復適用"""
+        return {
+            'fixes_applied': [],
+            'manual_fixes_required': [],
+            'success_rate': 0.0
+        }
+```
+
+#### **カテゴリ別実装例**
+```python
+# JavaScript検証hooks実装例
+class JavaScriptES6SyntaxHook(BaseValidationHook):
+    def execute_validation(self, js_files: List[str]) -> Dict[str, Any]:
+        findings = []
+        for file_path in js_files:
+            # ES6構文チェック実装
+            es6_issues = self._check_es6_compliance(file_path)
+            findings.extend(es6_issues)
+        
+        return {
+            'hook_name': 'JavaScriptES6SyntaxHook',
+            'validation_status': 'passed' if not findings else 'failed',
+            'findings': findings,
+            'auto_fix_suggestions': self._generate_es6_fixes(findings),
+            'compliance_score': self._calculate_compliance_score(findings),
+            'execution_time': self._get_execution_time(),
+            'recommendations': self._generate_recommendations(findings)
+        }
+
+# CSS BEM検証hooks実装例  
+class CSSBEMComplianceHook(BaseValidationHook):
+    def execute_validation(self, css_files: List[str]) -> Dict[str, Any]:
+        bem_violations = []
+        for file_path in css_files:
+            # BEM構造チェック実装
+            violations = self._analyze_bem_structure(file_path)
+            bem_violations.extend(violations)
+        
+        return {
+            'hook_name': 'CSSBEMComplianceHook',
+            'validation_status': 'passed' if not bem_violations else 'warning',
+            'findings': bem_violations,
+            'auto_fix_suggestions': self._generate_bem_fixes(bem_violations),
+            'compliance_score': self._calculate_bem_score(bem_violations),
+            'execution_time': self._get_execution_time(),
+            'recommendations': self._generate_bem_recommendations(bem_violations)
+        }
+
+# FastAPI 3層アーキテクチャ検証hooks実装例
+class FastAPIArchitectureHook(BaseValidationHook):
+    def execute_validation(self, module_path: str) -> Dict[str, Any]:
+        architecture_issues = []
+        
+        # Router層チェック
+        router_issues = self._validate_router_layer(f"{module_path}/router.py")
+        architecture_issues.extend(router_issues)
+        
+        # Service層チェック  
+        service_issues = self._validate_service_layer(f"{module_path}/service.py")
+        architecture_issues.extend(service_issues)
+        
+        # Repository層チェック
+        repository_issues = self._validate_repository_layer(f"{module_path}/repository.py")
+        architecture_issues.extend(repository_issues)
+        
+        return {
+            'hook_name': 'FastAPIArchitectureHook',
+            'validation_status': 'passed' if not architecture_issues else 'failed',
+            'findings': architecture_issues,
+            'auto_fix_suggestions': self._generate_architecture_fixes(architecture_issues),
+            'compliance_score': self._calculate_architecture_score(architecture_issues),
+            'execution_time': self._get_execution_time(),
+            'recommendations': self._generate_architecture_recommendations(architecture_issues)
+        }
+```
+
+## 🚀 **hooks実装ガイドライン**
+
+### **📋 実装品質基準**
+
+#### **品質要件（全hooks共通）**
+```python
+quality_standards = {
+    'execution_time': '< 5秒（単一hook実行）',
+    'accuracy_rate': '> 95%（検証精度）',
+    'false_positive_rate': '< 5%（誤検出率）',
+    'auto_fix_success_rate': '> 80%（自動修復成功率）',
+    'memory_usage': '< 100MB（実行時メモリ）',
+    'cpu_impact': '< 20%（CPU使用率）'
+}
+```
+
+#### **コード品質基準**
+```python
+code_quality_requirements = {
+    'type_hints': '100%（全関数・メソッドに型ヒント）',
+    'docstring_coverage': '100%（全クラス・メソッドにdocstring）',
+    'test_coverage': '> 90%（テストカバレッジ）',
+    'error_handling': '100%（全例外パターンのハンドリング）',
+    'logging': '100%（適切なログレベル設定）'
+}
+```
+
+### **🔄 hooks統合実行フロー**
+
+#### **実行制御システム（既存）との連携**
+```python
+# 既存の統合実行制御システムと連携
+class HooksIntegrationFlow:
+    def execute_validation_suite(self, project_path: str, hook_categories: List[str]) -> Dict[str, Any]:
+        """汎用hooks実行フロー"""
+        
+        execution_results = {
+            'project_path': project_path,
+            'execution_id': generate_execution_id(),
+            'start_time': datetime.now().isoformat(),
+            'hook_results': {},
+            'summary': {},
+            'recommendations': []
+        }
+        
+        # Phase 1: 環境分析（既存システム使用）
+        environment_analysis = self.auto_directory_manager.analyze_project_structure(project_path)
+        
+        # Phase 2: 適用可能hooks自動選定（既存システム使用）
+        applicable_hooks = self.natural_language_parser.select_applicable_hooks(
+            environment_analysis, hook_categories
+        )
+        
+        # Phase 3: hooks実行（新規実装部分）
+        for hook_category in applicable_hooks:
+            category_results = self._execute_hook_category(hook_category, project_path)
+            execution_results['hook_results'][hook_category] = category_results
+        
+        # Phase 4: 結果統合・レポート生成（既存システム拡張）
+        execution_results['summary'] = self._generate_execution_summary(execution_results['hook_results'])
+        execution_results['recommendations'] = self._generate_recommendations(execution_results['hook_results'])
+        
+        return execution_results
+```
+
+#### **自動修復フロー**
+```python
+class AutoFixExecutor:
+    def execute_auto_fixes(self, validation_results: Dict[str, Any]) -> Dict[str, Any]:
+        """自動修復実行"""
+        
+        auto_fix_results = {
+            'fixes_attempted': 0,
+            'fixes_successful': 0,
+            'fixes_failed': 0,
+            'manual_intervention_required': [],
+            'backup_created': True,
+            'rollback_available': True
+        }
+        
+        # 安全性チェック
+        if self._is_safe_to_auto_fix(validation_results):
+            # バックアップ作成
+            backup_path = self._create_project_backup()
+            
+            try:
+                # カテゴリ別自動修復実行
+                for category, results in validation_results['hook_results'].items():
+                    category_fixes = self._execute_category_auto_fixes(category, results)
+                    auto_fix_results['fixes_attempted'] += category_fixes['attempted']
+                    auto_fix_results['fixes_successful'] += category_fixes['successful']
+                    auto_fix_results['fixes_failed'] += category_fixes['failed']
+                
+            except Exception as e:
+                # 自動ロールバック
+                self._rollback_to_backup(backup_path)
+                auto_fix_results['rollback_executed'] = True
+                auto_fix_results['error'] = str(e)
+        
+        return auto_fix_results
+```
+
+### **📊 hooks実行結果レポート**
+
+#### **統合レポート形式**
+```python
+class HooksReportGenerator:
+    def generate_comprehensive_report(self, execution_results: Dict[str, Any]) -> Dict[str, Any]:
+        """包括的レポート生成"""
+        
+        report = {
+            'executive_summary': {
+                'overall_compliance_score': self._calculate_overall_score(execution_results),
+                'critical_issues_count': self._count_critical_issues(execution_results),
+                'auto_fix_success_rate': self._calculate_auto_fix_rate(execution_results),
+                'recommendations_count': len(execution_results.get('recommendations', []))
+            },
+            
+            'category_breakdown': {
+                'javascript_frontend': self._generate_category_summary('javascript_frontend', execution_results),
+                'python_backend': self._generate_category_summary('python_backend', execution_results),
+                'security': self._generate_category_summary('security', execution_results),
+                'testing_quality': self._generate_category_summary('testing_quality', execution_results),
+                'i18n': self._generate_category_summary('i18n', execution_results),
+                'deployment': self._generate_category_summary('deployment', execution_results)
+            },
+            
+            'priority_actions': {
+                'immediate_fixes': self._identify_immediate_actions(execution_results),
+                'short_term_improvements': self._identify_short_term_actions(execution_results),
+                'long_term_optimizations': self._identify_long_term_actions(execution_results)
+            },
+            
+            'technical_debt_analysis': {
+                'code_quality_debt': self._analyze_code_quality_debt(execution_results),
+                'security_debt': self._analyze_security_debt(execution_results),
+                'performance_debt': self._analyze_performance_debt(execution_results),
+                'maintainability_debt': self._analyze_maintainability_debt(execution_results)
+            }
+        }
+        
+        return report
+```
+
+---
+
+## 🎉 **結論：汎用hooks中身の完全実装準備完了**
+
+### **🎯 実装対象明確化**
+- **190種類の汎用hooks中身** - 完全実装可能
+- **6カテゴリ×平均32種類** - 段階的実装戦略確立
+- **既存基盤システム活用** - 統合制御・自動選定システム完備
+
+### **📅 実装スケジュール**
+- **Phase 1（2週間）**: 高頻度40種類 - JavaScript、CSS、FastAPI、セキュリティ基本
+- **Phase 2（3週間）**: 重要品質60種類 - テスト、パフォーマンス、デプロイ、監視  
+- **Phase 3（4週間）**: 専門特化90種類 - 国際化、高度セキュリティ、詳細分析
+
+### **🔧 実装方式**
+- **共通基底クラス**: BaseValidationHook継承による統一インターフェース
+- **カテゴリ別実装**: 各技術領域の専門hooks群
+- **既存システム統合**: 自動選定・実行制御システムとの完全連携
+
+### **📊 品質保証**
+- **実行性能**: 5秒以内実行、95%以上精度
+- **自動修復**: 80%以上成功率
+- **統合レポート**: 包括的分析・優先アクション提示
+
+**総実装期間: 9週間で190種類の世界最高水準汎用hooks完成！**
+
+**Phase 1の実装から開始しますか？**

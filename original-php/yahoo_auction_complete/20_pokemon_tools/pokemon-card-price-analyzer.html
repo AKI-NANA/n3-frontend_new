@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>グローバルポケカ相場分析システム</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .news-impact-high { border-left: 4px solid #ef4444; }
+        .news-impact-medium { border-left: 4px solid #f59e0b; }
+        .news-impact-low { border-left: 4px solid #10b981; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- ヘッダー -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-chart-line text-yellow-400 text-2xl"></i>
+                    <h1 class="text-2xl font-bold">グローバルポケカ相場分析システム</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2 bg-blue-800 px-3 py-2 rounded-lg">
+                        <i class="fas fa-globe text-sm"></i>
+                        <span class="text-sm">4地域対応・5言語配信</span>
+                    </div>
+                    <button class="bg-yellow-500 hover:bg-yellow-600 text-blue-900 px-4 py-2 rounded-lg font-medium">
+                        プレミアムプラン
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ナビゲーション -->
+    <nav class="bg-white border-b">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex space-x-8">
+                <button class="tab-button py-4 px-2 border-b-2 border-blue-500 text-blue-600 font-medium text-sm" data-tab="dashboard">
+                    ダッシュボード
+                </button>
+                <button class="tab-button py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm" data-tab="cards">
+                    カード詳細分析
+                </button>
+                <button class="tab-button py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm" data-tab="news">
+                    ニュース影響分析
+                </button>
+                <button class="tab-button py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm" data-tab="content">
+                    マルチプラットフォーム管理
+                </button>
+                <button class="tab-button py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm" data-tab="analytics">
+                    パフォーマンス分析
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <!-- ダッシュボードタブ -->
+        <div id="dashboard" class="tab-content active">
+            <!-- KPI カード -->
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+                <div class="bg-white p-4 rounded-lg shadow card-hover">
+                    <div class="flex items-center">
+                        <i class="fas fa-yen-sign text-green-500 text-2xl"></i>
+                        <div class="ml-3">
+                            <p class="text-xs font-medium text-gray-600">日本市場平均</p>
+                            <p class="text-lg font-semibold text-gray-900">¥86,000</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-4 rounded-lg shadow card-hover">
+                    <div class="flex items-center">
+                        <i class="fas fa-chart-bar text-blue-500 text-2xl"></i>
+                        <div class="ml-3">
+                            <p class="text-xs font-medium text-gray-600">中央値基準価格</p>
+                            <p class="text-lg font-semibold text-blue-600">¥84,500</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-4 rounded-lg shadow card-hover">
+                    <div class="flex items-center">
+                        <i class="fas fa-trending-up text-purple-500 text-2xl"></i>
+                        <div class="ml-3">
+                            <p class="text-xs font-medium text-gray-600">月間変動率</p>
+                            <p class="text-lg font-semibold text-green-600">+12.3%</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-4 rounded-lg shadow card-hover">
+                    <div class="flex items-center">
+                        <i class="fas fa-users text-orange-500 text-2xl"></i>
+                        <div class="ml-3">
+                            <p class="text-xs font-medium text-gray-600">総フォロワー</p>
+                            <p class="text-lg font-semibold text-gray-900">76.8K</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-4 rounded-lg shadow card-hover">
+                    <div class="flex items-center">
+                        <i class="fas fa-video text-red-500 text-2xl"></i>
+                        <div class="ml-3">
+                            <p class="text-xs font-medium text-gray-600">月間収益</p>
+                            <p class="text-lg font-semibold text-green-600">¥324K</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- メイン価格チャート -->
+            <div class="bg-white p-6 rounded-lg shadow mb-8">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-semibold text-gray-900">グローバル価格推移 + 中央値基準</h2>
+                    <div class="flex space-x-2">
+                        <button class="time-range-btn px-3 py-1 rounded bg-blue-500 text-white" data-range="3M">3M</button>
+                        <button class="time-range-btn px-3 py-1 rounded bg-gray-200 text-gray-700" data-range="6M">6M</button>
+                        <button class="time-range-btn px-3 py-1 rounded bg-gray-200 text-gray-700" data-range="9M">9M</button>
+                        <button class="time-range-btn px-3 py-1 rounded bg-gray-200 text-gray-700" data-range="1Y">1Y</button>
+                    </div>
+                </div>
+                <div class="h-96">
+                    <canvas id="priceChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 注目カード & 市場インサイト -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- 注目カードランキング -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">注目カードランキング</h3>
+                    <div id="topCardsContainer" class="space-y-4">
+                        <!-- カードリストはJSで動的生成 -->
+                    </div>
+                </div>
+
+                <!-- 市場インサイト -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">市場インサイト</h3>
+                    <div id="marketInsightsContainer" class="space-y-4">
+                        <!-- インサイトはJSで動的生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- カード詳細分析タブ -->
+        <div id="cards" class="tab-content">
+            <!-- カード検索・選択セクション -->
+            <div class="bg-white p-6 rounded-lg shadow mb-8">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-semibold text-gray-900">カード検索・管理システム</h2>
+                    <div class="flex space-x-3">
+                        <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg" onclick="bulkDataCollection()">
+                            一括データ取得
+                        </button>
+                        <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg" onclick="autoImageDownload()">
+                            画像自動取得
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">カード名</label>
+                        <input type="text" id="cardSearch" placeholder="例: ピカチュウ" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">シリーズ</label>
+                        <select id="seriesFilter" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                            <option value="">全シリーズ</option>
+                            <option value="base">ベースセット</option>
+                            <option value="promo">プロモーション</option>
+                            <option value="recent">最新弾</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">レアリティ</label>
+                        <select id="rarityFilter" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                            <option value="">全レアリティ</option>
+                            <option value="common">コモン</option>
+                            <option value="rare">レア</option>
+                            <option value="holo">ホロレア</option>
+                            <option value="promo">プロモ</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">価格帯</label>
+                        <select id="priceRange" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                            <option value="">全価格帯</option>
+                            <option value="low">〜¥10,000</option>
+                            <option value="mid">¥10,000〜¥50,000</option>
+                            <option value="high">¥50,000〜</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button class="w-full bg-purple-500 hover:bg-purple-600 text-white px-4 py-3 rounded-lg font-medium" onclick="searchCards()">
+                    <i class="fas fa-search mr-2"></i>カード検索・データ更新
+                </button>
+            </div>
+
+            <!-- データ収集マトリックス -->
+            <div class="bg-white p-6 rounded-lg shadow mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">データ収集マトリックス</h3>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- 収集対象設定 -->
+                    <div>
+                        <h4 class="font-medium text-gray-900 mb-4">収集対象カード設定</h4>
+                        <div class="space-y-4">
+                            <div class="border rounded-lg p-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="mr-2" checked>
+                                        <span class="font-medium">人気TOP100カード</span>
+                                    </label>
+                                    <span class="text-sm text-green-600">毎日更新</span>
+                                </div>
+                                <p class="text-sm text-gray-600">取引量・価格変動上位100枚を自動追跡</p>
+                            </div>
+                            
+                            <div class="border rounded-lg p-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="mr-2" checked>
+                                        <span class="font-medium">新規発売カード</span>
+                                    </label>
+                                    <span class="text-sm text-blue-600">発売日追従</span>
+                                </div>
+                                <p class="text-sm text-gray-600">新商品発売時に自動でデータ収集開始</p>
+                            </div>
+                            
+                            <div class="border rounded-lg p-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="mr-2">
+                                        <span class="font-medium">全カードデータベース</span>
+                                    </label>
+                                    <span class="text-sm text-orange-600">週1回更新</span>
+                                </div>
+                                <p class="text-sm text-gray-600">全ポケモンカードの基本データを網羅的に収集</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 収集スケジュール -->
+                    <div>
+                        <h4 class="font-medium text-gray-900 mb-4">データ収集スケジュール</h4>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                                <div>
+                                    <span class="font-medium text-gray-900">価格データ</span>
+                                    <p class="text-sm text-gray-600">メルカリ・ヤフオク・TCGPlayer等</p>
+                                </div>
+                                <span class="text-sm font-medium text-green-600">1時間毎</span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                                <div>
+                                    <span class="font-medium text-gray-900">画像データ</span>
+                                    <p class="text-sm text-gray-600">カード画像・パッケージ画像</p>
+                                </div>
+                                <span class="text-sm font-medium text-blue-600">6時間毎</span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                                <div>
+                                    <span class="font-medium text-gray-900">過去データ</span>
+                                    <p class="text-sm text-gray-600">3年分の価格履歴</p>
+                                </div>
+                                <span class="text-sm font-medium text-purple-600">初回のみ</span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
+                                <div>
+                                    <span class="font-medium text-gray-900">ニュース・イベント</span>
+                                    <p class="text-sm text-gray-600">価格影響分析用データ</p>
+                                </div>
+                                <span class="text-sm font-medium text-yellow-600">30分毎</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- カード詳細分析 -->
+            <div class="bg-white p-6 rounded-lg shadow mb-8">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900">選択カード: ピカチュウ プロモ</h3>
+                    <div class="flex space-x-2">
+                        <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-sm" onclick="refreshCardData()">
+                            <i class="fas fa-sync-alt mr-1"></i>データ更新
+                        </button>
+                        <button class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm" onclick="generateAnalysisReport()">
+                            <i class="fas fa-chart-line mr-1"></i>分析レポート生成
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    <!-- カード画像とAI画像生成 -->
+                    <div class="space-y-4">
+                        <div class="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                            <div class="w-32 h-44 bg-blue-200 rounded-lg mx-auto mb-4 flex items-center justify-center">
+                                <i class="fas fa-image text-blue-500 text-2xl"></i>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-3">カード画像</p>
+                            <button class="bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-600" onclick="downloadCardImage()">
+                                画像取得
+                            </button>
+                        </div>
+                        
+                        <div class="bg-yellow-50 p-4 rounded-lg">
+                            <h4 class="font-medium text-gray-900 mb-3">AI画像生成</h4>
+                            <div class="space-y-2">
+                                <button class="w-full bg-yellow-500 text-white px-3 py-2 rounded text-sm hover:bg-yellow-600" onclick="generateThumbnail()">
+                                    サムネイル生成
+                                </button>
+                                <button class="w-full bg-orange-500 text-white px-3 py-2 rounded text-sm hover:bg-orange-600" onclick="generateChartImage()">
+                                    グラフ画像生成
+                                </button>
+                                <button class="w-full bg-red-500 text-white px-3 py-2 rounded text-sm hover:bg-red-600" onclick="generateBlogImage()">
+                                    ブログ用画像生成
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 基本情報 -->
+                    <div class="space-y-4">
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-semibold text-gray-900 mb-4">多言語基本情報</h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <span class="text-sm font-medium text-gray-600">日本語:</span>
+                                    <p class="text-gray-900">ピカチュウ プロモ</p>
+                                </div>
+                                <div>
+                                    <span class="text-sm font-medium text-gray-600">English:</span>
+                                    <p class="text-gray-900">Pikachu Promo</p>
+                                </div>
+                                <div>
+                                    <span class="text-sm font-medium text-gray-600">中文:</span>
+                                    <p class="text-gray-900">皮卡丘 宣传卡</p>
+                                </div>
+                                <div>
+                                    <span class="text-sm font-medium text-gray-600">Español:</span>
+                                    <p class="text-gray-900">Pikachu Promo</p>
+                                </div>
+                                <div>
+                                    <span class="text-sm font-medium text-gray-600">カードID:</span>
+                                    <p class="text-gray-900">PROMO-001</p>
+                                </div>
+                                <div>
+                                    <span class="text-sm font-medium text-gray-600">発売日:</span>
+                                    <p class="text-gray-900">1998-04-01</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 価格データ -->
+                    <div class="space-y-4">
+                        <div class="bg-green-50 p-4 rounded-lg">
+                            <h4 class="font-semibold text-gray-900 mb-4">リアルタイム価格</h4>
+                            <div class="space-y-3">
+                                <div class="text-center">
+                                    <p class="text-2xl font-bold text-green-600">¥95,000</p>
+                                    <p class="text-sm text-gray-600">中央値基準価格</p>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2 text-center text-sm">
+                                    <div>
+                                        <p class="font-semibold text-green-600">+2.1%</p>
+                                        <p class="text-gray-600">24h</p>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-green-600">+8.5%</p>
+                                        <p class="text-gray-600">7d</p>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-green-600">+15.2%</p>
+                                        <p class="text-gray-600">30d</p>
+                                    </div>
+                                </div>
+                                <div class="border-t pt-3 space-y-2">
+                                    <div class="flex justify-between text-sm">
+                                        <span>日本平均:</span>
+                                        <span class="font-medium">¥94,500</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm">
+                                        <span>US平均:</span>
+                                        <span class="font-medium">$570</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm">
+                                        <span>EU平均:</span>
+                                        <span class="font-medium">€500</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm">
+                                        <span>中国平均:</span>
+                                        <span class="font-medium">¥3,950</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- コンテンツ自動生成 -->
+                    <div class="space-y-4">
+                        <div class="bg-purple-50 p-4 rounded-lg">
+                            <h4 class="font-semibold text-gray-900 mb-4">自動コンテンツ生成</h4>
+                            <div class="space-y-3">
+                                <button class="w-full bg-purple-500 text-white px-3 py-2 rounded text-sm hover:bg-purple-600" onclick="generateBlogContent()">
+                                    <i class="fas fa-edit mr-1"></i>ブログ記事生成
+                                </button>
+                                <button class="w-full bg-red-500 text-white px-3 py-2 rounded text-sm hover:bg-red-600" onclick="generateYouTubeScript()">
+                                    <i class="fas fa-video mr-1"></i>YouTube台本生成
+                                </button>
+                                <button class="w-full bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-600" onclick="generateSocialPosts()">
+                                    <i class="fas fa-share mr-1"></i>SNS投稿生成
+                                </button>
+                                <button class="w-full bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600" onclick="generateMultiLang()">
+                                    <i class="fas fa-globe mr-1"></i>多言語展開
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-orange-50 p-4 rounded-lg">
+                            <h4 class="font-semibold text-gray-900 mb-3">データエクスポート</h4>
+                            <div class="space-y-2">
+                                <button class="w-full bg-orange-500 text-white px-3 py-2 rounded text-sm hover:bg-orange-600" onclick="exportForAI()">
+                                    <i class="fas fa-robot mr-1"></i>AI用データ出力
+                                </button>
+                                <button class="w-full bg-gray-500 text-white px-3 py-2 rounded text-sm hover:bg-gray-600" onclick="exportCSV()">
+                                    <i class="fas fa-file-csv mr-1"></i>CSV出力
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 自動投稿設定 -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">自動投稿・連携設定</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h4 class="font-medium text-gray-900 mb-4">投稿スケジュール</h4>
+                        <div class="space-y-4">
+                            <div class="border rounded-lg p-4">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-medium">ブログ記事</span>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="mr-2" checked>
+                                        <span class="text-sm">自動投稿</span>
+                                    </label>
+                                </div>
+                                <div class="text-sm text-gray-600">
+                                    <p>日本語: 毎日 09:00</p>
+                                    <p>英語: 毎日 18:00 UTC</p>
+                                    <p>中国語: 毎日 10:00 CST</p>
+                                    <p>スペイン語: 毎日 15:00 CET</p>
+                                </div>
+                            </div>
+                            
+                            <div class="border rounded-lg p-4">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-medium">YouTube動画</span>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="mr-2" checked>
+                                        <span class="text-sm">自動投稿</span>
+                                    </label>
+                                </div>
+                                <div class="text-sm text-gray-600">
+                                    <p>日本チャンネル: 火・木・土 19:00</p>
+                                    <p>USAチャンネル: 月・水・金 18:00 EST</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-gray-900 mb-4">連携プラットフォーム</h4>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-3 border rounded-lg">
+                                <div class="flex items-center">
+                                    <i class="fab fa-wordpress text-blue-600 mr-2"></i>
+                                    <span>WordPress (日本語)</span>
+                                </div>
+                                <span class="text-green-600 text-sm">✓ 連携済み</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 border rounded-lg">
+                                <div class="flex items-center">
+                                    <i class="fab fa-blogger text-orange-600 mr-2"></i>
+                                    <span>Blogger (英語)</span>
+                                </div>
+                                <span class="text-green-600 text-sm">✓ 連携済み</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 border rounded-lg">
+                                <div class="flex items-center">
+                                    <i class="fas fa-globe text-purple-600 mr-2"></i>
+                                    <span>微博 (中国語)</span>
+                                </div>
+                                <span class="text-yellow-600 text-sm">設定中</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 border rounded-lg">
+                                <div class="flex items-center">
+                                    <i class="fab fa-shopify text-green-600 mr-2"></i>
+                                    <span>Shopify Blog</span>
+                                </div>
+                                <span class="text-green-600 text-sm">✓ 連携済み</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ニュース影響分析タブ -->
+        <div id="news" class="tab-content">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-2xl font-semibold text-gray-900">ニュース影響分析</h2>
+                <div class="flex space-x-4">
+                    <select id="newsFilter" class="border border-gray-300 rounded-lg px-3 py-2">
+                        <option value="all">全カテゴリ</option>
+                        <option value="tournament">大会発表</option>
+                        <option value="product">新商品</option>
+                        <option value="anime">アニメ関連</option>
+                    </select>
+                    <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg" onclick="fetchNews()">
+                        ニュース取得
+                    </button>
+                </div>
+            </div>
+
+            <div id="newsContainer" class="space-y-6">
+                <!-- ニュース記事1 -->
+                <div class="bg-white p-6 rounded-lg shadow news-impact-high">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <span class="text-sm text-gray-500">2024-09-15</span>
+                                <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">大会発表</span>
+                                <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">positive</span>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">ポケモンワールドチャンピオンシップ2025開催決定</h3>
+                            <p class="text-sm text-gray-600 mb-1">Pokemon World Championship 2025 Announced</p>
+                            <p class="text-sm text-gray-600 mb-4">出典: ポケモン公式</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
+                                影響度: 8.5/10
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <h4 class="font-medium text-gray-900 mb-2">影響を受けたカード</h4>
+                            <div class="space-y-1">
+                                <span class="inline-block bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm mr-1">ピカチュウ プロモ</span>
+                                <span class="inline-block bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm mr-1">リザードン 1st</span>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-gray-900 mb-2">価格影響</h4>
+                            <p class="text-lg font-semibold text-green-600">+15%～+25%</p>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-gray-900 mb-2">詳細分析</h4>
+                            <p class="text-sm text-gray-600">大会発表により競技用カードの需要が急増。特にプロモカードの価格上昇が顕著。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ニュース記事2 -->
+                <div class="bg-white p-6 rounded-lg shadow news-impact-medium">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <span class="text-sm text-gray-500">2024-09-10</span>
+                                <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">新商品</span>
+                                <span class="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">neutral</span>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">新拡張パック「時空の歪み」発表</h3>
+                            <p class="text-sm text-gray-600 mb-1">New Expansion "Temporal Distortion" Announced</p>
+                            <p class="text-sm text-gray-600 mb-4">出典: ポケモンカードゲーム公式</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
+                                影響度: 6.2/10
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <h4 class="font-medium text-gray-900 mb-2">影響を受けたカード</h4>
+                            <div class="space-y-1">
+                                <span class="inline-block bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm mr-1">旧裏面カード全般</span>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-gray-900 mb-2">価格影響</h4>
+                            <p class="text-lg font-semibold text-green-600">+5%～+10%</p>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-gray-900 mb-2">詳細分析</h4>
+                            <p class="text-sm text-gray-600">新パック発表により既存カードの希少価値が再評価される傾向。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- マルチプラットフォーム管理タブ -->
+        <div id="content" class="tab-content">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-2xl font-semibold text-gray-900">マルチプラットフォーム管理</h2>
+                <div class="flex space-x-2">
+                    <select id="platformFilter" class="border border-gray-300 rounded-lg px-3 py-2">
+                        <option value="all">全プラットフォーム</option>
+                        <option value="youtube">YouTube</option>
+                        <option value="blog">ブログ</option>
+                        <option value="note">note</option>
+                        <option value="social">SNS</option>
+                    </select>
+                    <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg" onclick="generateAllContent()">
+                        一括コンテンツ生成
+                    </button>
+                </div>
+            </div>
+
+            <!-- プラットフォーム統計 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-red-50 p-6 rounded-lg shadow">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-semibold text-gray-900">YouTube</h3>
+                        <i class="fab fa-youtube text-red-500 text-2xl"></i>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">日本チャンネル:</span>
+                            <span class="font-medium">12,500人</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">USAチャンネル:</span>
+                            <span class="font-medium">8,900人</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">月間収益:</span>
+                            <span class="font-medium text-green-600">¥214,000</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-blue-50 p-6 rounded-lg shadow">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-semibold text-gray-900">ブログ</h3>
+                        <i class="fas fa-blog text-blue-500 text-2xl"></i>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">日本語:</span>
+                            <span class="font-medium">180,000PV</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">英語:</span>
+                            <span class="font-medium">220,000PV</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">中国語:</span>
+                            <span class="font-medium">95,000PV</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">スペイン語:</span>
+                            <span class="font-medium">67,000PV</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-purple-50 p-6 rounded-lg shadow">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-semibold text-gray-900">SNS</h3>
+                        <i class="fas fa-share-alt text-purple-500 text-2xl"></i>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center space-x-2">
+                                <i class="fab fa-twitter text-blue-400"></i>
+                                <span class="text-sm text-gray-600">Twitter:</span>
+                            </div>
+                            <span class="font-medium">25,600</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center space-x-2">
+                                <i class="fab fa-instagram text-pink-500"></i>
+                                <span class="text-sm text-gray-600">Instagram:</span>
+                            </div>
+                            <span class="font-medium">18,900</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">総エンゲージメント率:</span>
+                            <span class="font-medium text-green-600">4.8%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- パフォーマンス分析タブ -->
+        <div id="analytics" class="tab-content">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-8">パフォーマンス分析</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">月間収益推移</h3>
+                    <div class="h-64">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">プラットフォーム別パフォーマンス</h3>
+                    <div class="h-64">
+                        <canvas id="platformChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // サンプルデータ
+        const priceData = {
+            labels: ['2024-01', '2024-02', '2024-03', '2024-04', '2024-05', '2024-06', '2024-07', '2024-08', '2024-09'],
+            datasets: [
+                {
+                    label: '中央値基準',
+                    data: [48000, 51000, 73000, 76000, 82000, 80000, 92000, 89000, 86000],
+                    borderColor: '#FF6B35',
+                    backgroundColor: 'rgba(255, 107, 53, 0.1)',
+                    borderWidth: 4,
+                    borderDash: [5, 5]
+                },
+                {
+                    label: '日本価格',
+                    data: [50000, 52000, 75000, 78000, 85000, 82000, 95000, 92000, 88000],
+                    borderColor: '#3B82F6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 3
+                },
+                {
+                    label: '米国価格',
+                    data: [320, 335, 480, 500, 550, 530, 610, 590, 570],
+                    borderColor: '#EF4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    borderWidth: 3,
+                    yAxisID: 'y1'
+                },
+                {
+                    label: '欧州価格',
+                    data: [280, 290, 420, 440, 480, 460, 540, 520, 500],
+                    borderColor: '#10B981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 3,
+                    yAxisID: 'y1'
+                }
+            ]
+        };
+
+        const topCards = [
+            { name: 'ピカチュウ プロモ', price: 95000, change: 15.2, volume: 2340, rarity: 'プロモ', condition: 'PSA10' },
+            { name: 'リザードン 1st Edition', price: 125000, change: 8.7, volume: 1890, rarity: 'ホロレア', condition: 'PSA10' },
+            { name: 'フシギダネ プロモ', price: 45000, change: -3.2, volume: 3450, rarity: 'プロモ', condition: 'PSA9' },
+            { name: 'ゲンガー 旧裏面', price: 38000, change: 22.1, volume: 1560, rarity: 'ホロレア', condition: 'PSA10' }
+        ];
+
+        const marketInsights = [
+            {
+                title: 'ピカチュウプロモカードの高騰要因',
+                summary: 'アニメ25周年記念効果で需要急増。海外コレクターの関心も高まっている。',
+                impact: 'HIGH',
+                prediction: '短期的にはさらに10-15%の上昇が予想される'
+            },
+            {
+                title: '新シリーズ発表による市場変動',
+                summary: '新しいカードシリーズの発表により、既存カードの希少価値が再評価されている。',
+                impact: 'MEDIUM',
+                prediction: '既存レアカードの価格安定化が期待される'
+            }
+        ];
+
+        // タブ機能
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const targetTab = this.getAttribute('data-tab');
+                    
+                    // すべてのタブボタンから active クラスを削除
+                    tabButtons.forEach(btn => {
+                        btn.classList.remove('border-blue-500', 'text-blue-600');
+                        btn.classList.add('border-transparent', 'text-gray-500');
+                    });
+                    
+                    // クリックされたタブボタンに active クラスを追加
+                    this.classList.remove('border-transparent', 'text-gray-500');
+                    this.classList.add('border-blue-500', 'text-blue-600');
+                    
+                    // すべてのタブコンテンツを非表示
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    
+                    // 対象のタブコンテンツを表示
+                    document.getElementById(targetTab).classList.add('active');
+                });
+            });
+
+            // 初期化
+            initializeCharts();
+            renderTopCards();
+            renderMarketInsights();
+        });
+
+        // チャート初期化
+        function initializeCharts() {
+            // メイン価格チャート
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: priceData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: '価格 (JPY)'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: '価格 (USD/EUR)'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // 収益チャート
+            const revenueCtx = document.getElementById('revenueChart');
+            if (revenueCtx) {
+                new Chart(revenueCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月'],
+                        datasets: [{
+                            label: '月間収益 (¥)',
+                            data: [280000, 290000, 310000, 295000, 320000, 315000, 340000, 330000, 324000],
+                            backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                            borderColor: 'rgba(59, 130, 246, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+
+            // プラットフォームチャート
+            const platformCtx = document.getElementById('platformChart');
+            if (platformCtx) {
+                new Chart(platformCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['YouTube', 'ブログ', 'note', 'SNS'],
+                        datasets: [{
+                            data: [214000, 170000, 23400, 15000],
+                            backgroundColor: [
+                                'rgba(239, 68, 68, 0.8)',
+                                'rgba(59, 130, 246, 0.8)',
+                                'rgba(16, 185, 129, 0.8)',
+                                'rgba(139, 92, 246, 0.8)'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // 注目カードの描画
+        function renderTopCards() {
+            const container = document.getElementById('topCardsContainer');
+            container.innerHTML = '';
+            
+            topCards.forEach((card, index) => {
+                const changeColor = card.change >= 0 ? 'text-green-600' : 'text-red-600';
+                const changeSign = card.change >= 0 ? '+' : '';
+                
+                const cardElement = document.createElement('div');
+                cardElement.className = 'flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer card-hover';
+                cardElement.innerHTML = `
+                    <div class="flex-1">
+                        <h4 class="font-medium text-gray-900">${card.name}</h4>
+                        <div class="flex items-center space-x-4 text-sm text-gray-600">
+                            <span>${card.rarity}</span>
+                            <span>${card.condition}</span>
+                            <span>取引量: ${card.volume.toLocaleString()}</span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-semibold text-gray-900">¥${card.price.toLocaleString()}</p>
+                        <p class="text-sm ${changeColor}">${changeSign}${card.change}%</p>
+                    </div>
+                `;
+                
+                container.appendChild(cardElement);
+            });
+        }
+
+        // 市場インサイトの描画
+        function renderMarketInsights() {
+            const container = document.getElementById('marketInsightsContainer');
+            container.innerHTML = '';
+            
+            marketInsights.forEach((insight, index) => {
+                const impactColorClass = insight.impact === 'HIGH' ? 'bg-red-100 text-red-800' : 
+                                       insight.impact === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' : 
+                                       'bg-green-100 text-green-800';
+                
+                const insightElement = document.createElement('div');
+                insightElement.className = 'border-l-4 border-blue-500 pl-4';
+                insightElement.innerHTML = `
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="font-medium text-gray-900">${insight.title}</h4>
+                        <span class="px-2 py-1 rounded-full text-xs font-medium ${impactColorClass}">
+                            ${insight.impact}
+                        </span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2">${insight.summary}</p>
+                    <p class="text-sm font-medium text-blue-600">予測: ${insight.prediction}</p>
+                `;
+                
+                container.appendChild(insightElement);
+            });
+        }
+
+        // 時間範囲ボタンの機能
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('time-range-btn')) {
+                // すべての時間範囲ボタンのスタイルをリセット
+                document.querySelectorAll('.time-range-btn').forEach(btn => {
+                    btn.classList.remove('bg-blue-500', 'text-white');
+                    btn.classList.add('bg-gray-200', 'text-gray-700');
+                });
+                
+                // クリックされたボタンをアクティブに
+                e.target.classList.remove('bg-gray-200', 'text-gray-700');
+                e.target.classList.add('bg-blue-500', 'text-white');
+                
+                // ここでチャートデータを更新する処理を追加
+                console.log('時間範囲変更:', e.target.getAttribute('data-range'));
+            }
+        });
+
+        // 機能ボタン
+        function generateChartImage() {
+            alert('記事用グラフ画像を生成しています...');
+            // 実際の実装では、チャートをPNG/JPEGとしてエクスポートする処理
+        }
+
+        function exportData() {
+            alert('データをCSV形式でエクスポートしています...');
+            // 実際の実装では、データをCSVファイルとしてダウンロードする処理
+        }
+
+        function generateReport() {
+            alert('分析レポートを生成しています...');
+            // 実際の実装では、PDFレポートを生成する処理
+        }
+
+        function fetchNews() {
+            alert('最新のニュースを取得しています...');
+            // 実際の実装では、ニュースAPIからデータを取得する処理
+        }
+
+        function generateAllContent() {
+            alert('全プラットフォーム向けコンテンツを一括生成しています...');
+            // 実際の実装では、AI を使って多言語コンテンツを生成する処理
+        }
+    </script>
+</body>
+</html>

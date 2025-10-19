@@ -1,0 +1,482 @@
+/* ========================================
+   11_system.css - システム統合CSS
+   全体統合・共通クラス・ユーティリティ
+   ======================================== */
+
+/* === システム統合変数 === */
+:root {
+    /* Yahoo Auction Tool 専用カラーパレット */
+    --auction-primary: #dc2626;
+    --auction-primary-rgb: 220, 38, 38;
+    --auction-secondary: #991b1b;
+    --auction-success: #10b981;
+    --auction-danger: #dc2626;
+    --auction-warning: #f59e0b;
+    --auction-info: #06b6d4;
+    
+    /* 拡張カラーパレット */
+    --auction-light: #fef2f2;
+    --auction-dark: #7f1d1d;
+    --auction-gradient: linear-gradient(135deg, var(--auction-primary), var(--auction-secondary));
+    
+    /* 統合システムサイズ */
+    --system-header-height: 60px;
+    --system-sidebar-width: 280px;
+    --system-content-max-width: 1400px;
+    --system-border-radius: 12px;
+    
+    /* Z-index レイヤー管理 */
+    --z-dropdown: 1000;
+    --z-sticky: 1020;
+    --z-fixed: 1030;
+    --z-modal-backdrop: 1040;
+    --z-modal: 1050;
+    --z-popover: 1060;
+    --z-tooltip: 1070;
+    --z-toast: 1080;
+}
+
+/* === グローバル統合スタイル === */
+* {
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+/* === 統合コンテナシステム === */
+.system-container {
+    max-width: var(--system-content-max-width);
+    margin: 0 auto;
+    padding: 0 var(--space-lg);
+}
+
+.system-wrapper {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.system-main {
+    flex: 1;
+    padding: var(--space-lg) 0;
+}
+
+/* === 統合タブシステム === */
+.unified-tab-navigation {
+    display: flex;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xs);
+    box-shadow: var(--shadow-md);
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.unified-tab-navigation::-webkit-scrollbar {
+    display: none;
+}
+
+.unified-tab-btn {
+    flex: 1;
+    min-width: 120px;
+    padding: var(--space-sm) var(--space-md);
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xs);
+    white-space: nowrap;
+}
+
+.unified-tab-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.unified-tab-btn.active {
+    background: var(--auction-gradient);
+    color: white;
+    box-shadow: var(--shadow-sm);
+}
+
+/* === 統合モーダルシステム === */
+.unified-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: var(--z-modal);
+    opacity: 0;
+    visibility: hidden;
+    transition: var(--transition-normal);
+    backdrop-filter: blur(4px);
+}
+
+.unified-modal.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.unified-modal-content {
+    background: var(--bg-secondary);
+    border-radius: var(--system-border-radius);
+    box-shadow: var(--shadow-xl);
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow: hidden;
+    transform: scale(0.95);
+    transition: var(--transition-normal);
+}
+
+.unified-modal.show .unified-modal-content {
+    transform: scale(1);
+}
+
+/* === 統合ボタンシステム === */
+.unified-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xs);
+    padding: var(--space-sm) var(--space-md);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    white-space: nowrap;
+    user-select: none;
+}
+
+.unified-btn:hover {
+    background: var(--bg-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.unified-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ボタンバリエーション */
+.unified-btn--primary {
+    background: var(--auction-gradient);
+    color: white;
+    border-color: var(--auction-primary);
+}
+
+.unified-btn--primary:hover {
+    background: var(--auction-secondary);
+    border-color: var(--auction-secondary);
+}
+
+.unified-btn--success {
+    background: var(--auction-success);
+    color: white;
+    border-color: var(--auction-success);
+}
+
+.unified-btn--danger {
+    background: var(--auction-danger);
+    color: white;
+    border-color: var(--auction-danger);
+}
+
+.unified-btn--warning {
+    background: var(--auction-warning);
+    color: white;
+    border-color: var(--auction-warning);
+}
+
+.unified-btn--info {
+    background: var(--auction-info);
+    color: white;
+    border-color: var(--auction-info);
+}
+
+.unified-btn--outline {
+    background: transparent;
+    color: var(--auction-primary);
+    border-color: var(--auction-primary);
+}
+
+.unified-btn--outline:hover {
+    background: var(--auction-primary);
+    color: white;
+}
+
+/* === 統合フォームシステム === */
+.unified-form-group {
+    margin-bottom: var(--space-md);
+}
+
+.unified-form-label {
+    display: block;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--space-xs);
+}
+
+.unified-form-input,
+.unified-form-select,
+.unified-form-textarea {
+    width: 100%;
+    padding: var(--space-sm);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: var(--text-sm);
+    transition: var(--transition-fast);
+}
+
+.unified-form-input:focus,
+.unified-form-select:focus,
+.unified-form-textarea:focus {
+    outline: none;
+    border-color: var(--auction-primary);
+    box-shadow: 0 0 0 3px rgba(var(--auction-primary-rgb), 0.1);
+}
+
+.unified-form-input.error,
+.unified-form-select.error,
+.unified-form-textarea.error {
+    border-color: var(--auction-danger);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+/* === 統合通知システム === */
+.unified-notification {
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-md);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    border: 2px solid;
+    animation: slideInRight 0.3s ease-out;
+}
+
+.unified-notification--info {
+    background: rgba(6, 182, 212, 0.1);
+    border-color: rgba(6, 182, 212, 0.3);
+    color: var(--auction-info);
+}
+
+.unified-notification--success {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.3);
+    color: var(--auction-success);
+}
+
+.unified-notification--warning {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.3);
+    color: var(--auction-warning);
+}
+
+.unified-notification--error {
+    background: rgba(220, 38, 38, 0.1);
+    border-color: rgba(220, 38, 38, 0.3);
+    color: var(--auction-danger);
+}
+
+/* === ユーティリティクラス === */
+.u-text-center { text-align: center; }
+.u-text-left { text-align: left; }
+.u-text-right { text-align: right; }
+
+.u-mb-0 { margin-bottom: 0; }
+.u-mb-xs { margin-bottom: var(--space-xs); }
+.u-mb-sm { margin-bottom: var(--space-sm); }
+.u-mb-md { margin-bottom: var(--space-md); }
+.u-mb-lg { margin-bottom: var(--space-lg); }
+.u-mb-xl { margin-bottom: var(--space-xl); }
+
+.u-mt-0 { margin-top: 0; }
+.u-mt-xs { margin-top: var(--space-xs); }
+.u-mt-sm { margin-top: var(--space-sm); }
+.u-mt-md { margin-top: var(--space-md); }
+.u-mt-lg { margin-top: var(--space-lg); }
+.u-mt-xl { margin-top: var(--space-xl); }
+
+.u-p-0 { padding: 0; }
+.u-p-xs { padding: var(--space-xs); }
+.u-p-sm { padding: var(--space-sm); }
+.u-p-md { padding: var(--space-md); }
+.u-p-lg { padding: var(--space-lg); }
+.u-p-xl { padding: var(--space-xl); }
+
+.u-w-full { width: 100%; }
+.u-h-full { height: 100%; }
+
+.u-flex { display: flex; }
+.u-flex-col { flex-direction: column; }
+.u-flex-wrap { flex-wrap: wrap; }
+.u-items-center { align-items: center; }
+.u-justify-center { justify-content: center; }
+.u-justify-between { justify-content: space-between; }
+.u-gap-xs { gap: var(--space-xs); }
+.u-gap-sm { gap: var(--space-sm); }
+.u-gap-md { gap: var(--space-md); }
+.u-gap-lg { gap: var(--space-lg); }
+
+.u-hidden { display: none; }
+.u-visible { visibility: visible; }
+.u-invisible { visibility: hidden; }
+
+.u-cursor-pointer { cursor: pointer; }
+.u-cursor-not-allowed { cursor: not-allowed; }
+
+.u-select-none { user-select: none; }
+.u-select-all { user-select: all; }
+
+.u-rounded { border-radius: var(--radius-md); }
+.u-rounded-full { border-radius: 50%; }
+
+.u-shadow { box-shadow: var(--shadow-md); }
+.u-shadow-lg { box-shadow: var(--shadow-lg); }
+
+/* === レスポンシブヘルパー === */
+.u-mobile-only { display: none; }
+.u-desktop-only { display: block; }
+
+@media (max-width: 768px) {
+    .u-mobile-only { display: block; }
+    .u-desktop-only { display: none; }
+    
+    .u-mobile-text-center { text-align: center; }
+    .u-mobile-flex-col { flex-direction: column; }
+    .u-mobile-w-full { width: 100%; }
+}
+
+/* === アニメーション === */
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* アニメーションクラス */
+.u-animate-fade-in { animation: fadeIn 0.3s ease-out; }
+.u-animate-slide-up { animation: slideUp 0.3s ease-out; }
+.u-animate-pulse { animation: pulse 2s ease-in-out infinite; }
+
+/* === スクロールバー統一 === */
+.unified-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--auction-primary) var(--bg-tertiary);
+}
+
+.unified-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.unified-scrollbar::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-full);
+}
+
+.unified-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--auction-primary);
+    border-radius: var(--radius-full);
+}
+
+.unified-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--auction-secondary);
+}
+
+/* === 印刷対応 === */
+@media print {
+    .unified-btn,
+    .unified-tab-navigation,
+    .system-header,
+    .system-sidebar {
+        display: none;
+    }
+    
+    .system-main {
+        padding: 0;
+    }
+    
+    .unified-modal {
+        position: static;
+        background: none;
+    }
+    
+    .unified-modal-content {
+        box-shadow: none;
+        border: 1px solid #ccc;
+    }
+}
+
+/* === ダークモード対応準備 === */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-primary: #1a1a1a;
+        --bg-secondary: #2d2d2d;
+        --bg-tertiary: #404040;
+        --text-primary: #ffffff;
+        --text-secondary: #cccccc;
+        --text-muted: #999999;
+        --border-color: #555555;
+    }
+}

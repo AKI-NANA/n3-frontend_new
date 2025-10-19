@@ -1,0 +1,97 @@
+/*
+ * Yahoo Auction Tool - Dashboard Tab Styles
+ * -------------------------------------------------------------
+ * Styles for the dashboard, search, and stats display.
+ * -------------------------------------------------------------
+ */
+.caids-constraints-bar {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  padding: var(--space-md);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--space-sm);
+  text-align: center;
+  border-bottom: 1px solid var(--border-color);
+}
+.constraint-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.constraint-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-primary);
+}
+.constraint-label {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  margin-top: var(--space-xs);
+}
+.search-results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+}
+.search-result-item {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  transition: var(--transition-normal);
+  display: flex;
+  gap: var(--space-md);
+}
+.search-result-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary);
+}
+.search-result-image {
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.search-result-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.search-result-info {
+  flex: 1;
+  min-width: 0;
+}
+.search-result-info h5 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.2rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.search-result-info p {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+.search-result-price {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-top: 0.5rem;
+}
+.search-result-price span {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}

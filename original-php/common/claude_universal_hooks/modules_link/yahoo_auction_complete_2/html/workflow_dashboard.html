@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ヤフオク→eBay完全ワークフロー管理</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; padding: 1rem;
+        }
+        
+        .dashboard {
+            max-width: 1400px; margin: 0 auto; background: white;
+            border-radius: 16px; box-shadow: 0 25px 50px rgba(0,0,0,0.1); 
+            overflow: hidden; display: grid; grid-template-rows: auto 1fr;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            color: white; padding: 2rem; text-align: center;
+        }
+        .header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        
+        .workflow-status {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white; padding: 1rem; display: flex;
+            justify-content: center; align-items: center; gap: 2rem;
+        }
+        
+        .status-item {
+            text-align: center;
+        }
+        .status-value {
+            font-size: 1.8rem; font-weight: 700; line-height: 1;
+        }
+        .status-label {
+            font-size: 0.8rem; opacity: 0.9; margin-top: 0.25rem;
+        }
+        
+        .main-content {
+            display: grid; grid-template-columns: 300px 1fr; min-height: 600px;
+        }
+        
+        .sidebar {
+            background: #f8fafc; border-right: 1px solid #e2e8f0; padding: 1.5rem;
+        }
+        
+        .workflow-steps {
+            list-style: none;
+        }
+        
+        .workflow-step {
+            margin-bottom: 1rem; padding: 1rem; border-radius: 8px;
+            border: 1px solid #e2e8f0; background: white;
+            cursor: pointer; transition: all 0.3s ease;
+        }
+        .workflow-step:hover { transform: translateX(4px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .workflow-step.active { border-color: #3b82f6; background: #eff6ff; }
+        .workflow-step.completed { border-color: #10b981; background: #ecfdf5; }
+        
+        .step-number {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 24px; height: 24px; background: #e2e8f0; color: #64748b;
+            border-radius: 50%; font-size: 0.8rem; font-weight: 600;
+            margin-right: 0.75rem;
+        }
+        .workflow-step.active .step-number { background: #3b82f6; color: white; }
+        .workflow-step.completed .step-number { background: #10b981; color: white; }
+        
+        .content-area {
+            padding: 2rem; overflow-y: auto;
+        }
+        
+        .step-content {
+            display: none;
+        }
+        .step-content.active {
+            display: block;
+        }
+        
+        .action-buttons {
+            display: flex; gap: 1rem; margin-top: 1.5rem;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem; border: none; border-radius: 8px;
+            font-size: 0.9rem; font-weight: 600; cursor: pointer;
+            transition: all 0.3s ease; display: flex; align-items: center; gap: 0.5rem;
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        
+        .btn-primary { background: #3b82f6; color: white; }
+        .btn-primary:hover { background: #2563eb; box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3); }
+        
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3); }
+        
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-warning:hover { background: #d97706; box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3); }
+        
+        .form-section {
+            background: #f8fafc; border-radius: 8px; padding: 1.5rem; margin: 1rem 0;
+        }
+        
+        .url-input {
+            width: 100%; padding: 0.75rem; border: 1px solid #d1d5db;
+            border-radius: 6px; font-size: 1rem; margin: 0.5rem 0;
+        }
+        
+        .data-table {
+            width: 100%; border-collapse: collapse; margin: 1rem 0;
+            background: white; border-radius: 8px; overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .data-table th, .data-table td {
+            padding: 0.75rem; text-align: left; border-bottom: 1px solid #e2e8f0;
+        }
+        .data-table th {
+            background: #f1f5f9; font-weight: 600; color: #374151;
+        }
+        .data-table tbody tr:hover { background: #f8fafc; }
+        
+        .status-badge {
+            padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;
+            font-weight: 600; text-transform: uppercase;
+        }
+        .status-scraped { background: #dbeafe; color: #1e40af; }
+        .status-edited { background: #fef3c7; color: #92400e; }
+        .status-listed { background: #d1fae5; color: #065f46; }
+        .status-sold_out { background: #fee2e2; color: #991b1b; }
+        .status-error { background: #fce7f3; color: #be185d; }
+        
+        .log-section {
+            background: #1e293b; color: #e2e8f0; border-radius: 8px; padding: 1rem;
+            max-height: 300px; overflow-y: auto; font-family: 'Courier New', monospace;
+            font-size: 0.8rem; line-height: 1.4; margin-top: 1rem;
+        }
+        .log-entry { margin-bottom: 0.5rem; }
+        .log-timestamp { color: #9ca3af; margin-right: 1rem; }
+        
+        .csv-preview {
+            max-height: 400px; overflow: auto; border: 1px solid #e2e8f0;
+            border-radius: 8px; background: white;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-content { grid-template-columns: 1fr; }
+            .sidebar { border-right: none; border-bottom: 1px solid #e2e8f0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1><i class="fas fa-sync-alt"></i> ヤフオク→eBay完全ワークフロー</h1>
+            <p>スクレイピング → CSV編集 → UI確認 → eBay出品 → 在庫管理</p>
+        </div>
+        
+        <div class="workflow-status" id="workflowStatus">
+            <div class="status-item">
+                <div class="status-value" id="scrapedCount">-</div>
+                <div class="status-label">スクレイピング済み</div>
+            </div>
+            <div class="status-item">
+                <div class="status-value" id="editedCount">-</div>
+                <div class="status-label">編集済み</div>
+            </div>
+            <div class="status-item">
+                <div class="status-value" id="listedCount">-</div>
+                <div class="status-label">eBay出品済み</div>
+            </div>
+            <div class="status-item">
+                <div class="status-value" id="totalCount">-</div>
+                <div class="status-label">総商品数</div>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="sidebar">
+                <h3 style="margin-bottom: 1rem; color: #1e293b;">ワークフロー手順</h3>
+                <ul class="workflow-steps">
+                    <li class="workflow-step active" data-step="scraping">
+                        <span class="step-number">1</span>
+                        <div>
+                            <strong>スクレイピング</strong>
+                            <div style="font-size: 0.8rem; color: #64748b;">ヤフオクデータ取得</div>
+                        </div>
+                    </li>
+                    <li class="workflow-step" data-step="csv-edit">
+                        <span class="step-number">2</span>
+                        <div>
+                            <strong>CSV編集</strong>
+                            <div style="font-size: 0.8rem; color: #64748b;">人間によるデータ編集</div>
+                        </div>
+                    </li>
+                    <li class="workflow-step" data-step="confirmation">
+                        <span class="step-number">3</span>
+                        <div>
+                            <strong>確認</strong>
+                            <div style="font-size: 0.8rem; color: #64748b;">UI内容確認</div>
+                        </div>
+                    </li>
+                    <li class="workflow-step" data-step="ebay-listing">
+                        <span class="step-number">4</span>
+                        <div>
+                            <strong>eBay出品</strong>
+                            <div style="font-size: 0.8rem; color: #64748b;">自動出品実行</div>
+                        </div>
+                    </li>
+                    <li class="workflow-step" data-step="inventory">
+                        <span class="step-number">5</span>
+                        <div>
+                            <strong>在庫管理</strong>
+                            <div style="font-size: 0.8rem; color: #64748b;">日次在庫監視</div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="content-area">
+                <!-- Step 1: スクレイピング -->
+                <div id="scraping" class="step-content active">
+                    <h2><i class="fas fa-search"></i> Step 1: ヤフオクスクレイピング</h2>
+                    <p>ヤフオクURLから商品情報を自動取得します</p>
+                    
+                    <div class="form-section">
+                        <h4>URL入力（複数可）</h4>
+                        <textarea id="urlInput" class="url-input" rows="4" 
+                                  placeholder="https://auctions.yahoo.co.jp/jp/auction/xxxxx&#10;https://auctions.yahoo.co.jp/jp/auction/yyyyy&#10;..."></textarea>
+                        
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" onclick="startScraping()">
+                                <i class="fas fa-play"></i>
+                                スクレイピング開始
+                            </button>
+                            <button class="btn btn-warning" onclick="loadExistingData()">
+                                <i class="fas fa-folder-open"></i>
+                                既存データ読み込み
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="scrapingResults">
+                        <!-- スクレイピング結果がここに表示 -->
+                    </div>
+                </div>
+                
+                <!-- Step 2: CSV編集 -->
+                <div id="csv-edit" class="step-content">
+                    <h2><i class="fas fa-edit"></i> Step 2: CSV編集</h2>
+                    <p>スクレイピングデータを編集用CSVとしてエクスポートします</p>
+                    
+                    <div class="form-section">
+                        <h4>編集対象データ</h4>
+                        <div id="editableDataCount">編集対象: 0件</div>
+                        
+                        <div class="action-buttons">
+                            <button class="btn btn-success" onclick="createEditingCSV()">
+                                <i class="fas fa-file-csv"></i>
+                                編集用CSV作成
+                            </button>
+                            <button class="btn btn-primary" onclick="processEditedCSV()">
+                                <i class="fas fa-upload"></i>
+                                編集済みCSV読み込み
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h4>編集手順</h4>
+                        <ol style="line-height: 1.6;">
+                            <li><strong>products_for_ebay.csv</strong> をExcelやGoogleスプレッドシートで開く</li>
+                            <li><strong>EDIT_で始まる列</strong>を編集：
+                                <ul style="margin: 0.5rem 0;">
+                                    <li>EDIT_title_en: 英語タイトル</li>
+                                    <li>EDIT_description_en: 英語説明</li>
+                                    <li>EDIT_ebay_category_id: eBayカテゴリID</li>
+                                    <li>EDIT_ebay_price_usd: USD価格</li>
+                                    <li>EDIT_shipping_cost_usd: 送料USD</li>
+                                </ul>
+                            </li>
+                            <li>保存後、「編集済みCSV読み込み」ボタンを押す</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="csv-preview" id="csvPreview">
+                        <!-- CSV内容プレビューがここに表示 -->
+                    </div>
+                </div>
+                
+                <!-- Step 3: 確認 -->
+                <div id="confirmation" class="step-content">
+                    <h2><i class="fas fa-eye"></i> Step 3: 内容確認</h2>
+                    <p>eBay出品前の最終確認を行います</p>
+                    
+                    <div class="form-section">
+                        <h4>出品準備完了商品</h4>
+                        <div id="readyProductsTable">
+                            <!-- 出品準備完了商品テーブルがここに表示 -->
+                        </div>
+                        
+                        <div class="action-buttons">
+                            <button class="btn btn-success" onclick="confirmAllProducts()">
+                                <i class="fas fa-check"></i>
+                                全商品確認完了
+                            </button>
+                            <button class="btn btn-warning" onclick="editSelectedProducts()">
+                                <i class="fas fa-edit"></i>
+                                選択商品を再編集
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Step 4: eBay出品 -->
+                <div id="ebay-listing" class="step-content">
+                    <h2><i class="fas fa-store"></i> Step 4: eBay出品</h2>
+                    <p>確認済み商品をeBayに自動出品します</p>
+                    
+                    <div class="form-section">
+                        <h4>出品設定</h4>
+                        <label><input type="checkbox" id="testMode" checked> テストモード（実際には出品しない）</label>
+                        <label><input type="checkbox" id="autoPrice"> 価格自動調整</label>
+                        <label><input type="checkbox" id="bulkListing"> 一括出品</label>
+                        
+                        <div class="action-buttons">
+                            <button class="btn btn-success" onclick="startEbayListing()">
+                                <i class="fas fa-rocket"></i>
+                                eBay出品開始
+                            </button>
+                            <button class="btn btn-warning" onclick="retryFailedListings()">
+                                <i class="fas fa-redo"></i>
+                                失敗商品再試行
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="listingProgress">
+                        <!-- 出品進捗がここに表示 -->
+                    </div>
+                </div>
+                
+                <!-- Step 5: 在庫管理 -->
+                <div id="inventory" class="step-content">
+                    <h2><i class="fas fa-boxes"></i> Step 5: 在庫管理</h2>
+                    <p>eBay出品済み商品の在庫を自動監視します</p>
+                    
+                    <div class="form-section">
+                        <h4>在庫監視設定</h4>
+                        <label><input type="checkbox" id="autoInventoryCheck" checked> 自動在庫チェック</label>
+                        <label><input type="checkbox" id="ebaySync"> eBay在庫同期</label>
+                        <label><input type="checkbox" id="notifyStockOut" checked> 在庫切れ通知</label>
+                        
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" onclick="runInventoryCheck()">
+                                <i class="fas fa-sync"></i>
+                                在庫チェック実行
+                            </button>
+                            <button class="btn btn-success" onclick="viewInventoryReport()">
+                                <i class="fas fa-chart-bar"></i>
+                                在庫レポート表示
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="inventoryStatus">
+                        <!-- 在庫ステータスがここに表示 -->
+                    </div>
+                </div>
+                
+                <!-- ログセクション -->
+                <div class="log-section" id="logSection">
+                    <div class="log-entry">
+                        <span class="log-timestamp">[初期化]</span>
+                        ヤフオク→eBay完全ワークフローシステムが初期化されました
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // グローバル変数
+        let currentStep = 'scraping';
+        let workflowData = {
+            scraped: [],
+            edited: [],
+            ready: [],
+            listed: [],
+            inventory: []
+        };
+        
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeWorkflow();
+            updateWorkflowStatus();
+        });
+        
+        // ワークフロー初期化
+        function initializeWorkflow() {
+            // サイドバーステップクリック
+            document.querySelectorAll('.workflow-step').forEach(step => {
+                step.addEventListener('click', function() {
+                    const stepName = this.dataset.step;
+                    switchStep(stepName);
+                });
+            });
+            
+            addLog('システム初期化完了');
+        }
+        
+        // ステップ切り替え
+        function switchStep(stepName) {
+            // アクティブステップ更新
+            document.querySelectorAll('.workflow-step').forEach(step => {
+                step.classList.remove('active');
+            });
+            document.querySelector(`[data-step="${stepName}"]`).classList.add('active');
+            
+            // コンテンツ切り替え
+            document.querySelectorAll('.step-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(stepName).classList.add('active');
+            
+            currentStep = stepName;
+            addLog(`ステップ切り替え: ${stepName}`);
+        }
+        
+        // スクレイピング開始
+        async function startScraping() {
+            const urls = document.getElementById('urlInput').value.trim().split('\n').filter(url => url.trim());
+            
+            if (urls.length === 0) {
+                alert('URLを入力してください');
+                return;
+            }
+            
+            addLog(`📡 スクレイピング開始: ${urls.length}件のURL`);
+            
+            const resultsDiv = document.getElementById('scrapingResults');
+            resultsDiv.innerHTML = `
+                <div style="text-align: center; padding: 2rem;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #3b82f6;"></i>
+                    <p>スクレイピング実行中...</p>
+                </div>
+            `;
+            
+            try {
+                // 実際のスクレイピング処理（Pythonバックエンドとの通信）
+                const response = await fetch('/scrape_yahoo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ urls: urls })
+                });
+                
+                if (!response.ok) throw new Error('スクレイピング通信エラー');
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    workflowData.scraped = result.data;
+                    displayScrapingResults(result.data);
+                    updateWorkflowStatus();
+                    addLog(`✅ スクレイピング完了: ${result.data.length}件成功`);
+                    
+                    // Step 2を有効化
+                    document.querySelector('[data-step="csv-edit"]').classList.add('completed');
+                } else {
+                    throw new Error(result.error);
+                }
+                
+            } catch (error) {
+                addLog(`❌ スクレイピングエラー: ${error.message}`);
+                resultsDiv.innerHTML = `
+                    <div class="form-section" style="background: #fee2e2; color: #991b1b;">
+                        <h4>エラーが発生しました</h4>
+                        <p>${error.message}</p>
+                        <button class="btn btn-warning" onclick="startScraping()">再試行</button>
+                    </div>
+                `;
+            }
+        }
+        
+        // スクレイピング結果表示
+        function displayScrapingResults(data) {
+            const resultsDiv = document.getElementById('scrapingResults');
+            
+            if (data.length === 0) {
+                resultsDiv.innerHTML = '<p>スクレイピング結果がありません</p>';
+                return;
+            }
+            
+            let html = `
+                <h4>スクレイピング結果 (${data.length}件)</h4>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>商品ID</th>
+                            <th>タイトル</th>
+                            <th>価格(¥)</th>
+                            <th>ステータス</th>
+                            <th>取得時刻</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            data.forEach(item => {
+                html += `
+                    <tr>
+                        <td>${item.product_id}</td>
+                        <td>${item.title_jp.substring(0, 50)}...</td>
+                        <td>¥${item.price_jpy.toLocaleString()}</td>
+                        <td><span class="status-badge status-${item.status}">${item.status}</span></td>
+                        <td>${item.scrape_timestamp}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            resultsDiv.innerHTML = html;
+        }
+        
+        // CSV編集用ファイル作成
+        async function createEditingCSV() {
+            addLog('📝 編集用CSV作成中...');
+            
+            try {
+                const response = await fetch('/create_editing_csv', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data: workflowData.scraped })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    addLog(`✅ 編集用CSV作成完了: ${result.filename}`);
+                    alert(`編集用CSVを作成しました:\n${result.filename}\n\nExcelで開いて編集してください`);
+                    
+                    // 編集対象件数表示
+                    document.getElementById('editableDataCount').textContent = `編集対象: ${result.count}件`;
+                } else {
+                    throw new Error(result.error);
+                }
+                
+            } catch (error) {
+                addLog(`❌ CSV作成エラー: ${error.message}`);
+                alert(`CSV作成エラー: ${error.message}`);
+            }
+        }
+        
+        // 編集済みCSV処理
+        async function processEditedCSV() {
+            addLog('🔄 編集済みCSV処理中...');
+            
+            try {
+                const response = await fetch('/process_edited_csv', {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    workflowData.edited = result.data;
+                    addLog(`✅ 編集処理完了: ${result.updated_count}件更新`);
+                    updateWorkflowStatus();
+                    
+                    // Step 3を有効化
+                    document.querySelector('[data-step="confirmation"]').classList.add('completed');
+                } else {
+                    throw new Error(result.error);
+                }
+                
+            } catch (error) {
+                addLog(`❌ CSV処理エラー: ${error.message}`);
+                alert(`CSV処理エラー: ${error.message}`);
+            }
+        }
+        
+        // eBay出品開始
+        async function startEbayListing() {
+            const testMode = document.getElementById('testMode').checked;
+            
+            addLog(`🚀 eBay出品開始${testMode ? '（テストモード）' : ''}`);
+            
+            try {
+                const response = await fetch('/start_ebay_listing', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        test_mode: testMode,
+                        products: workflowData.edited 
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    addLog(`✅ eBay出品完了: ${result.listed_count}件成功`);
+                    workflowData.listed = result.data;
+                    updateWorkflowStatus();
+                    
+                    // Step 5を有効化
+                    document.querySelector('[data-step="inventory"]').classList.add('completed');
+                } else {
+                    throw new Error(result.error);
+                }
+                
+            } catch (error) {
+                addLog(`❌ eBay出品エラー: ${error.message}`);
+                alert(`eBay出品エラー: ${error.message}`);
+            }
+        }
+        
+        // 在庫チェック実行
+        async function runInventoryCheck() {
+            addLog('📊 在庫チェック実行中...');
+            
+            try {
+                const response = await fetch('/run_inventory_check', {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    addLog(`✅ 在庫チェック完了: ${result.checked_count}件確認`);
+                    displayInventoryStatus(result.inventory_data);
+                } else {
+                    throw new Error(result.error);
+                }
+                
+            } catch (error) {
+                addLog(`❌ 在庫チェックエラー: ${error.message}`);
+                alert(`在庫チェックエラー: ${error.message}`);
+            }
+        }
+        
+        // 在庫ステータス表示
+        function displayInventoryStatus(inventoryData) {
+            const statusDiv = document.getElementById('inventoryStatus');
+            
+            let html = `
+                <h4>在庫ステータス</h4>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>商品ID</th>
+                            <th>タイトル</th>
+                            <th>在庫数</th>
+                            <th>ステータス</th>
+                            <th>最終チェック</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            inventoryData.forEach(item => {
+                html += `
+                    <tr>
+                        <td>${item.product_id}</td>
+                        <td>${item.title_en || item.title_jp}</td>
+                        <td>${item.stock_quantity}</td>
+                        <td><span class="status-badge status-${item.status}">${item.status}</span></td>
+                        <td>${item.last_stock_check}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            statusDiv.innerHTML = html;
+        }
+        
+        // ワークフローステータス更新
+        function updateWorkflowStatus() {
+            document.getElementById('scrapedCount').textContent = workflowData.scraped.length;
+            document.getElementById('editedCount').textContent = workflowData.edited.length;
+            document.getElementById('listedCount').textContent = workflowData.listed.length;
+            
+            const total = workflowData.scraped.length + workflowData.edited.length + workflowData.listed.length;
+            document.getElementById('totalCount').textContent = total;
+        }
+        
+        // ログ追加
+        function addLog(message) {
+            const logSection = document.getElementById('logSection');
+            const timestamp = new Date().toLocaleTimeString('ja-JP');
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = `
+                <span class="log-timestamp">[${timestamp}]</span>
+                ${message}
+            `;
+            
+            logSection.appendChild(logEntry);
+            logSection.scrollTop = logSection.scrollHeight;
+            
+            // ログ制限（100エントリ）
+            const entries = logSection.querySelectorAll('.log-entry');
+            if (entries.length > 100) {
+                entries[0].remove();
+            }
+        }
+        
+        // 未実装機能（プレースホルダ）
+        function loadExistingData() { addLog('既存データ読み込み機能（開発中）'); }
+        function confirmAllProducts() { addLog('商品確認機能（開発中）'); }
+        function editSelectedProducts() { addLog('選択編集機能（開発中）'); }
+        function retryFailedListings() { addLog('再出品機能（開発中）'); }
+        function viewInventoryReport() { addLog('在庫レポート機能（開発中）'); }
+        
+        console.log('✅ ヤフオク→eBay完全ワークフロー UI初期化完了');
+    </script>
+</body>
+</html>

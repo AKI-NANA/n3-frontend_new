@@ -1,0 +1,333 @@
+<!-- 統合出品モーダル - 完全版HTML -->
+<div id="integrated-listing-modal" class="integrated-listing-modal">
+    <div class="ilm-content">
+        <!-- ヘッダー -->
+        <header class="ilm-header">
+            <div class="ilm-product-info">
+                <img src="https://placehold.co/50x50/667eea/ffffff?text=商品" alt="商品" class="ilm-product-thumbnail" id="ilm-product-thumbnail">
+                <div>
+                    <h2 class="ilm-title" id="ilm-product-title">
+                        <i class="fas fa-edit"></i> <span id="ilm-title-text">商品データ読み込み中...</span>
+                    </h2>
+                    <small id="ilm-product-meta">データベースから商品情報を取得中...</small>
+                </div>
+            </div>
+            <button class="ilm-close" onclick="IntegratedListingModal.close()">&times;</button>
+        </header>
+
+        <!-- ボディ -->
+        <div class="ilm-body">
+            <!-- マーケットプレイス選択 -->
+            <div class="ilm-marketplace-selector">
+                <label style="font-weight: 600; color: var(--ilm-text-primary);">対象マーケットプレイス:</label>
+                <div class="ilm-marketplace-btn ebay active" onclick="IntegratedListingModal.switchMarketplace('ebay')">
+                    <i class="fab fa-ebay"></i> eBay
+                </div>
+                <div class="ilm-marketplace-btn shopee" onclick="IntegratedListingModal.switchMarketplace('shopee')">
+                    <i class="fas fa-shopping-bag"></i> Shopee
+                </div>
+                <div class="ilm-marketplace-btn amazon-global" onclick="IntegratedListingModal.switchMarketplace('amazon-global')">
+                    <i class="fab fa-amazon"></i> Amazon海外
+                </div>
+                <div class="ilm-marketplace-btn amazon-jp" onclick="IntegratedListingModal.switchMarketplace('amazon-jp')">
+                    <i class="fab fa-amazon"></i> Amazon日本
+                </div>
+                <div class="ilm-marketplace-btn coupang" onclick="IntegratedListingModal.switchMarketplace('coupang')">
+                    <i class="fas fa-store"></i> Coupang
+                </div>
+                <div class="ilm-marketplace-btn shopify" onclick="IntegratedListingModal.switchMarketplace('shopify')">
+                    <i class="fab fa-shopify"></i> Shopify
+                </div>
+            </div>
+
+            <!-- タブナビゲーション -->
+            <nav class="ilm-tabs">
+                <div class="ilm-tab-link active" onclick="IntegratedListingModal.switchTab('tab-overview')">
+                    <i class="fas fa-chart-pie"></i><br>統合概要
+                </div>
+                <div class="ilm-tab-link" onclick="IntegratedListingModal.switchTab('tab-data')">
+                    <i class="fas fa-database"></i><br>データ確認
+                </div>
+                <div class="ilm-tab-link" onclick="IntegratedListingModal.switchTab('tab-images')">
+                    <i class="fas fa-images"></i><br>画像選択
+                </div>
+                <div class="ilm-tab-link" onclick="IntegratedListingModal.switchTab('tab-tools')">
+                    <i class="fas fa-tools"></i><br>ツール連携
+                </div>
+                <div class="ilm-tab-link" onclick="IntegratedListingModal.switchTab('tab-mirror')">
+                    <i class="fas fa-search-dollar"></i><br>Mirror分析
+                </div>
+                <div class="ilm-tab-link marketplace-specific" onclick="IntegratedListingModal.switchTab('tab-listing')">
+                    <i class="fas fa-edit"></i><br>出品情報
+                </div>
+                <div class="ilm-tab-link marketplace-specific" onclick="IntegratedListingModal.switchTab('tab-shipping')">
+                    <i class="fas fa-shipping-fast"></i><br>配送・在庫
+                </div>
+                <div class="ilm-tab-link marketplace-specific" onclick="IntegratedListingModal.switchTab('tab-html')">
+                    <i class="fas fa-code"></i><br>HTML編集
+                </div>
+                <div class="ilm-tab-link" onclick="IntegratedListingModal.switchTab('tab-final')">
+                    <i class="fas fa-check-circle"></i><br>最終確認
+                </div>
+            </nav>
+
+            <!-- タブコンテンツ -->
+            <div class="ilm-tab-content">
+                <!-- 統合概要タブ -->
+                <section id="ilm-tab-overview" class="ilm-tab-pane active">
+                    <h3 style="margin-bottom: 1rem; color: var(--ilm-text-primary);">
+                        <i class="fas fa-dashboard"></i> 全ツール統合状況
+                    </h3>
+                    
+                    <div class="ilm-status-grid" id="ilm-tool-status-grid">
+                        <!-- 動的生成 -->
+                    </div>
+
+                    <div class="ilm-data-section">
+                        <div class="ilm-section-header">
+                            <i class="fas fa-info-circle"></i> 処理フロー
+                        </div>
+                        <div id="ilm-process-flow">
+                            <div style="display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #e9ecef;">
+                                <span style="font-weight: 500; color: var(--ilm-text-secondary);">1. データ取得</span>
+                                <span style="font-weight: 600; color: var(--ilm-text-primary);" id="ilm-step1-status">待機中</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #e9ecef;">
+                                <span style="font-weight: 500; color: var(--ilm-text-secondary);">2. ツール実行</span>
+                                <span style="font-weight: 600; color: var(--ilm-text-primary);" id="ilm-step2-status">待機中</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #e9ecef;">
+                                <span style="font-weight: 500; color: var(--ilm-text-secondary);">3. データ統合</span>
+                                <span style="font-weight: 600; color: var(--ilm-text-primary);" id="ilm-step3-status">待機中</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 0.4rem 0;">
+                                <span style="font-weight: 500; color: var(--ilm-text-secondary);">4. 出品準備</span>
+                                <span style="font-weight: 600; color: var(--ilm-text-primary);" id="ilm-step4-status">待機中</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- データ確認タブ -->
+                <section id="ilm-tab-data" class="ilm-tab-pane">
+                    <h3 style="margin-bottom: 1rem; color: var(--ilm-text-primary);">
+                        <i class="fas fa-database"></i> データソース別確認・編集
+                    </h3>
+                    
+                    <div class="ilm-data-section">
+                        <div class="ilm-section-header">
+                            <i class="fas fa-table" id="ilm-data-source-icon"></i> <span id="ilm-data-source-name">取得データ</span>
+                        </div>
+                        <div id="ilm-scraped-data">
+                            <!-- 動的生成 -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 画像選択タブ -->
+                <section id="ilm-tab-images" class="ilm-tab-pane">
+                    <h3 style="margin-bottom: 1rem; color: var(--ilm-text-primary);">
+                        <i class="fas fa-images"></i> 画像管理・順序設定
+                    </h3>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                        <div>
+                            <h4 style="margin-bottom: 0.5rem;">取得済み画像 (<span id="ilm-available-image-count">0</span>枚)</h4>
+                            <div class="ilm-images-grid" id="ilm-available-images">
+                                <!-- 動的生成 -->
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 style="margin-bottom: 0.5rem;">出品用画像順序 (<span id="ilm-selected-image-count">0</span>/<span id="ilm-max-images">12</span>枚)</h4>
+                            <div class="ilm-images-grid" id="ilm-selected-images">
+                                <!-- 動的生成 -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ツール連携タブ -->
+                <section id="ilm-tab-tools" class="ilm-tab-pane">
+                    <h3 style="margin-bottom: 1rem; color: var(--ilm-text-primary);">
+                        <i class="fas fa-tools"></i> 統合ツール実行
+                    </h3>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <!-- カテゴリ判定ツール -->
+                        <div class="ilm-data-section">
+                            <div class="ilm-section-header">
+                                <i class="fas fa-tags"></i> カテゴリ判定 (11_category)
+                                <button class="ilm-btn ilm-btn-primary" onclick="IntegratedListingModal.runCategoryTool()" id="ilm-category-btn">
+                                    <i class="fas fa-play"></i> 実行
+                                </button>
+                            </div>
+                            <div id="ilm-category-results">
+                                <p style="color: var(--ilm-text-secondary);">カテゴリ判定を実行してください</p>
+                            </div>
+                        </div>
+
+                        <!-- フィルターツール -->
+                        <div class="ilm-data-section">
+                            <div class="ilm-section-header">
+                                <i class="fas fa-filter"></i> フィルターチェック (06_filters)
+                                <button class="ilm-btn ilm-btn-primary" onclick="IntegratedListingModal.runFilterTool()" id="ilm-filter-btn">
+                                    <i class="fas fa-play"></i> 実行
+                                </button>
+                            </div>
+                            <div id="ilm-filter-results">
+                                <p style="color: var(--ilm-text-secondary);">フィルターチェックを実行してください</p>
+                            </div>
+                        </div>
+
+                        <!-- 利益計算ツール -->
+                        <div class="ilm-data-section">
+                            <div class="ilm-section-header">
+                                <i class="fas fa-yen-sign"></i> 利益計算 (05_rieki)
+                                <button class="ilm-btn ilm-btn-success" onclick="IntegratedListingModal.runProfitTool()" id="ilm-profit-btn">
+                                    <i class="fas fa-play"></i> 実行
+                                </button>
+                            </div>
+                            <div id="ilm-profit-results">
+                                <p style="color: var(--ilm-text-secondary);">利益計算を実行してください</p>
+                            </div>
+                        </div>
+
+                        <!-- その他ツール -->
+                        <div class="ilm-data-section">
+                            <div class="ilm-section-header">
+                                <i class="fas fa-search"></i> SellerMirror連携
+                                <button class="ilm-btn ilm-btn-primary" onclick="IntegratedListingModal.runSellerMirror()" id="ilm-sellermirror-btn">
+                                    <i class="fas fa-play"></i> 実行
+                                </button>
+                            </div>
+                            <div id="ilm-sellermirror-results">
+                                <p style="color: var(--ilm-text-secondary);">競合調査を実行してください</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 1.5rem; text-align: center;">
+                        <button class="ilm-btn ilm-btn-primary" onclick="IntegratedListingModal.runAllTools()" id="ilm-run-all-btn">
+                            <i class="fas fa-rocket"></i> 全ツール一括実行
+                        </button>
+                    </div>
+                </section>
+
+                <!-- SellerMirror分析タブ -->
+                <section id="ilm-tab-mirror" class="ilm-tab-pane">
+                    <h3 style="margin-bottom: 1rem; color: var(--ilm-text-primary);">
+                        <i class="fas fa-search-dollar"></i> SellerMirror競合分析結果
+                    </h3>
+                    
+                    <div class="ilm-data-section">
+                        <div class="ilm-section-header">
+                            <i class="fas fa-chart-bar"></i> 市場分析サマリー
+                            <button class="ilm-btn ilm-btn-primary" onclick="IntegratedListingModal.runSellerMirrorTool()">
+                                <i class="fas fa-sync"></i> 再分析
+                            </button>
+                        </div>
+                        <div id="sellermirror-results-container">
+                            <p style="text-align: center; padding: 2rem; color: var(--ilm-text-secondary);">
+                                <i class="fas fa-info-circle" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
+                                「ツール連携」タブでSellerMirror分析を実行してください
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="ilm-data-section" style="margin-top: 1rem;">
+                        <div class="ilm-section-header">
+                            <i class="fas fa-lightbulb"></i> 価格戦略の推奨
+                        </div>
+                        <div id="price-strategy-container">
+                            <!-- 動的生成 -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 出品情報タブ -->
+                <section id="ilm-tab-listing" class="ilm-tab-pane">
+                    <h3 style="margin-bottom: 1rem; color: var(--ilm-text-primary);">
+                        <i class="fas fa-edit"></i> <span id="ilm-current-marketplace-name">eBay</span> 出品情報編集
+                    </h3>
+                    
+                    <div id="ilm-marketplace-content">
+                        <!-- マーケットプレイス別コンテンツ動的ロード -->
+                    </div>
+                </section>
+
+                <!-- 配送・在庫タブ -->
+                <section id="ilm-tab-shipping" class="ilm-tab-pane">
+                    <h3 style="margin-bottom: 1rem; color: var(--ilm-text-primary);">
+                        <i class="fas fa-shipping-fast"></i> <span id="ilm-shipping-marketplace-name">eBay</span> 配送・在庫設定
+                    </h3>
+                    
+                    <div id="ilm-shipping-content">
+                        <!-- マーケットプレイス別配送設定動的ロード -->
+                    </div>
+                </section>
+
+                <!-- HTML編集タブ -->
+                <section id="ilm-tab-html" class="ilm-tab-pane">
+                    <h3 style="margin-bottom: 1rem; color: var(--ilm-text-primary);">
+                        <i class="fas fa-code"></i> <span id="ilm-html-marketplace-name">eBay</span> 商品説明HTML編集
+                    </h3>
+                    
+                    <div id="ilm-html-editor-container">
+                        <!-- HTMLエディタ動的ロード -->
+                    </div>
+                </section>
+
+                <!-- 最終確認タブ -->
+                <section id="ilm-tab-final" class="ilm-tab-pane">
+                    <h3 style="margin-bottom: 1rem; color: var(--ilm-text-primary);">
+                        <i class="fas fa-check-circle"></i> 最終確認・出品実行
+                    </h3>
+                    
+                    <div class="ilm-data-section">
+                        <div class="ilm-section-header">
+                            <i class="fas fa-clipboard-check"></i> 出品データ検証結果
+                        </div>
+                        <div id="ilm-validation-results">
+                            <!-- 動的生成 -->
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; padding: 2rem; background: #f8f9fa; border-radius: 8px; margin-top: 1.5rem;">
+                        <h4 style="margin-bottom: 1rem;">出品準備完了</h4>
+                        <p style="margin-bottom: 1.5rem; color: var(--ilm-text-secondary);" id="ilm-listing-ready-message">
+                            すべての項目が設定されています。出品ボタンを押すと実際に出品処理が実行されます。
+                        </p>
+                        
+                        <div style="display: flex; justify-content: center; gap: 1rem;">
+                            <button class="ilm-btn ilm-btn-success" onclick="IntegratedListingModal.submitListing()" id="ilm-submit-btn">
+                                <i class="fas fa-rocket"></i> <span id="ilm-current-marketplace-submit">eBay</span>に出品する
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- フッター -->
+        <footer class="ilm-footer">
+            <div style="font-size: 0.85rem; color: var(--ilm-text-secondary);">
+                <i class="fas fa-clock"></i> 処理時間: <span id="ilm-processing-time">0.00</span>秒 | 
+                <i class="fas fa-database"></i> データ完全性: <span id="ilm-data-integrity">0</span>% | 
+                <i class="fas fa-shield-alt"></i> バリデーション: <span id="ilm-validation-status">待機中</span>
+            </div>
+            
+            <div style="display: flex; gap: 0.75rem;">
+                <button class="ilm-btn" style="background: #6c757d; color: white;" onclick="IntegratedListingModal.close()">
+                    <i class="fas fa-times"></i> 閉じる
+                </button>
+                <button class="ilm-btn ilm-btn-primary" onclick="IntegratedListingModal.goToNextTab()">
+                    <i class="fas fa-arrow-right"></i> 次へ進む
+                </button>
+            </div>
+        </footer>
+    </div>
+</div>
+
+<!-- カテゴリー + 手数料統合機能 -->
+<script src="category_fee_addon.js"></script>

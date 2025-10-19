@@ -1,0 +1,84 @@
+<?php
+// modules/ebay_category_system/backend/CategoryDetector.php
+
+class CategoryDetector {
+    private $pdo;
+    
+    public function __construct($dbConnection) {
+        $this->pdo = $dbConnection;
+    }
+    
+    /**
+     * メイン関数: カテゴリー自動判定
+     * @param array $productData ['title' => '', 'price' => '', 'description' => '']
+     * @return array ['category_id' => '', 'category_name' => '', 'confidence' => 0, 'matched_keywords' => []]
+     */
+    public function detectCategory($productData) {
+        $title = mb_strtolower($productData['title'], 'UTF-8');
+        $description = mb_strtolower($productData['description'], 'UTF-8');
+        $text = $title . ' ' . $description;
+
+        $scores = $this->matchByKeywords($text);
+
+        if (empty($scores)) {
+            return [
+                'category_id' => '0', // 該当なし
+                'category_name' => 'Uncategorized',
+                'confidence' => 0,
+                'matched_keywords' => []
+            ];
+        }
+
+        // スコアを降順でソート
+        arsort($scores);
+        $bestCategoryId = key($scores);
+        $bestConfidence = $scores[$bestCategoryId];
+
+        // 判定されたカテゴリーIDの情報を取得
+        $stmt = $this->pdo->prepare("SELECT category_name FROM ebay_categories WHERE category_id = ?");
+        $stmt->execute([$bestCategoryId]);
+        $category = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        // 信頼度とマッチしたキーワードを返す
+        $matchedKeywords = [];
+        $stmt = $this->pdo->prepare("SELECT keyword FROM category_keywords WHERE category_id = ? AND ? LIKE CONCAT('%', keyword, '%')");
+        $stmt->execute([$bestCategoryId, $text]);
+        $matchedKeywords = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        return [
+            'category_id' => $bestCategoryId,
+            'category_name' => $category['category_name'] ?? 'Unknown',
+            'confidence' => min(100, $bestConfidence), // 信頼度は最大100%
+            'matched_keywords' => $matchedKeywords
+        ];
+    }
+    
+    /**
+     * キーワード辞書による判定
+     */
+    private function matchByKeywords($text) {
+        $scores = [];
+        $stmt = $this->pdo->prepare("SELECT category_id, keyword, weight FROM category_keywords");
+        $stmt->execute();
+        $keywords = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        foreach ($keywords as $row) {
+            $keyword = mb_strtolower($row['keyword'], 'UTF-8');
+            if (mb_stripos($text, $keyword, 0, 'UTF-8') !== false) {
+                if (!isset($scores[$row['category_id']])) {
+                    $scores[$row['category_id']] = 0;
+                }
+                $scores[$row['category_id']] += $row['weight'];
+            }
+        }
+        return $scores;
+    }
+    
+    /**
+     * 価格帯考慮による判定精度向上
+     * 現在は実装を省略
+     */
+    private function enhanceByPrice($basicResult, $price) {
+        return $basicResult;
+    }
+}

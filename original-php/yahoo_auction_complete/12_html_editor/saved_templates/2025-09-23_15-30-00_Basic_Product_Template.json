@@ -1,0 +1,20 @@
+{
+    "template_id": "test_template_001",
+    "name": "Basic Product Template",
+    "category": "general",
+    "html_content": "<div class=\"product-description\">\n    <h2>{{TITLE}}</h2>\n    <div class=\"price\">${{PRICE}}</div>\n    <div class=\"brand\">Brand: {{BRAND}}</div>\n    <div class=\"condition\">Condition: {{CONDITION}}</div>\n    <div class=\"description\">{{DESCRIPTION}}</div>\n    <div class=\"shipping\">{{SHIPPING_INFO}}</div>\n</div>",
+    "css_styles": "",
+    "javascript_code": "",
+    "placeholder_fields": [
+        "TITLE",
+        "PRICE",
+        "BRAND",
+        "CONDITION",
+        "DESCRIPTION",
+        "SHIPPING_INFO"
+    ],
+    "created_at": "2025-09-23 15:30:00",
+    "created_by": "system",
+    "file_name": "2025-09-23_15-30-00_Basic_Product_Template.json",
+    "file_size": 654
+}

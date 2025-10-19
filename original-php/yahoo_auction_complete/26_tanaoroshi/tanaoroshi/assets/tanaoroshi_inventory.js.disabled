@@ -1,0 +1,875 @@
+/**
+ * tanaoroshi_inventory.js
+ * NAGANO-3 棚卸しシステム JavaScript
+ * N3 Hooks Manager完全統合版
+ */
+
+(function() {
+    'use strict';
+    
+    /**
+     * 棚卸しシステム管理クラス
+     */
+    class TanaoroshiInventorySystem {
+        constructor() {
+            this.selectedProducts = [];
+            this.currentDetailProductId = null;
+            this.currentSetComponents = [];
+            this.componentCounter = 0;
+            this.exchangeRate = 150.25;
+            this.priceChart = null;
+            this.sampleProducts = [];
+            
+            // N3 Hooks Manager参照
+            this.hooksManager = null;
+            this.availableHooks = [];
+            
+            // 初期化
+            this.init();
+        }
+        
+        /**
+         * システム初期化
+         */
+        async init() {
+            console.log('棚卸しシステム初期化開始 - N3 Hooks Manager統合版');
+            
+            try {
+                // N3 Core 待機
+                await this.waitForN3Core();
+                
+                // Hooks Manager初期化
+                await this.initHooksManager();
+                
+                // サンプルデータロード
+                this.loadSampleData();
+                
+                // イベントリスナー設定
+                this.setupEventListeners();
+                
+                // ドラッグ&ドロップ設定
+                this.setupDragAndDrop();
+                
+                // 価格チャート初期化
+                this.initializePriceChart();
+                
+                // 為替レート更新
+                this.updateExchangeRate();
+                
+                console.log('棚卸しシステム初期化完了');
+                
+            } catch (error) {
+                console.error('棚卸しシステム初期化エラー:', error);
+                this.showMessage('システム初期化に失敗しました', 'error');
+            }
+        }
+        
+        /**
+         * N3 Core待機
+         */
+        async waitForN3Core() {
+            return new Promise((resolve) => {
+                if (window.N3) {
+                    resolve();
+                } else {
+                    window.addEventListener('n3:core_ready', resolve);
+                }
+            });
+        }
+        
+        /**
+         * Hooks Manager初期化
+         */
+        async initHooksManager() {
+            try {
+                console.log('Hooks Manager初期化開始...');
+                
+                // Hook Manager統合システム呼び出し
+                const result = await window.N3.ajax('hook_manager_integration', {
+                    action: 'discover_all'
+                });
+                
+                if (result.success) {
+                    this.availableHooks = result.result.discovered_hooks || [];
+                    console.log(`発見されたHooks: ${this.availableHooks.length}個`);
+                    console.log('利用可能なHooks:', this.availableHooks);
+                    
+                    // 棚卸し関連Hooks特定
+                    this.identifyInventoryHooks();
+                    
+                    // UI更新
+                    this.updateHooksStatus('統合済み', 'success');
+                    
+                } else {
+                    throw new Error('Hook Manager初期化失敗');
+                }
+                
+            } catch (error) {
+                console.error('Hooks Manager初期化エラー:', error);
+                this.updateHooksStatus('エラー', 'error');
+                this.showMessage('Hooks Manager初期化に失敗しました', 'warning');
+            }
+        }
+        
+        /**
+         * Hooks状態UI更新
+         */
+        updateHooksStatus(status, type) {
+            const statusElement = document.getElementById('hooks-status');
+            if (statusElement) {
+                statusElement.textContent = status;
+                statusElement.className = '';
+                
+                const colors = {
+                    success: '#10b981',
+                    error: '#ef4444',
+                    warning: '#f59e0b',
+                    info: '#06b6d4'
+                };
+                
+                statusElement.style.cssText = `
+                    font-size: 0.7rem;
+                    padding: 0.2rem 0.5rem;
+                    background: ${colors[type] || colors.info};
+                    color: white;
+                    border-radius: 0.25rem;
+                    font-weight: 500;
+                `;
+            }
+        }
+        
+        /**
+         * 棚卸し関連Hooks特定
+         */
+        identifyInventoryHooks() {
+            const inventoryKeywords = [
+                'inventory', 'stock', 'product', 'ebay', 'postgresql',
+                'csv', 'data', 'processing', 'import', 'export'
+            ];
+            
+            this.inventoryRelatedHooks = this.availableHooks.filter(hookId => {
+                const hookLower = hookId.toLowerCase();
+                return inventoryKeywords.some(keyword => hookLower.includes(keyword));
+            });
+            
+            console.log('棚卸し関連Hooks:', this.inventoryRelatedHooks);
+            
+            // 情報UI更新
+            const hooksInfo = document.getElementById('hooks-info');
+            if (hooksInfo) {
+                hooksInfo.innerHTML = `
+                    <strong>統合状況:</strong> N3 Core + Hook Manager + 
+                    ${this.inventoryRelatedHooks.length}個の棚卸し関連Hooks統合済み<br>
+                    <strong>利用可能:</strong> ${this.availableHooks.join(', ')}
+                `;
+            }
+        }
+        
+        /**
+         * PostgreSQL eBayデータ取得（Hooks経由）
+         */
+        async loadEbayInventoryData(limit = 50, withImages = true) {
+            try {
+                console.log('PostgreSQL eBayデータ取得開始...');
+                this.showMessage('eBayデータを取得中...', 'info');
+                
+                // Hook Manager経由でPostgreSQL統合Hook実行
+                const result = await window.N3.ajax('hook_manager_integration', {
+                    action: 'execute_hooks',
+                    hook_ids: ['6_postgresql_integration_hook_maru9'],
+                    args: {
+                        action: 'get_mystical_inventory_data',
+                        limit: limit,
+                        with_images: withImages
+                    }
+                });
+                
+                if (result.success && result.result.execution_results) {
+                    const hookResult = result.result.execution_results['6_postgresql_integration_hook_maru9'];
+                    
+                    if (hookResult.status === 'success') {
+                        const inventoryData = hookResult.result.data || [];
+                        console.log(`eBayデータ取得成功: ${inventoryData.length}件`);
+                        
+                        // データをサンプル形式に変換
+                        this.convertEbayDataToSample(inventoryData);
+                        
+                        // UI更新
+                        this.updateInventoryDisplay();
+                        
+                        this.showMessage(`eBayデータ ${inventoryData.length}件を読み込みました`, 'success');
+                        
+                        return inventoryData;
+                        
+                    } else {
+                        throw new Error(hookResult.error || 'Hook実行失敗');
+                    }
+                } else {
+                    throw new Error('Hook Manager実行失敗');
+                }
+                
+            } catch (error) {
+                console.error('eBayデータ取得エラー:', error);
+                this.showMessage(`データ取得失敗: ${error.message}`, 'error');
+                
+                // フォールバック: サンプルデータ使用
+                this.loadSampleData();
+                return null;
+            }
+        }
+        
+        /**
+         * eBayデータをサンプル形式に変換
+         */
+        convertEbayDataToSample(ebayData) {
+            this.sampleProducts = ebayData.map((item, index) => ({
+                id: index + 1,
+                name: item.title || `商品 #${index + 1}`,
+                sku: item.sku || `SKU-${index + 1}`,
+                type: this.determineProductType(item),
+                condition: item.condition || 'new',
+                priceUSD: parseFloat(item.price) || 0,
+                costUSD: parseFloat(item.cost) || 0,
+                stock: parseInt(item.quantity) || 0,
+                category: item.category || 'General',
+                channels: this.determineChannels(item),
+                image: item.gallery_url || `https://images.unsplash.com/photo-${1500000000000 + index}?w=300&h=200&fit=crop`,
+                description: item.description || `${item.title}の詳細説明`,
+                ebayItemId: item.item_id,
+                listingStatus: item.listing_status,
+                watchCount: item.watch_count,
+                hitCount: item.hit_count,
+                viewItemUrl: item.view_item_url
+            }));
+            
+            console.log('eBayデータ変換完了:', this.sampleProducts.length, '件');
+        }
+        
+        /**
+         * 商品タイプ判定
+         */
+        determineProductType(item) {
+            const quantity = parseInt(item.quantity) || 0;
+            
+            if (quantity > 50) return 'stock';
+            if (quantity === 0) return 'dropship';
+            if (quantity <= 5) return 'hybrid';
+            return 'stock';
+        }
+        
+        /**
+         * 販売チャンネル判定
+         */
+        determineChannels(item) {
+            const channels = ['ebay']; // eBayデータなので必ずeBay
+            
+            // 他チャンネルの判定ロジック（今後拡張）
+            if (item.shopify_id) channels.push('shopify');
+            if (item.mercari_id) channels.push('mercari');
+            
+            return channels;
+        }
+        
+        /**
+         * サンプルデータロード
+         */
+        loadSampleData() {
+            this.sampleProducts = [
+                {
+                    id: 1,
+                    name: "Wireless Gaming Mouse RGB LED 7 Buttons",
+                    sku: "MS-WR70-001",
+                    type: "stock",
+                    condition: "new",
+                    priceUSD: 21.84,
+                    costUSD: 12.33,
+                    stock: 48,
+                    category: "Electronics",
+                    channels: ["ebay", "shopify"],
+                    image: "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=300&h=200&fit=crop",
+                    description: "高性能なワイヤレスゲーミングマウス。RGB LED搭載で7つのボタンを配置。"
+                },
+                {
+                    id: 2,
+                    name: "Gaming PC Accessories Bundle (3 Items)",
+                    sku: "SET-PC01-003",
+                    type: "set",
+                    condition: "new",
+                    priceUSD: 59.26,
+                    costUSD: 37.96,
+                    stock: 15,
+                    category: "Bundle",
+                    channels: ["ebay"],
+                    image: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=300&h=200&fit=crop",
+                    description: "ゲーミングPC周辺機器の3点セット商品。",
+                    components: [
+                        { productId: 1, quantity: 1 },
+                        { productId: 3, quantity: 1 },
+                        { productId: 4, quantity: 1 }
+                    ]
+                },
+                {
+                    id: 3,
+                    name: "Mechanical Keyboard RGB Backlit",
+                    sku: "KB-MR88-002",
+                    type: "dropship",
+                    condition: "new",
+                    priceUSD: 52.24,
+                    costUSD: 34.67,
+                    stock: "∞",
+                    category: "Electronics",
+                    channels: ["mercari"],
+                    image: "https://images.unsplash.com/photo-1541140532154-b024d705b90a?w=300&h=200&fit=crop",
+                    description: "RGBバックライト付きメカニカルキーボード。"
+                },
+                {
+                    id: 4,
+                    name: "Gaming Headset with Microphone",
+                    sku: "HS-GM55-004",
+                    type: "hybrid",
+                    condition: "new",
+                    priceUSD: 35.20,
+                    costUSD: 22.62,
+                    stock: 3,
+                    category: "Electronics",
+                    channels: ["ebay", "shopify", "mercari"],
+                    image: "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=300&h=200&fit=crop",
+                    description: "マイク付きゲーミングヘッドセット。"
+                }
+            ];
+            
+            console.log('サンプルデータロード完了:', this.sampleProducts.length, '件');
+        }
+        
+        /**
+         * イベントリスナー設定
+         */
+        setupEventListeners() {
+            // ビュー切り替え
+            this.bindEvent('card-view-btn', 'click', () => this.switchView('grid'));
+            this.bindEvent('list-view-btn', 'click', () => this.switchView('list'));
+            
+            // Hooks統合コントロール
+            this.bindEvent('load-ebay-data-btn', 'click', () => this.loadEbayInventoryData());
+            this.bindEvent('hooks-discover-btn', 'click', () => this.discoverHooks());
+            this.bindEvent('csv-export-hooks-btn', 'click', () => this.exportInventoryData());
+            this.bindEvent('system-status-btn', 'click', () => this.showHooksSystemStatus());
+            
+            // カード選択
+            document.addEventListener('click', (e) => {
+                const card = e.target.closest('.inventory__card');
+                if (card && !e.target.matches('input, button, select')) {
+                    this.selectCard(card);
+                }
+            });
+            
+            // 新規商品登録
+            this.bindEvent('add-product-btn', 'click', () => this.showAddProductModal());
+            this.bindEvent('add-product-from-list-btn', 'click', () => this.showAddProductModal());
+            
+            // セット品作成
+            this.bindEvent('create-set-btn', 'click', () => this.handleSetCreation());
+            this.bindEvent('create-set-from-list-btn', 'click', () => this.handleSetCreation());
+            
+            // フィルター・検索
+            this.bindEvent('search-input', 'input', (e) => this.handleSearch(e.target.value));
+            
+            document.querySelectorAll('.inventory__filter-select').forEach(select => {
+                select.addEventListener('change', () => this.applyFilters());
+            });
+            
+            // 通貨切り替え
+            this.bindEvent('currency-usd', 'click', () => this.switchCurrency('USD'));
+            this.bindEvent('currency-jpy', 'click', () => this.switchCurrency('JPY'));
+            
+            console.log('イベントリスナー設定完了');
+        }
+        
+        /**
+         * イベントバインダー（要素存在チェック付き）
+         */
+        bindEvent(elementId, eventType, handler) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.addEventListener(eventType, handler);
+            }
+        }
+        
+        /**
+         * Hooks発見
+         */
+        async discoverHooks() {
+            try {
+                await this.initHooksManager();
+                this.showMessage(`Hooks再発見完了: ${this.availableHooks.length}個`, 'success');
+            } catch (error) {
+                this.showMessage(`Hooks発見エラー: ${error.message}`, 'error');
+            }
+        }
+        
+        /**
+         * Hooksシステム状態表示
+         */
+        async showHooksSystemStatus() {
+            try {
+                const result = await window.N3.ajax('hook_manager_integration', {
+                    action: 'get_status'
+                });
+                
+                if (result.success) {
+                    const status = result.result;
+                    const message = `
+                        Hooks統計:
+                        - 総Hook数: ${status.hook_manager_status.total_hooks}
+                        - カテゴリ別: ${JSON.stringify(status.hook_manager_status.hooks_by_category)}
+                        - 実行履歴: ${status.execution_history_summary.total_executions}件
+                        - 利用可能機能: ${status.hook_manager_status.capabilities_available.join(', ')}
+                    `;
+                    
+                    alert(message);
+                } else {
+                    throw new Error('システム状態取得失敗');
+                }
+                
+            } catch (error) {
+                this.showMessage(`システム状態取得エラー: ${error.message}`, 'error');
+            }
+        }
+        
+        /**
+         * ビュー切り替え
+         */
+        switchView(view) {
+            const cardView = document.getElementById('card-view');
+            const listView = document.getElementById('list-view');
+            const cardViewBtn = document.getElementById('card-view-btn');
+            const listViewBtn = document.getElementById('list-view-btn');
+            
+            if (!cardView || !listView || !cardViewBtn || !listViewBtn) {
+                console.error('ビュー要素が見つかりません');
+                return;
+            }
+            
+            // ボタン状態更新
+            cardViewBtn.classList.remove('inventory__view-btn--active');
+            listViewBtn.classList.remove('inventory__view-btn--active');
+            
+            if (view === 'grid') {
+                cardView.style.display = 'grid';
+                listView.style.display = 'none';
+                cardViewBtn.classList.add('inventory__view-btn--active');
+                console.log('カードビューに切り替え');
+            } else {
+                cardView.style.display = 'none';
+                listView.style.display = 'block';
+                listViewBtn.classList.add('inventory__view-btn--active');
+                console.log('リストビューに切り替え');
+            }
+        }
+        
+        /**
+         * カード選択
+         */
+        selectCard(card) {
+            const productId = parseInt(card.dataset.id);
+            
+            card.classList.toggle('inventory__card--selected');
+            
+            if (card.classList.contains('inventory__card--selected')) {
+                if (!this.selectedProducts.includes(productId)) {
+                    this.selectedProducts.push(productId);
+                }
+            } else {
+                this.selectedProducts = this.selectedProducts.filter(id => id !== productId);
+            }
+            
+            this.updateSelectionUI();
+            console.log('選択中の商品:', this.selectedProducts);
+        }
+        
+        /**
+         * 選択UI更新
+         */
+        updateSelectionUI() {
+            const selectedCount = this.selectedProducts.length;
+            const createSetBtn = document.getElementById('create-set-btn');
+            const setBtnText = document.getElementById('set-btn-text');
+            
+            if (createSetBtn && setBtnText) {
+                if (selectedCount >= 2) {
+                    createSetBtn.disabled = false;
+                    createSetBtn.classList.remove('btn--secondary');
+                    createSetBtn.classList.add('btn--warning');
+                    setBtnText.textContent = `選択商品からセット品作成 (${selectedCount}点)`;
+                } else {
+                    createSetBtn.disabled = false;
+                    createSetBtn.classList.remove('btn--warning');
+                    createSetBtn.classList.add('btn--secondary');
+                    setBtnText.textContent = '新規セット品作成';
+                }
+            }
+        }
+        
+        /**
+         * 在庫データ更新（Hooks経由）
+         */
+        async updateInventoryStock(productId, newStock) {
+            try {
+                const result = await window.N3.ajax('hook_manager_integration', {
+                    action: 'execute_hooks',
+                    hook_ids: ['6_postgresql_integration_hook_maru9'],
+                    args: {
+                        action: 'update_product_stock',
+                        product_id: productId,
+                        new_stock: newStock
+                    }
+                });
+                
+                if (result.success) {
+                    console.log('在庫更新成功:', productId, newStock);
+                    this.showMessage('在庫を更新しました', 'success');
+                } else {
+                    throw new Error('在庫更新失敗');
+                }
+                
+            } catch (error) {
+                console.error('在庫更新エラー:', error);
+                this.showMessage('在庫更新に失敗しました', 'error');
+            }
+        }
+        
+        /**
+         * CSVエクスポート（Hooks経由）
+         */
+        async exportInventoryData() {
+            try {
+                this.showMessage('CSVエクスポート中...', 'info');
+                
+                const result = await window.N3.ajax('hook_manager_integration', {
+                    action: 'execute_hooks',
+                    hook_ids: ['csv_export_hook'],
+                    args: {
+                        data: this.sampleProducts,
+                        format: 'inventory_export',
+                        filename: `inventory_${new Date().toISOString().split('T')[0]}.csv`
+                    }
+                });
+                
+                if (result.success) {
+                    console.log('CSVエクスポート成功');
+                    this.showMessage('CSVエクスポートが完了しました', 'success');
+                } else {
+                    throw new Error('エクスポート失敗');
+                }
+                
+            } catch (error) {
+                console.error('CSVエクスポートエラー:', error);
+                this.showMessage('エクスポートに失敗しました', 'error');
+                
+                // フォールバック: 簡易CSV生成
+                this.generateFallbackCSV();
+            }
+        }
+        
+        /**
+         * フォールバックCSV生成
+         */
+        generateFallbackCSV() {
+            try {
+                const csvContent = this.convertToCSV(this.sampleProducts);
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                
+                if (link.download !== undefined) {
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', `inventory_${new Date().toISOString().split('T')[0]}.csv`);
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    this.showMessage('CSVファイルをダウンロードしました（フォールバック）', 'success');
+                }
+                
+            } catch (error) {
+                console.error('フォールバックCSV生成エラー:', error);
+                this.showMessage('CSV生成に失敗しました', 'error');
+            }
+        }
+        
+        /**
+         * CSV変換
+         */
+        convertToCSV(data) {
+            const headers = ['ID', '商品名', 'SKU', 'タイプ', '状態', '販売価格(USD)', '仕入価格(USD)', '在庫数', 'カテゴリ'];
+            const rows = data.map(item => [
+                item.id,
+                `"${item.name}"`,
+                item.sku,
+                item.type,
+                item.condition,
+                item.priceUSD,
+                item.costUSD,
+                item.stock,
+                item.category
+            ]);
+            
+            return [headers, ...rows].map(row => row.join(',')).join('\n');
+        }
+        
+        /**
+         * 価格チャート初期化
+         */
+        initializePriceChart() {
+            const canvas = document.getElementById('price-chart');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            
+            // Chart.js使用（CDNで読み込み済み）
+            if (typeof Chart !== 'undefined') {
+                this.priceChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['$0-$25', '$25-$50', '$50-$100', '$100+'],
+                        datasets: [{
+                            data: [272, 298, 342, 200],
+                            backgroundColor: [
+                                '#3b82f6',
+                                '#10b981',
+                                '#f59e0b',
+                                '#ef4444'
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        /**
+         * 為替レート更新
+         */
+        updateExchangeRate() {
+            // 実際の為替レートAPI呼び出し（今後実装）
+            const rateElement = document.getElementById('exchange-rate');
+            if (rateElement) {
+                rateElement.textContent = `¥${this.exchangeRate}`;
+            }
+        }
+        
+        /**
+         * ドラッグ&ドロップ設定
+         */
+        setupDragAndDrop() {
+            const csvImportArea = document.getElementById('csv-import-area');
+            const csvImport = document.getElementById('csv-import');
+            
+            if (csvImportArea && csvImport) {
+                csvImportArea.addEventListener('click', () => csvImport.click());
+                csvImport.addEventListener('change', (e) => this.handleCSVImport(e));
+                
+                // ドラッグ&ドロップ
+                csvImportArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    csvImportArea.classList.add('inventory__import--dragover');
+                });
+                
+                csvImportArea.addEventListener('dragleave', () => {
+                    csvImportArea.classList.remove('inventory__import--dragover');
+                });
+                
+                csvImportArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    csvImportArea.classList.remove('inventory__import--dragover');
+                    
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        csvImport.files = files;
+                        this.handleCSVImport({ target: csvImport });
+                    }
+                });
+            }
+        }
+        
+        /**
+         * CSVインポート処理（Hooks経由）
+         */
+        async handleCSVImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            try {
+                this.showMessage('CSVファイルを読み込み中...', 'info');
+                
+                const csvContent = await this.readFileAsText(file);
+                
+                // CSV処理Hook実行
+                const result = await window.N3.ajax('hook_manager_integration', {
+                    action: 'execute_hooks',
+                    hook_ids: ['csv_import_hook'],
+                    args: {
+                        csv_content: csvContent,
+                        file_name: file.name,
+                        import_type: 'inventory'
+                    }
+                });
+                
+                if (result.success) {
+                    console.log('CSVインポート成功');
+                    this.showMessage('CSVインポートが完了しました', 'success');
+                    
+                    // データを更新
+                    this.updateInventoryDisplay();
+                } else {
+                    throw new Error('インポート処理失敗');
+                }
+                
+            } catch (error) {
+                console.error('CSVインポートエラー:', error);
+                this.showMessage(`CSVインポートに失敗しました: ${error.message}`, 'error');
+            }
+        }
+        
+        /**
+         * ファイル読み込み
+         */
+        readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = e => reject(new Error('ファイル読み込みエラー'));
+                reader.readAsText(file, 'UTF-8');
+            });
+        }
+        
+        /**
+         * 在庫表示更新
+         */
+        updateInventoryDisplay() {
+            // 統計更新
+            this.updateStatistics();
+            
+            // カード表示更新
+            this.renderProductCards();
+            
+            // テーブル表示更新
+            this.renderProductTable();
+        }
+        
+        /**
+         * 統計情報更新
+         */
+        updateStatistics() {
+            const stats = this.calculateStatistics();
+            
+            const elements = {
+                'total-products': stats.total,
+                'stock-products': stats.stock,
+                'dropship-products': stats.dropship,
+                'set-products': stats.set,
+                'hybrid-products': stats.hybrid,
+                'total-value': `$${(stats.totalValue / 1000).toFixed(1)}K`
+            };
+            
+            Object.entries(elements).forEach(([id, value]) => {
+                const element = document.getElementById(id);
+                if (element) element.textContent = value;
+            });
+        }
+        
+        /**
+         * 統計計算
+         */
+        calculateStatistics() {
+            return {
+                total: this.sampleProducts.length,
+                stock: this.sampleProducts.filter(p => p.type === 'stock').length,
+                dropship: this.sampleProducts.filter(p => p.type === 'dropship').length,
+                set: this.sampleProducts.filter(p => p.type === 'set').length,
+                hybrid: this.sampleProducts.filter(p => p.type === 'hybrid').length,
+                totalValue: this.sampleProducts.reduce((sum, p) => sum + (p.priceUSD * (p.stock || 0)), 0)
+            };
+        }
+        
+        /**
+         * 商品カード描画
+         */
+        renderProductCards() {
+            const cardView = document.getElementById('card-view');
+            if (!cardView) return;
+            
+            // 既存のカードを保持（イベントリスナー維持のため）
+            // 新しいデータがある場合のみ更新
+            console.log('商品カード表示更新');
+        }
+        
+        /**
+         * 商品テーブル描画
+         */
+        renderProductTable() {
+            const tableBody = document.getElementById('products-table-body');
+            if (!tableBody) return;
+            
+            // テーブル行更新
+            console.log('商品テーブル表示更新');
+        }
+        
+        /**
+         * メッセージ表示
+         */
+        showMessage(message, type = 'info') {
+            if (window.N3) {
+                window.N3.showMessage(message, type);
+            } else {
+                console.log(`[${type.toUpperCase()}] ${message}`);
+            }
+        }
+        
+        // グローバル関数（後方互換性）
+        showAddProductModal() { console.log('新規商品登録モーダル表示'); }
+        handleSetCreation() { console.log('セット品作成開始'); }
+        handleSearch(value) { console.log('検索:', value); }
+        applyFilters() { console.log('フィルター適用'); }
+        resetFilters() { console.log('フィルターリセット'); }
+        switchCurrency(currency) { console.log('通貨切り替え:', currency); }
+        exportData() { this.exportInventoryData(); }
+        showProductDetail(id) { console.log('商品詳細表示:', id); }
+        deleteProduct(id) { console.log('商品削除:', id); }
+    }
+    
+    /**
+     * グローバル初期化
+     */
+    let inventorySystem = null;
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        inventorySystem = new TanaoroshiInventorySystem();
+        
+        // グローバル関数として露出（既存HTML互換性）
+        window.switchView = (view) => inventorySystem.switchView(view);
+        window.showAddProductModal = () => inventorySystem.showAddProductModal();
+        window.handleSetCreation = () => inventorySystem.handleSetCreation();
+        window.handleSearch = (value) => inventorySystem.handleSearch(value);
+        window.applyFilters = () => inventorySystem.applyFilters();
+        window.resetFilters = () => inventorySystem.resetFilters();
+        window.switchCurrency = (currency) => inventorySystem.switchCurrency(currency);
+        window.exportData = () => inventorySystem.exportData();
+        window.showProductDetail = (id) => inventorySystem.showProductDetail(id);
+        window.deleteProduct = (id) => inventorySystem.deleteProduct(id);
+        
+        // システムオブジェクトもグローバル露出
+        window.TanaoroshiSystem = inventorySystem;
+    });
+    
+})();

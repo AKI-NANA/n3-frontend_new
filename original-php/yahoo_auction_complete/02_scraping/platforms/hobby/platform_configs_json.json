@@ -1,0 +1,199 @@
+{
+  "platforms": {
+    "takaratomy": {
+      "platform_code": "takaratomy",
+      "platform_name": "タカラトミーモール",
+      "base_url": "https://takaratomymall.jp",
+      "type": "ec_site",
+      "request_delay": 2000,
+      "timeout": 30,
+      "max_retries": 3,
+      "selectors": {
+        "product_title": ["h1.product-name", "h1.item-name", ".product-title h1"],
+        "price": ["span.price", ".product-price", "span[itemprop='price']"],
+        "original_price": ["span.original-price", ".price-original", "s.old-price"],
+        "stock_status": [".stock-status", ".availability", "span.stock"],
+        "images": ["img.product-image", ".item-images img", "img[itemprop='image']"],
+        "description": [".product-description", ".item-detail", "div[itemprop='description']"],
+        "category": [".breadcrumb", ".bread-crumb"],
+        "add_to_cart_button": ["button.add-to-cart", ".cart-btn", "button[name='add']"]
+      },
+      "stock_patterns": {
+        "in_stock": ["カートに入れる", "購入する", "在庫あり"],
+        "out_of_stock": ["品切れ", "売り切れ", "入荷待ち"],
+        "preorder": ["予約", "予約受付中", "予約販売"]
+      }
+    },
+    
+    "bandai_hobby": {
+      "platform_code": "bandai_hobby",
+      "platform_name": "バンダイホビーサイト",
+      "base_url": "https://bandai-hobby.net",
+      "type": "ec_site",
+      "request_delay": 3000,
+      "timeout": 30,
+      "use_headless": true,
+      "selectors": {
+        "product_title": ["h1.item-name", ".product-title"],
+        "price": [".price-value", "span.price"],
+        "images": [".product-image", ".item-img"],
+        "description": [".product-info", ".item-description"]
+      }
+    },
+    
+    "posthobby": {
+      "platform_code": "posthobby",
+      "platform_name": "ポストホビー",
+      "base_url": "https://www.posthobby.com",
+      "type": "hobby_shop",
+      "request_delay": 2000,
+      "timeout": 30,
+      "selectors": {
+        "product_title": ["h2.item_name", ".product-name"],
+        "price": ["span.sale_price", ".item-price"],
+        "stock_status": [".item_stock", ".stock-info"],
+        "images": ["img.item_photo", ".product-img"],
+        "description": [".item_detail", ".product-description"]
+      },
+      "stock_patterns": {
+        "in_stock": ["在庫:", "販売中"],
+        "out_of_stock": ["入荷待ち", "完売", "品切れ"]
+      }
+    },
+    
+    "kyd_store": {
+      "platform_code": "kyd_store",
+      "platform_name": "KYDストア",
+      "base_url": "https://www.kyd-store.jp",
+      "type": "hobby_shop",
+      "request_delay": 2000,
+      "timeout": 30,
+      "selectors": {
+        "product_title": ["h1.product-title", ".item-name"],
+        "price": [".price", "span.product-price"],
+        "stock_status": [".stock-status", ".availability"],
+        "images": [".product-image", "img.item-img"]
+      }
+    },
+    
+    "nintendo_store": {
+      "platform_code": "nintendo_store",
+      "platform_name": "任天堂公式ストア",
+      "base_url": "https://store-jp.nintendo.com",
+      "type": "official_store",
+      "request_delay": 5000,
+      "timeout": 30,
+      "max_retries": 5,
+      "selectors": {
+        "product_title": ["h1.product-name", ".item-title"],
+        "price": [".product-price", "span.price"],
+        "stock_status": [".stock-message", ".availability"],
+        "images": [".product-image", ".item-photo"]
+      }
+    },
+    
+    "premium_bandai": {
+      "platform_code": "premium_bandai",
+      "platform_name": "プレミアムバンダイ",
+      "base_url": "https://p-bandai.jp",
+      "type": "official_store",
+      "request_delay": 3000,
+      "timeout": 30,
+      "use_api": true,
+      "api_endpoint": "/api/v1/products",
+      "selectors": {
+        "product_title": ["h1.product-name"],
+        "price": [".product-price"],
+        "stock_status": [".stock-info"]
+      }
+    },
+    
+    "tamiya": {
+      "platform_code": "tamiya",
+      "platform_name": "タミヤ",
+      "base_url": "https://www.tamiya.com/japan",
+      "type": "manufacturer",
+      "request_delay": 2000,
+      "timeout": 30,
+      "selectors": {
+        "product_title": ["h1", ".product-title"],
+        "price": [".price", "span.product-price"],
+        "images": [".product-image", "img.item-photo"]
+      }
+    },
+    
+    "jumpcs": {
+      "platform_code": "jumpcs",
+      "platform_name": "集英社コミックストア",
+      "base_url": "https://jumpcs.shueisha.co.jp",
+      "type": "official_store",
+      "request_delay": 2000,
+      "timeout": 30,
+      "selectors": {
+        "product_title": ["h1.product-name", ".item-title"],
+        "price": [".product-price", "span.price"],
+        "stock_status": [".stock-status", ".availability"],
+        "images": [".product-image"]
+      }
+    },
+    
+    "toho_online": {
+      "platform_code": "toho_online",
+      "platform_name": "東宝エンタテインメント",
+      "base_url": "https://tohoentertainmentonline.com",
+      "type": "official_store",
+      "request_delay": 2000,
+      "timeout": 30,
+      "selectors": {
+        "product_title": ["h1.product-title"],
+        "price": [".product-price"],
+        "stock_status": [".stock-info"]
+      }
+    },
+    
+    "sofmap": {
+      "platform_code": "sofmap",
+      "platform_name": "ソフマップ",
+      "base_url": "https://a.sofmap.com",
+      "type": "retailer",
+      "request_delay": 2000,
+      "timeout": 30,
+      "selectors": {
+        "product_title": ["h1.product-name"],
+        "price": [".product-price", "span.price"],
+        "stock_status": [".stock-status"]
+      }
+    }
+  },
+  
+  "global_settings": {
+    "user_agents": [
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+    ],
+    "default_timeout": 30,
+    "default_delay": 2000,
+    "max_retries": 3,
+    "log_level": "info"
+  },
+  
+  "stock_detection_rules": {
+    "global": {
+      "in_stock_keywords": [
+        "カートに入れる", "購入する", "買い物かごに入れる", 
+        "在庫あり", "販売中", "発売中"
+      ],
+      "out_of_stock_keywords": [
+        "品切れ", "売り切れ", "完売", "入荷待ち", 
+        "取り扱い終了", "販売終了"
+      ],
+      "preorder_keywords": [
+        "予約", "予約受付中", "予約販売", "先行予約", "事前予約"
+      ],
+      "coming_soon_keywords": [
+        "近日発売", "発売予定", "Coming Soon"
+      ]
+    }
+  }
+}

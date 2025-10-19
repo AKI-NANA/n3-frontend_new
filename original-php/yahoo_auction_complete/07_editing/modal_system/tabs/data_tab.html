@@ -1,0 +1,248 @@
+<!-- データ確認タブ - 仕入れ先別対応 -->
+<div class="ilm-data-section">
+    <div class="ilm-section-header">
+        <i id="data-source-icon" class="fas fa-database"></i> 
+        <span id="data-source-name">データソース</span>
+    </div>
+    
+    <!-- 共通データセクション -->
+    <div class="data-common-section" style="padding: 1rem;">
+        <div class="ilm-form-grid">
+            <div class="form-row">
+                <label class="form-label">商品ID / ASIN</label>
+                <input type="text" class="ilm-form-input" id="common-product-id" readonly style="background: #f8f9fa;">
+            </div>
+            <div class="form-row">
+                <label class="form-label">データベースID</label>
+                <input type="text" class="ilm-form-input" id="common-db-id" readonly style="background: #f8f9fa;">
+            </div>
+        </div>
+
+        <div class="form-row" style="margin-top: 1rem;">
+            <label class="form-label">商品タイトル</label>
+            <input type="text" class="ilm-form-input" id="common-title" placeholder="商品名を入力">
+        </div>
+
+        <div class="ilm-form-grid" style="margin-top: 1rem;">
+            <div class="form-row">
+                <label class="form-label">価格（円）</label>
+                <input type="number" class="ilm-form-input" id="common-price" min="0">
+            </div>
+            <div class="form-row">
+                <label class="form-label">商品状態</label>
+                <select class="ilm-form-select" id="common-condition">
+                    <option value="">選択してください</option>
+                    <option value="新品">新品 / New</option>
+                    <option value="未使用に近い">未使用に近い / Like New</option>
+                    <option value="目立った傷や汚れなし">目立った傷や汚れなし / Very Good</option>
+                    <option value="やや傷や汚れあり">やや傷や汚れあり / Good</option>
+                    <option value="傷や汚れあり">傷や汚れあり / Acceptable</option>
+                    <option value="全体的に状態が悪い">全体的に状態が悪い / Poor</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row" style="margin-top: 1rem;">
+            <label class="form-label">商品説明</label>
+            <textarea class="ilm-form-textarea" id="common-description" rows="3" placeholder="商品の説明を入力"></textarea>
+        </div>
+    </div>
+</div>
+
+<!-- 仕入れ先固有セクション（動的表示） -->
+<div id="source-specific-section"></div>
+
+<!-- 手動入力・追加情報セクション -->
+<div class="ilm-data-section" style="margin-top: 1rem;">
+    <div class="ilm-section-header">
+        <i class="fas fa-edit"></i> 手動入力・追加情報
+    </div>
+    <div style="padding: 1rem;">
+        <div class="ilm-form-grid">
+            <div class="form-row">
+                <label class="form-label">重量 (g)</label>
+                <input type="number" class="ilm-form-input" id="manual-weight" placeholder="配送料計算用" min="0">
+            </div>
+            <div class="form-row">
+                <label class="form-label">仕入れコスト (円)</label>
+                <input type="number" class="ilm-form-input" id="manual-cost" placeholder="利益計算用" min="0">
+            </div>
+        </div>
+        
+        <div class="form-row" style="margin-top: 1rem;">
+            <label class="form-label">サイズ (cm)</label>
+            <div class="ilm-form-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+                <input type="number" class="ilm-form-input" id="manual-length" placeholder="長さ" min="0" step="0.1">
+                <input type="number" class="ilm-form-input" id="manual-width" placeholder="幅" min="0" step="0.1">
+                <input type="number" class="ilm-form-input" id="manual-height" placeholder="高さ" min="0" step="0.1">
+            </div>
+        </div>
+
+        <div class="form-row" style="margin-top: 1rem;">
+            <label class="form-label">システム生成SKU</label>
+            <input type="text" class="ilm-form-input" id="generated-sku" readonly style="background: #f8f9fa;">
+            <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
+                SKUは自動生成されます: [マーケット]-[商品ID]-[タイムスタンプ]
+            </div>
+        </div>
+        
+        <!-- 💾 保存ボタン -->
+        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #dee2e6; display: flex; justify-content: flex-end;">
+            <button class="ilm-btn ilm-btn-success" onclick="IntegratedListingModal.saveDataTab()" style="display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-save"></i> データ確認タブを保存
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Yahoo固有情報テンプレート（JSで動的挿入） -->
+<template id="yahoo-specific-template">
+    <div class="ilm-data-section" style="margin-top: 1rem;">
+        <div class="ilm-section-header" style="background: linear-gradient(135deg, #0B1D51, #725CAD); color: white;">
+            <i class="fas fa-gavel"></i> Yahoo オークション固有情報
+        </div>
+        <div style="padding: 1rem;">
+            <div class="ilm-form-grid">
+                <div class="form-row">
+                    <label class="form-label">元URL</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" class="ilm-form-input" id="yahoo-source-url" readonly style="background: #f8f9fa; flex: 1;">
+                        <a href="#" id="yahoo-url-link" target="_blank" class="ilm-btn ilm-btn-primary" style="padding: 0.5rem 1rem;">
+                            <i class="fas fa-external-link-alt"></i> 開く
+                        </a>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label class="form-label">カテゴリ</label>
+                    <input type="text" class="ilm-form-input" id="yahoo-category" readonly style="background: #f8f9fa;">
+                </div>
+            </div>
+
+            <div class="ilm-form-grid" style="margin-top: 1rem;">
+                <div class="form-row">
+                    <label class="form-label">取得日時</label>
+                    <input type="text" class="ilm-form-input" id="yahoo-scraped-at" readonly style="background: #f8f9fa;">
+                </div>
+                <div class="form-row">
+                    <label class="form-label">画像URL数</label>
+                    <input type="text" class="ilm-form-input" id="yahoo-image-count" readonly style="background: #f8f9fa;">
+                </div>
+            </div>
+
+            <div style="background: #e3f2fd; border-radius: 8px; padding: 1rem; margin-top: 1rem;">
+                <h5 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; color: #1976d2;">
+                    <i class="fas fa-info-circle"></i> データ完全性
+                </h5>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.85rem;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>タイトル:</span>
+                        <strong id="yahoo-title-status">✓</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>価格:</span>
+                        <strong id="yahoo-price-status">✓</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>画像:</span>
+                        <strong id="yahoo-image-status">✓</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>説明文:</span>
+                        <strong id="yahoo-desc-status">✓</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Amazon固有情報テンプレート（JSで動的挿入） -->
+<template id="amazon-specific-template">
+    <div class="ilm-data-section" style="margin-top: 1rem;">
+        <div class="ilm-section-header" style="background: linear-gradient(135deg, #ff9900, #232f3e); color: white;">
+            <i class="fab fa-amazon"></i> Amazon API固有情報
+        </div>
+        <div style="padding: 1rem;">
+            <div class="ilm-form-grid">
+                <div class="form-row">
+                    <label class="form-label">ASIN</label>
+                    <input type="text" class="ilm-form-input" id="amazon-asin" readonly style="background: #f8f9fa;">
+                </div>
+                <div class="form-row">
+                    <label class="form-label">ブランド</label>
+                    <input type="text" class="ilm-form-input" id="amazon-brand">
+                </div>
+            </div>
+
+            <div class="ilm-form-grid" style="margin-top: 1rem;">
+                <div class="form-row">
+                    <label class="form-label">モデル番号</label>
+                    <input type="text" class="ilm-form-input" id="amazon-model">
+                </div>
+                <div class="form-row">
+                    <label class="form-label">メーカー</label>
+                    <input type="text" class="ilm-form-input" id="amazon-manufacturer">
+                </div>
+            </div>
+
+            <div class="form-row" style="margin-top: 1rem;">
+                <label class="form-label">カテゴリパス</label>
+                <input type="text" class="ilm-form-input" id="amazon-category-path" readonly style="background: #f8f9fa;">
+            </div>
+
+            <div class="ilm-form-grid" style="margin-top: 1rem;">
+                <div class="form-row">
+                    <label class="form-label">API取得日</label>
+                    <input type="text" class="ilm-form-input" id="amazon-api-date" readonly style="background: #f8f9fa;">
+                </div>
+                <div class="form-row">
+                    <label class="form-label">画像URL数</label>
+                    <input type="text" class="ilm-form-input" id="amazon-image-count" readonly style="background: #f8f9fa;">
+                </div>
+            </div>
+
+            <div style="background: #fff3e0; border-radius: 8px; padding: 1rem; margin-top: 1rem;">
+                <h5 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; color: #e65100;">
+                    <i class="fas fa-info-circle"></i> 商品パッケージ情報
+                </h5>
+                <div class="ilm-form-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
+                    <div class="form-row">
+                        <label class="form-label" style="font-size: 0.8rem;">重量 (g)</label>
+                        <input type="number" class="ilm-form-input" id="amazon-weight" min="0" style="font-size: 0.85rem;">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label" style="font-size: 0.8rem;">長さ (cm)</label>
+                        <input type="number" class="ilm-form-input" id="amazon-length" min="0" step="0.1" style="font-size: 0.85rem;">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label" style="font-size: 0.8rem;">幅 (cm)</label>
+                        <input type="number" class="ilm-form-input" id="amazon-width" min="0" step="0.1" style="font-size: 0.85rem;">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label" style="font-size: 0.8rem;">高さ (cm)</label>
+                        <input type="number" class="ilm-form-input" id="amazon-height" min="0" step="0.1" style="font-size: 0.85rem;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<style>
+.form-row {
+    margin-bottom: 0.75rem;
+}
+
+.form-label {
+    display: block;
+    font-weight: 600;
+    color: var(--ilm-text-primary);
+    margin-bottom: 0.4rem;
+    font-size: 0.85rem;
+}
+
+.ilm-form-textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+</style>

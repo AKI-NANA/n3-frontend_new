@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eBay AI Research Tool - 次世代版</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #0066cc;
+            --secondary-color: #f8f9fa;
+            --accent-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --dark-color: #343a40;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            margin: 20px;
+            padding: 30px;
+        }
+        
+        .header-section {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+        
+        .header-section h1 {
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .mode-indicator {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        
+        .mode-full {
+            background: var(--accent-color);
+            color: white;
+        }
+        
+        .mode-standalone {
+            background: var(--warning-color);
+            color: var(--dark-color);
+        }
+        
+        .search-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+        }
+        
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 12px 16px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(0, 102, 204, 0.25);
+        }
+        
+        .btn {
+            border-radius: 10px;
+            padding: 12px 24px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), #004499);
+            border: none;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 102, 204, 0.3);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, var(--accent-color), #1e7e34);
+            border: none;
+        }
+        
+        .btn-info {
+            background: linear-gradient(135deg, #17a2b8, #138496);
+            border: none;
+        }
+        
+        .results-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        
+        .product-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            border: 1px solid #e9ecef;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .product-image {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .price-badge {
+            background: var(--accent-color);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        .sold-badge {
+            background: var(--primary-color);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        .ai-analysis-card {
+            background: linear-gradient(135deg, #f8f9ff, #e6f3ff);
+            border: 1px solid #b3d9ff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 15px;
+        }
+        
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .spinner-border-custom {
+            width: 3rem;
+            height: 3rem;
+            border: 0.3em solid rgba(0, 102, 204, 0.25);
+            border-top-color: var(--primary-color);
+        }
+        
+        .view-toggle {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        
+        .table-view {
+            display: none;
+        }
+        
+        .table-view.active {
+            display: block;
+        }
+        
+        .card-view.active {
+            display: block;
+        }
+        
+        .card-view {
+            display: none;
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .stats-number {
+            font-size: 2rem;
+            font-weight: 700;
+            display: block;
+        }
+        
+        .alert-custom {
+            border-radius: 12px;
+            border: none;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+        }
+        
+        .ai-score {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+        
+        .ai-score.high {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .ai-score.medium {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .ai-score.low {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .recommendation-list {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+        
+        .recommendation-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .recommendation-item:last-child {
+            border-bottom: none;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .status-connected { background: var(--accent-color); }
+        .status-disconnected { background: var(--danger-color); }
+        .status-warning { background: var(--warning-color); }
+        
+        @media (max-width: 768px) {
+            .main-container {
+                margin: 10px;
+                padding: 20px;
+            }
+            
+            .product-card {
+                padding: 15px;
+            }
+            
+            .search-section, .results-section {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="main-container">
+            <!-- Header Section -->
+            <div class="header-section">
+                <h1><i class="fas fa-search-dollar"></i> eBay AI Research Tool</h1>
+                <p class="lead">次世代プロダクトリサーチ & AI分析システム</p>
+                <div id="modeIndicator" class="mode-indicator">
+                    <i class="fas fa-circle status-indicator" id="statusDot"></i>
+                    <span id="modeText">システム確認中...</span>
+                </div>
+            </div>
+
+            <!-- System Status -->
+            <div id="systemStatus" class="alert alert-custom" style="display: none;">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-info-circle me-3"></i>
+                    <div>
+                        <strong>システム状態:</strong>
+                        <span id="systemStatusText">確認中...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Analysis Test Section -->
+            <div class="search-section">
+                <h3><i class="fas fa-robot"></i> AI分析テスト</h3>
+                <p>サンプル商品データでAI分析機能をテストできます</p>
+                
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <label for="testProductTitle" class="form-label">商品タイトル（英語）</label>
+                        <input type="text" class="form-control" id="testProductTitle" 
+                               value="Apple iPhone 14 Pro 128GB Unlocked - Space Black" 
+                               placeholder="テスト用商品タイトルを入力">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="testProductPrice" class="form-label">価格（USD）</label>
+                        <input type="number" class="form-control" id="testProductPrice" 
+                               value="899" step="0.01" placeholder="価格">
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <label for="testSoldQuantity" class="form-label">Sold数</label>
+                        <input type="number" class="form-control" id="testSoldQuantity" 
+                               value="150" placeholder="売上数">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="testViewCount" class="form-label">View数</label>
+                        <input type="number" class="form-control" id="testViewCount" 
+                               value="2500" placeholder="閲覧数">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="testWatchers" class="form-label">Watchers数</label>
+                        <input type="number" class="form-control" id="testWatchers" 
+                               value="45" placeholder="ウォッチャー数">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="testBrand" class="form-label">ブランド</label>
+                        <input type="text" class="form-control" id="testBrand" 
+                               value="Apple" placeholder="ブランド名">
+                    </div>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label for="testCategory" class="form-label">カテゴリ</label>
+                        <select class="form-select" id="testCategory">
+                            <option value="Consumer Electronics">Consumer Electronics</option>
+                            <option value="Cell Phones & Accessories">Cell Phones & Accessories</option>
+                            <option value="Computers/Tablets & Networking">Computers/Tablets & Networking</option>
+                            <option value="Video Games & Consoles">Video Games & Consoles</option>
+                            <option value="Clothing, Shoes & Accessories">Clothing, Shoes & Accessories</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="testCountry" class="form-label">販売者の国</label>
+                        <select class="form-select" id="testCountry">
+                            <option value="US">United States</option>
+                            <option value="JP">Japan</option>
+                            <option value="CN">China</option>
+                            <option value="GB">United Kingdom</option>
+                            <option value="DE">Germany</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="text-center">
+                    <button type="button" class="btn btn-primary btn-lg" id="testAIAnalysis">
+                        <i class="fas fa-brain"></i> AI分析を実行
+                    </button>
+                    <button type="button" class="btn btn-success btn-lg ms-3" id="testBatchAnalysis">
+                        <i class="fas fa-layer-group"></i> バッチ分析テスト
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div class="loading-spinner" id="loadingSpinner">
+                <div class="spinner-border spinner-border-custom" role="status">
+                    <span class="visually-hidden">分析中...</span>
+                </div>
+                <p class="mt-3">AI分析を実行中...</p>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results-section" id="resultsSection" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3><i class="fas fa-chart-line"></i> 分析結果</h3>
+                    <div class="view-toggle">
+                        <div class="btn-group" role="group">
+                            <input type="radio" class="btn-check" name="viewType" id="cardView" checked>
+                            <label class="btn btn-outline-primary" for="cardView">
+                                <i class="fas fa-th-large"></i> カード表示
+                            </label>
+                            
+                            <input type="radio" class="btn-check" name="viewType" id="tableView">
+                            <label class="btn btn-outline-primary" for="tableView">
+                                <i class="fas fa-table"></i> テーブル表示
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card View -->
+                <div id="cardViewContainer" class="card-view active">
+                    <div id="analysisResults"></div>
+                </div>
+
+                <!-- Table View -->
+                <div id="tableViewContainer" class="table-view">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="resultsTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>商品名</th>
+                                    <th>価格</th>
+                                    <th>Sold</th>
+                                    <th>総合スコア</th>
+                                    <th>推奨度</th>
+                                    <th>リスクレベル</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Export Controls -->
+                <div class="text-center mt-4">
+                    <button type="button" class="btn btn-info" id="exportCSV" disabled>
+                        <i class="fas fa-download"></i> CSV エクスポート
+                    </button>
+                    <button type="button" class="btn btn-secondary ms-2" id="clearResults">
+                        <i class="fas fa-trash"></i> 結果をクリア
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // グローバル変数
+        let analysisResults = [];
+        let systemMode = 'unknown';
+        const API_BASE = window.location.hostname === 'localhost' ? 
+            'http://localhost:3000' : 
+            `${window.location.protocol}//${window.location.hostname}:3000`;
+
+        // システム初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSystem();
+            setupEventListeners();
+        });
+
+        // システム状態確認
+        async function initializeSystem() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const health = await response.json();
+                systemMode = health.mode || 'unknown';
+                
+                updateSystemStatus(true, health);
+                
+            } catch (error) {
+                console.error('System initialization failed:', error);
+                updateSystemStatus(false, null);
+            }
+        }
+
+        // システム状態の更新
+        function updateSystemStatus(isConnected, healthData) {
+            const modeIndicator = document.getElementById('modeIndicator');
+            const modeText = document.getElementById('modeText');
+            const statusDot = document.getElementById('statusDot');
+            const systemStatus = document.getElementById('systemStatus');
+            const systemStatusText = document.getElementById('systemStatusText');
+
+            if (isConnected && healthData) {
+                if (healthData.mode === 'full') {
+                    modeIndicator.className = 'mode-indicator mode-full';
+                    modeText.textContent = 'フルモード (データベース接続済み)';
+                    statusDot.className = 'fas fa-circle status-indicator status-connected';
+                    systemStatus.className = 'alert alert-custom alert-success';
+                    systemStatusText.innerHTML = `
+                        <div>✅ バックエンドAPI: 接続済み</div>
+                        <div>✅ データベース: 接続済み</div>
+                        <div>✅ AI分析: 利用可能</div>
+                        <div>📊 稼働時間: ${Math.floor(healthData.uptime / 60)}分</div>
+                    `;
+                } else {
+                    modeIndicator.className = 'mode-indicator mode-standalone';
+                    modeText.textContent = 'スタンドアローンモード';
+                    statusDot.className = 'fas fa-circle status-indicator status-warning';
+                    systemStatus.className = 'alert alert-custom alert-warning';
+                    systemStatusText.innerHTML = `
+                        <div>✅ バックエンドAPI: 接続済み</div>
+                        <div>⚠️ データベース: 未接続</div>
+                        <div>✅ AI分析: 利用可能</div>
+                        <div>💡 データベース機能は制限されますが、AI分析は完全に利用可能です</div>
+                    `;
+                }
+                systemStatus.style.display = 'block';
+            } else {
+                modeIndicator.className = 'mode-indicator mode-standalone';
+                modeText.textContent = 'オフラインモード';
+                statusDot.className = 'fas fa-circle status-indicator status-disconnected';
+                systemStatus.className = 'alert alert-custom alert-danger';
+                systemStatusText.innerHTML = `
+                    <div>❌ バックエンドAPI: 接続失敗</div>
+                    <div>❌ データベース: 利用不可</div>
+                    <div>❌ AI分析: 利用不可</div>
+                    <div>🔧 バックエンドサーバーが起動していることを確認してください</div>
+                `;
+                systemStatus.style.display = 'block';
+            }
+        }
+
+        // イベントリスナー設定
+        function setupEventListeners() {
+            // AI分析テストボタン
+            document.getElementById('testAIAnalysis').addEventListener('click', runSingleAIAnalysis);
+            
+            // バッチ分析テストボタン
+            document.getElementById('testBatchAnalysis').addEventListener('click', runBatchAIAnalysis);
+            
+            // 表示切替
+            document.getElementById('cardView').addEventListener('change', toggleView);
+            document.getElementById('tableView').addEventListener('change', toggleView);
+            
+            // エクスポートボタン
+            document.getElementById('exportCSV').addEventListener('click', exportToCSV);
+            document.getElementById('clearResults').addEventListener('click', clearResults);
+        }
+
+        // 単一AI分析実行
+        async function runSingleAIAnalysis() {
+            const productData = collectProductData();
+            
+            showLoading(true);
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/ai-analysis/single`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        productData: productData,
+                        options: {
+                            includeMarketAnalysis: true,
+                            includeRiskAssessment: true,
+                            includeRecommendations: true
+                        }
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayAnalysisResults([result.data]);
+                    document.getElementById('exportCSV').disabled = false;
+                } else {
+                    throw new Error(result.message || 'AI分析に失敗しました');
+                }
+                
+            } catch (error) {
+                console.error('AI Analysis failed:', error);
+                showError('AI分析エラー', error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // バッチAI分析実行
+        async function runBatchAIAnalysis() {
+            const baseProduct = collectProductData();
+            
+            // テスト用に3つの商品データを生成
+            const products = [
+                baseProduct,
+                {
+                    ...baseProduct,
+                    id: 'test-2',
+                    ebayTitle: 'Samsung Galaxy S23 Ultra 256GB Unlocked',
+                    ebaySellingPrice: 1199,
+                    soldQuantity: 89,
+                    viewCount: 1800,
+                    brand: 'Samsung'
+                },
+                {
+                    ...baseProduct,
+                    id: 'test-3', 
+                    ebayTitle: 'Sony WH-1000XM5 Wireless Noise Canceling Headphones',
+                    ebaySellingPrice: 349,
+                    soldQuantity: 234,
+                    viewCount: 3200,
+                    brand: 'Sony',
+                    ebayCategoryName: 'Consumer Electronics'
+                }
+            ];
+            
+            showLoading(true);
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/ai-analysis/batch`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        products: products,
+                        options: {
+                            includeMarketAnalysis: true,
+                            includeRiskAssessment: true,
+                            includeRecommendations: true
+                        }
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayAnalysisResults(result.data);
+                    document.getElementById('exportCSV').disabled = false;
+                } else {
+                    throw new Error(result.message || 'バッチ分析に失敗しました');
+                }
+                
+            } catch (error) {
+                console.error('Batch Analysis failed:', error);
+                showError('バッチ分析エラー', error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // 商品データ収集
+        function collectProductData() {
+            return {
+                id: 'test-1',
+                ebayItemId: 'test-item-1',
+                ebayTitle: document.getElementById('testProductTitle').value,
+                ebaySellingPrice: parseFloat(document.getElementById('testProductPrice').value),
+                soldQuantity: parseInt(document.getElementById('testSoldQuantity').value),
+                viewCount: parseInt(document.getElementById('testViewCount').value),
+                ebayWatchersCount: parseInt(document.getElementById('testWatchers').value),
+                brand: document.getElementById('testBrand').value,
+                ebayCategoryName: document.getElementById('testCategory').value,
+                ebayCountry: document.getElementById('testCountry').value,
+                listingDate: new Date().toISOString(),
+                imageUrl: 'https://via.placeholder.com/120x120?text=Product'
+            };
+        }
+
+        // 分析結果表示
+        function displayAnalysisResults(results) {
+            analysisResults = results;
+            
+            // カード表示
+            const cardContainer = document.getElementById('analysisResults');
+            cardContainer.innerHTML = '';
+            
+            // テーブル表示
+            const tableBody = document.getElementById('resultsTableBody');
+            tableBody.innerHTML = '';
+            
+            results.forEach(result => {
+                // カード生成
+                const cardHtml = generateProductCard(result);
+                cardContainer.innerHTML += cardHtml;
+                
+                // テーブル行生成
+                const rowHtml = generateTableRow(result);
+                tableBody.innerHTML += rowHtml;
+            });
+            
+            document.getElementById('resultsSection').style.display = 'block';
+        }
+
+        // 商品カード生成
+        function generateProductCard(analysis) {
+            const product = analysis.productData;
+            const aiAnalysis = analysis.analysis;
+            
+            return `
+                <div class="product-card">
+                    <div class="row">
+                        <div class="col-md-2">
+                            <img src="${product.imageUrl}" alt="Product" class="product-image">
+                        </div>
+                        <div class="col-md-6">
+                            <h5>${product.ebayTitle}</h5>
+                            <div class="mb-2">
+                                <span class="price-badge me-2">$${product.ebaySellingPrice}</span>
+                                <span class="sold-badge me-2">${product.soldQuantity} Sold</span>
+                                <span class="badge bg-info">${product.viewCount} Views</span>
+                            </div>
+                            <p class="text-muted mb-1">
+                                <i class="fas fa-tag"></i> ${product.brand} | ${product.ebayCategoryName}
+                            </p>
+                            <p class="text-muted mb-0">
+                                <i class="fas fa-globe"></i> ${product.ebayCountry}
+                            </p>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="ai-score ${getScoreClass(aiAnalysis.overallScore)}">
+                                <i class="fas fa-brain"></i>
+                                総合スコア: ${aiAnalysis.overallScore}/10
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted">推奨度: ${aiAnalysis.recommendation}</small>
+                            </div>
+                            <div class="mt-1">
+                                <small class="text-muted">信頼度: ${(aiAnalysis.confidence * 100).toFixed(1)}%</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="ai-analysis-card">
+                        <h6><i class="fas fa-chart-bar"></i> AI分析詳細</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>売れる理由:</strong>
+                                <ul class="mb-2">
+                                    ${aiAnalysis.sellingReasons.map(reason => `<li>${reason}</li>`).join('')}
+                                </ul>
+                                <strong>市場機会スコア:</strong> ${aiAnalysis.marketOpportunityScore}/10
+                            </div>
+                            <div class="col-md-6">
+                                <strong>推奨される対策:</strong>
+                                <div class="recommendation-list">
+                                    ${aiAnalysis.recommendations.map(rec => `
+                                        <div class="recommendation-item">
+                                            <i class="fas fa-lightbulb text-warning"></i>
+                                            ${rec}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        ${aiAnalysis.risks && aiAnalysis.risks.length > 0 ? `
+                            <div class="mt-3">
+                                <strong><i class="fas fa-exclamation-triangle text-warning"></i> リスク要因:</strong>
+                                <ul class="mb-0">
+                                    ${aiAnalysis.risks.map(risk => `
+                                        <li class="text-${getRiskColor(risk.score)}">
+                                            ${risk.description} (リスクレベル: ${risk.score}/10)
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        // テーブル行生成
+        function generateTableRow(analysis) {
+            const product = analysis.productData;
+            const aiAnalysis = analysis.analysis;
+            const avgRiskScore = aiAnalysis.risks ? 
+                (aiAnalysis.risks.reduce((sum, risk) => sum + risk.score, 0) / aiAnalysis.risks.length).toFixed(1) : 0;
+            
+            return `
+                <tr>
+                    <td>
+                        <strong>${product.ebayTitle.substring(0, 50)}${product.ebayTitle.length > 50 ? '...' : ''}</strong><br>
+                        <small class="text-muted">${product.brand}</small>
+                    </td>
+                    <td>
+                        <span class="price-badge">$${product.ebaySellingPrice}</span>
+                    </td>
+                    <td>
+                        <span class="sold-badge">${product.soldQuantity}</span>
+                    </td>
+                    <td>
+                        <div class="ai-score ${getScoreClass(aiAnalysis.overallScore)}">
+                            ${aiAnalysis.overallScore}/10
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge bg-${getRecommendationColor(aiAnalysis.recommendation)}">
+                            ${aiAnalysis.recommendation}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge bg-${getRiskColorFromScore(avgRiskScore)}">
+                            ${avgRiskScore}/10
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="showDetailModal('${product.id}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
+
+        // ヘルパー関数
+        function getScoreClass(score) {
+            if (score >= 7) return 'high';
+            if (score >= 4) return 'medium';
+            return 'low';
+        }
+
+        function getRiskColor(score) {
+            if (score >= 7) return 'danger';
+            if (score >= 4) return 'warning';
+            return 'success';
+        }
+
+        function getRiskColorFromScore(score) {
+            if (score >= 7) return 'danger';
+            if (score >= 4) return 'warning';
+            return 'success';
+        }
+
+        function getRecommendationColor(recommendation) {
+            if (recommendation === '強く推奨') return 'success';
+            if (recommendation === '推奨') return 'primary';
+            if (recommendation === '要検討') return 'warning';
+            return 'secondary';
+        }
+
+        // 表示切替
+        function toggleView() {
+            const cardView = document.getElementById('cardViewContainer');
+            const tableView = document.getElementById('tableViewContainer');
+            const isCard = document.getElementById('cardView').checked;
+            
+            if (isCard) {
+                cardView.style.display = 'block';
+                tableView.style.display = 'none';
+            } else {
+                cardView.style.display = 'none';
+                tableView.style.display = 'block';
+            }
+        }
+
+        // CSV エクスポート
+        function exportToCSV() {
+            if (analysisResults.length === 0) return;
+            
+            const headers = [
+                '商品名', '価格', 'Sold数', 'View数', 'ブランド', 'カテゴリ',
+                '総合スコア', '推奨度', '信頼度', '市場機会スコア', '売れる理由'
+            ];
+            
+            const rows = analysisResults.map(result => {
+                const product = result.productData;
+                const analysis = result.analysis;
+                
+                return [
+                    product.ebayTitle,
+                    product.ebaySellingPrice,
+                    product.soldQuantity,
+                    product.viewCount,
+                    product.brand,
+                    product.ebayCategoryName,
+                    analysis.overallScore,
+                    analysis.recommendation,
+                    (analysis.confidence * 100).toFixed(1) + '%',
+                    analysis.marketOpportunityScore,
+                    analysis.sellingReasons.join('; ')
+                ];
+            });
+            
+            const csvContent = [headers, ...rows]
+                .map(row => row.map(field => `"${field}"`).join(','))
+                .join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `ebay_analysis_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // 結果クリア
+        function clearResults() {
+            analysisResults = [];
+            document.getElementById('analysisResults').innerHTML = '';
+            document.getElementById('resultsTableBody').innerHTML = '';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('exportCSV').disabled = true;
+        }
+
+        // ローディング表示制御
+        function showLoading(show) {
+            document.getElementById('loadingSpinner').style.display = show ? 'block' : 'none';
+        }
+
+        // エラー表示
+        function showError(title, message) {
+            const alertHtml = `
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <strong><i class="fas fa-exclamation-circle"></i> ${title}</strong><br>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            document.querySelector('.main-container').insertAdjacentHTML('afterbegin', alertHtml);
+            
+            // 5秒後に自動削除
+            setTimeout(() => {
+                const alert = document.querySelector('.alert-danger');
+                if (alert) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+
+        // 詳細モーダル表示（将来の実装用）
+        function showDetailModal(productId) {
+            const result = analysisResults.find(r => r.productData.id === productId);
+            if (result) {
+                alert('詳細モーダルは今後実装予定です\n\n' + JSON.stringify(result, null, 2));
+            }
+        }
+    </script>
+</body>
+</html>

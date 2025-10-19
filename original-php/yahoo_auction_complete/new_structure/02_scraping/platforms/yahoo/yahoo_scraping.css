@@ -1,0 +1,208 @@
+/**
+ * スクレイピングタブ専用CSS
+ * modules/yahoo_auction_complete/new_structure/02_scraping/scraping.css
+ * 
+ * 🎯 機能: Yahoo オークションデータ取得・CSV処理・接続テスト
+ * 📅 作成日: 2025年9月15日
+ */
+
+/* ===== スクレイピングコンテナ ===== */
+.scraping-container {
+    padding: var(--space-lg);
+    background: var(--bg-primary);
+    min-height: 100vh;
+}
+
+/* ===== フォームグリッドレイアウト ===== */
+.scraping-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+}
+
+/* ===== URL入力セクション ===== */
+.url-input-section {
+    background: var(--bg-secondary);
+    padding: var(--space-lg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+}
+
+.url-textarea {
+    width: 100%;
+    height: 120px;
+    padding: var(--space-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-family: 'Courier New', monospace;
+    font-size: 0.875rem;
+    resize: vertical;
+    background: var(--bg-tertiary);
+    transition: border-color 0.2s ease;
+}
+
+.url-textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* ===== CSV アップロードセクション ===== */
+.csv-upload-section {
+    background: var(--bg-secondary);
+    padding: var(--space-lg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+}
+
+.file-input-wrapper {
+    position: relative;
+    display: block;
+    margin-bottom: var(--space-md);
+}
+
+.file-input {
+    width: 100%;
+    padding: var(--space-md);
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-tertiary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.file-input:hover {
+    border-color: var(--primary-color);
+    background: rgba(37, 99, 235, 0.05);
+}
+
+/* ===== ボタンスタイル ===== */
+.scraping-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-md) var(--space-lg);
+    border: none;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.scraping-btn--primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.scraping-btn--primary:hover {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.scraping-btn--secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.scraping-btn--secondary:hover {
+    background: var(--bg-hover);
+}
+
+/* ===== プログレス表示 ===== */
+.scraping-progress {
+    background: var(--bg-secondary);
+    padding: var(--space-lg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    margin-top: var(--space-lg);
+    display: none;
+}
+
+.progress-bar-container {
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    height: 12px;
+    margin: var(--space-md) 0;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-top: var(--space-sm);
+}
+
+/* ===== 結果表示エリア ===== */
+.scraping-results {
+    background: var(--bg-secondary);
+    padding: var(--space-lg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    margin-top: var(--space-lg);
+}
+
+.results-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+
+.summary-card {
+    background: var(--bg-tertiary);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    text-align: center;
+}
+
+.summary-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.summary-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: var(--space-xs);
+}
+
+/* ===== レスポンシブ対応 ===== */
+@media (max-width: 768px) {
+    .scraping-form-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-md);
+    }
+    
+    .results-summary {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .scraping-container {
+        padding: var(--space-md);
+    }
+    
+    .results-summary {
+        grid-template-columns: 1fr;
+    }
+    
+    .scraping-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}

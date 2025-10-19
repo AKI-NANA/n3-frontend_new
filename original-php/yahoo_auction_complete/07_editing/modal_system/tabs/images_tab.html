@@ -1,0 +1,69 @@
+<!-- 画像選択タブ - 完全版 -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+    <!-- 取得済み画像 -->
+    <div>
+        <h4 style="margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+            <span>取得済み画像 (<span id="ilm-available-image-count">0</span>枚)</span>
+            <button class="ilm-btn ilm-btn-primary" onclick="IntegratedListingModal.selectAllImages()" style="font-size: 0.75rem; padding: 0.4rem 0.8rem;">
+                <i class="fas fa-check-double"></i> 全選択
+            </button>
+        </h4>
+        <div class="ilm-images-grid" id="ilm-available-images">
+            <!-- 動的生成 -->
+        </div>
+    </div>
+    
+    <!-- 出品用画像順序 -->
+    <div>
+        <h4 style="margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+            <span>出品用画像順序 (<span id="ilm-selected-image-count">0</span>/<span id="ilm-max-images">12</span>枚)</span>
+            <button class="ilm-btn" style="background: #dc3545; color: white; font-size: 0.75rem; padding: 0.4rem 0.8rem;" onclick="IntegratedListingModal.clearSelectedImages()">
+                <i class="fas fa-times"></i> クリア
+            </button>
+        </h4>
+        <div class="ilm-images-grid" id="ilm-selected-images">
+            <!-- 動的生成 -->
+        </div>
+        
+        <!-- 画像処理設定 -->
+        <div style="margin-top: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+            <h5 style="margin: 0 0 0.75rem 0; font-size: 0.95rem;">
+                <i class="fas fa-cog"></i> 画像処理設定
+            </h5>
+            <label style="display: flex; align-items: center; margin-bottom: 0.5rem; cursor: pointer;">
+                <input type="checkbox" id="resize-images" checked style="margin-right: 0.5rem;">
+                <span style="font-size: 0.85rem;">推奨サイズにリサイズ（1600x1600px）</span>
+            </label>
+            <label style="display: flex; align-items: center; margin-bottom: 0.5rem; cursor: pointer;">
+                <input type="checkbox" id="optimize-quality" checked style="margin-right: 0.5rem;">
+                <span style="font-size: 0.85rem;">品質最適化（ファイルサイズ削減）</span>
+            </label>
+            <label style="display: flex; align-items: center; cursor: pointer;">
+                <input type="checkbox" id="add-watermark" style="margin-right: 0.5rem;">
+                <span style="font-size: 0.85rem;">ウォーターマーク追加</span>
+            </label>
+            
+            <div style="margin-top: 1rem; padding: 0.75rem; background: #e3f2fd; border-radius: 6px; font-size: 0.8rem; color: #1976d2;">
+                <i class="fas fa-info-circle"></i> 
+                <strong>注意:</strong> 画像処理は出品時に自動実行されます。元画像は保持されます。
+            </div>
+        </div>
+
+        <!-- 画像アップロード（追加機能） -->
+        <div style="margin-top: 1rem; padding: 1rem; border: 2px dashed #dee2e6; border-radius: 8px; text-align: center;">
+            <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: #6c757d; margin-bottom: 0.5rem;"></i>
+            <p style="margin: 0.5rem 0; font-size: 0.85rem; color: #6c757d;">追加画像をアップロード</p>
+            <input type="file" id="additional-images" multiple accept="image/*" style="display: none;" onchange="IntegratedListingModal.handleAdditionalImages(this)">
+            <button class="ilm-btn ilm-btn-primary" onclick="document.getElementById('additional-images').click()" style="font-size: 0.85rem;">
+                <i class="fas fa-plus"></i> ファイルを選択
+            </button>
+        </div>
+        
+        <!-- 💾 保存ボタン -->
+        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #dee2e6; display: flex; justify-content: flex-end;">
+            <button class="ilm-btn ilm-btn-success" onclick="IntegratedListingModal.saveImagesTab()" style="display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-save"></i> 画像選択を保存
+            </button>
+        </div>
+    </div>
+</div>

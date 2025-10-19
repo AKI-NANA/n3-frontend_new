@@ -1,0 +1,378 @@
+/* === 統一デザインモーダル専用CSS（N3準拠・外部CSS） === */
+
+/* === CSS変数定義 === */
+:root {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f1f5f9;
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+    --color-primary: #3b82f6;
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-danger: #dc2626;
+    --radius-sm: 0.25rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --space-xs: 0.5rem;
+    --space-sm: 0.75rem;
+    --space-md: 1rem;
+    --space-lg: 1.5rem;
+    --space-xl: 2rem;
+}
+
+/* === モーダル基本構造 === */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    align-items: center !important;
+    justify-content: center !important;
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.modal--active {
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+.modal-content {
+    background-color: var(--bg-secondary);
+    margin: 0;
+    padding: var(--space-xl);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-lg);
+    padding-bottom: var(--space-md);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 0;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.modal-body {
+    margin-bottom: var(--space-lg);
+}
+
+.modal-footer {
+    display: flex;
+    gap: var(--space-sm);
+    justify-content: flex-end;
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--border-color);
+}
+
+/* === 商品タイプ選択グリッド === */
+.inventory__product-type-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+
+.inventory__product-type-option {
+    cursor: pointer;
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+}
+
+.inventory__product-type-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-lg) var(--space-md);
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    text-align: center;
+    transition: all 0.2s ease;
+    min-height: 100px;
+}
+
+.inventory__product-type-card i {
+    font-size: 1.5rem;
+    margin-bottom: var(--space-sm);
+    color: var(--text-muted);
+    transition: color 0.2s ease;
+}
+
+.inventory__product-type-card span {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+}
+
+.inventory__product-type-option:hover .inventory__product-type-card {
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.inventory__product-type-option:hover .inventory__product-type-card i {
+    color: var(--color-primary);
+}
+
+.inventory__product-type-option--active .inventory__product-type-card {
+    border-color: var(--color-primary);
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.inventory__product-type-option--active .inventory__product-type-card i {
+    color: var(--color-primary);
+}
+
+/* === 画像アップロード === */
+.inventory__image-upload {
+    position: relative;
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-tertiary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.inventory__image-upload:hover {
+    border-color: var(--color-primary);
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.inventory__image-upload-icon {
+    font-size: 2rem;
+    color: var(--text-muted);
+    margin-bottom: var(--space-sm);
+}
+
+.inventory__image-upload-text {
+    text-align: center;
+    color: var(--text-secondary);
+    font-weight: 500;
+    line-height: 1.4;
+    font-size: 0.875rem;
+}
+
+.inventory__image-remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    background: rgba(220, 38, 38, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.inventory__image-remove:hover {
+    background: var(--color-danger);
+    transform: scale(1.1);
+}
+
+/* === フォームグリッド === */
+.inventory__form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--space-md);
+}
+
+.inventory__form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.inventory__form-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.inventory__form-input {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.inventory__form-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.inventory__form-input::placeholder {
+    color: var(--text-muted);
+}
+
+/* === ボタンスタイル === */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.btn--secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.btn--secondary:hover {
+    background: var(--border-color);
+    transform: translateY(-1px);
+}
+
+.btn--success {
+    background: var(--color-success);
+    color: white;
+}
+
+.btn--success:hover {
+    background: #059669;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn--primary {
+    background: var(--color-primary);
+    color: white;
+}
+
+.btn--primary:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn--warning {
+    background: var(--color-warning);
+    color: white;
+}
+
+.btn--warning:hover {
+    background: #d97706;
+    transform: translateY(-1px);
+}
+
+/* === レスポンシブ === */
+@media (max-width: 768px) {
+    .inventory__product-type-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .inventory__form-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .inventory__image-upload {
+        width: 100% !important;
+        max-width: 250px;
+    }
+    
+    .modal-content {
+        width: 95%;
+        padding: var(--space-md);
+    }
+}
+
+@media (max-width: 480px) {
+    .inventory__product-type-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .inventory__product-type-card {
+        min-height: 80px;
+        padding: var(--space-md);
+    }
+    
+    .inventory__product-type-card i {
+        font-size: 1.25rem;
+    }
+    
+    .modal-content {
+        max-height: 95vh;
+    }
+}

@@ -1,0 +1,2204 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>商品承認グリッドシステム | NAGANO-3</title>
+
+  <!-- 外部ライブラリ -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+
+  <style>
+    /* ===== NAGANO-3共通変数 ===== */
+    :root {
+      /* ライトモード */
+      --bg-primary: #f8fafc;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #f1f5f9;
+      --bg-hover: #e2e8f0;
+      --bg-active: #cbd5e1;
+      
+      --text-primary: #1e293b;
+      --text-secondary: #475569;
+      --text-tertiary: #64748b;
+      --text-muted: #94a3b8;
+      --text-white: #ffffff;
+      
+      --border-color: #e2e8f0;
+      --border-light: #f1f5f9;
+      --border-dark: #cbd5e1;
+      
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      
+      /* フィルター専用色 */
+      --filter-primary: #dc2626;
+      --filter-primary-rgb: 220, 38, 38;
+      --filter-secondary: #f59e0b;
+      --filter-success: #10b981;
+      --filter-warning: #f59e0b;
+      --filter-danger: #dc2626;
+      --filter-info: #06b6d4;
+      
+      /* アクセントカラー */
+      --accent-blue: #06b6d4;
+      --accent-purple: #8b5cf6;
+      --accent-green: #10b981;
+      --accent-yellow: #f59e0b;
+      --accent-red: #ef4444;
+      --accent-orange: #f97316;
+      
+      /* リスクカラー */
+      --risk-high: #dc2626;
+      --risk-high-light: #fef2f2;
+      --risk-medium: #f59e0b;
+      --risk-medium-light: #fefbf0;
+      --risk-low: #10b981;
+      --risk-low-light: #f0fdf4;
+      
+      /* AI判定カラー */
+      --ai-approved: #10b981;
+      --ai-rejected: #dc2626;
+      --ai-pending: #6b7280;
+      
+      /* スペーシング */
+      --space-1: 0.25rem;
+      --space-2: 0.5rem;
+      --space-3: 0.75rem;
+      --space-4: 1rem;
+      --space-5: 1.25rem;
+      --space-6: 1.5rem;
+      --space-8: 2rem;
+      
+      /* ボーダーラジアス */
+      --radius-sm: 0.25rem;
+      --radius-md: 0.375rem;
+      --radius-lg: 0.5rem;
+      --radius-xl: 0.75rem;
+      --radius-2xl: 1rem;
+      
+      /* トランジション */
+      --transition-fast: all 0.15s ease;
+      --transition-normal: all 0.3s ease;
+    }
+
+    /* テーマ切り替え対応 */
+    [data-theme="dark"] {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-tertiary: #334155;
+      --bg-hover: #475569;
+      --bg-active: #64748b;
+      
+      --text-primary: #f8fafc;
+      --text-secondary: #e2e8f0;
+      --text-tertiary: #cbd5e1;
+      --text-muted: #94a3b8;
+      
+      --border-color: #475569;
+      --border-light: #64748b;
+      --border-dark: #334155;
+      
+      --filter-primary: #f87171;
+      --filter-primary-rgb: 248, 113, 113;
+    }
+
+    /* ベーススタイル */
+    body {
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      margin: 0;
+      padding: 0;
+      transition: var(--transition-normal);
+    }
+
+    .approval__main-container {
+      padding: var(--space-4);
+      max-width: none; /* 無制限幅対応 */
+      width: 100%;
+      margin: 0;
+      background: var(--bg-primary);
+      min-height: 100vh;
+    }
+
+    /* ===== ヘッダーセクション ===== */
+    .approval__page-header {
+      background: linear-gradient(135deg, #1e40af, #3b82f6);
+      border-radius: var(--radius-2xl);
+      padding: var(--space-4);
+      margin-bottom: var(--space-4);
+      color: var(--text-white);
+      box-shadow: var(--shadow-lg);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .approval__page-header::before {
+      content: '';
+      position: absolute;
+      top: -30%;
+      right: -10%;
+      width: 200px;
+      height: 200px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      transform: rotate(45deg);
+    }
+
+    .approval__header-content {
+      position: relative;
+      z-index: 2;
+    }
+
+    .approval__page-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: var(--space-2);
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .approval__title-icon {
+      width: 40px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      backdrop-filter: blur(10px);
+    }
+
+    /* ===== 統計・フィルターセクション ===== */
+    .approval__controls {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-xl);
+      padding: var(--space-4);
+      margin-bottom: var(--space-4);
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--border-light);
+    }
+
+    .approval__stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: var(--space-3);
+      margin-bottom: var(--space-4);
+    }
+
+    .approval__stat-card {
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-lg);
+      padding: var(--space-3);
+      text-align: center;
+      border: 1px solid var(--border-color);
+    }
+
+    .approval__stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: var(--space-1);
+    }
+
+    .approval__stat-label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* ===== フィルターコントロール ===== */
+    .approval__filter-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      align-items: center;
+      margin-bottom: var(--space-3);
+    }
+
+    .approval__filter-group {
+      display: flex;
+      gap: var(--space-2);
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .approval__filter-label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    .approval__filter-btn {
+      padding: var(--space-1) var(--space-3);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      white-space: nowrap;
+    }
+
+    .approval__filter-btn:hover {
+      background: var(--bg-hover);
+      border-color: var(--filter-primary);
+    }
+
+    .approval__filter-btn--active {
+      background: var(--filter-primary);
+      border-color: var(--filter-primary);
+      color: var(--text-white);
+    }
+
+    .approval__filter-count {
+      background: var(--bg-hover);
+      color: var(--text-secondary);
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      font-size: 0.7rem;
+      margin-left: var(--space-1);
+    }
+
+    .approval__filter-btn--active .approval__filter-count {
+      background: rgba(255, 255, 255, 0.2);
+      color: var(--text-white);
+    }
+
+    /* ===== AI判定状態の視覚化 ===== */
+    .approval__filter-btn[data-filter="ai-approved"] {
+      border-color: var(--ai-approved);
+    }
+
+    .approval__filter-btn[data-filter="ai-approved"]:hover,
+    .approval__filter-btn[data-filter="ai-approved"].approval__filter-btn--active {
+      background: var(--ai-approved);
+      border-color: var(--ai-approved);
+      color: white;
+    }
+
+    .approval__filter-btn[data-filter="ai-rejected"] {
+      border-color: var(--ai-rejected);
+    }
+
+    .approval__filter-btn[data-filter="ai-rejected"]:hover,
+    .approval__filter-btn[data-filter="ai-rejected"].approval__filter-btn--active {
+      background: var(--ai-rejected);
+      border-color: var(--ai-rejected);
+      color: white;
+    }
+
+    .approval__filter-btn[data-filter="ai-pending"] {
+      border-color: var(--ai-pending);
+    }
+
+    .approval__filter-btn[data-filter="ai-pending"]:hover,
+    .approval__filter-btn[data-filter="ai-pending"].approval__filter-btn--active {
+      background: var(--ai-pending);
+      border-color: var(--ai-pending);
+      color: white;
+    }
+
+    /* ===== 主要操作ボタン ===== */
+    .approval__main-actions {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--space-4);
+      margin-top: var(--space-4);
+      padding: var(--space-3);
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-color);
+    }
+
+    .approval__selection-controls,
+    .approval__decision-controls {
+      display: flex;
+      gap: var(--space-2);
+    }
+
+    .approval__main-btn {
+      padding: var(--space-3) var(--space-5);
+      border: none;
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      min-width: 100px;
+      justify-content: center;
+    }
+
+    .approval__main-btn--select {
+      background: var(--accent-blue);
+      color: white;
+    }
+
+    .approval__main-btn--select:hover {
+      background: #0891b2;
+    }
+
+    .approval__main-btn--deselect {
+      background: var(--text-muted);
+      color: white;
+    }
+
+    .approval__main-btn--deselect:hover {
+      background: #64748b;
+    }
+
+    .approval__main-btn--approve {
+      background: var(--filter-success);
+      color: white;
+      font-size: 1rem;
+      padding: var(--space-4) var(--space-6);
+    }
+
+    .approval__main-btn--approve:hover {
+      background: #059669;
+    }
+
+    .approval__main-btn--reject {
+      background: var(--filter-danger);
+      color: white;
+      font-size: 1rem;
+      padding: var(--space-4) var(--space-6);
+    }
+
+    .approval__main-btn--reject:hover {
+      background: #dc2626;
+    }
+
+    /* ===== 一括操作バー ===== */
+    .approval__bulk-actions {
+      background: var(--bg-secondary);
+      border: 2px solid var(--filter-primary);
+      border-radius: var(--radius-lg);
+      padding: var(--space-3);
+      margin-bottom: var(--space-4);
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-lg);
+      position: sticky;
+      top: var(--space-4);
+      z-index: 100;
+    }
+
+    .approval__bulk-actions--show {
+      display: flex;
+    }
+
+    .approval__bulk-info {
+      font-weight: 600;
+      color: var(--filter-primary);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .approval__bulk-buttons {
+      display: flex;
+      gap: var(--space-2);
+    }
+
+    .approval__bulk-btn {
+      padding: var(--space-2) var(--space-3);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+    }
+
+    .approval__bulk-btn--success {
+      background: var(--filter-success);
+      border-color: var(--filter-success);
+      color: var(--text-white);
+    }
+
+    .approval__bulk-btn--danger {
+      background: var(--filter-danger);
+      border-color: var(--filter-danger);
+      color: var(--text-white);
+    }
+
+    /* ===== メイングリッド（無制限幅対応） ===== */
+    .approval__grid-container {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-xl);
+      padding: var(--space-2);
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--border-light);
+    }
+
+    .approval__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* 自動調整グリッド */
+      gap: var(--space-2);
+      margin-bottom: var(--space-3);
+    }
+
+    /* ===== 商品カード（元デザイン準拠） ===== */
+    .product-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      cursor: pointer;
+      transition: var(--transition-normal);
+      position: relative;
+      height: 180px; /* 元の高さに戻す */
+      display: flex;
+      flex-direction: column;
+      font-size: 0.7rem;
+    }
+
+    .product-card:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--filter-info);
+    }
+
+    /* ===== 選択状態（チェックボックス不要） ===== */
+    .product-card--selected {
+      border-color: var(--filter-primary);
+      background: rgba(var(--filter-primary-rgb), 0.05);
+      box-shadow: 0 0 0 3px rgba(var(--filter-primary-rgb), 0.3);
+      transform: translateY(-2px);
+    }
+
+    .product-card--selected::after {
+      content: '✓';
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: var(--filter-primary);
+      color: white;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      z-index: 10;
+      box-shadow: var(--shadow-md);
+    }
+
+    /* ===== AI判定表示（極細ボーダー・外周全体） ===== */
+    .product-card--ai-approved {
+      border: 1px solid var(--ai-approved);
+    }
+
+    .product-card--ai-rejected {
+      border: 1px solid var(--ai-rejected);
+    }
+
+    .product-card--ai-pending {
+      border: 1px solid var(--ai-pending);
+    }
+
+    /* ===== ホバー時のボーダー強調 ===== */
+    .product-card:hover.product-card--ai-approved {
+      border: 2px solid var(--ai-approved);
+    }
+
+    .product-card:hover.product-card--ai-rejected {
+      border: 2px solid var(--ai-rejected);
+    }
+
+    .product-card:hover.product-card--ai-pending {
+      border: 2px solid var(--ai-pending);
+    }
+
+    /* ===== カード内バッジ（画像表示領域内・画像と重ならない位置） ===== */
+    .product-card__badges {
+      position: absolute;
+      top: 2px; /* 画像領域の上部に配置 */
+      left: 2px;
+      right: 2px;
+      display: flex;
+      justify-content: flex-start;
+      gap: 2px;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .product-card__risk-badge {
+      padding: 1px 3px;
+      border-radius: 2px;
+      font-size: 0.5rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    }
+
+    .product-card__risk-badge--high {
+      background: var(--risk-high);
+      color: white;
+    }
+
+    .product-card__risk-badge--medium {
+      background: var(--risk-medium);
+      color: white;
+    }
+
+    .product-card__ai-badge {
+      padding: 1px 3px;
+      border-radius: 2px;
+      font-size: 0.45rem;
+      font-weight: 700;
+      color: white;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    }
+
+    .product-card__ai-badge--approved {
+      background: var(--ai-approved);
+    }
+
+    .product-card__ai-badge--rejected {
+      background: var(--ai-rejected);
+    }
+
+    .product-card__ai-badge--pending {
+      background: var(--ai-pending);
+    }
+
+    .product-card__mall-badge {
+      padding: 1px 3px;
+      border-radius: 2px;
+      font-size: 0.45rem;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.95);
+      color: var(--text-primary);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+
+    /* ===== 画像セクション（バッジ用の基準コンテナ） ===== */
+    .product-card__image-container {
+      position: relative;
+      height: 120px;
+      background: var(--bg-tertiary);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .product-card__image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      transition: var(--transition-normal);
+    }
+
+    .product-card:hover .product-card__image {
+      transform: scale(1.02); /* 元のスケールに戻す */
+    }
+
+    .product-card__image-placeholder {
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+
+    /* ===== 商品情報セクション（文字サイズ拡大・高さ維持） ===== */
+    .product-card__info {
+      padding: 2px 3px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-secondary);
+      justify-content: space-between;
+      line-height: 1.0;
+    }
+
+    .product-card__header {
+      margin-bottom: 1px;
+    }
+
+    /* カテゴリ単一行化 */
+    .product-card__category {
+      font-size: 0.5rem; /* 0.4rem → 0.5rem */
+      font-weight: 700;
+      color: var(--filter-info);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-bottom: 1px;
+      line-height: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .product-card__title {
+      font-size: 0.6rem; /* 0.5rem → 0.6rem */
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.0;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .product-card__price {
+      font-size: 0.7rem; /* 0.6rem → 0.7rem */
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 2px;
+    }
+
+    /* 4項目横並び1行レイアウト（横並び最適化） */
+    .product-card__details {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr; /* 4列に変更 */
+      gap: 1px;
+      font-size: 0.45rem; /* 0.4rem → 0.45rem */
+      margin-bottom: 2px;
+      height: 20px; /* 固定高さで高さ増加防止 */
+    }
+
+    .product-card__detail {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: row; /* 横並びに変更 */
+      text-align: center;
+      gap: 2px;
+    }
+
+    .product-card__detail-label {
+      color: var(--text-muted);
+      font-size: 0.4rem; /* 0.35rem → 0.4rem */
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .product-card__detail-value {
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1;
+      font-size: 0.45rem; /* 0.4rem → 0.45rem */
+      white-space: nowrap;
+    }
+
+    .product-card__footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: auto;
+      padding-top: 1px;
+      height: 14px; /* 固定高さ */
+    }
+
+    .product-card__condition {
+      padding: 1px 3px; /* 1px 2px → 1px 3px */
+      border-radius: 2px; /* 1px → 2px */
+      font-size: 0.45rem; /* 0.4rem → 0.45rem */
+      font-weight: 700;
+      color: white;
+      line-height: 1;
+    }
+
+    .product-card__condition--new { background: #2e7d32; }
+    .product-card__condition--used { background: #5d4037; }
+    .product-card__condition--preorder { background: #1565c0; }
+    .product-card__condition--refurbished { background: #6a1b9a; }
+
+    .product-card__sku {
+      font-size: 0.5rem; /* 0.45rem → 0.5rem */
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* ===== ページネーション ===== */
+    .approval__pagination {
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-lg);
+      padding: var(--space-3);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.875rem;
+      border: 1px solid var(--border-color);
+    }
+
+    .approval__pagination-info {
+      color: var(--text-secondary);
+    }
+
+    .approval__pagination-controls {
+      display: flex;
+      gap: var(--space-1);
+    }
+
+    .approval__pagination-btn {
+      padding: var(--space-1) var(--space-2);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: var(--transition-fast);
+    }
+
+    .approval__pagination-btn:hover {
+      background: var(--bg-hover);
+    }
+
+    .approval__pagination-btn--active {
+      background: var(--filter-primary);
+      border-color: var(--filter-primary);
+      color: var(--text-white);
+    }
+
+    /* ===== レスポンシブ対応 ===== */
+    @media (max-width: 1200px) {
+      .approval__grid {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      }
+    }
+
+    @media (max-width: 768px) {
+      .approval__main-container {
+        padding: var(--space-2);
+      }
+
+      .approval__grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: var(--space-1);
+      }
+
+      .product-card {
+        height: 320px;
+      }
+
+      .product-card__image-container {
+        height: 120px;
+      }
+
+      .approval__filter-controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .approval__bulk-actions {
+        flex-direction: column;
+        gap: var(--space-2);
+      }
+    }
+
+    /* ===== アニメーション ===== */
+    @keyframes cardSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .product-card {
+      animation: cardSlideIn 0.3s ease;
+    }
+
+    /* ===== AI推奨表示 ===== */
+    .approval__ai-recommendations {
+      background: linear-gradient(135deg, var(--accent-purple), var(--filter-info));
+      border-radius: var(--radius-lg);
+      padding: var(--space-3);
+      margin-bottom: var(--space-4);
+      color: var(--text-white);
+    }
+
+    .approval__ai-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: var(--space-2);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .approval__ai-summary {
+      font-size: 0.875rem;
+      opacity: 0.9;
+    }
+
+    /* ===== 除外商品 ===== */
+    .product-card--excluded {
+      opacity: 0.4;
+      border-color: var(--text-muted);
+      background: var(--bg-hover);
+      pointer-events: none;
+    }
+  </style>
+<script>
+// CAIDS error_handling Hook
+
+// CAIDS エラー処理Hook - 完全実装
+window.CAIDS_ERROR_HANDLER = {
+    isActive: true,
+    errorCount: 0,
+    errorHistory: [],
+    
+    initialize: function() {
+        this.setupGlobalErrorHandler();
+        this.setupUnhandledPromiseRejection();
+        this.setupNetworkErrorHandler();
+        console.log('⚠️ CAIDS エラーハンドリングシステム完全初期化');
+    },
+    
+    setupGlobalErrorHandler: function() {
+        window.addEventListener('error', (event) => {
+            this.handleError({
+                type: 'JavaScript Error',
+                message: event.message,
+                filename: event.filename,
+                lineno: event.lineno,
+                colno: event.colno,
+                stack: event.error?.stack
+            });
+        });
+    },
+    
+    setupUnhandledPromiseRejection: function() {
+        window.addEventListener('unhandledrejection', (event) => {
+            this.handleError({
+                type: 'Unhandled Promise Rejection',
+                message: event.reason?.message || String(event.reason),
+                stack: event.reason?.stack
+            });
+        });
+    },
+    
+    setupNetworkErrorHandler: function() {
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            try {
+                const response = await originalFetch.apply(this, args);
+                if (!response.ok) {
+                    window.CAIDS_ERROR_HANDLER.handleError({
+                        type: 'Network Error',
+                        message: `HTTP ${response.status}: ${response.statusText}`,
+                        url: args[0]
+                    });
+                }
+                return response;
+            } catch (error) {
+                window.CAIDS_ERROR_HANDLER.handleError({
+                    type: 'Network Fetch Error',
+                    message: error.message,
+                    url: args[0]
+                });
+                throw error;
+            }
+        };
+    },
+    
+    handleError: function(errorInfo) {
+        this.errorCount++;
+        this.errorHistory.push({...errorInfo, timestamp: new Date().toISOString()});
+        
+        console.error('🚨 CAIDS Error Handler:', errorInfo);
+        this.showErrorNotification(errorInfo);
+        this.reportError(errorInfo);
+    },
+    
+    showErrorNotification: function(errorInfo) {
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = `
+            position: fixed; top: 10px; right: 10px; z-index: 999999;
+            background: linear-gradient(135deg, #ff4444, #cc0000);
+            color: white; padding: 15px 20px; border-radius: 8px;
+            max-width: 350px; box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            font-size: 13px; font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            border: 2px solid #ff6666; animation: caids-error-shake 0.5s ease-in-out;
+        `;
+        errorDiv.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 18px;">🚨</span>
+                <div>
+                    <strong>エラーが発生しました</strong><br>
+                    <small style="opacity: 0.9;">${errorInfo.type}: ${errorInfo.message}</small>
+                </div>
+            </div>
+        `;
+        
+        // CSS Animation
+        if (!document.getElementById('caids-error-styles')) {
+            const style = document.createElement('style');
+            style.id = 'caids-error-styles';
+            style.textContent = `
+                @keyframes caids-error-shake {
+                    0%, 100% { transform: translateX(0); }
+                    25% { transform: translateX(-5px); }
+                    75% { transform: translateX(5px); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(errorDiv);
+        setTimeout(() => errorDiv.remove(), 7000);
+    },
+    
+    reportError: function(errorInfo) {
+        // エラーレポート生成・送信（将来の拡張用）
+        const report = {
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent,
+            url: window.location.href,
+            errorCount: this.errorCount,
+            sessionId: this.getSessionId(),
+            ...errorInfo
+        };
+        
+        console.log('📋 CAIDS Error Report:', report);
+        localStorage.setItem('caids_last_error', JSON.stringify(report));
+    },
+    
+    getSessionId: function() {
+        let sessionId = sessionStorage.getItem('caids_session_id');
+        if (!sessionId) {
+            sessionId = 'caids_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            sessionStorage.setItem('caids_session_id', sessionId);
+        }
+        return sessionId;
+    },
+    
+    getErrorStats: function() {
+        return {
+            totalErrors: this.errorCount,
+            recentErrors: this.errorHistory.slice(-10),
+            sessionId: this.getSessionId()
+        };
+    }
+};
+
+window.CAIDS_ERROR_HANDLER.initialize();
+
+</script>
+<script>
+// CAIDS character_limit Hook
+// CAIDS character_limit Hook - 基本実装
+console.log('✅ character_limit Hook loaded');
+</script>
+<script>
+// CAIDS development_control Hook
+// CAIDS development_control Hook - 基本実装
+console.log('✅ development_control Hook loaded');
+</script>
+<script>
+// CAIDS natural_explanation Hook
+// CAIDS natural_explanation Hook - 基本実装
+console.log('✅ natural_explanation Hook loaded');
+</script>
+<script>
+// CAIDS emergency_accumulation Hook
+// CAIDS emergency_accumulation Hook - 基本実装
+console.log('✅ emergency_accumulation Hook loaded');
+</script>
+<script>
+// CAIDS processing_capacity_monitoring Hook
+// CAIDS processing_capacity_monitoring Hook - 基本実装
+console.log('✅ processing_capacity_monitoring Hook loaded');
+</script>
+<script>
+// CAIDS pre_analysis_enforcement Hook
+// CAIDS pre_analysis_enforcement Hook - 基本実装
+console.log('✅ pre_analysis_enforcement Hook loaded');
+</script>
+<script>
+// CAIDS user_approval_required Hook
+// CAIDS user_approval_required Hook - 基本実装
+console.log('✅ user_approval_required Hook loaded');
+</script>
+<script>
+// CAIDS timeout_management Hook
+// CAIDS timeout_management Hook - 基本実装
+console.log('✅ timeout_management Hook loaded');
+</script>
+</head>
+<body data-system-ready="false">
+  <!-- メインコンテナ -->
+  <main class="approval__main-container">
+    
+    <!-- ページヘッダー -->
+    <header class="approval__page-header">
+      <div class="approval__header-content">
+        <h1 class="approval__page-title">
+          <div class="approval__title-icon">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          商品承認グリッドシステム（統合版）
+        </h1>
+        <p class="approval__page-subtitle">
+          AI推奨システム × 高速グリッド承認 - クリック選択 × ボーダー色リスク判定
+        </p>
+      </div>
+    </header>
+
+    <!-- AI推奨セクション -->
+    <section class="approval__ai-recommendations">
+      <h2 class="approval__ai-title">
+        <i class="fas fa-brain"></i>
+        AI推奨: 要確認商品のみ表示中
+      </h2>
+      <div class="approval__ai-summary">
+        低リスク商品 1,847件は自動承認済み。高・中リスク商品 <span id="totalProductCount">25</span>件を人間判定待ちで表示しています。
+      </div>
+    </section>
+
+    <!-- 統計・コントロールセクション -->
+    <section class="approval__controls">
+      <!-- 統計表示 -->
+      <div class="approval__stats-grid">
+        <div class="approval__stat-card">
+          <div class="approval__stat-value" id="pendingCount">25</div>
+          <div class="approval__stat-label">承認待ち</div>
+        </div>
+        <div class="approval__stat-card">
+          <div class="approval__stat-value">1,847</div>
+          <div class="approval__stat-label">自動承認済み</div>
+        </div>
+        <div class="approval__stat-card">
+          <div class="approval__stat-value" id="highRiskCount">13</div>
+          <div class="approval__stat-label">高リスク</div>
+        </div>
+        <div class="approval__stat-card">
+          <div class="approval__stat-value" id="mediumRiskCount">12</div>
+          <div class="approval__stat-label">中リスク</div>
+        </div>
+        <div class="approval__stat-card">
+          <div class="approval__stat-value">2.3分</div>
+          <div class="approval__stat-label">平均処理時間</div>
+        </div>
+      </div>
+
+      <!-- フィルターコントロール -->
+      <div class="approval__filter-controls">
+        <div class="approval__filter-group">
+          <span class="approval__filter-label">表示:</span>
+          <button class="approval__filter-btn approval__filter-btn--active" data-filter="all">
+            すべて <span class="approval__filter-count" id="countAll">25</span>
+          </button>
+        </div>
+
+        <div class="approval__filter-group">
+          <span class="approval__filter-label">AI判定:</span>
+          <button class="approval__filter-btn" data-filter="ai-approved">
+            AI承認済み <span class="approval__filter-count" id="countAiApproved">13</span>
+          </button>
+          <button class="approval__filter-btn" data-filter="ai-rejected">
+            AI非承認 <span class="approval__filter-count" id="countAiRejected">8</span>
+          </button>
+          <button class="approval__filter-btn" data-filter="ai-pending">
+            AI判定待ち <span class="approval__filter-count" id="countAiPending">4</span>
+          </button>
+        </div>
+
+        <div class="approval__filter-group">
+          <span class="approval__filter-label">リスク:</span>
+          <button class="approval__filter-btn" data-filter="high-risk">
+            高リスク <span class="approval__filter-count" id="countHighRisk">13</span>
+          </button>
+          <button class="approval__filter-btn" data-filter="medium-risk">
+            中リスク <span class="approval__filter-count" id="countMediumRisk">12</span>
+          </button>
+        </div>
+
+        <div class="approval__filter-group">
+          <span class="approval__filter-label">価格帯:</span>
+          <button class="approval__filter-btn" data-filter="low-price">
+            ～5,000円 <span class="approval__filter-count" id="countLowPrice">8</span>
+          </button>
+          <button class="approval__filter-btn" data-filter="medium-price">
+            5,001～20,000円 <span class="approval__filter-count" id="countMediumPrice">10</span>
+          </button>
+          <button class="approval__filter-btn" data-filter="high-price">
+            20,001円～ <span class="approval__filter-count" id="countHighPrice">7</span>
+          </button>
+        </div>
+
+        <div class="approval__filter-group">
+          <span class="approval__filter-label">コンディション:</span>
+          <button class="approval__filter-btn" data-filter="new">
+            新品 <span class="approval__filter-count" id="countNew">17</span>
+          </button>
+          <button class="approval__filter-btn" data-filter="used">
+            中古 <span class="approval__filter-count" id="countUsed">7</span>
+          </button>
+          <button class="approval__filter-btn" data-filter="preorder">
+            予約 <span class="approval__filter-count" id="countPreorder">1</span>
+          </button>
+        </div>
+
+        <div class="approval__filter-group">
+          <span class="approval__filter-label">カテゴリ:</span>
+          <button class="approval__filter-btn" data-filter="electronics">
+            電子機器 <span class="approval__filter-count" id="countElectronics">9</span>
+          </button>
+          <button class="approval__filter-btn" data-filter="toys">
+            おもちゃ <span class="approval__filter-count" id="countToys">7</span>
+          </button>
+          <button class="approval__filter-btn" data-filter="books">
+            書籍 <span class="approval__filter-count" id="countBooks">6</span>
+          </button>
+          <button class="approval__filter-btn" data-filter="clothing">
+            衣類 <span class="approval__filter-count" id="countClothing">3</span>
+          </button>
+        </div>
+
+        <div class="approval__filter-group">
+          <span class="approval__filter-label">仕入先:</span>
+          <button class="approval__filter-btn" data-filter="amazon">
+            Amazon <span class="approval__filter-count" id="countAmazon">8</span>
+          </button>
+          <button class="approval__filter-btn" data-filter="ebay">
+            eBay <span class="approval__filter-count" id="countEbay">9</span>
+          </button>
+          <button class="approval__filter-btn" data-filter="shopify">
+            Shopify <span class="approval__filter-count" id="countShopify">8</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 主要操作ボタン -->
+      <div class="approval__main-actions">
+        <div class="approval__selection-controls">
+          <button class="approval__main-btn approval__main-btn--select" onclick="selectAllVisible()">
+            <i class="fas fa-check-square"></i>
+            全選択
+          </button>
+          <button class="approval__main-btn approval__main-btn--deselect" onclick="deselectAll()">
+            <i class="fas fa-square"></i>
+            全解除
+          </button>
+        </div>
+        
+        <div class="approval__decision-controls">
+          <button class="approval__main-btn approval__main-btn--approve" onclick="bulkApprove()">
+            <i class="fas fa-check"></i>
+            承認
+          </button>
+          <button class="approval__main-btn approval__main-btn--reject" onclick="bulkReject()">
+            <i class="fas fa-times"></i>
+            非承認
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 一括操作バー -->
+    <div class="approval__bulk-actions" id="bulkActions">
+      <div class="approval__bulk-info">
+        <i class="fas fa-check-square"></i>
+        <span id="selectedCount">0</span>件 を選択中
+      </div>
+      <div class="approval__bulk-buttons">
+        <button class="approval__bulk-btn approval__bulk-btn--success" onclick="bulkApprove()">
+          <i class="fas fa-check"></i>
+          一括承認
+        </button>
+        <button class="approval__bulk-btn approval__bulk-btn--danger" onclick="bulkReject()">
+          <i class="fas fa-ban"></i>
+          一括否認
+        </button>
+        <button class="approval__bulk-btn" onclick="bulkHold()">
+          <i class="fas fa-pause"></i>
+          一括保留
+        </button>
+        <button class="approval__bulk-btn" onclick="clearSelection()">
+          <i class="fas fa-times"></i>
+          選択クリア
+        </button>
+      </div>
+    </div>
+
+    <!-- メイングリッド -->
+    <section class="approval__grid-container">
+      <div class="approval__grid" id="productGrid">
+        
+        <!-- 商品カード動的生成領域 -->
+        
+      </div>
+
+      <div class="approval__pagination">
+        <div class="approval__pagination-info">
+          <span id="displayRange">1-25件表示</span> / 全<span id="totalCount">25</span>件
+        </div>
+        <div class="approval__pagination-controls">
+          <button class="approval__pagination-btn approval__pagination-btn--active">1</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // ===== グローバル変数 =====
+    let selectedProducts = new Set();
+    let currentFilter = 'all';
+    let approvedCount = 0;
+    let rejectedCount = 0;
+    let heldCount = 0;
+
+    // ===== 商品データ（可変枚数対応） =====
+    const productData = [
+      {
+        sku: "EMV-ELE-H-001",
+        risk: "high",
+        ai: "approved",
+        category: "electronics",
+        condition: "new",
+        price: 18500,
+        source: "amazon",
+        title: "Apple Watch Series 9 GPS",
+        image: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=300&h=200&fit=crop",
+        stock: 1,
+        profitRate: 23.5,
+        profitAmount: 4348
+      },
+      {
+        sku: "EMV-TOY-M-002",
+        risk: "medium",
+        ai: "approved",
+        category: "toys",
+        condition: "new",
+        price: 12800,
+        source: "ebay",
+        title: "LEGO Creator Expert 10242",
+        image: "https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=300&h=200&fit=crop",
+        stock: 3,
+        profitRate: 18.2,
+        profitAmount: 2330
+      },
+      {
+        sku: "EMV-BK-H-003",
+        risk: "high",
+        ai: "rejected",
+        category: "books",
+        condition: "used",
+        price: 4200,
+        source: "shopify",
+        title: "Clean Code プログラマー必読書",
+        image: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=300&h=200&fit=crop",
+        stock: 1,
+        profitRate: 31.8,
+        profitAmount: 1336
+      },
+      {
+        sku: "EMV-CLO-M-004",
+        risk: "medium",
+        ai: "approved",
+        category: "clothing",
+        condition: "new",
+        price: 3980,
+        source: "amazon",
+        title: "Uniqlo ヒートテック Tシャツ",
+        image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=300&h=200&fit=crop",
+        stock: 8,
+        profitRate: 15.7,
+        profitAmount: 625
+      },
+      {
+        sku: "EMV-ELE-H-005",
+        risk: "high",
+        ai: "rejected",
+        category: "electronics",
+        condition: "preorder",
+        price: 28900,
+        source: "ebay",
+        title: "Sony WH-1000XM5 ヘッドフォン",
+        image: "https://images.unsplash.com/photo-1567581935884-3349723552ca?w=300&h=200&fit=crop",
+        stock: 1,
+        profitRate: 27.3,
+        profitAmount: 7889
+      },
+      {
+        sku: "EMV-TOY-M-006",
+        risk: "medium",
+        ai: "approved",
+        category: "toys",
+        condition: "used",
+        price: 6750,
+        source: "shopify",
+        title: "1000ピース ジグソーパズル",
+        image: "https://images.unsplash.com/photo-1594736797933-d0bc02e4bb66?w=300&h=200&fit=crop",
+        stock: 2,
+        profitRate: 22.1,
+        profitAmount: 1492
+      },
+      {
+        sku: "EMV-ELE-H-007",
+        risk: "high",
+        ai: "approved",
+        category: "electronics",
+        condition: "refurbished",
+        price: 45200,
+        source: "amazon",
+        title: "iPad Pro 11インチ 第4世代",
+        image: "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?w=300&h=200&fit=crop",
+        stock: 1,
+        profitRate: 19.8,
+        profitAmount: 8950
+      },
+      {
+        sku: "EMV-BK-M-008",
+        risk: "medium",
+        ai: "rejected",
+        category: "books",
+        condition: "new",
+        price: 2890,
+        source: "ebay",
+        title: "人を動かす D.カーネギー",
+        image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=200&fit=crop",
+        stock: 5,
+        profitRate: 24.6,
+        profitAmount: 711
+      },
+      {
+        sku: "EMV-CLO-H-009",
+        risk: "high",
+        ai: "rejected",
+        category: "clothing",
+        condition: "used",
+        price: 16500,
+        source: "shopify",
+        title: "Patagonia フリースジャケット",
+        image: "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=300&h=200&fit=crop",
+        stock: 1,
+        profitRate: 33.2,
+        profitAmount: 5478
+      },
+      {
+        sku: "EMV-TOY-M-010",
+        risk: "medium",
+        ai: "approved",
+        category: "toys",
+        condition: "new",
+        price: 8980,
+        source: "amazon",
+        title: "カタン ボードゲーム 日本語版",
+        image: "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?w=300&h=200&fit=crop",
+        stock: 4,
+        profitRate: 16.9,
+        profitAmount: 1518
+      },
+      {
+        sku: "EMV-ELE-H-011",
+        risk: "high",
+        ai: "approved",
+        category: "electronics",
+        condition: "new",
+        price: 32800,
+        source: "ebay",
+        title: "Bose SoundLink Mini II",
+        image: "https://images.unsplash.com/photo-1585776245991-cf89dd7fc73a?w=300&h=200&fit=crop",
+        stock: 1,
+        profitRate: 28.7,
+        profitAmount: 9414
+      },
+      {
+        sku: "EMV-BK-M-012",
+        risk: "medium",
+        ai: "rejected",
+        category: "books",
+        condition: "used",
+        price: 1650,
+        source: "shopify",
+        title: "ハリー・ポッターと賢者の石",
+        image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&h=200&fit=crop",
+        stock: 3,
+        profitRate: 29.4,
+        profitAmount: 485
+      },
+      {
+        sku: "EMV-ELE-H-013",
+        risk: "high",
+        ai: "pending",
+        category: "electronics",
+        condition: "new",
+        price: 24500,
+        source: "amazon",
+        title: "Nintendo Switch OLED",
+        image: "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=300&h=200&fit=crop",
+        stock: 2,
+        profitRate: 21.3,
+        profitAmount: 5218
+      },
+      {
+        sku: "EMV-TOY-H-014",
+        risk: "high",
+        ai: "pending",
+        category: "toys",
+        condition: "new",
+        price: 15800,
+        source: "ebay",
+        title: "ポケモンカード 未開封BOX",
+        image: "https://images.unsplash.com/photo-1613963931023-5dc59437c8a6?w=300&h=200&fit=crop",
+        stock: 1,
+        profitRate: 45.2,
+        profitAmount: 7142
+      },
+      {
+        sku: "EMV-BK-M-015",
+        risk: "medium",
+        ai: "approved",
+        category: "books",
+        condition: "new",
+        price: 3200,
+        source: "shopify",
+        title: "Think Fast and Slow",
+        image: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=300&h=200&fit=crop",
+        stock: 6,
+        profitRate: 18.7,
+        profitAmount: 598
+      },
+      {
+        sku: "EMV-ELE-H-016",
+        risk: "high",
+        ai: "rejected",
+        category: "electronics",
+        condition: "new",
+        price: 89800,
+        source: "amazon",
+        title: "MacBook Pro 14インチ M3",
+        image: "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=300&h=200&fit=crop",
+        stock: 1,
+        profitRate: 12.5,
+        profitAmount: 11225
+      },
+      {
+        sku: "EMV-TOY-M-017",
+        risk: "medium",
+        ai: "approved",
+        category: "toys",
+        condition: "new",
+        price: 7800,
+        source: "ebay",
+        title: "タミヤ ミニ四駆 完全セット",
+        image: "https://images.unsplash.com/photo-1607734834519-d8576ae60ea4?w=300&h=200&fit=crop",
+        stock: 3,
+        profitRate: 25.1,
+        profitAmount: 1958
+      },
+      {
+        sku: "EMV-CLO-H-018",
+        risk: "high",
+        ai: "pending",
+        category: "clothing",
+        condition: "new",
+        price: 25600,
+        source: "shopify",
+        title: "Supreme Box Logo Hoodie",
+        image: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=300&h=200&fit=crop",
+        stock: 1,
+        profitRate: 38.4,
+        profitAmount: 9830
+      },
+      {
+        sku: "EMV-ELE-M-019",
+        risk: "medium",
+        ai: "approved",
+        category: "electronics",
+        condition: "used",
+        price: 14200,
+        source: "amazon",
+        title: "iPhone 14 Pro 128GB",
+        image: "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=300&h=200&fit=crop",
+        stock: 2,
+        profitRate: 19.7,
+        profitAmount: 2797
+      },
+      {
+        sku: "EMV-BK-H-020",
+        risk: "high",
+        ai: "rejected",
+        category: "books",
+        condition: "new",
+        price: 4980,
+        source: "ebay",
+        title: "プログラミング完全ガイド 2024",
+        image: "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=300&h=200&fit=crop",
+        stock: 4,
+        profitRate: 42.1,
+        profitAmount: 2097
+      },
+      {
+        sku: "EMV-TOY-H-021",
+        risk: "high",
+        ai: "approved",
+        category: "toys",
+        condition: "new",
+        price: 18900,
+        source: "shopify",
+        title: "遊戯王 限定コレクション",
+        image: "https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=300&h=200&fit=crop",
+        stock: 1,
+        profitRate: 51.2,
+        profitAmount: 9677
+      },
+      {
+        sku: "EMV-CLO-M-022",
+        risk: "medium",
+        ai: "approved",
+        category: "clothing",
+        condition: "used",
+        price: 8900,
+        source: "amazon",
+        title: "Nike Air Jordan 1 Retro",
+        image: "https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=300&h=200&fit=crop",
+        stock: 1,
+        profitRate: 28.3,
+        profitAmount: 2519
+      },
+      {
+        sku: "EMV-ELE-H-023",
+        risk: "high",
+        ai: "pending",
+        category: "electronics",
+        condition: "new",
+        price: 35400,
+        source: "ebay",
+        title: "Canon EOS R6 Mark II",
+        image: "https://images.unsplash.com/photo-1606983340126-99ab4feaa64a?w=300&h=200&fit=crop",
+        stock: 1,
+        profitRate: 22.8,
+        profitAmount: 8071
+      },
+      {
+        sku: "EMV-BK-M-024",
+        risk: "medium",
+        ai: "approved",
+        category: "books",
+        condition: "new",
+        price: 2750,
+        source: "shopify",
+        title: "AI革命と未来社会",
+        image: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=300&h=200&fit=crop",
+        stock: 8,
+        profitRate: 31.2,
+        profitAmount: 858
+      },
+      {
+        sku: "EMV-TOY-M-025",
+        risk: "medium",
+        ai: "rejected",
+        category: "toys",
+        condition: "new",
+        price: 12400,
+        source: "amazon",
+        title: "ドラゴンボール フィギュア",
+        image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=200&fit=crop",
+        stock: 2,
+        profitRate: 23.8,
+        profitAmount: 2951
+      }
+    ];
+
+    // ===== カテゴリ日本語名マッピング =====
+    const categoryNames = {
+      electronics: "電子機器",
+      toys: "おもちゃ",
+      books: "書籍",
+      clothing: "衣類"
+    };
+
+    // ===== 仕入先名マッピング =====
+    const sourceNames = {
+      amazon: "Amazon",
+      ebay: "eBay",
+      shopify: "Shopify"
+    };
+
+    // ===== 初期化 =====
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('🎯 商品承認グリッドシステム初期化開始');
+      renderProducts(productData);
+      initializeFilters();
+      updateBulkActions();
+      updateStats();
+      console.log('✅ 商品承認グリッドシステム初期化完了');
+    });
+
+    // ===== 商品カード生成 =====
+    function createProductCard(product) {
+      const aiClass = `product-card--ai-${product.ai}`;
+      const riskClass = `product-card--risk-${product.risk}`;
+      
+      return `
+        <div class="product-card ${riskClass} ${aiClass}" 
+             data-risk="${product.risk}" 
+             data-ai="${product.ai}"
+             data-category="${product.category}" 
+             data-condition="${product.condition}"
+             data-price="${product.price}"
+             data-source="${product.source}"
+             data-sku="${product.sku}"
+             onclick="toggleSelection(this)">
+          
+          <div class="product-card__badges">
+            <div class="product-card__risk-badge product-card__risk-badge--${product.risk}">
+              ${product.risk === 'high' ? '高' : '中'}
+            </div>
+            <div class="product-card__ai-badge product-card__ai-badge--${product.ai}">
+              ${product.ai === 'approved' ? 'AI承認' : product.ai === 'rejected' ? 'AI否認' : 'AI判定待ち'}
+            </div>
+            <div class="product-card__mall-badge">${sourceNames[product.source]}</div>
+          </div>
+          
+          <div class="product-card__image-container">
+            <img src="${product.image}" 
+                 alt="${product.title}" class="product-card__image">
+          </div>
+          
+          <div class="product-card__info">
+            <div class="product-card__header">
+              <div class="product-card__category">${categoryNames[product.category]}</div>
+              <div class="product-card__title">${product.title}</div>
+              <div class="product-card__price">¥${product.price.toLocaleString()}</div>
+            </div>
+            
+            <div class="product-card__details">
+              <div class="product-card__detail">
+                <span class="product-card__detail-label">在庫</span>
+                <span class="product-card__detail-value">${product.stock}個</span>
+              </div>
+              <div class="product-card__detail">
+                <span class="product-card__detail-label">利益率</span>
+                <span class="product-card__detail-value">${product.profitRate}%</span>
+              </div>
+              <div class="product-card__detail">
+                <span class="product-card__detail-label">利益額</span>
+                <span class="product-card__detail-value">¥${product.profitAmount.toLocaleString()}</span>
+              </div>
+              <div class="product-card__detail">
+                <span class="product-card__detail-label">仕入先</span>
+                <span class="product-card__detail-value">${sourceNames[product.source]}</span>
+              </div>
+            </div>
+            
+            <div class="product-card__footer">
+              <div class="product-card__condition product-card__condition--${product.condition}">
+                ${getConditionName(product.condition)}
+              </div>
+              <div class="product-card__sku">${product.sku}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // ===== コンディション名取得 =====
+    function getConditionName(condition) {
+      const names = {
+        new: "新品",
+        used: "中古",
+        preorder: "予約",
+        refurbished: "整備済"
+      };
+      return names[condition] || condition;
+    }
+
+    // ===== 商品レンダリング =====
+    function renderProducts(products) {
+      const grid = document.getElementById('productGrid');
+      if (!grid) return;
+      
+      grid.innerHTML = products.map(product => createProductCard(product)).join('');
+    }
+
+    // ===== フィルター初期化 =====
+    function initializeFilters() {
+      const filterButtons = document.querySelectorAll('.approval__filter-btn');
+      
+      filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          if (this.dataset.filter) {
+            const group = this.closest('.approval__filter-group');
+            const groupButtons = group.querySelectorAll('.approval__filter-btn');
+            groupButtons.forEach(btn => btn.classList.remove('approval__filter-btn--active'));
+            
+            this.classList.add('approval__filter-btn--active');
+            applyFilter(this.dataset.filter);
+          }
+        });
+      });
+    }
+
+    // ===== フィルター適用 =====
+    function applyFilter(filter) {
+      currentFilter = filter;
+      const cards = document.querySelectorAll('.product-card');
+      
+      cards.forEach(card => {
+        let show = true;
+        
+        if (filter === 'all') {
+          show = true;
+        } else if (filter === 'ai-approved') {
+          show = card.dataset.ai === 'approved';
+        } else if (filter === 'ai-rejected') {
+          show = card.dataset.ai === 'rejected';
+        } else if (filter === 'ai-pending') {
+          show = card.dataset.ai === 'pending';
+        } else if (filter === 'high-risk') {
+          show = card.dataset.risk === 'high';
+        } else if (filter === 'medium-risk') {
+          show = card.dataset.risk === 'medium';
+        } else if (filter === 'electronics') {
+          show = card.dataset.category === 'electronics';
+        } else if (filter === 'toys') {
+          show = card.dataset.category === 'toys';
+        } else if (filter === 'books') {
+          show = card.dataset.category === 'books';
+        } else if (filter === 'clothing') {
+          show = card.dataset.category === 'clothing';
+        } else if (filter === 'new') {
+          show = card.dataset.condition === 'new';
+        } else if (filter === 'used') {
+          show = card.dataset.condition === 'used';
+        } else if (filter === 'preorder') {
+          show = card.dataset.condition === 'preorder';
+        } else if (filter === 'amazon') {
+          show = card.dataset.source === 'amazon';
+        } else if (filter === 'ebay') {
+          show = card.dataset.source === 'ebay';
+        } else if (filter === 'shopify') {
+          show = card.dataset.source === 'shopify';
+        } else if (filter === 'low-price') {
+          const price = parseInt(card.dataset.price);
+          show = price <= 5000;
+        } else if (filter === 'medium-price') {
+          const price = parseInt(card.dataset.price);
+          show = price > 5000 && price <= 20000;
+        } else if (filter === 'high-price') {
+          const price = parseInt(card.dataset.price);
+          show = price > 20000;
+        }
+        
+        if (show) {
+          card.style.display = 'block';
+          card.style.animation = 'cardSlideIn 0.3s ease';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+      
+      console.log(`フィルター適用: ${filter}`);
+    }
+
+    // ===== 一括選択機能 =====
+    function selectAllVisible() {
+      const visibleCards = document.querySelectorAll('.product-card:not([style*="display: none"])');
+      visibleCards.forEach(card => {
+        if (card.dataset.sku && !selectedProducts.has(card.dataset.sku)) {
+          selectedProducts.add(card.dataset.sku);
+          card.classList.add('product-card--selected');
+        }
+      });
+      updateBulkActions();
+      showNotification(`${visibleCards.length}件の表示中商品を全選択しました`, 'info');
+    }
+
+    function deselectAll() {
+      selectedProducts.clear();
+      const cards = document.querySelectorAll('.product-card');
+      cards.forEach(card => {
+        card.classList.remove('product-card--selected');
+      });
+      updateBulkActions();
+      showNotification('全選択を解除しました', 'info');
+    }
+
+    // ===== 商品選択の切り替え（クリック選択） =====
+    function toggleSelection(card) {
+      if (!card || !card.dataset.sku) {
+        console.warn('Invalid card element');
+        return;
+      }
+      
+      const sku = card.dataset.sku;
+      
+      if (selectedProducts.has(sku)) {
+        selectedProducts.delete(sku);
+        card.classList.remove('product-card--selected');
+      } else {
+        selectedProducts.add(sku);
+        card.classList.add('product-card--selected');
+      }
+      
+      updateBulkActions();
+    }
+
+    // ===== 承認・否認・保留処理 =====
+    function bulkApprove() {
+      if (selectedProducts.size === 0) {
+        showNotification('商品が選択されていません', 'warning');
+        return;
+      }
+      
+      if (confirm(`${selectedProducts.size}件の商品を承認しますか？`)) {
+        const selectedCards = [];
+        document.querySelectorAll('.product-card').forEach(card => {
+          if (card.dataset.sku && selectedProducts.has(card.dataset.sku)) {
+            selectedCards.push(card);
+          }
+        });
+        
+        selectedCards.forEach((card, index) => {
+          setTimeout(() => {
+            card.style.transform = 'scale(0.9)';
+            card.style.opacity = '0.5';
+            card.style.backgroundColor = '#f0fdf4';
+            card.style.borderColor = '#22c55e';
+            
+            setTimeout(() => {
+              if (card.parentNode) {
+                // データからも削除
+                const cardSku = card.dataset.sku;
+                const productIndex = productData.findIndex(p => p.sku === cardSku);
+                if (productIndex !== -1) {
+                  productData.splice(productIndex, 1);
+                }
+                card.remove();
+              }
+              approvedCount++;
+            }, 500);
+          }, index * 100);
+        });
+        
+        selectedProducts.clear();
+        updateBulkActions();
+        
+        setTimeout(() => {
+          showNotification(`${selectedCards.length}件の商品を承認しました`, 'success');
+          updateStats();
+        }, 1000);
+      }
+    }
+
+    function bulkReject() {
+      if (selectedProducts.size === 0) {
+        showNotification('商品が選択されていません', 'warning');
+        return;
+      }
+      
+      if (confirm(`${selectedProducts.size}件の商品を否認しますか？`)) {
+        const selectedCards = [];
+        document.querySelectorAll('.product-card').forEach(card => {
+          if (card.dataset.sku && selectedProducts.has(card.dataset.sku)) {
+            selectedCards.push(card);
+          }
+        });
+        
+        selectedCards.forEach((card, index) => {
+          setTimeout(() => {
+            card.style.transform = 'scale(0.9)';
+            card.style.opacity = '0.5';
+            card.style.backgroundColor = '#fef2f2';
+            card.style.borderColor = '#ef4444';
+            
+            setTimeout(() => {
+              if (card.parentNode) {
+                const cardSku = card.dataset.sku;
+                const productIndex = productData.findIndex(p => p.sku === cardSku);
+                if (productIndex !== -1) {
+                  productData.splice(productIndex, 1);
+                }
+                card.remove();
+              }
+              rejectedCount++;
+            }, 500);
+          }, index * 100);
+        });
+        
+        selectedProducts.clear();
+        updateBulkActions();
+        
+        setTimeout(() => {
+          showNotification(`${selectedCards.length}件の商品を否認しました`, 'danger');
+          updateStats();
+        }, 1000);
+      }
+    }
+
+    function bulkHold() {
+      if (selectedProducts.size === 0) {
+        showNotification('商品が選択されていません', 'warning');
+        return;
+      }
+      
+      if (confirm(`${selectedProducts.size}件の商品を保留にしますか？`)) {
+        const selectedCards = [];
+        document.querySelectorAll('.product-card').forEach(card => {
+          if (card.dataset.sku && selectedProducts.has(card.dataset.sku)) {
+            selectedCards.push(card);
+          }
+        });
+        
+        selectedCards.forEach((card, index) => {
+          setTimeout(() => {
+            card.style.transform = 'scale(0.9)';
+            card.style.opacity = '0.5';
+            card.style.backgroundColor = '#fefbf0';
+            card.style.borderColor = '#f59e0b';
+            
+            setTimeout(() => {
+              if (card.parentNode) {
+                const cardSku = card.dataset.sku;
+                const productIndex = productData.findIndex(p => p.sku === cardSku);
+                if (productIndex !== -1) {
+                  productData.splice(productIndex, 1);
+                }
+                card.remove();
+              }
+              heldCount++;
+            }, 500);
+          }, index * 100);
+        });
+        
+        selectedProducts.clear();
+        updateBulkActions();
+        
+        setTimeout(() => {
+          showNotification(`${selectedCards.length}件の商品を保留にしました`, 'warning');
+          updateStats();
+        }, 1000);
+      }
+    }
+
+    // ===== 一括操作バーの更新 =====
+    function updateBulkActions() {
+      const bulkActions = document.getElementById('bulkActions');
+      const selectedCount = document.getElementById('selectedCount');
+      
+      if (selectedProducts.size > 0) {
+        bulkActions.classList.add('approval__bulk-actions--show');
+        selectedCount.textContent = selectedProducts.size;
+      } else {
+        bulkActions.classList.remove('approval__bulk-actions--show');
+      }
+    }
+
+    // ===== 選択クリア =====
+    function clearSelection() {
+      selectedProducts.clear();
+      
+      const cards = document.querySelectorAll('.product-card');
+      cards.forEach(card => {
+        card.classList.remove('product-card--selected');
+      });
+      
+      updateBulkActions();
+      showNotification('選択をクリアしました', 'info');
+    }
+
+    // ===== 統計更新 =====
+    function updateStats() {
+      const remainingCards = document.querySelectorAll('.product-card').length;
+      
+      // 統計表示を更新
+      const pendingCountEl = document.getElementById('pendingCount');
+      const totalProductCountEl = document.getElementById('totalProductCount');
+      const totalCountEl = document.getElementById('totalCount');
+      const displayRangeEl = document.getElementById('displayRange');
+      
+      if (pendingCountEl) pendingCountEl.textContent = remainingCards;
+      if (totalProductCountEl) totalProductCountEl.textContent = remainingCards;
+      if (totalCountEl) totalCountEl.textContent = remainingCards;
+      if (displayRangeEl) displayRangeEl.textContent = `1-${remainingCards}件表示`;
+      
+      // フィルターカウント更新
+      updateFilterCounts();
+      
+      console.log(`承認済み: ${approvedCount}件, 否認済み: ${rejectedCount}件, 保留: ${heldCount}件, 残り: ${remainingCards}件`);
+    }
+
+    // ===== フィルターカウント更新 =====
+    function updateFilterCounts() {
+      const cards = document.querySelectorAll('.product-card');
+      
+      const counts = {
+        all: cards.length,
+        aiApproved: 0,
+        aiRejected: 0,
+        aiPending: 0,
+        highRisk: 0,
+        mediumRisk: 0,
+        lowPrice: 0,
+        mediumPrice: 0,
+        highPrice: 0,
+        new: 0,
+        used: 0,
+        preorder: 0,
+        electronics: 0,
+        toys: 0,
+        books: 0,
+        clothing: 0,
+        amazon: 0,
+        ebay: 0,
+        shopify: 0
+      };
+      
+      cards.forEach(card => {
+        const ai = card.dataset.ai;
+        const risk = card.dataset.risk;
+        const category = card.dataset.category;
+        const condition = card.dataset.condition;
+        const source = card.dataset.source;
+        const price = parseInt(card.dataset.price);
+        
+        if (ai === 'approved') counts.aiApproved++;
+        if (ai === 'rejected') counts.aiRejected++;
+        if (ai === 'pending') counts.aiPending++;
+        
+        if (risk === 'high') counts.highRisk++;
+        if (risk === 'medium') counts.mediumRisk++;
+        
+        if (price <= 5000) counts.lowPrice++;
+        if (price > 5000 && price <= 20000) counts.mediumPrice++;
+        if (price > 20000) counts.highPrice++;
+        
+        if (condition === 'new') counts.new++;
+        if (condition === 'used') counts.used++;
+        if (condition === 'preorder') counts.preorder++;
+        
+        if (category === 'electronics') counts.electronics++;
+        if (category === 'toys') counts.toys++;
+        if (category === 'books') counts.books++;
+        if (category === 'clothing') counts.clothing++;
+        
+        if (source === 'amazon') counts.amazon++;
+        if (source === 'ebay') counts.ebay++;
+        if (source === 'shopify') counts.shopify++;
+      });
+      
+      // DOM更新
+      const updateElement = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+      };
+      
+      updateElement('countAll', counts.all);
+      updateElement('countAiApproved', counts.aiApproved);
+      updateElement('countAiRejected', counts.aiRejected);
+      updateElement('countAiPending', counts.aiPending);
+      updateElement('countHighRisk', counts.highRisk);
+      updateElement('countMediumRisk', counts.mediumRisk);
+      updateElement('countLowPrice', counts.lowPrice);
+      updateElement('countMediumPrice', counts.mediumPrice);
+      updateElement('countHighPrice', counts.highPrice);
+      updateElement('countNew', counts.new);
+      updateElement('countUsed', counts.used);
+      updateElement('countPreorder', counts.preorder);
+      updateElement('countElectronics', counts.electronics);
+      updateElement('countToys', counts.toys);
+      updateElement('countBooks', counts.books);
+      updateElement('countClothing', counts.clothing);
+      updateElement('countAmazon', counts.amazon);
+      updateElement('countEbay', counts.ebay);
+      updateElement('countShopify', counts.shopify);
+    }
+
+    // ===== 通知表示 =====
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      const bgColors = {
+        success: 'var(--filter-success)',
+        warning: 'var(--filter-warning)',
+        danger: 'var(--filter-danger)',
+        info: 'var(--filter-info)'
+      };
+      
+      notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 16px 24px;
+        background: ${bgColors[type] || bgColors.info};
+        color: white;
+        border-radius: 8px;
+        font-weight: 500;
+        z-index: 1000;
+        animation: cardSlideIn 0.3s ease;
+        box-shadow: var(--shadow-lg);
+        max-width: 300px;
+      `;
+      notification.textContent = message;
+      
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.remove();
+          }
+        }, 300);
+      }, 3000);
+    }
+
+    // ===== キーボードショートカット =====
+    document.addEventListener('keydown', function(e) {
+      // Ctrl+A: 全選択
+      if (e.ctrlKey && e.key === 'a') {
+        e.preventDefault();
+        selectAllVisible();
+      }
+      
+      // Escape: 選択クリア
+      if (e.key === 'Escape') {
+        clearSelection();
+      }
+      
+      // Enter: 一括承認
+      if (e.key === 'Enter' && selectedProducts.size > 0) {
+        bulkApprove();
+      }
+      
+      // R: 一括否認
+      if (e.key === 'r' && selectedProducts.size > 0) {
+        bulkReject();
+      }
+      
+      // H: 一括保留
+      if (e.key === 'h' && selectedProducts.size > 0) {
+        bulkHold();
+      }
+    });
+
+    console.log('🎯 商品承認グリッドシステム JavaScript読み込み完了');
+  </script>
+</body>
+</html>

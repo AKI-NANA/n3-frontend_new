@@ -1,0 +1,560 @@
+/**
+ * 記帳自動化ツール専用CSS
+ * common/css/pages/kicho.css
+ * 
+ * ✅ HTMLからCSS分離
+ * ✅ 既存変数活用
+ * ✅ クラス名完全保持
+ */
+
+/* =====================================
+   記帳ツール専用変数
+   ===================================== */
+:root {
+    /* 既存変数の継承・活用 */
+    --kicho-primary: var(--accent-blue, #8b5cf6);
+    --kicho-secondary: var(--accent-purple, #a855f7);
+    --mf-blue: var(--primary-color, #3b82f6);
+    --mf-green: var(--success-color, #10b981);
+    --mf-orange: var(--warning-color, #f59e0b);
+    --kicho-danger: var(--error-color, #ef4444);
+}
+
+/* =====================================
+   メインレイアウト
+   ===================================== */
+.kicho__container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--spacing-lg, 1.5rem);
+}
+
+.kicho__header {
+    background: var(--bg-secondary, #f9fafb);
+    border-bottom: 2px solid var(--border-light, #e5e7eb);
+    padding: var(--spacing-lg, 1.5rem);
+    margin: calc(-1 * var(--spacing-lg, 1.5rem)) calc(-1 * var(--spacing-lg, 1.5rem)) var(--spacing-xl, 2rem);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-md, 1rem);
+}
+
+.kicho__header-left {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm, 0.5rem);
+}
+
+.kicho__page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--kicho-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 0.5rem);
+}
+
+.kicho__page-icon {
+    color: var(--mf-blue);
+}
+
+.kicho__system-status {
+    display: flex;
+    gap: var(--spacing-lg, 1.5rem);
+    font-size: 0.8rem;
+    color: var(--text-secondary, #6b7280);
+}
+
+.kicho__status-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.kicho__status-item--active i {
+    color: var(--mf-green);
+}
+
+.kicho__header-actions {
+    display: flex;
+    gap: var(--spacing-sm, 0.5rem);
+}
+
+/* =====================================
+   統計ダッシュボード
+   ===================================== */
+.dashboard__stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-lg, 1.5rem);
+    margin-bottom: var(--spacing-xl, 2rem);
+}
+
+.dashboard__stat-card {
+    background: var(--bg-secondary, #f9fafb);
+    border: 1px solid var(--border-light, #e5e7eb);
+    border-radius: var(--border-radius, 0.375rem);
+    padding: var(--spacing-lg, 1.5rem);
+    box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+    transition: var(--transition-fast, all 0.15s ease);
+}
+
+.dashboard__stat-card:hover {
+    box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+}
+
+.dashboard__stat-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md, 1rem);
+}
+
+.dashboard__stat-card__title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary, #6b7280);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.dashboard__stat-card__icon {
+    width: 32px;
+    height: 32px;
+    background: var(--bg-tertiary, #f3f4f6);
+    border-radius: var(--border-radius, 0.375rem);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--kicho-primary);
+}
+
+.dashboard__stat-card__value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary, #111827);
+    margin-bottom: var(--spacing-sm, 0.5rem);
+}
+
+.dashboard__stat-card__trend {
+    font-size: 0.8rem;
+    color: var(--text-secondary, #6b7280);
+}
+
+/* =====================================
+   セクション
+   ===================================== */
+.kicho__section {
+    background: var(--bg-secondary, #f9fafb);
+    border: 1px solid var(--border-light, #e5e7eb);
+    border-radius: var(--border-radius, 0.375rem);
+    margin-bottom: var(--spacing-xl, 2rem);
+    box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+}
+
+.kicho__section__header {
+    padding: var(--spacing-lg, 1.5rem);
+    border-bottom: 1px solid var(--border-light, #e5e7eb);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: var(--spacing-md, 1rem);
+}
+
+.kicho__section__title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary, #111827);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 0.5rem);
+}
+
+.kicho__section__subtitle {
+    font-size: 0.8rem;
+    color: var(--text-secondary, #6b7280);
+    margin-top: 0.25rem;
+}
+
+.kicho__section__actions {
+    display: flex;
+    gap: var(--spacing-sm, 0.5rem);
+    flex-wrap: wrap;
+}
+
+/* =====================================
+   カード
+   ===================================== */
+.kicho__overview-section {
+    padding: var(--spacing-lg, 1.5rem);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-lg, 1.5rem);
+}
+
+.card {
+    background: var(--bg-tertiary, #f3f4f6);
+    border: 1px solid var(--border-light, #e5e7eb);
+    border-radius: var(--border-radius, 0.375rem);
+    padding: var(--spacing-lg, 1.5rem);
+}
+
+.card__header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 0.5rem);
+    margin-bottom: var(--spacing-lg, 1.5rem);
+}
+
+.card__header h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary, #111827);
+}
+
+.card__icon--mf {
+    color: var(--mf-blue);
+    font-size: 1.2rem;
+}
+
+.card__icon--csv {
+    color: var(--mf-green);
+    font-size: 1.2rem;
+}
+
+.card__icon--ai {
+    color: var(--mf-orange);
+    font-size: 1.2rem;
+}
+
+/* =====================================
+   フォーム
+   ===================================== */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm, 0.5rem);
+    margin-bottom: var(--spacing-md, 1rem);
+}
+
+.form-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-primary, #111827);
+}
+
+.form-input {
+    padding: var(--spacing-sm, 0.5rem) var(--spacing-md, 1rem);
+    border: 1px solid var(--border-color, #d1d5db);
+    border-radius: var(--border-radius, 0.375rem);
+    font-size: 0.9rem;
+    transition: var(--transition-fast, all 0.15s ease);
+    background: var(--bg-primary, #ffffff);
+    color: var(--text-primary, #111827);
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--kicho-primary);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+/* =====================================
+   ボタン
+   ===================================== */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: var(--spacing-sm, 0.5rem) var(--spacing-md, 1rem);
+    font-size: 0.8rem;
+    font-weight: 500;
+    border: 1px solid transparent;
+    border-radius: var(--border-radius, 0.375rem);
+    cursor: pointer;
+    transition: var(--transition-fast, all 0.15s ease);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.btn--primary {
+    background: var(--kicho-primary);
+    color: white;
+    border-color: var(--kicho-primary);
+}
+
+.btn--primary:hover {
+    background: #7c3aed;
+    border-color: #7c3aed;
+}
+
+.btn--secondary {
+    background: var(--bg-primary, #ffffff);
+    color: var(--text-primary, #111827);
+    border-color: var(--border-color, #d1d5db);
+}
+
+.btn--secondary:hover {
+    background: var(--bg-tertiary, #f3f4f6);
+}
+
+.btn--success {
+    background: var(--mf-green);
+    color: white;
+    border-color: var(--mf-green);
+}
+
+.btn--success:hover {
+    background: #059669;
+    border-color: #047857;
+}
+
+.btn--info {
+    background: var(--mf-blue);
+    color: white;
+    border-color: var(--mf-blue);
+}
+
+.btn--info:hover {
+    background: #2563eb;
+    border-color: #1d4ed8;
+}
+
+.btn--warning {
+    background: var(--mf-orange);
+    color: white;
+    border-color: var(--mf-orange);
+}
+
+.btn--warning:hover {
+    background: #d97706;
+    border-color: #b45309;
+}
+
+.btn--danger {
+    background: var(--kicho-danger);
+    color: white;
+    border-color: var(--kicho-danger);
+}
+
+.btn--danger:hover {
+    background: #dc2626;
+    border-color: #b91c1c;
+}
+
+.btn--full {
+    width: 100%;
+    justify-content: center;
+}
+
+.btn--small {
+    padding: 0.25rem var(--spacing-sm, 0.5rem);
+    font-size: 0.75rem;
+}
+
+/* =====================================
+   アップロードエリア
+   ===================================== */
+.upload-area {
+    border: 2px dashed var(--border-color, #d1d5db);
+    border-radius: var(--border-radius, 0.375rem);
+    padding: var(--spacing-xl, 2rem);
+    text-align: center;
+    cursor: pointer;
+    transition: var(--transition-fast, all 0.15s ease);
+    background: var(--bg-primary, #ffffff);
+}
+
+.upload-area:hover {
+    border-color: var(--kicho-primary);
+    background: rgba(139, 92, 246, 0.05);
+}
+
+.upload-area__icon {
+    font-size: 2rem;
+    color: var(--text-secondary, #6b7280);
+    margin-bottom: var(--spacing-sm, 0.5rem);
+}
+
+.upload-area__text {
+    font-weight: 600;
+    color: var(--text-primary, #111827);
+    margin-bottom: 0.25rem;
+}
+
+.upload-area__subtext {
+    font-size: 0.8rem;
+    color: var(--text-secondary, #6b7280);
+}
+
+/* =====================================
+   AI学習履歴
+   ===================================== */
+.kicho__learning-history {
+    background: var(--bg-primary, #ffffff);
+    border: 1px solid var(--border-light, #e5e7eb);
+    border-radius: var(--border-radius, 0.375rem);
+    padding: var(--spacing-lg, 1.5rem);
+}
+
+.kicho__learning-history h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary, #111827);
+    margin-bottom: var(--spacing-md, 1rem);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 0.5rem);
+}
+
+.kicho__session-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm, 0.5rem);
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.kicho__session-item {
+    background: var(--bg-secondary, #f9fafb);
+    border: 1px solid var(--border-light, #e5e7eb);
+    border-radius: var(--border-radius, 0.375rem);
+    padding: var(--spacing-md, 1rem);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.kicho__session-datetime {
+    font-size: 0.85rem;
+    color: var(--text-primary, #111827);
+    font-weight: 500;
+}
+
+.kicho__session-status--success {
+    background: var(--mf-green);
+    color: white;
+    padding: 0.25rem var(--spacing-sm, 0.5rem);
+    border-radius: var(--border-radius, 0.375rem);
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+/* =====================================
+   アラート
+   ===================================== */
+.alert {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: var(--spacing-md, 1rem) var(--spacing-lg, 1.5rem);
+    border-radius: var(--border-radius, 0.375rem);
+    font-size: 0.9rem;
+    font-weight: 500;
+    z-index: 1000;
+    min-width: 300px;
+    display: none;
+    align-items: center;
+    gap: var(--spacing-sm, 0.5rem);
+    box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+}
+
+.alert--success {
+    background: var(--mf-green);
+    color: white;
+}
+
+.alert--error {
+    background: var(--kicho-danger);
+    color: white;
+}
+
+.alert--warning {
+    background: var(--mf-orange);
+    color: white;
+}
+
+.alert--info {
+    background: var(--mf-blue);
+    color: white;
+}
+
+/* =====================================
+   レスポンシブ対応
+   ===================================== */
+@media (max-width: 1024px) {
+    .kicho__overview-section {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .kicho__container {
+        padding: var(--spacing-md, 1rem);
+    }
+    
+    .kicho__header {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+        margin: calc(-1 * var(--spacing-md, 1rem)) calc(-1 * var(--spacing-md, 1rem)) var(--spacing-lg, 1.5rem);
+    }
+    
+    .kicho__header-left,
+    .kicho__header-actions {
+        width: 100%;
+    }
+    
+    .kicho__header-actions {
+        justify-content: center;
+    }
+    
+    .dashboard__stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: var(--spacing-md, 1rem);
+    }
+    
+    .kicho__section__header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .kicho__section__actions {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard__stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .btn {
+        font-size: 0.8rem;
+        padding: var(--spacing-md, 1rem);
+    }
+    
+    .dashboard__stat-card__value {
+        font-size: 1.5rem;
+    }
+    
+    .kicho__page-title {
+        font-size: 1.2rem;
+    }
+}
+
+/* =====================================
+   ダークモード対応
+   ===================================== */
+[data-theme="dark"] {
+    --bg-primary: #1f2937;
+    --bg-secondary: #374151;
+    --bg-tertiary: #4b5563;
+    --text-primary: #f9fafb;
+    --text-secondary: #d1d5db;
+    --border-color: #4b5563;
+    --border-light: #6b7280;
+}

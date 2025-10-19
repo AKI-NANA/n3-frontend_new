@@ -1,0 +1,140 @@
+{
+  "policy_templates": {
+    "economy": {
+      "name": "FedEx Economy International Shipping",
+      "service_type": "economy",
+      "base_service": "FedEx International Economy",
+      "carrier": "ELOJI_FEDEX",
+      "zones": {
+        "USA/Canada": {
+          "base_cost": 29.00,
+          "weight_factor": 1.8,
+          "delivery_days": "5-8",
+          "countries": ["US", "CA"]
+        },
+        "Europe": {
+          "base_cost": 42.00,
+          "weight_factor": 2.2,
+          "delivery_days": "6-10",
+          "countries": ["GB", "DE", "FR", "IT", "ES", "NL", "BE", "AT", "CH"]
+        },
+        "Asia Pacific": {
+          "base_cost": 36.00,
+          "weight_factor": 2.0,
+          "delivery_days": "4-7",
+          "countries": ["AU", "NZ", "SG", "MY", "TH", "PH", "IN"]
+        },
+        "East Asia": {
+          "base_cost": 34.00,
+          "weight_factor": 1.9,
+          "delivery_days": "3-6",
+          "countries": ["KR", "TW", "HK", "CN"]
+        },
+        "Latin America": {
+          "base_cost": 52.00,
+          "weight_factor": 2.8,
+          "delivery_days": "7-14",
+          "countries": ["MX", "BR", "AR", "CL", "CO"]
+        },
+        "Middle East/Africa": {
+          "base_cost": 65.00,
+          "weight_factor": 3.2,
+          "delivery_days": "8-15",
+          "countries": ["AE", "SA", "ZA", "EG", "NG"]
+        }
+      },
+      "rules": {
+        "max_weight": 20.0,
+        "max_length": 150,
+        "volume_weight_factor": 5000,
+        "fuel_surcharge": 5.0,
+        "handling_fee": 2.50
+      }
+    },
+    "express": {
+      "name": "FedEx Express International Shipping",
+      "service_type": "express",
+      "base_service": "FedEx International Priority",
+      "carrier": "ELOJI_FEDEX",
+      "zones": {
+        "USA/Canada": {
+          "base_cost": 42.00,
+          "weight_factor": 2.5,
+          "delivery_days": "1-3",
+          "countries": ["US", "CA"]
+        },
+        "Europe": {
+          "base_cost": 58.00,
+          "weight_factor": 3.0,
+          "delivery_days": "2-4",
+          "countries": ["GB", "DE", "FR", "IT", "ES", "NL", "BE", "AT", "CH"]
+        },
+        "Asia Pacific": {
+          "base_cost": 50.00,
+          "weight_factor": 2.8,
+          "delivery_days": "2-4",
+          "countries": ["AU", "NZ", "SG", "MY", "TH", "PH", "IN"]
+        },
+        "East Asia": {
+          "base_cost": 45.00,
+          "weight_factor": 2.6,
+          "delivery_days": "1-3",
+          "countries": ["KR", "TW", "HK", "CN"]
+        },
+        "Latin America": {
+          "base_cost": 72.00,
+          "weight_factor": 3.8,
+          "delivery_days": "3-7",
+          "countries": ["MX", "BR", "AR", "CL", "CO"]
+        },
+        "Middle East/Africa": {
+          "base_cost": 88.00,
+          "weight_factor": 4.2,
+          "delivery_days": "3-8",
+          "countries": ["AE", "SA", "ZA", "EG", "NG"]
+        }
+      },
+      "rules": {
+        "max_weight": 30.0,
+        "max_length": 200,
+        "volume_weight_factor": 5000,
+        "fuel_surcharge": 5.0,
+        "handling_fee": 3.50,
+        "tracking_included": true,
+        "signature_required": true
+      }
+    }
+  },
+  "zone_mapping": {
+    "USA/Canada": ["US", "CA"],
+    "Europe": ["GB", "DE", "FR", "IT", "ES", "NL", "BE", "AT", "CH", "SE", "NO", "DK", "FI", "PT", "IE", "GR"],
+    "Asia Pacific": ["AU", "NZ", "SG", "MY", "TH", "PH", "IN", "ID", "VN"],
+    "East Asia": ["KR", "TW", "HK", "CN", "JP", "MO"],
+    "Latin America": ["MX", "BR", "AR", "CL", "CO", "PE", "VE", "EC", "UY", "PY"],
+    "Middle East/Africa": ["AE", "SA", "ZA", "EG", "NG", "KE", "MA", "TN", "IL", "JO", "KW", "QA", "BH", "OM"]
+  },
+  "calculation_rules": {
+    "volume_weight_factor": 5000,
+    "fuel_surcharge": 5.0,
+    "handling_fee": 2.50,
+    "currency": "USD",
+    "weight_unit": "kg",
+    "dimension_unit": "cm"
+  },
+  "carrier_settings": {
+    "eloji_fedex": {
+      "carrier_code": "ELOJI_FEDEX",
+      "priority": 1,
+      "coverage": "WORLDWIDE",
+      "api_enabled": false,
+      "rate_source": "CSV_IMPORT"
+    },
+    "orange_connex": {
+      "carrier_code": "ORANGE_CONNEX",
+      "priority": 2,
+      "coverage": "WORLDWIDE_EXCEPT_USA",
+      "api_enabled": false,
+      "rate_source": "TO_BE_ADDED"
+    }
+  }
+}

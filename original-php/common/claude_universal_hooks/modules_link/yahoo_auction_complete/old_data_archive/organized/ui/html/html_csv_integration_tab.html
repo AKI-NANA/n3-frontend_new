@@ -1,0 +1,1282 @@
+<!-- 🎯 HTMLアップロード → CSV自動挿入タブ -->
+<div id="html-csv-integration" class="tab-content fade-in">
+    <div class="section">
+        <div class="section-header">
+            <i class="fas fa-upload"></i>
+            <h3 class="section-title">HTML → CSV自動統合システム</h3>
+            <div style="margin-left: auto; display: flex; gap: var(--space-sm);">
+                <button class="btn btn-success" onclick="processAllProducts()">
+                    <i class="fas fa-magic"></i> 全商品一括処理
+                </button>
+                <button class="btn btn-info" onclick="downloadUpdatedCSV()">
+                    <i class="fas fa-download"></i> 更新CSV取得
+                </button>
+                <button class="btn btn-warning" onclick="resetProcessing()">
+                    <i class="fas fa-undo"></i> リセット
+                </button>
+            </div>
+        </div>
+
+        <!-- 処理状況ダッシュボード -->
+        <div class="processing-dashboard">
+            <div class="process-stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalProducts">0</div>
+                    <div class="stat-label">総商品数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="processedProducts">0</div>
+                    <div class="stat-label">処理完了</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="htmlGeneratedCount">0</div>
+                    <div class="stat-label">HTML生成済み</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="errorCount">0</div>
+                    <div class="stat-label">エラー</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HTMLテンプレート選択セクション -->
+        <div class="html-template-section">
+            <div class="section-header">
+                <h4><i class="fas fa-palette"></i> HTMLテンプレート設定</h4>
+            </div>
+            
+            <div class="template-selection-grid">
+                <div class="template-upload-area">
+                    <h5>📤 HTMLファイルアップロード</h5>
+                    <div class="upload-dropzone" id="htmlUploadZone" 
+                         onclick="document.getElementById('htmlFileInput').click()"
+                         ondrop="handleHTMLDrop(event)" 
+                         ondragover="handleDragOver(event)" 
+                         ondragleave="handleDragLeave(event)">
+                        <input type="file" id="htmlFileInput" accept=".html,.htm" style="display: none;" onchange="handleHTMLUpload(event)">
+                        <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                        <div class="upload-text">
+                            <strong>HTMLファイルをドラッグ&ドロップ</strong><br>
+                            または、クリックしてファイルを選択<br>
+                            <small>対応形式: .html, .htm</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="template-direct-input">
+                    <h5>📝 HTML直接入力</h5>
+                    <textarea id="htmlDirectInput" class="html-input-textarea" placeholder="HTMLを直接貼り付け...
+
+例:
+<div class='product'>
+    <h1>{{TITLE}}</h1>
+    <div class='price'>${{PRICE}}</div>
+    <img src='{{MAIN_IMAGE}}' alt='{{TITLE}}'>
+    <p>{{DESCRIPTION}}</p>
+    <div class='specs'>{{SPECIFICATIONS_TABLE}}</div>
+    <div class='shipping'>{{SHIPPING_INFO_HTML}}</div>
+</div>"></textarea>
+                    <button class="btn btn-primary" onclick="useDirectHTML()">
+                        <i class="fas fa-check"></i> このHTMLを使用
+                    </button>
+                </div>
+
+                <div class="saved-templates">
+                    <h5>💾 保存済みテンプレート</h5>
+                    <select id="savedTemplateSelect" class="form-select" onchange="loadSavedTemplate(this.value)">
+                        <option value="">選択してください</option>
+                        <!-- JavaScript で動的生成 -->
+                    </select>
+                    <button class="btn btn-secondary" onclick="loadSelectedTemplate()">
+                        <i class="fas fa-arrow-down"></i> テンプレート読み込み
+                    </button>
+                </div>
+            </div>
+
+            <!-- 現在のHTMLプレビュー -->
+            <div class="current-html-preview" id="currentHtmlPreview" style="display: none;">
+                <div class="preview-header">
+                    <h5><i class="fas fa-eye"></i> 現在のHTMLテンプレート</h5>
+                    <button class="btn btn-sm btn-warning" onclick="clearCurrentHTML()">
+                        <i class="fas fa-trash"></i> クリア
+                    </button>
+                </div>
+                <div class="preview-content">
+                    <pre><code id="htmlPreviewCode"></code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- CSV商品データ処理セクション -->
+        <div class="csv-processing-section">
+            <div class="section-header">
+                <h4><i class="fas fa-table"></i> CSV商品データ処理</h4>
+                <div class="processing-controls">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="autoProcessMode" checked>
+                        自動処理モード
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="overwriteExisting">
+                        既存HTML上書き
+                    </label>
+                </div>
+            </div>
+
+            <!-- 処理対象商品一覧 -->
+            <div class="products-table-container">
+                <table class="products-table" id="productsTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">
+                                <input type="checkbox" id="selectAllProducts" onchange="toggleAllProducts()">
+                            </th>
+                            <th style="width: 80px;">処理状況</th>
+                            <th style="width: 120px;">商品ID</th>
+                            <th style="width: 200px;">商品名</th>
+                            <th style="width: 100px;">価格</th>
+                            <th style="width: 100px;">ブランド</th>
+                            <th style="width: 120px;">HTML状況</th>
+                            <th style="width: 100px;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productsTableBody">
+                        <tr>
+                            <td colspan="8" class="loading-cell">
+                                <i class="fas fa-spinner fa-spin"></i> 商品データを読み込み中...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 処理ログセクション -->
+        <div class="processing-log-section">
+            <div class="section-header">
+                <h4><i class="fas fa-list-alt"></i> 処理ログ</h4>
+                <button class="btn btn-sm btn-secondary" onclick="clearLog()">
+                    <i class="fas fa-eraser"></i> ログクリア
+                </button>
+            </div>
+            <div class="log-container" id="processingLog">
+                <div class="log-entry log-info">
+                    <span class="log-time">[初期化]</span>
+                    <span class="log-message">HTML → CSV自動統合システムを起動しました</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- プレビューモーダル -->
+        <div class="preview-modal" id="previewModal" style="display: none;">
+            <div class="modal-content-large">
+                <div class="modal-header">
+                    <h3>生成HTMLプレビュー</h3>
+                    <button class="modal-close" onclick="closePreviewModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="preview-tabs">
+                        <button class="preview-tab active" data-tab="rendered" onclick="switchPreviewTab('rendered')">
+                            <i class="fas fa-eye"></i> 表示結果
+                        </button>
+                        <button class="preview-tab" data-tab="source" onclick="switchPreviewTab('source')">
+                            <i class="fas fa-code"></i> HTMLソース
+                        </button>
+                    </div>
+                    <div class="preview-content">
+                        <div id="previewRendered" class="preview-pane active"></div>
+                        <div id="previewSource" class="preview-pane">
+                            <pre><code id="previewSourceCode"></code></pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-success" onclick="confirmHTML()">
+                        <i class="fas fa-check"></i> このHTMLで確定
+                    </button>
+                    <button class="btn btn-secondary" onclick="closePreviewModal()">
+                        キャンセル
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 🎨 専用CSS -->
+<style>
+/* === 処理ダッシュボード === */
+.processing-dashboard {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: var(--radius-lg, 0.5rem);
+    padding: var(--space-lg, 1.5rem);
+    margin-bottom: var(--space-lg, 1.5rem);
+    color: white;
+}
+
+.process-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--space-md, 1rem);
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.15);
+    padding: var(--space-md, 1rem);
+    border-radius: var(--radius-md, 0.375rem);
+    text-align: center;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: white;
+    margin-bottom: var(--space-xs, 0.25rem);
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+}
+
+/* === HTMLテンプレートセクション === */
+.html-template-section {
+    background: var(--bg-tertiary, #f1f5f9);
+    border-radius: var(--radius-lg, 0.5rem);
+    padding: var(--space-lg, 1.5rem);
+    margin-bottom: var(--space-lg, 1.5rem);
+}
+
+.template-selection-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: var(--space-lg, 1.5rem);
+    margin-bottom: var(--space-lg, 1.5rem);
+}
+
+.template-upload-area, .template-direct-input, .saved-templates {
+    background: var(--bg-secondary, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-md, 0.375rem);
+    padding: var(--space-md, 1rem);
+}
+
+.template-upload-area h5, .template-direct-input h5, .saved-templates h5 {
+    margin-bottom: var(--space-md, 1rem);
+    color: var(--text-primary, #1e293b);
+    font-size: 0.875rem;
+    font-weight: 700;
+}
+
+/* === アップロードドロップゾーン === */
+.upload-dropzone {
+    border: 2px dashed var(--border-color, #e2e8f0);
+    border-radius: var(--radius-md, 0.375rem);
+    background: var(--bg-tertiary, #f1f5f9);
+    padding: var(--space-xl, 2rem);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.upload-dropzone:hover, .upload-dropzone.drag-over {
+    border-color: var(--color-primary, #3b82f6);
+    background: rgba(59, 130, 246, 0.05);
+    transform: translateY(-2px);
+}
+
+.upload-icon {
+    font-size: 2rem;
+    color: var(--color-primary, #3b82f6);
+    margin-bottom: var(--space-sm, 0.5rem);
+}
+
+.upload-text {
+    color: var(--text-secondary, #475569);
+    line-height: 1.4;
+}
+
+.upload-text strong {
+    color: var(--text-primary, #1e293b);
+}
+
+.upload-text small {
+    color: var(--text-muted, #64748b);
+    font-size: 0.75rem;
+}
+
+/* === HTML入力エリア === */
+.html-input-textarea {
+    width: 100%;
+    height: 120px;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-sm, 0.25rem);
+    padding: var(--space-sm, 0.5rem);
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    resize: vertical;
+    margin-bottom: var(--space-sm, 0.5rem);
+}
+
+/* === 現在のHTMLプレビュー === */
+.current-html-preview {
+    background: var(--bg-secondary, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-md, 0.375rem);
+    overflow: hidden;
+}
+
+.preview-header {
+    background: var(--bg-tertiary, #f1f5f9);
+    padding: var(--space-md, 1rem);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+
+.preview-header h5 {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary, #1e293b);
+}
+
+.preview-content {
+    padding: var(--space-md, 1rem);
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.preview-content pre {
+    margin: 0;
+    background: var(--bg-tertiary, #f1f5f9);
+    padding: var(--space-sm, 0.5rem);
+    border-radius: var(--radius-sm, 0.25rem);
+    font-size: 0.75rem;
+    line-height: 1.4;
+    overflow-x: auto;
+}
+
+/* === CSV処理セクション === */
+.csv-processing-section {
+    background: var(--bg-secondary, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-lg, 0.5rem);
+    padding: var(--space-lg, 1.5rem);
+    margin-bottom: var(--space-lg, 1.5rem);
+}
+
+.processing-controls {
+    display: flex;
+    gap: var(--space-md, 1rem);
+    align-items: center;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs, 0.25rem);
+    font-size: 0.875rem;
+    color: var(--text-secondary, #475569);
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    margin: 0;
+}
+
+/* === 商品テーブル === */
+.products-table-container {
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-md, 0.375rem);
+    overflow: hidden;
+    margin: var(--space-md, 1rem) 0;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.products-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.products-table th {
+    background: var(--bg-tertiary, #f1f5f9);
+    padding: var(--space-sm, 0.5rem);
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-primary, #1e293b);
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.products-table td {
+    padding: var(--space-sm, 0.5rem);
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+    vertical-align: middle;
+}
+
+.products-table tbody tr:hover {
+    background: var(--bg-hover, #f8fafc);
+}
+
+.loading-cell {
+    text-align: center;
+    padding: var(--space-xl, 2rem);
+    color: var(--text-muted, #64748b);
+    font-style: italic;
+}
+
+/* === 処理状況バッジ === */
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm, 0.25rem);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+    min-width: 60px;
+}
+
+.status-pending { background: #fef3c7; color: #92400e; }
+.status-processing { background: #dbeafe; color: #1e40af; }
+.status-completed { background: #dcfce7; color: #166534; }
+.status-error { background: #fee2e2; color: #991b1b; }
+
+/* === HTML状況表示 === */
+.html-status {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm, 0.25rem);
+    text-align: center;
+}
+
+.html-empty { background: #f3f4f6; color: #6b7280; }
+.html-ready { background: #dcfce7; color: #166534; }
+.html-error { background: #fee2e2; color: #991b1b; }
+
+/* === 処理ログセクション === */
+.processing-log-section {
+    background: var(--bg-tertiary, #f1f5f9);
+    border-radius: var(--radius-lg, 0.5rem);
+    padding: var(--space-lg, 1.5rem);
+}
+
+.log-container {
+    background: var(--bg-secondary, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-md, 0.375rem);
+    padding: var(--space-md, 1rem);
+    max-height: 300px;
+    overflow-y: auto;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.75rem;
+    line-height: 1.4;
+}
+
+.log-entry {
+    margin-bottom: var(--space-xs, 0.25rem);
+    display: flex;
+    gap: var(--space-sm, 0.5rem);
+}
+
+.log-time {
+    color: var(--text-muted, #64748b);
+    font-weight: 600;
+    min-width: 80px;
+}
+
+.log-message {
+    color: var(--text-secondary, #475569);
+}
+
+.log-info .log-message { color: #1e40af; }
+.log-success .log-message { color: #166534; }
+.log-warning .log-message { color: #92400e; }
+.log-error .log-message { color: #991b1b; }
+
+/* === プレビューモーダル === */
+.preview-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: var(--space-md, 1rem);
+}
+
+.modal-content-large {
+    background: var(--bg-secondary, #ffffff);
+    border-radius: var(--radius-xl, 0.75rem);
+    width: 90vw;
+    max-width: 1000px;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: var(--shadow-xl, 0 20px 25px -5px rgba(0, 0, 0, 0.1));
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    background: var(--bg-tertiary, #f1f5f9);
+    padding: var(--space-lg, 1.5rem);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-muted, #64748b);
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: var(--radius-sm, 0.25rem);
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    background: var(--bg-hover, #e2e8f0);
+    color: var(--text-primary, #1e293b);
+}
+
+.modal-body {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.preview-tabs {
+    display: flex;
+    background: var(--bg-tertiary, #f1f5f9);
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+
+.preview-tab {
+    padding: var(--space-sm, 0.5rem) var(--space-md, 1rem);
+    border: none;
+    background: none;
+    color: var(--text-secondary, #475569);
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs, 0.25rem);
+    transition: all 0.2s ease;
+}
+
+.preview-tab:hover {
+    background: var(--bg-hover, #e2e8f0);
+    color: var(--text-primary, #1e293b);
+}
+
+.preview-tab.active {
+    background: var(--bg-secondary, #ffffff);
+    color: var(--color-primary, #3b82f6);
+    border-bottom: 2px solid var(--color-primary, #3b82f6);
+}
+
+.preview-content {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+.preview-pane {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: var(--space-md, 1rem);
+    overflow-y: auto;
+    display: none;
+}
+
+.preview-pane.active {
+    display: block;
+}
+
+.modal-footer {
+    background: var(--bg-tertiary, #f1f5f9);
+    padding: var(--space-md, 1rem);
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-sm, 0.5rem);
+    border-top: 1px solid var(--border-color, #e2e8f0);
+}
+
+/* === レスポンシブ === */
+@media (max-width: 1024px) {
+    .template-selection-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-md, 1rem);
+    }
+    
+    .saved-templates {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 768px) {
+    .template-selection-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .process-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .products-table {
+        font-size: 0.75rem;
+    }
+    
+    .products-table th,
+    .products-table td {
+        padding: 0.25rem;
+    }
+    
+    .modal-content-large {
+        width: 95vw;
+        max-height: 90vh;
+    }
+}
+
+/* === アニメーション === */
+@keyframes processing {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.processing-indicator {
+    position: relative;
+    overflow: hidden;
+}
+
+.processing-indicator::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent);
+    animation: processing 1.5s infinite;
+}
+
+/* === フォーム要素 === */
+.form-select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-sm, 0.25rem);
+    background: var(--bg-secondary, #ffffff);
+    font-size: 0.875rem;
+    margin-bottom: var(--space-sm, 0.5rem);
+}
+
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+}
+</style>
+
+<script>
+// 🎯 HTML → CSV自動統合システム JavaScript
+let currentHTML = '';
+let productData = [];
+let processedCount = 0;
+let htmlProcessor = null;
+
+// システム初期化
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🎯 HTML → CSV自動統合システム初期化中...');
+    
+    // HTMLProcessor初期化
+    if (typeof HTMLTemplateProcessor !== 'undefined') {
+        htmlProcessor = new HTMLTemplateProcessor();
+        console.log('✅ HTMLProcessor 初期化完了');
+    }
+    
+    // 初期データ読み込み
+    loadProductData();
+    loadSavedTemplates();
+    
+    logMessage('システム初期化完了', 'success');
+});
+
+// 商品データ読み込み
+function loadProductData() {
+    logMessage('商品データ読み込み開始', 'info');
+    
+    fetch('database_csv_handler_ebay_complete_v2.php?action=get_products_for_html')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                productData = data.data || [];
+                displayProductTable(productData);
+                updateStats();
+                logMessage(`${productData.length}件の商品データを読み込みました`, 'success');
+            } else {
+                logMessage('商品データ読み込みエラー: ' + (data.error || '不明なエラー'), 'error');
+                // サンプルデータで代替
+                loadSampleData();
+            }
+        })
+        .catch(error => {
+            console.error('商品データ読み込みエラー:', error);
+            logMessage('商品データ読み込みエラー: ' + error.message, 'error');
+            // サンプルデータで代替
+            loadSampleData();
+        });
+}
+
+// サンプルデータ読み込み（開発・テスト用）
+function loadSampleData() {
+    productData = [
+        {
+            master_sku: 'AUTO-YAHOO-12345',
+            title: 'iPhone 15 Pro 128GB Natural Titanium',
+            start_price: 650.00,
+            brand: 'Apple',
+            condition_id: 1000,
+            description: 'Brand new iPhone 15 Pro in Natural Titanium. Factory unlocked.',
+            pic_url: 'https://via.placeholder.com/300x300/333/fff?text=iPhone+15+Pro',
+            weight_kg: 0.187,
+            html_content: '',
+            html_status: 'empty'
+        },
+        {
+            master_sku: 'AUTO-YAHOO-67890',
+            title: 'Canon EOS R6 Mark II Camera Body',
+            start_price: 1200.00,
+            brand: 'Canon',
+            condition_id: 1000,
+            description: 'Professional mirrorless camera with advanced features.',
+            pic_url: 'https://via.placeholder.com/300x300/222/fff?text=Canon+R6',
+            weight_kg: 0.588,
+            html_content: '',
+            html_status: 'empty'
+        },
+        {
+            master_sku: 'AUTO-YAHOO-11111',
+            title: 'Rolex Submariner Date Black Dial',
+            start_price: 8500.00,
+            brand: 'Rolex',
+            condition_id: 3000,
+            description: 'Authentic Rolex Submariner with box and papers.',
+            pic_url: 'https://via.placeholder.com/300x300/000/fff?text=Rolex',
+            weight_kg: 0.15,
+            html_content: '',
+            html_status: 'empty'
+        }
+    ];
+    
+    displayProductTable(productData);
+    updateStats();
+    logMessage('サンプルデータを読み込みました（開発モード）', 'info');
+}
+
+// 商品テーブル表示
+function displayProductTable(products) {
+    const tbody = document.getElementById('productsTableBody');
+    
+    if (!products || products.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="loading-cell">商品データがありません</td></tr>';
+        return;
+    }
+    
+    const rows = products.map((product, index) => `
+        <tr data-product-id="${product.master_sku}">
+            <td>
+                <input type="checkbox" class="product-checkbox" value="${product.master_sku}">
+            </td>
+            <td>
+                <span class="status-badge status-pending">待機中</span>
+            </td>
+            <td class="product-id">${product.master_sku}</td>
+            <td class="product-title" title="${product.title}">${truncateText(product.title, 30)}</td>
+            <td class="product-price">$${(product.start_price || 0).toFixed(2)}</td>
+            <td class="product-brand">${product.brand || '-'}</td>
+            <td>
+                <span class="html-status html-${product.html_content ? 'ready' : 'empty'}">
+                    ${product.html_content ? 'HTML済' : '未生成'}
+                </span>
+            </td>
+            <td>
+                <div style="display: flex; gap: 0.25rem;">
+                    <button class="btn btn-sm btn-primary" onclick="processProduct('${product.master_sku}')" title="個別処理">
+                        <i class="fas fa-play"></i>
+                    </button>
+                    <button class="btn btn-sm btn-info" onclick="previewProduct('${product.master_sku}')" title="プレビュー">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+    
+    tbody.innerHTML = rows;
+}
+
+// HTMLファイルアップロード処理
+function handleHTMLUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    if (!file.type.match(/text\/html/)) {
+        alert('HTMLファイルを選択してください');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        currentHTML = e.target.result;
+        showCurrentHTML();
+        logMessage(`HTMLファイル "${file.name}" を読み込みました`, 'success');
+    };
+    reader.readAsText(file);
+}
+
+// ドラッグ&ドロップ処理
+function handleHTMLDrop(event) {
+    event.preventDefault();
+    event.currentTarget.classList.remove('drag-over');
+    
+    const files = event.dataTransfer.files;
+    if (files.length > 0) {
+        const file = files[0];
+        if (file.type.match(/text\/html/)) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                currentHTML = e.target.result;
+                showCurrentHTML();
+                logMessage(`HTMLファイル "${file.name}" をドロップで読み込みました`, 'success');
+            };
+            reader.readAsText(file);
+        } else {
+            alert('HTMLファイルをドロップしてください');
+        }
+    }
+}
+
+function handleDragOver(event) {
+    event.preventDefault();
+    event.currentTarget.classList.add('drag-over');
+}
+
+function handleDragLeave(event) {
+    event.preventDefault();
+    event.currentTarget.classList.remove('drag-over');
+}
+
+// 直接入力HTML使用
+function useDirectHTML() {
+    const htmlContent = document.getElementById('htmlDirectInput').value.trim();
+    if (!htmlContent) {
+        alert('HTMLが入力されていません');
+        return;
+    }
+    
+    currentHTML = htmlContent;
+    showCurrentHTML();
+    logMessage('直接入力されたHTMLを設定しました', 'success');
+}
+
+// 現在のHTML表示
+function showCurrentHTML() {
+    const previewDiv = document.getElementById('currentHtmlPreview');
+    const codeElement = document.getElementById('htmlPreviewCode');
+    
+    if (currentHTML) {
+        previewDiv.style.display = 'block';
+        codeElement.textContent = currentHTML;
+    } else {
+        previewDiv.style.display = 'none';
+    }
+}
+
+// 保存済みテンプレート読み込み
+function loadSavedTemplates() {
+    fetch('database_csv_handler_ebay_complete_v2.php?action=get_all_templates')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const select = document.getElementById('savedTemplateSelect');
+                
+                // 既存オプションクリア
+                while (select.children.length > 1) {
+                    select.removeChild(select.lastChild);
+                }
+                
+                // テンプレート追加
+                data.data.forEach(template => {
+                    const option = document.createElement('option');
+                    option.value = template.template_id;
+                    option.textContent = template.name || template.template_id;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('テンプレート読み込みエラー:', error);
+        });
+}
+
+// 保存済みテンプレート読み込み
+function loadSavedTemplate(templateId) {
+    if (!templateId) return;
+    
+    fetch(`database_csv_handler_ebay_complete_v2.php?action=get_html_template&template_id=${encodeURIComponent(templateId)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.data) {
+                currentHTML = data.data.html_content || '';
+                showCurrentHTML();
+                logMessage(`テンプレート "${templateId}" を読み込みました`, 'success');
+            }
+        })
+        .catch(error => {
+            console.error('テンプレート読み込みエラー:', error);
+        });
+}
+
+// 選択したテンプレート読み込み
+function loadSelectedTemplate() {
+    const select = document.getElementById('savedTemplateSelect');
+    const templateId = select.value;
+    
+    if (templateId) {
+        loadSavedTemplate(templateId);
+    } else {
+        alert('テンプレートを選択してください');
+    }
+}
+
+// 個別商品処理
+function processProduct(productId) {
+    if (!currentHTML) {
+        alert('HTMLテンプレートが設定されていません');
+        return;
+    }
+    
+    if (!htmlProcessor) {
+        alert('HTML処理エンジンが初期化されていません');
+        return;
+    }
+    
+    const product = productData.find(p => p.master_sku === productId);
+    if (!product) {
+        logMessage(`商品 ${productId} が見つかりません`, 'error');
+        return;
+    }
+    
+    // 処理状況更新
+    updateProductStatus(productId, 'processing');
+    logMessage(`商品 ${productId} の処理を開始`, 'info');
+    
+    try {
+        // HTMLを生成
+        const generatedHTML = htmlProcessor.processTemplate(currentHTML, product);
+        
+        // 商品データにHTML保存
+        product.html_content = generatedHTML;
+        product.html_status = 'ready';
+        
+        // データベースに保存
+        saveProductHTML(productId, generatedHTML);
+        
+        // 状況更新
+        updateProductStatus(productId, 'completed');
+        updateProductHTMLStatus(productId, 'ready');
+        
+        processedCount++;
+        updateStats();
+        
+        logMessage(`商品 ${productId} の処理が完了しました`, 'success');
+        
+    } catch (error) {
+        console.error('商品処理エラー:', error);
+        updateProductStatus(productId, 'error');
+        logMessage(`商品 ${productId} の処理でエラー: ${error.message}`, 'error');
+    }
+}
+
+// 全商品一括処理
+function processAllProducts() {
+    if (!currentHTML) {
+        alert('HTMLテンプレートが設定されていません');
+        return;
+    }
+    
+    if (!confirm(`${productData.length}件の商品を一括処理しますか？`)) {
+        return;
+    }
+    
+    logMessage('全商品一括処理を開始', 'info');
+    
+    let processed = 0;
+    const total = productData.length;
+    
+    productData.forEach((product, index) => {
+        setTimeout(() => {
+            processProduct(product.master_sku);
+            processed++;
+            
+            if (processed === total) {
+                logMessage('全商品の一括処理が完了しました', 'success');
+            }
+        }, index * 100); // 100ms間隔で処理
+    });
+}
+
+// 商品プレビュー
+function previewProduct(productId) {
+    if (!currentHTML) {
+        alert('HTMLテンプレートが設定されていません');
+        return;
+    }
+    
+    const product = productData.find(p => p.master_sku === productId);
+    if (!product) {
+        alert('商品が見つかりません');
+        return;
+    }
+    
+    try {
+        const generatedHTML = htmlProcessor.processTemplate(currentHTML, product);
+        showPreviewModal(generatedHTML, productId);
+    } catch (error) {
+        alert('プレビュー生成エラー: ' + error.message);
+    }
+}
+
+// プレビューモーダル表示
+function showPreviewModal(html, productId) {
+    const modal = document.getElementById('previewModal');
+    const renderedPane = document.getElementById('previewRendered');
+    const sourcePane = document.getElementById('previewSourceCode');
+    
+    renderedPane.innerHTML = html;
+    sourcePane.textContent = html;
+    
+    modal.style.display = 'flex';
+    modal.dataset.productId = productId;
+}
+
+// プレビューモーダル閉じる
+function closePreviewModal() {
+    document.getElementById('previewModal').style.display = 'none';
+}
+
+// プレビュータブ切り替え
+function switchPreviewTab(tabName) {
+    // タブボタン切り替え
+    document.querySelectorAll('.preview-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    
+    // プレビューペイン切り替え
+    document.querySelectorAll('.preview-pane').forEach(pane => {
+        pane.classList.remove('active');
+    });
+    document.getElementById('preview' + tabName.charAt(0).toUpperCase() + tabName.slice(1)).classList.add('active');
+}
+
+// HTML確定
+function confirmHTML() {
+    const productId = document.getElementById('previewModal').dataset.productId;
+    if (productId) {
+        processProduct(productId);
+    }
+    closePreviewModal();
+}
+
+// 商品HTMLをデータベースに保存
+function saveProductHTML(productId, htmlContent) {
+    const formData = new FormData();
+    formData.append('action', 'save_product_html');
+    formData.append('product_id', productId);
+    formData.append('html_content', htmlContent);
+    
+    fetch('database_csv_handler_ebay_complete_v2.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            logMessage(`商品 ${productId} のHTMLをデータベースに保存`, 'success');
+        } else {
+            logMessage(`商品 ${productId} のHTML保存エラー: ${data.error}`, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('HTML保存エラー:', error);
+        logMessage(`商品 ${productId} のHTML保存エラー: ${error.message}`, 'error');
+    });
+}
+
+// 更新CSV取得
+function downloadUpdatedCSV() {
+    logMessage('更新CSVの生成を開始', 'info');
+    
+    // HTML処理済みの商品データでCSV生成
+    const csvData = productData.map(product => ({
+        master_sku: product.master_sku,
+        title: product.title,
+        start_price: product.start_price,
+        brand: product.brand,
+        ebay_description_html: product.html_content || '', // ここにHTMLが入る
+        html_template_id: 'uploaded_template',
+        // その他のCSVフィールド
+    }));
+    
+    // CSV生成・ダウンロード処理
+    generateAndDownloadCSV(csvData);
+}
+
+// CSV生成・ダウンロード
+function generateAndDownloadCSV(data) {
+    const headers = Object.keys(data[0] || {});
+    const csvContent = [
+        headers.join(','),
+        ...data.map(row => 
+            headers.map(header => 
+                `"${(row[header] || '').toString().replace(/"/g, '""')}"` // CSV エスケープ処理
+            ).join(',')
+        )
+    ].join('\n');
+    
+    // BOM付きでダウンロード
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv; charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `updated_products_with_html_${new Date().getTime()}.csv`;
+    a.click();
+    
+    URL.revokeObjectURL(url);
+    logMessage('更新CSVをダウンロードしました', 'success');
+}
+
+// ユーティリティ関数
+function truncateText(text, length) {
+    return text && text.length > length ? text.substring(0, length) + '...' : text;
+}
+
+function updateProductStatus(productId, status) {
+    const row = document.querySelector(`tr[data-product-id="${productId}"]`);
+    if (row) {
+        const statusCell = row.querySelector('.status-badge');
+        statusCell.className = `status-badge status-${status}`;
+        statusCell.textContent = {
+            'pending': '待機中',
+            'processing': '処理中',
+            'completed': '完了',
+            'error': 'エラー'
+        }[status] || status;
+        
+        if (status === 'processing') {
+            statusCell.parentElement.classList.add('processing-indicator');
+        } else {
+            statusCell.parentElement.classList.remove('processing-indicator');
+        }
+    }
+}
+
+function updateProductHTMLStatus(productId, status) {
+    const row = document.querySelector(`tr[data-product-id="${productId}"]`);
+    if (row) {
+        const htmlStatusCell = row.querySelector('.html-status');
+        htmlStatusCell.className = `html-status html-${status}`;
+        htmlStatusCell.textContent = {
+            'empty': '未生成',
+            'ready': 'HTML済',
+            'error': 'エラー'
+        }[status] || status;
+    }
+}
+
+function updateStats() {
+    document.getElementById('totalProducts').textContent = productData.length;
+    document.getElementById('processedProducts').textContent = processedCount;
+    document.getElementById('htmlGeneratedCount').textContent = productData.filter(p => p.html_content).length;
+    document.getElementById('errorCount').textContent = 0; // エラーカウントロジック追加予定
+}
+
+function logMessage(message, type = 'info') {
+    const logContainer = document.getElementById('processingLog');
+    const timestamp = new Date().toLocaleTimeString();
+    
+    const logEntry = document.createElement('div');
+    logEntry.className = `log-entry log-${type}`;
+    logEntry.innerHTML = `
+        <span class="log-time">[${timestamp}]</span>
+        <span class="log-message">${message}</span>
+    `;
+    
+    logContainer.appendChild(logEntry);
+    logContainer.scrollTop = logContainer.scrollHeight;
+}
+
+function clearLog() {
+    document.getElementById('processingLog').innerHTML = '';
+}
+
+function clearCurrentHTML() {
+    currentHTML = '';
+    document.getElementById('htmlDirectInput').value = '';
+    document.getElementById('currentHtmlPreview').style.display = 'none';
+    document.getElementById('savedTemplateSelect').value = '';
+    logMessage('HTMLテンプレートをクリアしました', 'info');
+}
+
+function resetProcessing() {
+    if (confirm('処理状況をリセットしますか？')) {
+        processedCount = 0;
+        productData.forEach(product => {
+            product.html_content = '';
+            product.html_status = 'empty';
+        });
+        displayProductTable(productData);
+        updateStats();
+        clearLog();
+        logMessage('処理状況をリセットしました', 'info');
+    }
+}
+
+function toggleAllProducts() {
+    const selectAll = document.getElementById('selectAllProducts');
+    const checkboxes = document.querySelectorAll('.product-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+}
+
+console.log('🎯 HTML → CSV自動統合システム初期化完了');
+</script>

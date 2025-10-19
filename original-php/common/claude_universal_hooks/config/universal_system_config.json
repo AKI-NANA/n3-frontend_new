@@ -1,0 +1,69 @@
+{
+  "universal_local_system": {
+    "version": "1.0.0",
+    "description": "汎用ローカル参照・自動保存システム",
+    "enabled": true
+  },
+  "project_detection": {
+    "auto_detect": true,
+    "search_markers": [
+      ".git", "package.json", "composer.json", "requirements.txt",
+      "Makefile", "docker-compose.yml", "README.md"
+    ],
+    "priority_folders": [
+      "src", "common", "config", "components", "modules", 
+      "hooks", "services", "database", "N3-Development",
+      "claude_hooks", "claude_universal_hooks"
+    ]
+  },
+  "search_configuration": {
+    "target_extensions": [
+      ".py", ".js", ".html", ".css", ".md", ".json", 
+      ".yaml", ".yml", ".sql", ".sh", ".php", ".txt"
+    ],
+    "search_depths": {
+      "shallow": 2,
+      "medium": 4,
+      "deep": 6
+    },
+    "max_results": 10
+  },
+  "auto_save": {
+    "enabled": true,
+    "base_folder": "claude_generated",
+    "date_format": "%Y-%m-%d",
+    "session_format": "session_%H%M%S",
+    "auto_organize": true,
+    "categories": {
+      "code": "01_code",
+      "config": "02_config",
+      "docs": "03_docs", 
+      "scripts": "04_scripts",
+      "data": "05_data",
+      "analysis": "06_analysis"
+    }
+  },
+  "search_patterns": {
+    "hooks": ["hook", "validation", "check", "unified", "統一"],
+    "config": ["config", "setting", "database", "auth", "設定"],
+    "ai": ["ai", "intelligent", "smart", "auto", "machine"],
+    "development": ["dev", "build", "deploy", "run", "開発"],
+    "database": ["db", "database", "sql", "データベース"],
+    "api": ["api", "service", "endpoint", "rest"],
+    "frontend": ["frontend", "ui", "component", "フロント"],
+    "backend": ["backend", "server", "バック"]
+  },
+  "ignored_directories": [
+    ".git", ".svn", "node_modules", "__pycache__", 
+    ".venv", "venv", ".env", "build", "dist"
+  ],
+  "file_categories": {
+    "python": [".py"],
+    "javascript": [".js", ".ts"],
+    "web": [".html", ".css"],
+    "config": [".json", ".yaml", ".yml", ".ini"],
+    "documentation": [".md", ".txt"],
+    "database": [".sql"],
+    "script": [".sh", ".bat"]
+  }
+}

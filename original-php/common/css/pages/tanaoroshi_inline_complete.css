@@ -1,0 +1,476 @@
+/* 🎯 N3準拠 棚卸しシステム専用CSS */
+/* 📁 common/css/pages/tanaoroshi_inline_complete.css */
+/* ✅ N3共通CSS変数継承・専用スタイル定義 */
+
+/* ===== N3共通CSS変数継承 ===== */
+/* common/css/core/common.cssの変数を使用 */
+
+/* ===== 専用: 棚卸しヘッダー ===== */
+.inventory__header {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    border-radius: var(--radius-xl);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-lg);
+    color: var(--text-white);
+    box-shadow: var(--shadow-lg);
+}
+
+.inventory__title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 var(--space-sm) 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.inventory__stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: var(--space-lg);
+    margin-top: var(--space-lg);
+}
+
+.inventory__stat {
+    text-align: center;
+    background: rgba(255, 255, 255, 0.1);
+    padding: var(--space-md);
+    border-radius: var(--radius-lg);
+    backdrop-filter: blur(10px);
+}
+
+.inventory__stat-number {
+    font-size: 1.5rem;
+    font-weight: 700;
+    display: block;
+    margin-bottom: var(--space-xs);
+}
+
+.inventory__stat-label {
+    font-size: 0.75rem;
+    opacity: 0.9;
+}
+
+/* ===== 専用: フィルターバー ===== */
+.inventory__filter-bar {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-xl);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-lg);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-light);
+}
+
+.inventory__filter-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: var(--space-lg);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.inventory__filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-lg);
+    margin-bottom: var(--space-lg);
+}
+
+.inventory__filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.inventory__filter-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.inventory__filter-select {
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    transition: var(--transition-fast);
+}
+
+.inventory__filter-select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.inventory__filter-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+}
+
+/* ===== 専用: 検索ボックス ===== */
+.inventory__search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    max-width: 300px;
+}
+
+.inventory__search-icon {
+    position: absolute;
+    left: var(--space-md);
+    color: var(--text-muted);
+    z-index: 2;
+}
+
+.inventory__search-input {
+    width: 100%;
+    padding: var(--space-sm) var(--space-md) var(--space-sm) 2.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    transition: var(--transition-fast);
+}
+
+.inventory__search-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* ===== 専用: ビューコントロール ===== */
+.inventory__view-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-lg);
+    flex-wrap: wrap;
+    gap: var(--space-md);
+}
+
+.inventory__view-toggle {
+    display: flex;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xs);
+    border: 1px solid var(--border-color);
+}
+
+.inventory__view-btn {
+    padding: var(--space-sm) var(--space-lg);
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: var(--radius-md);
+    transition: var(--transition-fast);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.inventory__view-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.inventory__view-btn--active {
+    background: var(--color-primary);
+    color: var(--text-white);
+}
+
+.inventory__actions {
+    display: flex;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+}
+
+/* ===== 🎯 専用: カードグリッド（N3準拠・8枚横並び） ===== */
+.inventory__grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: var(--space-md);
+    padding: var(--space-md);
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-lg);
+    min-height: 400px;
+}
+
+/* ===== 🎯 専用: 商品カード ===== */
+.inventory__card,
+.product-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    cursor: pointer;
+    transition: var(--transition-normal);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 250px;
+    box-shadow: var(--shadow-sm);
+}
+
+.inventory__card:hover,
+.product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--color-primary);
+}
+
+/* ===== 専用: カード画像エリア ===== */
+.inventory__card-image,
+.product-card__image-container {
+    width: 100%;
+    height: 180px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-tertiary);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.inventory__card-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: var(--text-muted);
+    background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-hover));
+}
+
+.inventory__card-placeholder i {
+    font-size: 2rem;
+    margin-bottom: var(--space-sm);
+    opacity: 0.6;
+}
+
+.inventory__card-placeholder span {
+    font-size: 0.875rem;
+    font-weight: 500;
+    opacity: 0.8;
+}
+
+/* ===== 専用: カード情報エリア ===== */
+.inventory__card-info,
+.product-card__info {
+    padding: var(--space-sm);
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-light);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex: 1;
+}
+
+.inventory__card-title,
+.product-card__title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.3;
+    margin-bottom: var(--space-xs);
+    color: var(--text-primary);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.inventory__card-price,
+.product-card__price {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-success);
+    margin-bottom: var(--space-xs);
+}
+
+.inventory__card-footer,
+.product-card__footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+/* ===== 専用: バッジシステム ===== */
+.inventory__badge,
+.product-card__badge {
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-white);
+}
+
+.inventory__badge--stock,
+.product-card__badge--stock {
+    background: var(--color-success);
+}
+
+.inventory__badge--dropship,
+.product-card__badge--dropship {
+    background: var(--color-warning);
+}
+
+.inventory__badge--set,
+.product-card__badge--set {
+    background: var(--color-danger);
+}
+
+.inventory__badge--hybrid,
+.product-card__badge--hybrid {
+    background: var(--color-info);
+}
+
+/* ===== 専用: ビュー切り替え ===== */
+.inventory__view {
+    display: none;
+}
+
+.inventory__view--visible {
+    display: block;
+}
+
+.inventory__view--hidden {
+    display: none;
+}
+
+/* ===== 専用: Excelビュー ===== */
+#excel-view {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-xl);
+    padding: var(--space-lg);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-light);
+    overflow-x: auto;
+}
+
+.excel-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: var(--space-sm);
+    font-size: 0.875rem;
+}
+
+.excel-table th,
+.excel-table td {
+    border: 1px solid var(--border-color);
+    padding: var(--space-sm);
+    text-align: left;
+    vertical-align: middle;
+}
+
+.excel-table th {
+    background: var(--bg-tertiary);
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* ===== 専用: データベース状態表示 ===== */
+.database-status {
+    position: fixed;
+    top: var(--space-md);
+    left: var(--space-md);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-lg);
+    font-size: 0.75rem;
+    font-weight: 500;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    transition: var(--transition-normal);
+}
+
+.database-status--connected {
+    background: var(--color-success);
+    color: var(--text-white);
+}
+
+.database-status--disconnected {
+    background: var(--color-warning);
+    color: var(--text-white);
+}
+
+.database-status--error {
+    background: var(--color-danger);
+    color: var(--text-white);
+}
+
+/* ===== レスポンシブ対応 ===== */
+@media (max-width: 1400px) {
+    .inventory__grid {
+        grid-template-columns: repeat(6, 1fr);
+    }
+}
+
+@media (max-width: 1000px) {
+    .inventory__grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    
+    .inventory__view-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .inventory__actions {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 768px) {
+    .inventory__grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: var(--space-sm);
+        padding: var(--space-sm);
+    }
+    
+    .inventory__card,
+    .product-card {
+        height: 200px;
+    }
+    
+    .inventory__card-image,
+    .product-card__image-container {
+        height: 140px;
+    }
+    
+    .inventory__filter-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .inventory__grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 400px) {
+    .inventory__grid {
+        grid-template-columns: 1fr;
+    }
+}

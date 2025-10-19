@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>統一商品登録システム</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f1f5f9;
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --radius: 0.375rem;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: var(--radius);
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+
+        .product-types {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .product-type-card {
+            background: var(--bg-secondary);
+            border-radius: var(--radius);
+            padding: 2rem;
+            border: 2px solid var(--border);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .product-type-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .product-type-card.active {
+            border-color: var(--primary);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .type-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .type-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .type-description {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .form-section {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: var(--radius);
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 0.875rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .image-upload {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--bg-tertiary);
+        }
+
+        .image-upload:hover {
+            border-color: var(--primary);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .image-upload.dragover {
+            border-color: var(--success);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .upload-text {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .image-preview {
+            display: none;
+            max-width: 200px;
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: var(--radius);
+            margin: 1rem auto;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: var(--radius);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+
+        .actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .sku-management {
+            background: var(--bg-tertiary);
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .sku-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--bg-secondary);
+        }
+
+        .sku-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .sku-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .sku-item:last-child {
+            border-bottom: none;
+        }
+
+        .sku-checkbox {
+            margin-right: 0.75rem;
+        }
+
+        .sku-info {
+            flex: 1;
+        }
+
+        .sku-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .sku-details {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .sku-quantity {
+            width: 80px;
+            margin-left: 0.75rem;
+        }
+
+        .notice {
+            padding: 1rem;
+            border-radius: var(--radius);
+            margin: 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .notice-info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+
+        .notice-success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #86efac;
+        }
+
+        .notice-warning {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fbbf24;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .product-types {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-plus-circle"></i> 統一商品登録システム</h1>
+            <p>在庫・無在庫・ハイブリッド・セット品に対応した次世代商品登録</p>
+        </div>
+
+        <!-- 商品タイプ選択 -->
+        <div class="product-types">
+            <div class="product-type-card active" data-type="stock">
+                <div class="type-icon">
+                    <i class="fas fa-warehouse"></i>
+                </div>
+                <div class="type-title">有在庫商品</div>
+                <div class="type-description">
+                    実在庫を持つ通常商品。在庫数管理あり。
+                </div>
+            </div>
+
+            <div class="product-type-card" data-type="dropship">
+                <div class="type-icon">
+                    <i class="fas fa-truck"></i>
+                </div>
+                <div class="type-title">無在庫商品</div>
+                <div class="type-description">
+                    ドロップシッピング商品。仕入先から直送。
+                </div>
+            </div>
+
+            <div class="product-type-card" data-type="hybrid">
+                <div class="type-icon">
+                    <i class="fas fa-sync-alt"></i>
+                </div>
+                <div class="type-title">ハイブリッド商品</div>
+                <div class="type-description">
+                    在庫・無在庫を併用。複数調達ルート。
+                </div>
+            </div>
+
+            <div class="product-type-card" data-type="set">
+                <div class="type-icon">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+                <div class="type-title">セット商品</div>
+                <div class="type-description">
+                    複数SKUの組み合わせセット商品。
+                </div>
+            </div>
+        </div>
+
+        <!-- SKU管理（セット・ハイブリッド用） -->
+        <div id="skuManagement" class="sku-management">
+            <div class="section-title">
+                <i class="fas fa-barcode"></i>
+                構成SKU選択
+            </div>
+            
+            <div class="sku-list" id="skuList">
+                <!-- SKUリストは動的生成 -->
+            </div>
+            
+            <div class="notice notice-info">
+                <i class="fas fa-info-circle"></i>
+                セット・ハイブリッド商品の構成SKUを選択し、数量を設定してください。
+            </div>
+        </div>
+
+        <!-- 基本情報 -->
+        <div class="form-section">
+            <div class="section-title">
+                <i class="fas fa-edit"></i>
+                基本情報
+            </div>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">商品名 <span style="color: var(--danger);">*</span></label>
+                    <input type="text" class="form-input" id="productName" placeholder="商品名を入力" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">SKU <span style="color: var(--danger);">*</span></label>
+                    <input type="text" class="form-input" id="productSku" placeholder="SKU-XXX-001" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">カテゴリ</label>
+                    <select class="form-select" id="productCategory">
+                        <option value="">カテゴリを選択</option>
+                        <option value="electronics">エレクトロニクス</option>
+                        <option value="fashion">ファッション</option>
+                        <option value="home">ホーム・ガーデン</option>
+                        <option value="sports">スポーツ・アウトドア</option>
+                        <option value="books">本・メディア</option>
+                        <option value="other">その他</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">商品状態</label>
+                    <select class="form-select" id="productCondition">
+                        <option value="new">新品</option>
+                        <option value="used-like-new">未使用に近い</option>
+                        <option value="used-very-good">非常に良い</option>
+                        <option value="used-good">良い</option>
+                        <option value="used-acceptable">可</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">ブランド</label>
+                    <input type="text" class="form-input" id="productBrand" placeholder="ブランド名">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">モデル番号</label>
+                    <input type="text" class="form-input" id="productModel" placeholder="モデル番号">
+                </div>
+            </div>
+        </div>
+
+        <!-- 価格設定 -->
+        <div class="form-section">
+            <div class="section-title">
+                <i class="fas fa-dollar-sign"></i>
+                価格設定
+            </div>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">販売価格 (USD) <span style="color: var(--danger);">*</span></label>
+                    <input type="number" class="form-input" id="salePrice" placeholder="0.00" step="0.01" min="0" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">仕入価格 (USD)</label>
+                    <input type="number" class="form-input" id="costPrice" placeholder="0.00" step="0.01" min="0">
+                </div>
+
+                <div class="form-group" id="stockField">
+                    <label class="form-label">在庫数</label>
+                    <input type="number" class="form-input" id="stockQuantity" placeholder="0" min="0" value="1">
+                </div>
+
+                <div class="form-group" id="supplierField" style="display: none;">
+                    <label class="form-label">仕入先</label>
+                    <input type="text" class="form-input" id="supplier" placeholder="AliExpress, Amazon等">
+                </div>
+            </div>
+        </div>
+
+        <!-- 商品画像 -->
+        <div class="form-section">
+            <div class="section-title">
+                <i class="fas fa-camera"></i>
+                商品画像
+            </div>
+            
+            <div class="image-upload" onclick="document.getElementById('imageInput').click();" 
+                 ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                <input type="file" id="imageInput" style="display: none;" accept="image/*" onchange="handleImageUpload(event)">
+                <div class="upload-icon">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <div class="upload-text">
+                    <strong>画像をアップロード</strong><br>
+                    ドラッグ&ドロップまたはクリックして選択
+                </div>
+                <img id="imagePreview" class="image-preview" alt="プレビュー">
+            </div>
+        </div>
+
+        <!-- 商品説明 -->
+        <div class="form-section">
+            <div class="section-title">
+                <i class="fas fa-align-left"></i>
+                商品説明
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">商品説明 <span style="color: var(--danger);">*</span></label>
+                <textarea class="form-textarea" id="productDescription" placeholder="商品の詳細な説明を入力してください..." required></textarea>
+            </div>
+        </div>
+
+        <!-- アクション -->
+        <div class="actions">
+            <div>
+                <button class="btn btn-secondary" onclick="resetForm()">
+                    <i class="fas fa-undo"></i> リセット
+                </button>
+                <button class="btn btn-secondary" onclick="saveDraft()">
+                    <i class="fas fa-save"></i> 下書き保存
+                </button>
+            </div>
+            <div>
+                <button class="btn btn-success" onclick="registerProduct()">
+                    <i class="fas fa-plus"></i> 商品を登録
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // グローバル変数
+        let currentProductType = 'stock';
+        let selectedSkus = new Map();
+        let uploadedImage = null;
+
+        // 利用可能SKUデータ（実際の運用ではAPIから取得）
+        const availableSkus = [
+            { sku: 'SKU-001', name: 'ワイヤレスイヤホン', price: 50.00, stock: 100 },
+            { sku: 'SKU-002', name: 'USB充電ケーブル', price: 15.00, stock: 200 },
+            { sku: 'SKU-003', name: '保護ケース', price: 25.00, stock: 150 },
+            { sku: 'SKU-004', name: '画面保護フィルム', price: 10.00, stock: 300 },
+            { sku: 'SKU-005', name: 'バッテリーパック', price: 40.00, stock: 80 }
+        ];
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            setupProductTypeSelection();
+            generateSkuList();
+            console.log('統一商品登録システム初期化完了');
+        });
+
+        // 商品タイプ選択
+        function setupProductTypeSelection() {
+            const typeCards = document.querySelectorAll('.product-type-card');
+            
+            typeCards.forEach(card => {
+                card.addEventListener('click', () => {
+                    // 既存の選択を解除
+                    typeCards.forEach(c => c.classList.remove('active'));
+                    
+                    // 新しい選択を設定
+                    card.classList.add('active');
+                    currentProductType = card.dataset.type;
+                    
+                    updateFormByType(currentProductType);
+                });
+            });
+        }
+
+        // タイプに応じたフォーム更新
+        function updateFormByType(type) {
+            const stockField = document.getElementById('stockField');
+            const supplierField = document.getElementById('supplierField');
+            const skuManagement = document.getElementById('skuManagement');
+            
+            // 全て非表示にしてリセット
+            stockField.style.display = 'none';
+            supplierField.style.display = 'none';
+            skuManagement.style.display = 'none';
+            
+            switch(type) {
+                case 'stock':
+                    stockField.style.display = 'block';
+                    break;
+                    
+                case 'dropship':
+                    supplierField.style.display = 'block';
+                    document.getElementById('stockQuantity').value = '';
+                    break;
+                    
+                case 'hybrid':
+                    stockField.style.display = 'block';
+                    supplierField.style.display = 'block';
+                    skuManagement.style.display = 'block';
+                    break;
+                    
+                case 'set':
+                    skuManagement.style.display = 'block';
+                    document.getElementById('stockQuantity').value = '';
+                    break;
+            }
+            
+            console.log('商品タイプ変更:', type);
+        }
+
+        // SKUリスト生成
+        function generateSkuList() {
+            const skuList = document.getElementById('skuList');
+            skuList.innerHTML = '';
+            
+            availableSkus.forEach(sku => {
+                const skuItem = document.createElement('div');
+                skuItem.className = 'sku-item';
+                
+                skuItem.innerHTML = `
+                    <input type="checkbox" class="sku-checkbox" id="sku-${sku.sku}" onchange="toggleSku('${sku.sku}')">
+                    <div class="sku-info">
+                        <div class="sku-name">${sku.name}</div>
+                        <div class="sku-details">${sku.sku} - $${sku.price.toFixed(2)} (在庫: ${sku.stock})</div>
+                    </div>
+                    <input type="number" class="form-input sku-quantity" id="qty-${sku.sku}" placeholder="数量" min="1" value="1" disabled>
+                `;
+                
+                skuList.appendChild(skuItem);
+            });
+        }
+
+        // SKU選択切り替え
+        function toggleSku(sku) {
+            const checkbox = document.getElementById(`sku-${sku}`);
+            const quantityInput = document.getElementById(`qty-${sku}`);
+            
+            if (checkbox.checked) {
+                quantityInput.disabled = false;
+                selectedSkus.set(sku, parseInt(quantityInput.value) || 1);
+            } else {
+                quantityInput.disabled = true;
+                selectedSkus.delete(sku);
+            }
+            
+            // 数量変更イベント
+            quantityInput.addEventListener('input', () => {
+                if (checkbox.checked) {
+                    selectedSkus.set(sku, parseInt(quantityInput.value) || 1);
+                }
+            });
+            
+            console.log('選択SKU:', selectedSkus);
+        }
+
+        // 画像アップロード
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.type.startsWith('image/')) {
+                alert('画像ファイルを選択してください。');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('imagePreview');
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                uploadedImage = e.target.result;
+                
+                console.log('画像アップロード完了');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ドラッグ&ドロップ
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.currentTarget.classList.add('dragover');
+        }
+
+        function handleDragLeave(event) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('dragover');
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('dragover');
+            
+            const files = event.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('image/')) {
+                const file = files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('imagePreview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    uploadedImage = e.target.result;
+                    
+                    console.log('ドラッグ&ドロップで画像アップロード完了');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // バリデーション
+        function validateForm() {
+            const errors = [];
+            
+            const productName = document.getElementById('productName').value;
+            if (!productName.trim()) {
+                errors.push('商品名は必須です。');
+            }
+            
+            const productSku = document.getElementById('productSku').value;
+            if (!productSku.trim()) {
+                errors.push('SKUは必須です。');
+            }
+            
+            const salePrice = parseFloat(document.getElementById('salePrice').value);
+            if (!salePrice || salePrice <= 0) {
+                errors.push('販売価格を正しく入力してください。');
+            }
+            
+            const productDescription = document.getElementById('productDescription').value;
+            if (!productDescription.trim()) {
+                errors.push('商品説明は必須です。');
+            }
+            
+            // セット商品の場合、SKU選択チェック
+            if (currentProductType === 'set' && selectedSkus.size === 0) {
+                errors.push('セット商品にはSKUを選択してください。');
+            }
+            
+            return errors;
+        }
+
+        // 商品登録
+        function registerProduct() {
+            const errors = validateForm();
+            
+            if (errors.length > 0) {
+                alert('入力エラー:\n' + errors.join('\n'));
+                return;
+            }
+            
+            const productData = {
+                type: currentProductType,
+                name: document.getElementById('productName').value,
+                sku: document.getElementById('productSku').value,
+                category: document.getElementById('productCategory').value,
+                condition: document.getElementById('productCondition').value,
+                brand: document.getElementById('productBrand').value,
+                model: document.getElementById('productModel').value,
+                salePrice: parseFloat(document.getElementById('salePrice').value),
+                costPrice: parseFloat(document.getElementById('costPrice').value) || 0,
+                stockQuantity: parseInt(document.getElementById('stockQuantity').value) || 0,
+                supplier: document.getElementById('supplier').value,
+                description: document.getElementById('productDescription').value,
+                image: uploadedImage,
+                selectedSkus: Array.from(selectedSkus.entries()),
+                timestamp: new Date().toISOString()
+            };
+            
+            console.log('商品登録データ:', productData);
+            
+            // 実際の運用ではAPIに送信
+            if (confirm('商品を登録しますか？')) {
+                // 仮の成功処理
+                alert('商品が正常に登録されました！\n\nSKU: ' + productData.sku + '\n商品名: ' + productData.name);
+                resetForm();
+            }
+        }
+
+        // 下書き保存
+        function saveDraft() {
+            const draftData = {
+                type: currentProductType,
+                name: document.getElementById('productName').value,
+                sku: document.getElementById('productSku').value,
+                salePrice: document.getElementById('salePrice').value,
+                description: document.getElementById('productDescription').value,
+                timestamp: new Date().toISOString()
+            };
+            
+            localStorage.setItem('productDraft', JSON.stringify(draftData));
+            
+            // 成功通知を表示
+            const notice = document.createElement('div');
+            notice.className = 'notice notice-success';
+            notice.innerHTML = '<i class="fas fa-check"></i> 下書きを保存しました';
+            notice.style.position = 'fixed';
+            notice.style.top = '20px';
+            notice.style.right = '20px';
+            notice.style.zIndex = '1000';
+            
+            document.body.appendChild(notice);
+            
+            setTimeout(() => {
+                notice.remove();
+            }, 3000);
+            
+            console.log('下書き保存完了');
+        }
+
+        // フォームリセット
+        function resetForm() {
+            if (confirm('入力内容をリセットしますか？')) {
+                document.getElementById('productName').value = '';
+                document.getElementById('productSku').value = '';
+                document.getElementById('productCategory').value = '';
+                document.getElementById('productCondition').value = 'new';
+                document.getElementById('productBrand').value = '';
+                document.getElementById('productModel').value = '';
+                document.getElementById('salePrice').value = '';
+                document.getElementById('costPrice').value = '';
+                document.getElementById('stockQuantity').value = '1';
+                document.getElementById('supplier').value = '';
+                document.getElementById('productDescription').value = '';
+                
+                // 画像リセット
+                document.getElementById('imageInput').value = '';
+                document.getElementById('imagePreview').style.display = 'none';
+                uploadedImage = null;
+                
+                // SKU選択リセット
+                selectedSkus.clear();
+                document.querySelectorAll('.sku-checkbox').forEach(cb => cb.checked = false);
+                document.querySelectorAll('.sku-quantity').forEach(input => {
+                    input.disabled = true;
+                    input.value = '1';
+                });
+                
+                // タイプを有在庫に戻す
+                document.querySelectorAll('.product-type-card').forEach(card => {
+                    card.classList.remove('active');
+                });
+                document.querySelector('[data-type="stock"]').classList.add('active');
+                currentProductType = 'stock';
+                updateFormByType('stock');
+                
+                console.log('フォームリセット完了');
+            }
+        }
+
+        // 下書き読み込み（ページ読み込み時）
+        function loadDraft() {
+            const draftData = localStorage.getItem('productDraft');
+            if (draftData) {
+                const data = JSON.parse(draftData);
+                
+                if (confirm('保存されている下書きがあります。読み込みますか？')) {
+                    document.getElementById('productName').value = data.name || '';
+                    document.getElementById('productSku').value = data.sku || '';
+                    document.getElementById('salePrice').value = data.salePrice || '';
+                    document.getElementById('productDescription').value = data.description || '';
+                    
+                    if (data.type) {
+                        document.querySelectorAll('.product-type-card').forEach(card => {
+                            card.classList.remove('active');
+                        });
+                        document.querySelector(`[data-type="${data.type}"]`).classList.add('active');
+                        currentProductType = data.type;
+                        updateFormByType(data.type);
+                    }
+                    
+                    console.log('下書き読み込み完了');
+                }
+            }
+        }
+
+        // ページ読み込み時に下書きチェック
+        window.addEventListener('load', loadDraft);
+    </script>
+</body>
+</html>

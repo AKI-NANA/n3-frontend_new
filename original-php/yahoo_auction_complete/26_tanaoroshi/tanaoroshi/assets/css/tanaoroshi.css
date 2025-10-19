@@ -1,0 +1,600 @@
+/**
+ * NAGANO3 在庫管理システム 専用CSS
+ * N3準拠 ページ固有スタイル
+ * Bootstrap 5.3.0 カスタマイズ・拡張
+ */
+
+/* ===== カスタムCSS変数 ===== */
+:root {
+    --inventory-primary: #007bff;
+    --inventory-success: #28a745;
+    --inventory-warning: #ffc107;
+    --inventory-danger: #dc3545;
+    --inventory-info: #17a2b8;
+    
+    --inventory-border-radius: 8px;
+    --inventory-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    --inventory-transition: all 0.3s ease;
+}
+
+/* ===== Hook統合状態表示 ===== */
+.hook-status .badge {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.8rem;
+    border-radius: var(--inventory-border-radius);
+    margin-right: 0.5rem;
+    transition: var(--inventory-transition);
+}
+
+.hook-status .badge:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--inventory-shadow);
+}
+
+/* ===== 統計ダッシュボード ===== */
+.card.bg-primary,
+.card.bg-success,
+.card.bg-warning,
+.card.bg-info {
+    border: none;
+    border-radius: var(--inventory-border-radius);
+    box-shadow: var(--inventory-shadow);
+    transition: var(--inventory-transition);
+}
+
+.card.bg-primary:hover,
+.card.bg-success:hover,
+.card.bg-warning:hover,
+.card.bg-info:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+}
+
+/* ===== 在庫テーブル ===== */
+#inventory-table {
+    border-radius: var(--inventory-border-radius);
+    overflow: hidden;
+    box-shadow: var(--inventory-shadow);
+}
+
+#inventory-table thead th {
+    background: linear-gradient(135deg, #495057, #6c757d);
+    border: none;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    font-size: 0.875rem;
+    padding: 1rem 0.75rem;
+}
+
+#inventory-table tbody tr {
+    transition: var(--inventory-transition);
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+#inventory-table tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+#inventory-table td {
+    padding: 0.875rem 0.75rem;
+    vertical-align: middle;
+    border: none;
+}
+
+/* ===== フォーム要素 ===== */
+.form-control,
+.form-select {
+    border-radius: var(--inventory-border-radius);
+    border: 1px solid #dee2e6;
+    transition: var(--inventory-transition);
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--inventory-primary);
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    transform: translateY(-1px);
+}
+
+.form-control-sm {
+    border-radius: calc(var(--inventory-border-radius) / 1.5);
+}
+
+/* ===== ボタン ===== */
+.btn {
+    border-radius: var(--inventory-border-radius);
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    transition: var(--inventory-transition);
+    border: none;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--inventory-shadow);
+}
+
+.btn-sm {
+    border-radius: calc(var(--inventory-border-radius) / 1.5);
+    font-size: 0.75rem;
+}
+
+.btn-group-sm .btn {
+    padding: 0.375rem 0.5rem;
+}
+
+/* ===== Badge・ステータス表示 ===== */
+.badge {
+    border-radius: calc(var(--inventory-border-radius) / 2);
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    padding: 0.5rem 0.75rem;
+}
+
+.badge.bg-success {
+    background: linear-gradient(135deg, #28a745, #20c997) !important;
+}
+
+.badge.bg-warning {
+    background: linear-gradient(135deg, #ffc107, #fd7e14) !important;
+    color: #212529 !important;
+}
+
+.badge.bg-danger {
+    background: linear-gradient(135deg, #dc3545, #e83e8c) !important;
+}
+
+.badge.bg-info {
+    background: linear-gradient(135deg, #17a2b8, #6f42c1) !important;
+}
+
+.badge.bg-secondary {
+    background: linear-gradient(135deg, #6c757d, #495057) !important;
+}
+
+/* ===== アラート・メッセージ ===== */
+.alert {
+    border: none;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    border-left: 4px solid;
+}
+
+.alert-success {
+    border-left-color: var(--color-success);
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(32, 201, 151, 0.1));
+}
+
+.alert-warning {
+    border-left-color: var(--color-warning);
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(253, 126, 20, 0.1));
+}
+
+.alert-danger {
+    border-left-color: var(--color-danger);
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(232, 62, 140, 0.1));
+}
+
+.alert-info {
+    border-left-color: var(--color-info);
+    background: linear-gradient(135deg, rgba(23, 162, 184, 0.1), rgba(111, 66, 193, 0.1));
+}
+
+/* ===== フォーム要素 ===== */
+.form-control,
+.form-select {
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    transition: var(--transition-fast);
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    transform: translateY(-1px);
+}
+
+/* ===== ローディング・スピナー ===== */
+.spinner-border {
+    animation-duration: 0.8s;
+}
+
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.1em;
+}
+
+/* ===== ユーティリティクラス ===== */
+.opacity-75 {
+    opacity: 0.75;
+}
+
+.text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.shadow-sm {
+    box-shadow: var(--shadow-sm) !important;
+}
+
+.shadow {
+    box-shadow: var(--shadow-md) !important;
+}
+
+.rounded {
+    border-radius: var(--radius-md) !important;
+}
+
+/* ===== テーブル専用スタイル ===== */
+.table-responsive {
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+}
+
+/* ===== レスポンシブ対応 ===== */
+@media (max-width: 1200px) {
+    .inventory__chart-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .content {
+        padding: var(--space-md);
+    }
+    
+    .inventory__header-top {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .inventory__filter-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .inventory__filter-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .inventory__chart-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .btn {
+        font-size: 0.875rem;
+    }
+    
+    #inventory-table th,
+    #inventory-table td {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.875rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .badge {
+        font-size: 0.65rem;
+        padding: 0.35rem 0.5rem;
+    }
+    
+    .inventory__stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* ===== 印刷用スタイル ===== */
+@media print {
+    .btn,
+    .alert {
+        display: none !important;
+    }
+    
+    .card {
+        box-shadow: none !important;
+        border: 1px solid var(--border-color) !important;
+    }
+    
+    .table {
+        font-size: 0.75rem;
+    }
+}
+
+/* ===== アニメーション ===== */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+/* ===== カスタムスクロールバー（Webkit） ===== */
+.table-responsive::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #0056b3, #520dc2);
+}
+
+/* ===== フォーカス可視化（アクセシビリティ） ===== */
+.btn:focus,
+.form-control:focus,
+.form-select:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* ===== ダークモード対応（将来用） ===== */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --shadow-sm: 0 2px 10px rgba(255,255,255,0.1);
+        --shadow-md: 0 4px 6px -1px rgba(255,255,255,0.1);
+    }
+} #ffc107, #fd7e14) !important;
+    color: #212529 !important;
+}
+
+.badge.bg-danger {
+    background: linear-gradient(135deg, #dc3545, #e83e8c) !important;
+}
+
+.badge.bg-info {
+    background: linear-gradient(135deg, #17a2b8, #6f42c1) !important;
+}
+
+.badge.bg-secondary {
+    background: linear-gradient(135deg, #6c757d, #495057) !important;
+}
+
+/* ===== カード ===== */
+.card {
+    border: none;
+    border-radius: var(--inventory-border-radius);
+    box-shadow: var(--inventory-shadow);
+    transition: var(--inventory-transition);
+}
+
+.card:hover {
+    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+}
+
+.card-header {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    border-radius: var(--inventory-border-radius) var(--inventory-border-radius) 0 0 !important;
+    font-weight: 600;
+    padding: 1rem 1.25rem;
+}
+
+.card-body {
+    padding: 1.25rem;
+}
+
+/* ===== モーダル ===== */
+.modal-content {
+    border: none;
+    border-radius: var(--inventory-border-radius);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #007bff, #6610f2);
+    color: white;
+    border-radius: var(--inventory-border-radius) var(--inventory-border-radius) 0 0;
+    border-bottom: none;
+}
+
+.modal-header .btn-close {
+    filter: invert(1);
+}
+
+.modal-title {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* ===== アラート・メッセージ ===== */
+.alert {
+    border: none;
+    border-radius: var(--inventory-border-radius);
+    box-shadow: var(--inventory-shadow);
+    border-left: 4px solid;
+}
+
+.alert-success {
+    border-left-color: var(--inventory-success);
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(32, 201, 151, 0.1));
+}
+
+.alert-warning {
+    border-left-color: var(--inventory-warning);
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(253, 126, 20, 0.1));
+}
+
+.alert-danger {
+    border-left-color: var(--inventory-danger);
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(232, 62, 140, 0.1));
+}
+
+.alert-info {
+    border-left-color: var(--inventory-info);
+    background: linear-gradient(135deg, rgba(23, 162, 184, 0.1), rgba(111, 66, 193, 0.1));
+}
+
+/* ===== テーブル専用スタイル ===== */
+.table-responsive {
+    border-radius: var(--inventory-border-radius);
+    box-shadow: var(--inventory-shadow);
+}
+
+.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+}
+
+/* ===== ローディング・スピナー ===== */
+.spinner-border {
+    animation-duration: 0.8s;
+}
+
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.1em;
+}
+
+/* ===== ユーティリティクラス ===== */
+.opacity-75 {
+    opacity: 0.75;
+}
+
+.text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.shadow-sm {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+}
+
+.shadow {
+    box-shadow: var(--inventory-shadow) !important;
+}
+
+.rounded {
+    border-radius: var(--inventory-border-radius) !important;
+}
+
+/* ===== レスポンシブ対応 ===== */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .btn {
+        font-size: 0.875rem;
+    }
+    
+    #inventory-table th,
+    #inventory-table td {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.875rem;
+    }
+    
+    .modal-dialog {
+        margin: 1rem 0.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.375rem;
+        font-size: 0.7rem;
+    }
+    
+    .badge {
+        font-size: 0.65rem;
+        padding: 0.35rem 0.5rem;
+    }
+}
+
+/* ===== 印刷用スタイル ===== */
+@media print {
+    .btn,
+    .modal,
+    .alert {
+        display: none !important;
+    }
+    
+    .card {
+        box-shadow: none !important;
+        border: 1px solid #dee2e6 !important;
+    }
+    
+    .table {
+        font-size: 0.75rem;
+    }
+}
+
+/* ===== アニメーション ===== */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+/* ===== カスタムスクロールバー（Webkit） ===== */
+.table-responsive::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #007bff, #6610f2);
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #0056b3, #520dc2);
+}
+
+/* ===== フォーカス可視化（アクセシビリティ） ===== */
+.btn:focus,
+.form-control:focus,
+.form-select:focus {
+    outline: 2px solid var(--inventory-primary);
+    outline-offset: 2px;
+}
+
+/* ===== ダークモード対応（将来用） ===== */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --inventory-shadow: 0 2px 10px rgba(255,255,255,0.1);
+    }
+}

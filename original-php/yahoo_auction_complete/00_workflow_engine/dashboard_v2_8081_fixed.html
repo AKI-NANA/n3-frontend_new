@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAGANO-3 統合ワークフロー監視ダッシュボード v2.0 - 修正版</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --info-color: #9b59b6;
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+            --background-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--background-gradient);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            background: rgba(44, 62, 80, 0.95);
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .sidebar-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar-header h1 {
+            font-size: 1.4em;
+            margin-bottom: 5px;
+        }
+        
+        .sidebar-header .version {
+            font-size: 0.8em;
+            opacity: 0.7;
+        }
+        
+        .port-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 0.9em;
+        }
+        
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+        
+        .connection-status.connected {
+            background: rgba(39, 174, 96, 0.2);
+            border: 1px solid rgba(39, 174, 96, 0.3);
+        }
+        
+        .connection-status.disconnected {
+            background: rgba(231, 76, 60, 0.2);
+            border: 1px solid rgba(231, 76, 60, 0.3);
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-indicator.connected {
+            background: #27ae60;
+        }
+        
+        .status-indicator.disconnected {
+            background: #e74c3c;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .sidebar-section {
+            margin-bottom: 25px;
+        }
+        
+        .sidebar-section h3 {
+            font-size: 1em;
+            margin-bottom: 15px;
+            color: #bdc3c7;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        
+        .queue-stats {
+            display: grid;
+            gap: 10px;
+        }
+        
+        .queue-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        
+        .queue-stat .label {
+            opacity: 0.8;
+        }
+        
+        .queue-stat .value {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .main-content {
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .header-title {
+            font-size: 1.8em;
+            color: var(--dark-color);
+            margin-bottom: 5px;
+        }
+        
+        .header-subtitle {
+            color: #7f8c8d;
+            font-size: 1em;
+        }
+        
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .control-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .control-btn:hover {
+            background: #2980b9;
+            transform: translateY(-1px);
+        }
+        
+        .control-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary-color);
+        }
+        
+        .stat-card.success::before { background: var(--success-color); }
+        .stat-card.warning::before { background: var(--warning-color); }
+        .stat-card.danger::before { background: var(--danger-color); }
+        
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .stat-icon {
+            font-size: 2em;
+            opacity: 0.8;
+        }
+        
+        .stat-trend {
+            font-size: 0.8em;
+            padding: 2px 6px;
+            border-radius: 10px;
+            background: rgba(39, 174, 96, 0.1);
+            color: var(--success-color);
+        }
+        
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: var(--dark-color);
+        }
+        
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 1em;
+            font-weight: 500;
+        }
+        
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 25px;
+        }
+        
+        .panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .panel-header {
+            padding: 20px;
+            border-bottom: 2px solid #ecf0f1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        }
+        
+        .panel-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: var(--dark-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .panel-content {
+            padding: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .workflow-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 5px solid var(--primary-color);
+            transition: all 0.3s ease;
+        }
+        
+        .workflow-item:hover {
+            background: #e3f2fd;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .workflow-item.processing {
+            border-left-color: var(--primary-color);
+        }
+        
+        .workflow-item.approved {
+            border-left-color: var(--success-color);
+        }
+        
+        .workflow-item.completed {
+            border-left-color: var(--success-color);
+        }
+        
+        .workflow-item.failed {
+            border-left-color: var(--danger-color);
+        }
+        
+        .workflow-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .workflow-id {
+            font-weight: bold;
+            color: var(--dark-color);
+            font-size: 1.1em;
+        }
+        
+        .workflow-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .workflow-progress {
+            margin: 15px 0;
+        }
+        
+        .progress-bar {
+            background: #ecf0f1;
+            border-radius: 10px;
+            height: 8px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), #2980b9);
+            transition: width 0.5s ease;
+        }
+        
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 0.9em;
+            color: #7f8c8d;
+        }
+        
+        .workflow-meta {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+            font-size: 0.85em;
+            color: #666;
+        }
+        
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .workflow-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+        }
+        
+        .action-btn {
+            background: var(--success-color);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: background 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .action-btn:hover {
+            background: #229954;
+        }
+        
+        .action-btn.danger {
+            background: var(--danger-color);
+        }
+        
+        .action-btn.danger:hover {
+            background: #c0392b;
+        }
+        
+        .action-btn.warning {
+            background: var(--warning-color);
+        }
+        
+        .action-btn.warning:hover {
+            background: #d68910;
+        }
+        
+        .alerts-container {
+            margin-bottom: 20px;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: alert-slide-in 0.3s ease;
+        }
+        
+        .alert.warning {
+            background: rgba(243, 156, 18, 0.1);
+            border: 1px solid rgba(243, 156, 18, 0.3);
+            color: #d68910;
+        }
+        
+        .alert.critical {
+            background: rgba(231, 76, 60, 0.1);
+            border: 1px solid rgba(231, 76, 60, 0.3);
+            color: #c0392b;
+        }
+        
+        .alert.info {
+            background: rgba(52, 152, 219, 0.1);
+            border: 1px solid rgba(52, 152, 219, 0.3);
+            color: #2980b9;
+        }
+        
+        @keyframes alert-slide-in {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .chart-container {
+            height: 200px;
+            margin: 20px 0;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+        
+        .empty-state i {
+            font-size: 3em;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        
+        .loading {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .system-metrics {
+            display: grid;
+            gap: 10px;
+            font-size: 0.9em;
+        }
+        
+        .metric-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .metric-value {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        @media (max-width: 1200px) {
+            .dashboard-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                order: 2;
+                max-height: none;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .workflow-meta {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- サイドバー -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1><i class="fas fa-cogs"></i> NAGANO-3</h1>
+                <div class="version">v2.0 - 修正版（8080）</div>
+            </div>
+            
+            <!-- ポート情報 -->
+            <div class="port-info">
+                <i class="fas fa-server"></i> ポート: 8080
+                <br>24ツールシステム統合
+            </div>
+            
+            <!-- 接続状態 -->
+            <div id="connectionStatus" class="connection-status disconnected">
+                <div class="status-indicator disconnected"></div>
+                <span>接続中...</span>
+            </div>
+            
+            <!-- キュー統計 -->
+            <div class="sidebar-section">
+                <h3><i class="fas fa-list"></i> キュー統計</h3>
+                <div class="queue-stats" id="queueStats">
+                    <div class="queue-stat">
+                        <span class="label">高優先度</span>
+                        <span class="value" id="highPriorityCount">0</span>
+                    </div>
+                    <div class="queue-stat">
+                        <span class="label">通常優先度</span>
+                        <span class="value" id="normalPriorityCount">0</span>
+                    </div>
+                    <div class="queue-stat">
+                        <span class="label">低優先度</span>
+                        <span class="value" id="lowPriorityCount">0</span>
+                    </div>
+                    <div class="queue-stat">
+                        <span class="label">処理中</span>
+                        <span class="value" id="processingCount">0</span>
+                    </div>
+                    <div class="queue-stat">
+                        <span class="label">完了</span>
+                        <span class="value" id="completedCount">0</span>
+                    </div>
+                    <div class="queue-stat">
+                        <span class="label">失敗</span>
+                        <span class="value" id="failedCount">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- システムメトリクス -->
+            <div class="sidebar-section">
+                <h3><i class="fas fa-server"></i> システム</h3>
+                <div class="system-metrics">
+                    <div class="metric-item">
+                        <span>メモリ使用量</span>
+                        <span class="metric-value" id="memoryUsage">0 MB</span>
+                    </div>
+                    <div class="metric-item">
+                        <span>CPU負荷</span>
+                        <span class="metric-value" id="cpuLoad">0%</span>
+                    </div>
+                    <div class="metric-item">
+                        <span>稼働時間</span>
+                        <span class="metric-value" id="uptime">0分</span>
+                    </div>
+                    <div class="metric-item">
+                        <span>成功率</span>
+                        <span class="metric-value" id="successRate">95%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- メインコンテンツ -->
+        <div class="main-content">
+            <!-- ヘッダー -->
+            <div class="header">
+                <div class="header-top">
+                    <div>
+                        <div class="header-title">リアルタイム監視ダッシュボード（修正版）</div>
+                        <div class="header-subtitle">Yahoo Auction → eBay 24ツール統合システム</div>
+                    </div>
+                    <div class="header-controls">
+                        <button class="control-btn" onclick="toggleAutoRefresh()">
+                            <i class="fas fa-pause" id="autoRefreshIcon"></i>
+                            <span id="autoRefreshText">自動更新 ON</span>
+                        </button>
+                        <button class="control-btn" onclick="refreshWorkflows()">
+                            <i class="fas fa-sync-alt"></i> 手動更新
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- アラート表示 -->
+            <div class="alerts-container" id="alertsContainer"></div>
+            
+            <!-- 統計カード -->
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="color: var(--primary-color);">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-trend" id="processingTrend">+0</div>
+                    </div>
+                    <div class="stat-value" id="totalProcessing">0</div>
+                    <div class="stat-label">処理中ワークフロー</div>
+                </div>
+                
+                <div class="stat-card success">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="color: var(--success-color);">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-trend" id="approvedTrend">+0</div>
+                    </div>
+                    <div class="stat-value" id="totalApproved">0</div>
+                    <div class="stat-label">承認済み</div>
+                </div>
+                
+                <div class="stat-card warning">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="color: var(--info-color);">
+                            <i class="fas fa-store"></i>
+                        </div>
+                        <div class="stat-trend" id="listedTrend">+0</div>
+                    </div>
+                    <div class="stat-value" id="totalListed">0</div>
+                    <div class="stat-label">出品完了</div>
+                </div>
+                
+                <div class="stat-card danger">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="color: var(--danger-color);">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-trend" id="failedTrend">+0</div>
+                    </div>
+                    <div class="stat-value" id="totalFailed">0</div>
+                    <div class="stat-label">エラー・失敗</div>
+                </div>
+            </div>
+            
+            <!-- コンテンツグリッド -->
+            <div class="content-grid">
+                <!-- ワークフロー監視パネル -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <i class="fas fa-tasks"></i> アクティブワークフロー
+                        </div>
+                        <button class="control-btn" onclick="refreshWorkflows()">
+                            <i class="fas fa-sync-alt" id="workflowRefreshIcon"></i> 更新
+                        </button>
+                    </div>
+                    <div class="panel-content">
+                        <div id="workflowList">
+                            <div class="empty-state">
+                                <i class="fas fa-search"></i>
+                                <p>ワークフローを読み込み中...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 統計・制御パネル -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <i class="fas fa-chart-line"></i> 統計・制御
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <!-- チャート -->
+                        <div class="chart-container">
+                            <canvas id="performanceChart"></canvas>
+                        </div>
+                        
+                        <!-- 手動実行セクション -->
+                        <div class="sidebar-section">
+                            <h3>手動実行</h3>
+                            <div style="margin-bottom: 10px;">
+                                <input type="text" id="manualProductIds" placeholder="商品ID (カンマ区切り)" 
+                                       style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px;">
+                                <button class="action-btn" onclick="executeManualFlow()" style="width: 100%;">
+                                    <i class="fas fa-rocket"></i> 承認フロー実行
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 24ツールリンク -->
+                        <div class="sidebar-section">
+                            <h3>24ツール</h3>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button class="action-btn" onclick="open24Tools()" style="flex: 1; min-width: 120px;">
+                                    <i class="fas fa-tools"></i> 24ツール
+                                </button>
+                                <button class="action-btn warning" onclick="openDashboard()" style="flex: 1; min-width: 120px;">
+                                    <i class="fas fa-tachometer-alt"></i> 統合DB
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // グローバル変数（簡素化）
+        let isAutoRefreshEnabled = true;
+        let performanceChart = null;
+        let refreshInterval = null;
+        let startTime = Date.now();
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('ダッシュボード初期化開始（修正版）');
+            initializeCharts();
+            connectAndStart();
+            setupEventHandlers();
+        });
+
+        // チャート初期化
+        function initializeCharts() {
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            performanceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: '処理中',
+                            data: [],
+                            borderColor: '#3498db',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: '完了',
+                            data: [],
+                            borderColor: '#27ae60',
+                            backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'エラー',
+                            data: [],
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // 接続開始
+        function connectAndStart() {
+            console.log('API接続とデータ取得を開始');
+            
+            // 初期データ取得
+            testAPI();
+            refreshWorkflows();
+            
+            // 定期更新開始
+            if (isAutoRefreshEnabled) {
+                startAutoRefresh();
+            }
+        }
+
+        // 自動更新開始
+        function startAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+            
+            refreshInterval = setInterval(() => {
+                if (isAutoRefreshEnabled) {
+                    refreshWorkflows();
+                    updateSystemUptime();
+                }
+            }, 5000); // 5秒間隔
+        }
+
+        // API接続テスト
+        async function testAPI() {
+            console.log('API接続テスト開始');
+            
+            try {
+                const response = await fetch('integrated_workflow_engine_8080.php?action=health_check');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateConnectionStatus('connected', 'API接続成功（8080ポート）');
+                    console.log('API接続成功');
+                } else {
+                    updateConnectionStatus('disconnected', 'API失敗: ' + data.message);
+                }
+                
+            } catch (error) {
+                console.error('API接続エラー:', error);
+                updateConnectionStatus('disconnected', 'API接続エラー: ' + error.message);
+            }
+        }
+
+        // ワークフロー更新
+        async function refreshWorkflows() {
+            console.log('ワークフロー更新開始');
+            
+            const icon = document.getElementById('workflowRefreshIcon');
+            if (icon) {
+                icon.classList.add('loading');
+            }
+            
+            try {
+                const response = await fetch('integrated_workflow_engine_8080.php?action=get_active_workflows');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    console.log(`ワークフロー取得成功: ${data.count}件`);
+                    updateWorkflowList(data.data);
+                    updateStats(data.data);
+                    updateChart(data.data);
+                } else {
+                    console.error('ワークフロー取得失敗:', data.message);
+                    showAlert('ワークフロー取得に失敗しました', 'warning');
+                }
+                
+            } catch (error) {
+                console.error('ワークフロー取得エラー:', error);
+                showAlert('ワークフロー更新エラー: ' + error.message, 'warning');
+            } finally {
+                if (icon) {
+                    icon.classList.remove('loading');
+                }
+            }
+        }
+
+        // ワークフロー一覧表示
+        function updateWorkflowList(workflows) {
+            const workflowList = document.getElementById('workflowList');
+            
+            if (workflows.length === 0) {
+                workflowList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <p>アクティブなワークフローはありません</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            workflows.forEach(workflow => {
+                const progress = calculateProgress(workflow.current_step || 1);
+                const statusClass = getStatusClass(workflow.status);
+                const stepName = getStepName(workflow.current_step || 1);
+
+                html += `
+                    <div class="workflow-item ${statusClass}">
+                        <div class="workflow-header">
+                            <div class="workflow-id">ワークフロー #${workflow.id}</div>
+                            <div class="workflow-status" style="background: ${getStatusColor(workflow.status)}">
+                                ${getStatusLabel(workflow.status)}
+                            </div>
+                        </div>
+                        <div class="workflow-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${progress}%"></div>
+                            </div>
+                            <div class="progress-text">
+                                <span>ステップ ${workflow.current_step || 1}/9 - ${stepName}</span>
+                                <span>${progress}%</span>
+                            </div>
+                        </div>
+                        <div class="workflow-meta">
+                            <div class="meta-item">
+                                <i class="fas fa-tag"></i>
+                                <span>Yahoo ID: ${workflow.yahoo_auction_id || '不明'}</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-clock"></i>
+                                <span>開始: ${formatDateTime(workflow.created_at)}</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-sync"></i>
+                                <span>更新: ${formatDateTime(workflow.updated_at)}</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-star"></i>
+                                <span>優先度: ${workflow.priority || 0}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            workflowList.innerHTML = html;
+        }
+
+        // 統計更新
+        function updateStats(workflows) {
+            const stats = {
+                processing: 0,
+                approved: 0,
+                completed: 0,
+                failed: 0
+            };
+            
+            workflows.forEach(wf => {
+                switch (wf.status) {
+                    case 'processing':
+                    case 'started':
+                        stats.processing++;
+                        break;
+                    case 'approved':
+                        stats.approved++;
+                        break;
+                    case 'completed':
+                    case 'listed':
+                        stats.completed++;
+                        break;
+                    case 'failed':
+                        stats.failed++;
+                        break;
+                }
+            });
+            
+            // 統計カード更新
+            animateValue(document.getElementById('totalProcessing'), stats.processing);
+            animateValue(document.getElementById('totalApproved'), stats.approved);
+            animateValue(document.getElementById('totalListed'), stats.completed);
+            animateValue(document.getElementById('totalFailed'), stats.failed);
+            
+            // サイドバー統計更新
+            document.getElementById('processingCount').textContent = stats.processing;
+            document.getElementById('completedCount').textContent = stats.completed;
+            document.getElementById('failedCount').textContent = stats.failed;
+            
+            console.log('統計更新完了:', stats);
+        }
+
+        // チャート更新
+        function updateChart(workflows) {
+            if (!performanceChart) return;
+
+            const now = new Date().toLocaleTimeString();
+            const stats = {
+                processing: workflows.filter(w => ['processing', 'started'].includes(w.status)).length,
+                completed: workflows.filter(w => ['completed', 'listed', 'approved'].includes(w.status)).length,
+                failed: workflows.filter(w => w.status === 'failed').length
+            };
+            
+            // データを追加
+            performanceChart.data.labels.push(now);
+            performanceChart.data.datasets[0].data.push(stats.processing);
+            performanceChart.data.datasets[1].data.push(stats.completed);
+            performanceChart.data.datasets[2].data.push(stats.failed);
+
+            // 古いデータを削除（最新20ポイントのみ保持）
+            if (performanceChart.data.labels.length > 20) {
+                performanceChart.data.labels.shift();
+                performanceChart.data.datasets.forEach(dataset => {
+                    dataset.data.shift();
+                });
+            }
+
+            performanceChart.update('none');
+        }
+
+        // 接続状態更新
+        function updateConnectionStatus(status, message) {
+            const statusElement = document.getElementById('connectionStatus');
+            const indicator = statusElement.querySelector('.status-indicator');
+            const text = statusElement.querySelector('span');
+
+            if (status === 'connected') {
+                statusElement.className = 'connection-status connected';
+                indicator.className = 'status-indicator connected';
+                text.textContent = message;
+            } else {
+                statusElement.className = 'connection-status disconnected';
+                indicator.className = 'status-indicator disconnected';
+                text.textContent = message;
+            }
+        }
+
+        // システム稼働時間更新
+        function updateSystemUptime() {
+            const uptimeElement = document.getElementById('uptime');
+            if (uptimeElement) {
+                const uptime = Math.floor((Date.now() - startTime) / 1000 / 60);
+                uptimeElement.textContent = uptime + '分';
+            }
+        }
+
+        // アラート表示
+        function showAlert(message, severity = 'info', duration = 5000) {
+            const alertsContainer = document.getElementById('alertsContainer');
+            const alertId = 'alert_' + Date.now();
+            
+            const alertHtml = `
+                <div class="alert ${severity}" id="${alertId}">
+                    <i class="fas ${getAlertIcon(severity)}"></i>
+                    <span>${message}</span>
+                    <i class="fas fa-times" onclick="closeAlert('${alertId}')" style="cursor: pointer; margin-left: auto;"></i>
+                </div>
+            `;
+            
+            alertsContainer.insertAdjacentHTML('afterbegin', alertHtml);
+            
+            // 自動削除
+            setTimeout(() => {
+                closeAlert(alertId);
+            }, duration);
+        }
+
+        // アラート削除
+        function closeAlert(alertId) {
+            const alert = document.getElementById(alertId);
+            if (alert) {
+                alert.remove();
+            }
+        }
+
+        // 制御関数
+        function toggleAutoRefresh() {
+            isAutoRefreshEnabled = !isAutoRefreshEnabled;
+            const icon = document.getElementById('autoRefreshIcon');
+            const text = document.getElementById('autoRefreshText');
+            
+            if (isAutoRefreshEnabled) {
+                icon.className = 'fas fa-pause';
+                text.textContent = '自動更新 ON';
+                startAutoRefresh();
+                showAlert('自動更新を開始しました', 'info');
+            } else {
+                icon.className = 'fas fa-play';
+                text.textContent = '自動更新 OFF';
+                if (refreshInterval) {
+                    clearInterval(refreshInterval);
+                }
+                showAlert('自動更新を停止しました', 'warning');
+            }
+        }
+
+        // 手動承認フロー実行
+        async function executeManualFlow() {
+            const productIds = document.getElementById('manualProductIds').value.trim();
+            
+            if (!productIds) {
+                showAlert('商品IDを入力してください', 'warning');
+                return;
+            }
+
+            const productIdArray = productIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+
+            try {
+                const response = await fetch('integrated_workflow_engine_8080.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'execute_approval_flow',
+                        product_ids: productIdArray,
+                        approved_by: 'dashboard_manual_8080_fixed'
+                    })
+                });
+                
+                const data = await response.json();
+                showAlert(data.message || '処理が完了しました', data.success ? 'info' : 'warning');
+                
+                if (data.success) {
+                    document.getElementById('manualProductIds').value = '';
+                    setTimeout(refreshWorkflows, 2000);
+                }
+            } catch (error) {
+                showAlert('実行エラー: ' + error.message, 'warning');
+            }
+        }
+
+        function open24Tools() {
+            window.open('/yahoo_auction_complete_24tools.html', '_blank');
+            showAlert('24ツールシステムを開きました', 'info');
+        }
+
+        function openDashboard() {
+            window.open('/n3_integrated_dashboard_complete_fixed.php', '_blank');
+            showAlert('統合ダッシュボードを開きました', 'info');
+        }
+
+        // イベントハンドラー設定
+        function setupEventHandlers() {
+            // ページ離脱時のクリーンアップ
+            window.addEventListener('beforeunload', function() {
+                if (refreshInterval) {
+                    clearInterval(refreshInterval);
+                }
+            });
+
+            // エラーハンドリング
+            window.addEventListener('error', function(event) {
+                console.error('JavaScriptエラー:', event.message);
+            });
+        }
+
+        // ヘルパー関数群
+        function animateValue(element, endValue) {
+            if (!element) return;
+            const startValue = parseInt(element.textContent) || 0;
+            const duration = 500;
+            const startTime = Date.now();
+
+            function update() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const current = Math.floor(startValue + (endValue - startValue) * progress);
+                element.textContent = current;
+
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                }
+            }
+
+            update();
+        }
+
+        function calculateProgress(currentStep) {
+            return Math.round((currentStep / 9) * 100);
+        }
+
+        function getStatusClass(status) {
+            const statusMap = {
+                'processing': 'processing',
+                'started': 'processing',
+                'approved': 'approved',
+                'listed': 'completed',
+                'completed': 'completed',
+                'failed': 'failed'
+            };
+            return statusMap[status] || 'processing';
+        }
+
+        function getStatusColor(status) {
+            const colorMap = {
+                'started': '#3498db',
+                'processing': '#3498db',
+                'approved': '#27ae60',
+                'listed': '#9b59b6',
+                'completed': '#27ae60',
+                'failed': '#e74c3c'
+            };
+            return colorMap[status] || '#3498db';
+        }
+
+        function getStatusLabel(status) {
+            const labelMap = {
+                'started': '開始',
+                'processing': '処理中',
+                'approved': '承認済み',
+                'listed': '出品完了',
+                'completed': '完了',
+                'failed': 'エラー'
+            };
+            return labelMap[status] || status;
+        }
+
+        function getStepName(step) {
+            const stepNames = {
+                1: '02_scraping',
+                2: '06_filters',
+                3: '09_shipping',
+                4: '11_category',
+                5: '12_html_editor',
+                6: '07_editing',
+                7: '03_approval',
+                8: '08_listing',
+                9: '10_zaiko'
+            };
+            return stepNames[step] || 'unknown';
+        }
+
+        function getAlertIcon(severity) {
+            const iconMap = {
+                'info': 'fa-info-circle',
+                'warning': 'fa-exclamation-triangle',
+                'critical': 'fa-exclamation-circle'
+            };
+            return iconMap[severity] || 'fa-info-circle';
+        }
+
+        function formatDateTime(dateTime) {
+            if (!dateTime) return '不明';
+            return new Date(dateTime).toLocaleString('ja-JP', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+    </script>
+</body>
+</html>
