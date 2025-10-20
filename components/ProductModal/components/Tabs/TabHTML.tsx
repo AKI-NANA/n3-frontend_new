@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import styles from '../../FullFeaturedModal.module.css';
 import type { Product } from '@/types/product';
+import { supabase } from '@/lib/supabase';
 
 export interface TabHTMLProps {
   product: Product | null;
@@ -29,35 +30,179 @@ function marketplaceToCountry(marketplace: string): string {
 function replacePlaceholders(template: string, productData: any): string {
   const listingData = productData?.listing_data || {};
   
-  return template
-    .replace(/\{\{TITLE\}\}/g, productData?.english_title || productData?.title || '')
+  console.log('🔄 Replacing placeholders with product data:', productData);
+  
+  const replaced = template
+    .replace(/\{\{TITLE\}\}/g, productData?.english_title || productData?.title || 'N/A')
     .replace(/\{\{CONDITION\}\}/g, listingData.condition || 'Used')
     .replace(/\{\{LANGUAGE\}\}/g, 'Japanese')
     .replace(/\{\{RARITY\}\}/g, 'Rare')
-    .replace(/\{\{DESCRIPTION\}\}/g, productData?.description || productData?.english_title || '');
+    .replace(/\{\{DESCRIPTION\}\}/g, productData?.description || productData?.english_title || 'N/A')
+    .replace(/\{\{PRICE\}\}/g, productData?.price_usd || productData?.price || '0')
+    .replace(/\{\{BRAND\}\}/g, productData?.brand || 'N/A')
+    .replace(/\{\{SHIPPING_INFO\}\}/g, listingData.shipping_info || 'Standard Shipping')
+    .replace(/\{\{FEATURES\}\}/g, 'See description')
+    .replace(/\{\{SPECIFICATIONS\}\}/g, 'See description')
+    .replace(/\{\{NOTES\}\}/g, '')
+    .replace(/\{\{SERIAL_NUMBER\}\}/g, productData?.sku || 'N/A')
+    .replace(/\{\{SKU\}\}/g, productData?.sku || 'N/A')
+    .replace(/\{\{RETURN_POLICY\}\}/g, '30 days money-back guarantee');
+  
+  console.log('✅ Placeholder replacement complete');
+  return replaced;
 }
 
 export function TabHTML({ product, marketplace, marketplaceName }: TabHTMLProps) {
-  const htmlTemplates = (product as any)?.html_templates || {};
-  const defaultCountry = htmlTemplates.default_country || 'US';
-  const countryCode = marketplaceToCountry(marketplace);
-  
-  // デフォルト国のテンプレートを取得
-  const defaultTemplate = htmlTemplates.templates?.[defaultCountry]?.html || '';
-  
-  // 現在のマーケットプレイス用のテンプレートを取得
-  const currentTemplate = htmlTemplates.templates?.[countryCode]?.html || defaultTemplate;
-  
-  // プレースホルダーを置換
   const [htmlContent, setHtmlContent] = useState('');
-  
+  const [isLoading, setIsLoading] = useState(true);
+  const [editMode, setEditMode] = useState(false);
+  const [template, setTemplate] = useState<any>(null);
+  const [generatedHtml, setGeneratedHtml] = useState<any>(null);
+  const [error, setError] = useState('');
+  const [saveStatus, setSaveStatus] = useState('');
+
+  const countryCode = marketplaceToCountry(marketplace);
+
+  // ステップ1: テンプレートを取得 & ステップ2: 個別HTMLを生成・保存
   useEffect(() => {
-    if (currentTemplate) {
-      const replaced = replacePlaceholders(currentTemplate, product);
-      setHtmlContent(replaced);
-    }
-  }, [currentTemplate, product]);
-  
+    const generateAndSaveHTML = async () => {
+      if (!product?.id || !product?.sku) {
+        console.log('⚠️ Product ID or SKU is missing');
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        setError('');
+        setSaveStatus('テンプレートを読み込み中...');
+
+        console.log(`📝 Generating HTML for Product ID: ${product.id}, SKU: ${product.sku}, Marketplace: ${marketplace}`);
+
+        // ステップ1: 既に生成済みのHTMLがあるか確認
+        let existingHtml = null;
+        try {
+          const { data, error } = await supabase
+            .from('product_html_generated')
+            .select('*')
+            .eq('product_id', product.id)
+            .eq('marketplace', marketplace)
+            .single();
+          
+          if (!error) {
+            existingHtml = data;
+          }
+        } catch (err) {
+          console.log('⚠️ 既存HTML取得時のエラー（初回時は正常）:', err);
+        }
+
+        if (existingHtml) {
+          console.log('✅ 既存の生成済みHTMLを取得:', existingHtml);
+          console.log('📄 HTML Content:', existingHtml.generated_html);
+          setTemplate(existingHtml);
+          setGeneratedHtml(existingHtml);
+          setHtmlContent(existingHtml.generated_html || '');
+          setSaveStatus('✓ 既存データを読み込みました');
+          setIsLoading(false);
+          return;
+        }
+
+        // ステップ2: テンプレートを取得してHTMLを生成
+        setSaveStatus('テンプレートを検索中...');
+
+        let template_data = null;
+        
+        // 方法1: デフォルトテンプレートを取得
+        let defaultTemplate = null;
+        try {
+          const { data } = await supabase
+            .from('html_templates')
+            .select('*')
+            .eq('is_default_preview', true)
+            .single();
+          
+          defaultTemplate = data;
+        } catch (err) {
+          console.log('⚠️ デフォルトテンプレート取得エラー:', err);
+        }
+
+        if (defaultTemplate) {
+          template_data = defaultTemplate;
+          console.log('✅ デフォルトテンプレートを取得:', template_data);
+        }
+
+        if (!template_data) {
+          setError('利用可能なテンプレートがありません');
+          setHtmlContent('<p style="color: #d32f2f; text-align: center;">テンプレートが見つかりません</p>');
+          setIsLoading(false);
+          return;
+        }
+
+        setTemplate(template_data);
+
+        // ステップ3: プレースホルダーを置換して個別HTMLを生成
+        setSaveStatus('HTMLを生成中...');
+        const htmlToUse = template_data.html_content || template_data.languages?.en_US?.html_content || '<p>No content</p>';
+        const generatedContent = replacePlaceholders(htmlToUse, product);
+        
+        // ステップ4: 生成したHTMLをDBに保存
+        setSaveStatus('HTMLをデータベースに保存中...');
+        
+        const { data: savedHtml, error: saveError } = await supabase
+          .from('product_html_generated')
+          .insert({
+            product_id: product.id,
+            sku: product.sku,
+            marketplace: marketplace,
+            template_id: template_data.id || template_data.name,
+            template_name: template_data.name,
+            generated_html: generatedContent,
+          })
+          .select()
+          .single();
+
+        if (saveError) {
+          console.warn('⚠️ 初回保存エラー（既存の可能性）:', saveError.message);
+          
+          // 既に存在する場合は更新
+          const { data: updatedHtml, error: updateError } = await supabase
+            .from('product_html_generated')
+            .update({
+              generated_html: generatedContent,
+              template_id: template_data.id,
+              template_name: template_data.name,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('product_id', product.id)
+            .eq('marketplace', marketplace)
+            .select()
+            .single();
+
+          if (updateError) {
+            throw updateError;
+          }
+
+          setGeneratedHtml(updatedHtml);
+        } else {
+          setGeneratedHtml(savedHtml);
+        }
+
+        setHtmlContent(generatedContent);
+        setSaveStatus('✓ HTMLを生成・保存しました');
+        console.log('✅ HTML生成完了:', generatedContent.substring(0, 100) + '...');
+
+      } catch (err) {
+        console.error('❌ エラー:', err);
+        setError('HTML生成に失敗しました: ' + (err as any).message);
+        setSaveStatus('');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    generateAndSaveHTML();
+  }, [product, marketplace]);
+
   const validateHtml = () => {
     const forbiddenTags = ['<script', '<iframe', '<form', '<object', '<embed'];
     const forbiddenAttrs = ['onclick', 'onload', 'onerror', 'onmouseover'];
@@ -95,23 +240,82 @@ export function TabHTML({ product, marketplace, marketplaceName }: TabHTMLProps)
     setHtmlContent(formatted);
   };
 
+  const toggleEditMode = () => {
+    setEditMode(!editMode);
+  };
+
+  const saveEditedHTML = async () => {
+    if (!product?.id || !generatedHtml?.id) {
+      alert('HTMLを保存できません');
+      return;
+    }
+
+    try {
+      setSaveStatus('編集内容を保存中...');
+
+      const { error } = await supabase
+        .from('product_html_generated')
+        .update({
+          generated_html: htmlContent,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', generatedHtml.id);
+
+      if (error) throw error;
+
+      alert('✓ 編集内容を保存しました');
+      setSaveStatus('✓ 保存完了');
+      setEditMode(false);
+      
+      setTimeout(() => setSaveStatus(''), 3000);
+    } catch (err) {
+      console.error('❌ 保存エラー:', err);
+      alert('保存に失敗しました');
+      setSaveStatus('');
+    }
+  };
+
   return (
     <div style={{ padding: '1.5rem' }}>
       <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', fontWeight: 600 }}>
         <i className="fas fa-code"></i> <span style={{ color: 'var(--ilm-primary)' }}>{marketplaceName}</span> 商品説明HTML
       </h3>
       
-      {/* 情報バー */}
-      <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#e3f2fd', border: '1px solid #2196f3', borderRadius: '6px' }}>
-        <div style={{ fontSize: '0.85rem', color: '#1565c0' }}>
-          <strong>📍 表示中:</strong> {countryCode}用テンプレート（{htmlTemplates.templates?.[countryCode] ? 'カスタム' : 'デフォルト'}）
-          {defaultCountry !== countryCode && (
-            <span style={{ marginLeft: '1rem' }}>
-              <strong>デフォルト国:</strong> {defaultCountry}
-            </span>
-          )}
+      {/* ステータス情報バー */}
+      {isLoading && (
+        <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#fff3cd', border: '1px solid #ffc107', borderRadius: '6px' }}>
+          <div style={{ fontSize: '0.85rem', color: '#856404' }}>
+            <i className="fas fa-spinner fa-spin"></i> {saveStatus || 'HTML生成中...'}
+          </div>
         </div>
-      </div>
+      )}
+
+      {error && (
+        <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#f8d7da', border: '1px solid #f5c6cb', borderRadius: '6px' }}>
+          <div style={{ fontSize: '0.85rem', color: '#721c24' }}>
+            <i className="fas fa-exclamation-circle"></i> {error}
+          </div>
+        </div>
+      )}
+
+      {saveStatus && !isLoading && (
+        <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#d4edda', border: '1px solid #c3e6cb', borderRadius: '6px' }}>
+          <div style={{ fontSize: '0.85rem', color: '#155724' }}>
+            {saveStatus}
+          </div>
+        </div>
+      )}
+
+      {!isLoading && template && (
+        <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#e7f3ff', border: '1px solid #b3d9ff', borderRadius: '6px' }}>
+          <div style={{ fontSize: '0.85rem', color: '#004085' }}>
+            <strong>📋 テンプレート:</strong> {template.name}
+            {editMode && <span style={{ marginLeft: '1rem', fontWeight: 600, color: '#ff6600' }}>【編集モード】</span>}
+            <br/>
+            <strong>🎯 SKU:</strong> {product?.sku} | <strong>Product ID:</strong> {product?.id}
+          </div>
+        </div>
+      )}
       
       {/* ツールバー */}
       <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -119,21 +323,41 @@ export function TabHTML({ product, marketplace, marketplaceName }: TabHTMLProps)
           className={styles.btn}
           style={{ background: '#ffc107', color: '#000' }}
           onClick={validateHtml}
+          disabled={isLoading}
         >
           <i className="fas fa-check"></i> バリデート
         </button>
         <button 
           className={`${styles.btn} ${styles.btnSuccess}`}
           onClick={copyToClipboard}
+          disabled={isLoading}
         >
           <i className="fas fa-copy"></i> コピー
         </button>
         <button 
           className={styles.btn}
           onClick={formatHtml}
+          disabled={isLoading}
         >
           <i className="fas fa-align-left"></i> フォーマット
         </button>
+        <button 
+          className={`${styles.btn} ${editMode ? styles.btnDanger : styles.btnWarning}`}
+          onClick={toggleEditMode}
+          disabled={isLoading}
+        >
+          <i className={`fas fa-${editMode ? 'eye' : 'edit'}`}></i> 
+          {editMode ? '表示に戻す' : '編集'}
+        </button>
+        {editMode && (
+          <button 
+            className={`${styles.btn} ${styles.btnSuccess}`}
+            onClick={saveEditedHTML}
+            disabled={isLoading}
+          >
+            <i className="fas fa-save"></i> 保存
+          </button>
+        )}
       </div>
       
       {/* エディタとプレビュー */}
@@ -142,7 +366,7 @@ export function TabHTML({ product, marketplace, marketplaceName }: TabHTMLProps)
         <div className={styles.editorPane}>
           <div className={styles.editorHeader}>
             <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>
-              <i className="fas fa-code"></i> HTMLソース
+              <i className="fas fa-code"></i> {editMode ? 'HTML編集' : 'HTMLソース'}
             </span>
           </div>
           <div style={{ flex: 1, overflow: 'hidden' }}>
@@ -151,7 +375,11 @@ export function TabHTML({ product, marketplace, marketplaceName }: TabHTMLProps)
               value={htmlContent}
               onChange={(e) => setHtmlContent(e.target.value)}
               placeholder="HTMLコードをここに入力..."
-              readOnly
+              readOnly={!editMode}
+              style={{
+                background: editMode ? '#ffffff' : '#f8f9fa',
+                color: editMode ? '#000' : '#6c757d',
+              }}
             />
           </div>
         </div>
@@ -165,7 +393,9 @@ export function TabHTML({ product, marketplace, marketplaceName }: TabHTMLProps)
           </div>
           <div 
             className={styles.previewPane}
-            dangerouslySetInnerHTML={{ __html: htmlContent || '<p style="color: #6c757d; text-align: center;">HTMLテンプレートが設定されていません</p>' }}
+            dangerouslySetInnerHTML={{ 
+              __html: htmlContent || '<p style="color: #6c757d; text-align: center;">HTMLが生成されていません</p>' 
+            }}
           />
         </div>
       </div>
@@ -173,31 +403,15 @@ export function TabHTML({ product, marketplace, marketplaceName }: TabHTMLProps)
       {/* ヒント */}
       <div style={{ marginTop: '1rem', padding: '1rem', background: '#f8f9fa', borderRadius: '6px' }}>
         <h5 style={{ margin: '0 0 0.5rem 0', fontSize: '0.95rem' }}>
-          <i className="fas fa-lightbulb"></i> HTMLテンプレートについて
+          <i className="fas fa-lightbulb"></i> 仕組み
         </h5>
         <ul style={{ fontSize: '0.85rem', color: '#6c757d', margin: 0, paddingLeft: '1.5rem', lineHeight: 1.6 }}>
-          <li>HTMLテンプレートは「HTMLエディタ」ツールで編集できます</li>
-          <li>各国ごとにテンプレートが用意されており、自動的に適切なものが選択されます</li>
-          <li>商品データ（タイトル、状態など）は自動的に差し込まれます</li>
-          <li>デフォルト国のテンプレートは全ての国で使用されます</li>
+          <li>テンプレートをDBから検索</li>
+          <li>{`{{TITLE}}`}などを商品データに置換</li>
+          <li>データごとに異なるHTMLを生成</li>
+          <li>生成したHTMLをproduct_html_generatedテーブルに保存</li>
+          <li>編集で修正 → 保存でDB更新</li>
         </ul>
-      </div>
-      
-      {/* テンプレート編集リンク */}
-      <div style={{ marginTop: '1.5rem', padding: '1.5rem', background: 'white', border: '1px solid #dee2e6', borderRadius: '8px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontSize: '0.9rem', color: '#6c757d' }}>
-            <i className="fas fa-info-circle"></i> テンプレートを編集するには「HTMLエディタ」ツールを使用してください
-          </div>
-          <a 
-            href="/tools/html-editor"
-            target="_blank"
-            className={`${styles.btn} ${styles.btnPrimary}`}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none' }}
-          >
-            <i className="fas fa-external-link-alt"></i> HTMLエディタを開く
-          </a>
-        </div>
       </div>
     </div>
   );

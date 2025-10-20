@@ -32,7 +32,13 @@ export async function POST(request: NextRequest) {
     const supabase = createClient()
     const body = await request.json()
 
-    const { name, html_content } = body
+    const { 
+      name, 
+      html_content,
+      mall_type,           // 新規: ebay, yahoo, mercari, amazon
+      country_code,        // 新規: US, JP, UK等
+      is_default_preview   // 新規: プレビュー用デフォルト
+    } = body
 
     if (!name || !html_content) {
       return NextResponse.json(
@@ -47,6 +53,9 @@ export async function POST(request: NextRequest) {
         {
           name,
           html_content,
+          mall_type: mall_type || 'ebay',
+          country_code: country_code || 'US',
+          is_default_preview: is_default_preview || false,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },

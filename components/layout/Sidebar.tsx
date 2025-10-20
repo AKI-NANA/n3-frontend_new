@@ -6,8 +6,9 @@ import {
   Link, List, Plus, Tags, BarChart3,
   TrendingUp, Archive, Truck, AlertCircle, Zap, Target, Database,
   FileText, DollarSign, Users, Shield, Globe,
-  Pin, ChevronRight, Upload, Cog, CheckCircle, Edit, Calendar
+  Pin, ChevronRight, Upload, Cog, CheckCircle, Edit, Calendar, Code, LogOut
 } from "lucide-react"
+import { useAuth } from "@/lib/auth/hooks"
 
 type SidebarState = "hidden" | "expanded" | "icon-only"
 
@@ -19,7 +20,8 @@ const iconMap: any = {
   truck: Truck, "alert-circle": AlertCircle, zap: Zap, target: Target,
   database: Database, "file-text": FileText, "dollar-sign": DollarSign,
   users: Users, shield: Shield, globe: Globe, upload: Upload,
-  cog: Cog, "check-circle": CheckCircle, edit: Edit, calendar: Calendar
+  cog: Cog, "check-circle": CheckCircle, edit: Edit, calendar: Calendar,
+  code: Code, logout: LogOut
 }
 
 const statusLabels = {
@@ -28,46 +30,60 @@ const statusLabels = {
   pending: "準備中"
 }
 
-const navigationItems = [
+interface NavigationItem {
+  id: string
+  label: string
+  icon: string
+  link?: string
+  submenu?: {
+    text: string
+    link: string
+    icon: string
+    status: "ready" | "new" | "pending"
+    toolId?: string
+  }[]
+}
+
+const navigationItems: NavigationItem[] = [
   { id: "dashboard", label: "ダッシュボード", icon: "home", link: "/" },
   {
     id: "listing-tools", label: "出品ツール", icon: "upload",
     submenu: [
       { text: "全体概要", link: "/dashboard", icon: "home", status: "ready" as const },
-      { text: "データ取得", link: "/data-collection", icon: "database", status: "ready" as const },
-      { text: "データ編集", link: "/tools/editing", icon: "edit", status: "ready" as const },
-      { text: "フィルター管理", link: "/management/filter", icon: "shield", status: "ready" as const },
-      { text: "商品承認", link: "/approval", icon: "check-circle", status: "ready" as const },
-      { text: "在庫管理", link: "/inventory", icon: "warehouse", status: "ready" as const },
-      { text: "在庫監視システム", link: "/inventory-monitoring", icon: "bar-chart", status: "ready" as const },
-      { text: "管理ツール", link: "/management", icon: "settings", status: "ready" as const },
+      { text: "データ取得", link: "/data-collection", icon: "database", status: "ready" as const, toolId: "data-collection" },
+      { text: "データ編集", link: "/tools/editing", icon: "edit", status: "ready" as const, toolId: "tools-editing" },
+      { text: "HTMLエディタ", link: "/tools/html-editor", icon: "code", status: "ready" as const, toolId: "html-editor" },
+      { text: "フィルター管理", link: "/management/filter", icon: "shield", status: "ready" as const, toolId: "filter-management" },
+      { text: "商品承認", link: "/approval", icon: "check-circle", status: "ready" as const, toolId: "approval" },
+      { text: "在庫管理", link: "/inventory", icon: "warehouse", status: "ready" as const, toolId: "inventory" },
+      { text: "在庫監視システム", link: "/inventory-monitoring", icon: "bar-chart", status: "ready" as const, toolId: "inventory-monitoring" },
+      { text: "管理ツール", link: "/management", icon: "settings", status: "ready" as const, toolId: "management" },
       { text: "出品管理", link: "/management/listing", icon: "upload", status: "ready" as const },
-      { text: "出品スケジューラー", link: "/listing-management", icon: "calendar", status: "ready" as const },
-      { text: "送料計算", link: "/shipping-calculator", icon: "truck", status: "ready" as const },
+      { text: "出品スケジューラー", link: "/listing-management", icon: "calendar", status: "ready" as const, toolId: "listing-management" },
+      { text: "送料計算", link: "/shipping-calculator", icon: "truck", status: "ready" as const, toolId: "shipping-calculator" },
       { text: "配送ポリシー管理", link: "/shipping-policy-manager", icon: "settings", status: "ready" as const },
-      { text: "eBay価格計算", link: "/ebay-pricing", icon: "calculator", status: "ready" as const },
-      { text: "カテゴリ管理", link: "/category-management", icon: "tags", status: "ready" as const },
-      { text: "出品ツール", link: "/listing-tool", icon: "shopping-cart", status: "ready" as const },
-      { text: "Yahoo!オークション", link: "/yahoo-auction-dashboard", icon: "globe", status: "ready" as const },
-      { text: "メルカリ", link: "/mercari", icon: "shopping-cart", status: "ready" as const },
-      { text: "eBay", link: "/ebay", icon: "globe", status: "ready" as const },
-      { text: "eBay API テスト", link: "/ebay-api-test", icon: "zap", status: "new" as const },
-      { text: "一括出品", link: "/bulk-listing", icon: "list", status: "ready" as const },
+      { text: "eBay価格計算", link: "/ebay-pricing", icon: "calculator", status: "ready" as const, toolId: "ebay-pricing" },
+      { text: "カテゴリ管理", link: "/category-management", icon: "tags", status: "ready" as const, toolId: "category-management" },
+      { text: "出品ツール", link: "/listing-tool", icon: "shopping-cart", status: "ready" as const, toolId: "listing-tool" },
+      { text: "Yahoo!オークション", link: "/yahoo-auction-dashboard", icon: "globe", status: "ready" as const, toolId: "yahoo-auction-dashboard" },
+      { text: "メルカリ", link: "/mercari", icon: "shopping-cart", status: "ready" as const, toolId: "mercari" },
+      { text: "eBay", link: "/ebay", icon: "globe", status: "ready" as const, toolId: "ebay" },
+      { text: "一括出品", link: "/bulk-listing", icon: "list", status: "ready" as const, toolId: "bulk-listing" },
     ],
   },
   {
     id: "products", label: "商品管理", icon: "cube",
     submenu: [
-      { text: "商品一覧", link: "/shohin", icon: "list", status: "ready" as const },
+      { text: "商品一覧", link: "/shohin", icon: "list", status: "ready" as const, toolId: "products-list" },
       { text: "商品登録", link: "/shohin/add", icon: "plus", status: "ready" as const },
       { text: "Amazon商品登録", link: "/asin-upload", icon: "globe", status: "pending" as const },
       { text: "カテゴリ管理", link: "/shohin/category", icon: "tags", status: "pending" as const },
     ],
   },
   {
-    id: "inventory", label: "在庫管理", icon: "warehouse",
+    id: "inventory-main", label: "在庫管理", icon: "warehouse",
     submenu: [
-      { text: "在庫一覧", link: "/zaiko", icon: "bar-chart", status: "ready" as const },
+      { text: "在庫一覧", link: "/zaiko", icon: "bar-chart", status: "ready" as const, toolId: "zaiko" },
       { text: "入庫管理", link: "/zaiko/nyuko", icon: "trending-up", status: "ready" as const },
       { text: "出庫管理", link: "/zaiko/shukko", icon: "archive", status: "ready" as const },
       { text: "棚卸し", link: "/zaiko/tanaoroshi", icon: "list", status: "new" as const },
@@ -77,7 +93,7 @@ const navigationItems = [
   {
     id: "orders", label: "受注管理", icon: "shopping-cart",
     submenu: [
-      { text: "受注一覧", link: "/juchu", icon: "list", status: "ready" as const },
+      { text: "受注一覧", link: "/juchu", icon: "list", status: "ready" as const, toolId: "juchu" },
       { text: "出荷管理", link: "/shukka", icon: "truck", status: "ready" as const },
       { text: "返品管理", link: "/henpin", icon: "alert-circle", status: "new" as const },
       { text: "配送追跡", link: "/haisou", icon: "truck", status: "pending" as const },
@@ -86,7 +102,7 @@ const navigationItems = [
   {
     id: "ai", label: "AI制御", icon: "robot",
     submenu: [
-      { text: "AI分析", link: "/ai/analysis", icon: "zap", status: "new" as const },
+      { text: "AI分析", link: "/ai/analysis", icon: "zap", status: "new" as const, toolId: "ai-analysis" },
       { text: "需要予測", link: "/ai/demand", icon: "target", status: "new" as const },
       { text: "価格最適化", link: "/ai/pricing", icon: "dollar-sign", status: "pending" as const },
       { text: "レコメンド", link: "/ai/recommend", icon: "robot", status: "pending" as const },
@@ -95,7 +111,7 @@ const navigationItems = [
   {
     id: "accounting", label: "記帳会計", icon: "calculator",
     submenu: [
-      { text: "売上管理", link: "/uriage", icon: "dollar-sign", status: "ready" as const },
+      { text: "売上管理", link: "/uriage", icon: "dollar-sign", status: "ready" as const, toolId: "uriage" },
       { text: "仕入管理", link: "/shiire", icon: "file-text", status: "ready" as const },
       { text: "財務レポート", link: "/zaimu", icon: "bar-chart", status: "new" as const },
     ],
@@ -105,6 +121,7 @@ const navigationItems = [
     submenu: [
       { text: "ユーザー管理", link: "/users", icon: "users", status: "ready" as const },
       { text: "権限設定", link: "/permissions", icon: "shield", status: "ready" as const },
+      { text: "外注管理", link: "/admin/outsourcer-management", icon: "users", status: "ready" as const },
       { text: "バックアップ", link: "/backup", icon: "database", status: "new" as const },
       { text: "ログ管理", link: "/logs", icon: "file-text", status: "pending" as const },
     ],
@@ -115,14 +132,14 @@ const navigationItems = [
       { text: "Amazon連携", link: "/amazon", icon: "globe", status: "ready" as const },
       { text: "楽天連携", link: "/rakuten", icon: "globe", status: "ready" as const },
       { text: "Yahoo連携", link: "/yahoo", icon: "globe", status: "pending" as const },
-      { text: "Yahooオークション", link: "/yahoo-auction-dashboard", icon: "shopping-cart", status: "ready" as const },
+      { text: "Yahooオークション", link: "/yahoo-auction-dashboard", icon: "shopping-cart", status: "ready" as const, toolId: "yahoo-auction-dashboard" },
       { text: "API管理", link: "/api", icon: "database", status: "new" as const },
     ],
   },
   {
     id: "analytics", label: "分析", icon: "bar-chart",
     submenu: [
-      { text: "売上分析", link: "/analytics/sales", icon: "dollar-sign", status: "ready" as const },
+      { text: "売上分析", link: "/analytics/sales", icon: "dollar-sign", status: "ready" as const, toolId: "analytics-sales" },
       { text: "在庫回転率", link: "/analytics/inventory", icon: "trending-up", status: "ready" as const },
       { text: "価格トレンド", link: "/analytics/price-trends", icon: "bar-chart", status: "pending" as const },
       { text: "顧客分析", link: "/analytics/customers", icon: "users", status: "pending" as const },
@@ -136,20 +153,12 @@ const navigationItems = [
       { text: "スコアリング", link: "/research/scoring", icon: "bar-chart", status: "ready" as const },
     ],
   },
-  {
-    id: "settings", label: "設定", icon: "cog",
-    submenu: [
-      { text: "ユーザー管理", link: "/settings/users", icon: "users", status: "ready" as const },
-      { text: "API設定", link: "/settings/api", icon: "database", status: "ready" as const },
-      { text: "通知設定", link: "/settings/notifications", icon: "alert-circle", status: "pending" as const },
-      { text: "バックアップ", link: "/settings/backup", icon: "database", status: "pending" as const },
-    ],
-  },
 ]
 
 export default function Sidebar() {
+  const { user, isAuthenticated, assignedTools, logout, isLoading } = useAuth()
   const [mounted, setMounted] = useState(false)
-  const [sidebarState, setSidebarState] = useState<SidebarState>("expanded")
+  const [sidebarState, setSidebarState] = useState<SidebarState>("icon-only")
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null)
   const sidebarRef = useRef<HTMLDivElement>(null)
   const submenuRef = useRef<HTMLDivElement>(null)
@@ -158,6 +167,32 @@ export default function Sidebar() {
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // ナビゲーション項目をフィルタリング
+  const getVisibleItems = (): NavigationItem[] => {
+    if (!isAuthenticated || isLoading) return []
+    if (user?.role === 'ADMIN') return navigationItems // 管理者は全表示
+
+    // OUTSOURCER: 割り当てられたツールのみ表示
+    if (user?.role === 'OUTSOURCER') {
+      return navigationItems.map(item => {
+        if (!item.submenu) return item
+        
+        const filteredSubmenu = item.submenu.filter(sub => {
+          if (!sub.toolId) return true // toolId がない項目は表示
+          return assignedTools.includes(sub.toolId)
+        })
+
+        return filteredSubmenu.length > 0
+          ? { ...item, submenu: filteredSubmenu }
+          : null
+      }).filter(Boolean) as NavigationItem[]
+    }
+
+    return []
+  }
+
+  const visibleItems = getVisibleItems()
 
   useEffect(() => {
     if (!mounted) return
@@ -232,6 +267,11 @@ export default function Sidebar() {
     }, 300)
   }
 
+  const handleLogout = async () => {
+    await logout()
+    window.location.href = '/login'
+  }
+
   const renderIcon = (name: string, size = 20) => {
     const Icon = iconMap[name] || Home
     return <Icon size={size} />
@@ -293,7 +333,8 @@ export default function Sidebar() {
           </div>
         )}
 
-        {navigationItems.map((item, index) => (
+        {/* ナビゲーション項目 */}
+        {visibleItems.map((item, index) => (
           <div
             key={item.id}
             onMouseEnter={() => handleMenuEnter(item.id, !!item.submenu)}
@@ -364,6 +405,22 @@ export default function Sidebar() {
             )}
           </div>
         ))}
+
+        {/* ログアウトボタン */}
+        {isAuthenticated && sidebarState !== "hidden" && (
+          <button
+            onClick={handleLogout}
+            className="absolute bottom-0 w-full h-[54px] px-3 flex items-center text-white/70 hover:text-white 
+                     border-t border-white/10 hover:bg-red-600/20 transition-colors"
+          >
+            <div className="w-5 flex-shrink-0">
+              <LogOut size={18} />
+            </div>
+            {sidebarState === "expanded" && (
+              <span className="ml-3 text-xs font-medium">ログアウト</span>
+            )}
+          </button>
+        )}
       </div>
     </nav>
   )

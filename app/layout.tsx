@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { AuthProvider } from "@/lib/auth/hooks"
 import Header from "@/components/layout/Header"
 import Sidebar from "@/components/layout/Sidebar"
 import Footer from "@/components/layout/Footer"
@@ -29,13 +30,15 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <Header />
-        <Sidebar />
-        <RightSidebar />
-        <MainContent>
-          {children}
-        </MainContent>
-        <Footer />
+        <AuthProvider>
+          <Header />
+          <Sidebar />
+          <RightSidebar />
+          <MainContent>
+            {children}
+          </MainContent>
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   )

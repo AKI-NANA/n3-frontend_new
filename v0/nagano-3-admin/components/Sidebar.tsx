@@ -33,6 +33,8 @@ import {
   Mail,
   MessageSquare,
   HelpCircle,
+  Pin,
+  PinOff,
 } from "lucide-react"
 
 type SidebarState = "expanded" | "collapsed" | "hidden"
@@ -193,47 +195,91 @@ export const navigationItems: MenuItem[] = [
 ]
 
 export default function Sidebar() {
-  const [sidebarState, setSidebarState] = useState<SidebarState>("expanded")
+  const [sidebarState, setSidebarState] = useState<SidebarState>("collapsed")
+  const [isSidebarPinned, setIsSidebarPinned] = useState(true)
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null)
   const [submenuTimeout, setSubmenuTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [isHovering, setIsHovering] = useState(false)
 
   // localStorage から状態を復元
   useEffect(() => {
-    const saved = localStorage.getItem("sidebar_state") as SidebarState
-    if (saved && ["expanded", "collapsed", "hidden"].includes(saved)) {
-      setSidebarState(saved)
+    const savedState = localStorage.getItem("sidebar_state") as SidebarState
+    const savedPinned = localStorage.getItem("sidebar_pinned")
+
+    if (savedState && ["expanded", "collapsed", "hidden"].includes(savedState)) {
+      setSidebarState(savedState)
+    }
+
+    if (savedPinned !== null) {
+      setIsSidebarPinned(JSON.parse(savedPinned))
     }
   }, [])
 
-  // 3段階トグル制御
-  const toggleSidebar = () => {
-    const states: SidebarState[] = ["expanded", "collapsed", "hidden"]
-    const currentIndex = states.indexOf(sidebarState)
-    const nextState = states[(currentIndex + 1) % 3]
-    setSidebarState(nextState)
-    localStorage.setItem("sidebar_state", nextState)
+  // ピン機能付きトグル制御
+  const toggleSidebarPin = () => {
+    if (isSidebarPinned) {
+      // ピンを外す → ホバー展開モードに
+      setIsSidebarPinned(false)
+      setSidebarState("collapsed")
+    } else {
+      // ピンを付ける → 固定表示に
+      setIsSidebarPinned(true)
+      setSidebarState("expanded")
+    }
+
+    localStorage.setItem("sidebar_pinned", JSON.stringify(!isSidebarPinned))
+    localStorage.setItem("sidebar_state", !isSidebarPinned ? "expanded" : "collapsed")
+  }
+
+  // ピンが外れている場合のホバー展開制御
+  const handleSidebarMouseEnter = () => {
+    if (!isSidebarPinned) {
+      setIsHovering(true)
+      setSidebarState("expanded")
+    }
+  }
+
+  const handleSidebarMouseLeave = () => {
+    if (!isSidebarPinned) {
+      setIsHovering(false)
+      setSidebarState("collapsed")
+      setActiveSubmenu(null)
+    }
   }
 
   // サブメニュー表示制御
-  const handleMouseEnter = (id: string) => {
+  const handleMenuItemMouseEnter = (id: string) => {
     if (submenuTimeout) {
       clearTimeout(submenuTimeout)
       setSubmenuTimeout(null)
     }
-    setActiveSubmenu(id)
+    if (isSidebarPinned || isHovering) {
+      setActiveSubmenu(id)
+    }
   }
 
-  const handleMouseLeave = () => {
-    const timeout = setTimeout(() => {
-      setActiveSubmenu(null)
-    }, 150) // 150ms遅延
-    setSubmenuTimeout(timeout)
+  const handleMenuItemMouseLeave = () => {
+    if (!isSidebarPinned) {
+      const timeout = setTimeout(() => {
+        setActiveSubmenu(null)
+      }, 150)
+      setSubmenuTimeout(timeout)
+    }
   }
 
   const handleSubmenuMouseEnter = () => {
     if (submenuTimeout) {
       clearTimeout(submenuTimeout)
       setSubmenuTimeout(null)
+    }
+  }
+
+  const handleSubmenuMouseLeave = () => {
+    if (!isSidebarPinned) {
+      const timeout = setTimeout(() => {
+        setActiveSubmenu(null)
+      }, 150)
+      setSubmenuTimeout(timeout)
     }
   }
 
@@ -248,20 +294,28 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* サイドバー制御タブ */}
-      <button className="sidebar-control" onClick={toggleSidebar} title="サイドバー切替">
-        <Menu size={20} />
+      {/* サイドバー制御タブ - ピンボタン */}
+      <button
+        className="sidebar-pin-button"
+        onClick={toggleSidebarPin}
+        title={isSidebarPinned ? "ピンを外す" : "ピンで固定"}
+      >
+        {isSidebarPinned ? <Pin size={20} /> : <PinOff size={20} />}
       </button>
 
       {/* サイドバー */}
-      <nav className={`sidebar ${sidebarState}`}>
+      <nav
+        className={`sidebar ${sidebarState} ${isSidebarPinned ? "pinned" : "hoverable"}`}
+        onMouseEnter={handleSidebarMouseEnter}
+        onMouseLeave={handleSidebarMouseLeave}
+      >
         <div className="pt-4">
           {navigationItems.map((item) => (
             <div
               key={item.id}
               className="relative"
-              onMouseEnter={() => item.submenu && handleMouseEnter(item.id)}
-              onMouseLeave={() => item.submenu && handleMouseLeave()}
+              onMouseEnter={() => item.submenu && handleMenuItemMouseEnter(item.id)}
+              onMouseLeave={() => item.submenu && handleMenuItemMouseLeave()}
             >
               <div className="menu-item">
                 <div className="menu-icon">{renderIcon(item.icon)}</div>
@@ -275,7 +329,7 @@ export default function Sidebar() {
                   className={`submenu ${sidebarState} ${activeSubmenu === item.id ? "show" : ""}`}
                   style={{ top: `${item.top}px` }}
                   onMouseEnter={handleSubmenuMouseEnter}
-                  onMouseLeave={handleMouseLeave}
+                  onMouseLeave={handleSubmenuMouseLeave}
                 >
                   {item.submenu.map((subItem, index) => (
                     <a key={index} href={subItem.link} className="submenu-item">

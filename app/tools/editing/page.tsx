@@ -9,6 +9,7 @@ import { StatusBar } from './components/StatusBar'
 import { ProductModal } from './components/ProductModal'
 import { PasteModal } from './components/PasteModal'
 import { CSVUploadModal } from './components/CSVUploadModal'
+import { HTMLPublishPanel } from './components/HTMLPublishPanel'
 import { useProductData } from './hooks/useProductData'
 import { useBatchProcess } from './hooks/useBatchProcess'
 import type { Product, MarketplaceSelection } from './types/product'
@@ -175,6 +176,9 @@ export default function EditingPage() {
   const readyCount = products.filter(p => p.ready_to_list).length
   const incompleteCount = products.length - readyCount
 
+  // 選択された商品をオブジェクト配列に変換
+  const selectedProducts = products.filter(p => selectedIds.has(String(p.id)))
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -204,9 +208,9 @@ export default function EditingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" style={{ position: 'relative' }}>
       {/* メインコンテンツ - サイドバーの影響を受けない */}
-      <main className="p-3">
+      <main className="p-3" style={{ position: 'relative', zIndex: 1 }}>
         <div className="mb-3">
           <h1 className="text-xl font-bold mb-1 text-foreground">商品データ編集</h1>
           <p className="text-xs text-muted-foreground">
@@ -346,6 +350,11 @@ export default function EditingPage() {
           onChange={setMarketplaces}
         />
 
+        {/* HTML生成・出品パネル - 新規追加 */}
+        <HTMLPublishPanel
+          selectedProducts={selectedProducts}
+        />
+
         <StatusBar
           total={total}
           unsaved={modifiedIds.size}
@@ -405,8 +414,8 @@ export default function EditingPage() {
       )}
 
       {processing && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card rounded-lg p-6 max-w-md border border-border">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center" style={{ zIndex: 9998 }}>
+          <div className="bg-card rounded-lg p-6 max-w-md border border-border" style={{ zIndex: 9999 }}>
             <div className="text-center">
               <div className="mb-4">
                 <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>

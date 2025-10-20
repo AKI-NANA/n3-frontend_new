@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Bell, Palette, TrendingUp, BookOpen, User } from "lucide-react"
+import { Search, Bell, Palette, TrendingUp, BookOpen, User, Pin, PinOff } from "lucide-react"
 
 interface WorldClocks {
   la: { time: string; date: string }
@@ -27,6 +27,9 @@ export default function Header() {
     usdJpy: 150.25,
     eurJpy: 165.8,
   })
+
+  const [isHeaderPinned, setIsHeaderPinned] = useState(true)
+  const [isHeaderHovering, setIsHeaderHovering] = useState(false)
 
   // 世界時計更新関数
   const updateWorldClocks = () => {
@@ -65,6 +68,12 @@ export default function Header() {
   }
 
   useEffect(() => {
+    // localStorage から状態を復元
+    const savedHeaderPinned = localStorage.getItem("header_pinned")
+    if (savedHeaderPinned !== null) {
+      setIsHeaderPinned(JSON.parse(savedHeaderPinned))
+    }
+
     // 初期データ設定
     updateWorldClocks()
     updateExchangeRates()
@@ -82,8 +91,17 @@ export default function Header() {
     }
   }, [])
 
+  const toggleHeaderPin = () => {
+    setIsHeaderPinned(!isHeaderPinned)
+    localStorage.setItem("header_pinned", JSON.stringify(!isHeaderPinned))
+  }
+
   return (
-    <header className="header-fixed">
+    <header
+      className={`header-fixed ${isHeaderPinned ? "pinned" : "hoverable"} ${isHeaderHovering ? "hovering" : ""}`}
+      onMouseEnter={() => !isHeaderPinned && setIsHeaderHovering(true)}
+      onMouseLeave={() => !isHeaderPinned && setIsHeaderHovering(false)}
+    >
       {/* ロゴ */}
       <div className="flex items-center">
         <div className="logo-gradient">N3</div>
@@ -158,6 +176,15 @@ export default function Header() {
 
         <button className="action-button" title="ユーザー">
           <User size={16} />
+        </button>
+
+        {/* ピンボタン */}
+        <button
+          className="action-button pin-button ml-2"
+          onClick={toggleHeaderPin}
+          title={isHeaderPinned ? "ピンを外す" : "ピンで固定"}
+        >
+          {isHeaderPinned ? <Pin size={16} /> : <PinOff size={16} />}
         </button>
       </div>
     </header>

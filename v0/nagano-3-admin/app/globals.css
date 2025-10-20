@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -130,7 +129,7 @@ body {
   background-color: var(--color-background);
 }
 
-/* Header styles */
+/* Header styles with pin functionality */
 .header-fixed {
   position: fixed;
   top: 0;
@@ -144,6 +143,27 @@ body {
   align-items: center;
   padding: 0 1rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+/* ピンが付いている状態（初期状態） */
+.header-fixed.pinned {
+  top: 0;
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ピンが外れている状態（ホバーで展開） */
+.header-fixed.hoverable {
+  top: -80px;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.header-fixed.hoverable.hovering {
+  top: 0;
+  opacity: 1;
+  visibility: visible;
 }
 
 .logo-gradient {
@@ -256,7 +276,18 @@ body {
   border-color: var(--color-sidebar-border);
 }
 
-/* Sidebar styles */
+.action-button.pin-button {
+  margin-left: 1rem;
+  border: 2px solid var(--color-primary);
+  background: rgba(var(--color-primary), 0.1);
+}
+
+.action-button.pin-button:hover {
+  background: rgba(var(--color-primary), 0.2);
+  border-color: var(--color-primary);
+}
+
+/* Sidebar styles with pin functionality */
 .sidebar {
   position: fixed;
   top: 80px;
@@ -280,7 +311,7 @@ body {
   width: 0;
 }
 
-.sidebar-control {
+.sidebar-pin-button {
   position: fixed;
   top: 90px;
   left: 10px;
@@ -295,10 +326,16 @@ body {
   cursor: pointer;
   z-index: 10000;
   transition: all 0.2s;
+  border: none;
 }
 
-.sidebar-control:hover {
+.sidebar-pin-button:hover {
   transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.sidebar-pin-button:active {
+  transform: scale(0.95);
 }
 
 .menu-item {
