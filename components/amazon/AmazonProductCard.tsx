@@ -1,11 +1,13 @@
 'use client'
 
+import { useState } from 'react'
 import { AmazonProduct } from '@/types/amazon'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Star, TrendingUp, Package, DollarSign } from 'lucide-react'
+import { Star, TrendingUp, Package, DollarSign, Send, CheckCircle } from 'lucide-react'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 
 interface AmazonProductCardProps {
   product: AmazonProduct
@@ -13,6 +15,9 @@ interface AmazonProductCardProps {
 }
 
 export function AmazonProductCard({ product, onUpdate }: AmazonProductCardProps) {
+  const router = useRouter()
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
   const imageUrl = product.images_primary?.medium || product.images_primary?.small || '/placeholder.png'
 
   const handleCalculateProfit = async () => {
@@ -28,6 +33,32 @@ export function AmazonProductCard({ product, onUpdate }: AmazonProductCardProps)
       }
     } catch (error) {
       console.error('Profit calculation error:', error)
+    }
+  }
+
+  const handleSendToEditing = async () => {
+    try {
+      setSending(true)
+      const response = await fetch('/api/amazon/send-to-editing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: product.id })
+      })
+
+      if (response.ok) {
+        setSent(true)
+        setTimeout(() => {
+          router.push('/tools/editing')
+        }, 1000)
+      } else {
+        const error = await response.json()
+        alert(error.error || 'データ編集ページへの送信に失敗しました')
+      }
+    } catch (error) {
+      console.error('Send to editing error:', error)
+      alert('エラーが発生しました')
+    } finally {
+      setSending(false)
     }
   }
 
@@ -123,24 +154,45 @@ export function AmazonProductCard({ product, onUpdate }: AmazonProductCardProps)
         )}
       </CardContent>
 
-      <CardFooter className="p-4 pt-0 flex gap-2">
+      <CardFooter className="p-4 pt-0 flex flex-col gap-2">
+        <div className="flex gap-2 w-full">
+          <Button
+            onClick={handleCalculateProfit}
+            size="sm"
+            variant="outline"
+            className="flex-1"
+          >
+            <TrendingUp className="w-4 h-4 mr-1" />
+            利益計算
+          </Button>
+          <Button
+            size="sm"
+            variant="default"
+            className="flex-1"
+            onClick={() => window.open(`https://www.amazon.com/dp/${product.asin}`, '_blank')}
+          >
+            <DollarSign className="w-4 h-4 mr-1" />
+            Amazon
+          </Button>
+        </div>
         <Button
-          onClick={handleCalculateProfit}
+          onClick={handleSendToEditing}
+          disabled={sending || sent}
           size="sm"
-          variant="outline"
-          className="flex-1"
+          variant={sent ? "default" : "secondary"}
+          className="w-full"
         >
-          <TrendingUp className="w-4 h-4 mr-1" />
-          利益計算
-        </Button>
-        <Button
-          size="sm"
-          variant="default"
-          className="flex-1"
-          onClick={() => window.open(`https://www.amazon.com/dp/${product.asin}`, '_blank')}
-        >
-          <DollarSign className="w-4 h-4 mr-1" />
-          Amazon
+          {sent ? (
+            <>
+              <CheckCircle className="w-4 h-4 mr-1" />
+              送信完了
+            </>
+          ) : (
+            <>
+              <Send className="w-4 h-4 mr-1" />
+              {sending ? '送信中...' : 'データ編集に送る'}
+            </>
+          )}
         </Button>
       </CardFooter>
     </Card>
