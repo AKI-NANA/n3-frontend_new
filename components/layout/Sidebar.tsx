@@ -134,6 +134,7 @@ const navigationItems = [
   {
     id: "research", label: "リサーチ", icon: "target",
     submenu: [
+      { text: "Amazon リサーチ", link: "/tools/amazon-research", icon: "globe", status: "ready" as const },
       { text: "eBay リサーチ", link: "/research/ebay-research", icon: "globe", status: "ready" as const },
       { text: "市場リサーチ", link: "/research/market-research", icon: "trending-up", status: "ready" as const },
       { text: "スコアリング", link: "/research/scoring", icon: "bar-chart", status: "ready" as const },
