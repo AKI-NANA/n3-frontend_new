@@ -5,8 +5,10 @@ import type { Product, ProductUpdate } from '@/app/tools/editing/types/product'
 const supabase = createClient()
 
 export async function fetchProducts(limit = 100, offset = 0) {
+  // 🔧 修正: yahoo_scraped_products → products に変更
+  // EU責任者情報フィールドを含むすべてのカラムを取得
   const { data, error, count } = await supabase
-    .from('yahoo_scraped_products')
+    .from('products')
     .select('*', { count: 'exact' })
     .order('updated_at', { ascending: false })
     .range(offset, offset + limit - 1)
@@ -16,19 +18,46 @@ export async function fetchProducts(limit = 100, offset = 0) {
     throw error
   }
 
-  // 各商品の出品履歴を取得
+  console.log('📦 Fetched products with EU data:', data?.length || 0)
+  
+  // デバッグ: 最初の商品のEU情報を確認
+  if (data && data.length > 0) {
+    console.log('🇪🇺 First product EU info:', {
+      company: data[0].eu_responsible_company_name,
+      city: data[0].eu_responsible_city,
+      country: data[0].eu_responsible_country
+    })
+  }
+
+  // 各商品の出品履歴を取得（エラーが出ても続行）
   const productsWithHistory = await Promise.all(
     (data || []).map(async (product) => {
-      const { data: history } = await supabase
-        .from('listing_history')
-        .select('marketplace, account, listing_id, status, error_message, listed_at')
-        .eq('product_id', product.id)
-        .order('listed_at', { ascending: false })
-        .limit(5)
-      
-      return {
-        ...product,
-        listing_history: history || []
+      try {
+        const { data: history, error } = await supabase
+          .from('listing_history')
+          .select('marketplace, account, listing_id, status, error_message, listed_at')
+          .eq('product_id', product.id)
+          .order('listed_at', { ascending: false })
+          .limit(5)
+        
+        if (error) {
+          console.warn('⚠️ listing_history取得エラー（スキップ）:', error.message);
+          return {
+            ...product,
+            listing_history: []
+          }
+        }
+        
+        return {
+          ...product,
+          listing_history: history || []
+        }
+      } catch (err) {
+        console.warn('⚠️ listing_history取得エラー（スキップ）:', err);
+        return {
+          ...product,
+          listing_history: []
+        }
       }
     })
   )
@@ -38,18 +67,27 @@ export async function fetchProducts(limit = 100, offset = 0) {
 
 export async function fetchProductById(id: string) {
   const { data, error } = await supabase
-    .from('yahoo_scraped_products')
+    .from('products')
     .select('*')
     .eq('id', id)
     .single()
 
   if (error) throw error
+  
+  // デバッグ出力
+  console.log('📦 Fetched product by ID:', id)
+  console.log('🇪🇺 EU info:', {
+    company: data.eu_responsible_company_name,
+    city: data.eu_responsible_city,
+    country: data.eu_responsible_country
+  })
+  
   return data as Product
 }
 
 export async function updateProduct(id: string, updates: ProductUpdate) {
   const { data, error } = await supabase
-    .from('yahoo_scraped_products')
+    .from('products')
     .update(updates)
     .eq('id', id)
     .select()
@@ -75,7 +113,7 @@ export async function updateProducts(updates: { id: string; data: ProductUpdate 
 
 export async function deleteProduct(id: string) {
   const { error } = await supabase
-    .from('yahoo_scraped_products')
+    .from('products')
     .delete()
     .eq('id', id)
 
@@ -84,7 +122,7 @@ export async function deleteProduct(id: string) {
 
 export async function deleteProducts(ids: string[]) {
   const { error } = await supabase
-    .from('yahoo_scraped_products')
+    .from('products')
     .delete()
     .in('id', ids)
 
@@ -170,6 +208,11 @@ export async function calculateScores(products: Product[]) {
     // 利益率が高ければプラス
     if (p.sm_profit_margin && p.sm_profit_margin > 15) score += 15
     else if (p.sm_profit_margin && p.sm_profit_margin > 5) score += 10
+
+    // 🇪🇺 EU情報があればプラス
+    if (p.eu_responsible_company_name && p.eu_responsible_company_name !== 'N/A') {
+      score += 5
+    }
 
     return {
       id: p.id,

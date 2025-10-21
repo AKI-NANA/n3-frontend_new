@@ -19,7 +19,7 @@ export function TabData({ product }: TabDataProps) {
     dbId: product?.id || '',
     title: (product as any)?.english_title || product?.title || '',
     price: (product as any)?.price_usd || product?.price || 0,
-    condition: listingData.condition || scrapedData.condition || '', // scraped_dataからも取得
+    condition: listingData.condition || scrapedData.condition || '',
     description: product?.description || '',
     
     // 手動入力

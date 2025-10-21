@@ -4,8 +4,12 @@ import { promisify } from 'util'
 
 const execAsync = promisify(exec)
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
+    // リクエストボディからコミットメッセージを取得（オプション）
+    const body = await request.json().catch(() => ({}))
+    const customMessage = body.message
+
     // Git status確認
     const { stdout: statusOutput } = await execAsync('git status --porcelain')
     
@@ -16,11 +20,24 @@ export async function POST() {
       )
     }
 
+    // ⭐ 重要: まずpullして最新を取り込む
+    try {
+      await execAsync('git pull origin main')
+    } catch (pullError: any) {
+      return NextResponse.json(
+        { 
+          error: 'Git pullに失敗しました。競合がある可能性があります。',
+          details: pullError.message 
+        },
+        { status: 500 }
+      )
+    }
+
     // Git add
     await execAsync('git add .')
     
     // Git commit
-    const commitMessage = `Update: ${new Date().toISOString()}`
+    const commitMessage = customMessage || `Update: ${new Date().toISOString()}`
     await execAsync(`git commit -m "${commitMessage}"`)
     
     // Git push

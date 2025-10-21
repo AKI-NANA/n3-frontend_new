@@ -17,6 +17,14 @@ export function ProductModal({ product, onClose, onSave }: ProductModalProps) {
   console.log('ProductModal - sku:', product.sku);
   console.log('ProductModal - master_key:', product.master_key);
   
+  // 🇪🇺 EU責任者情報のデバッグ出力
+  console.log('🇪🇺 EU Responsible Person Data:', {
+    company: product.eu_responsible_company_name,
+    address: product.eu_responsible_address_line1,
+    city: product.eu_responsible_city,
+    country: product.eu_responsible_country
+  });
+  
   // 画像データを取得
   const imageUrls = product.scraped_data?.image_urls || product.listing_data?.image_urls || []
   const images = Array.isArray(imageUrls) 
@@ -62,7 +70,20 @@ export function ProductModal({ product, onClose, onSave }: ProductModalProps) {
       name: 'eBay',
       status: product.status === 'ready' ? 'ready' : 'draft'
     },
-    listing_data: product.listing_data, // listing_dataをそのまま渡す
+    listing_data: {
+      ...product.listing_data,
+      // EU責任者情報を明示的に含める
+      eu_responsible_company_name: product.eu_responsible_company_name,
+      eu_responsible_address_line1: product.eu_responsible_address_line1,
+      eu_responsible_address_line2: product.eu_responsible_address_line2,
+      eu_responsible_city: product.eu_responsible_city,
+      eu_responsible_state_or_province: product.eu_responsible_state_or_province,
+      eu_responsible_postal_code: product.eu_responsible_postal_code,
+      eu_responsible_country: product.eu_responsible_country,
+      eu_responsible_email: product.eu_responsible_email,
+      eu_responsible_phone: product.eu_responsible_phone,
+      eu_responsible_contact_url: product.eu_responsible_contact_url,
+    },
     ebay_api_data: product.ebay_api_data, // ebay_api_dataをそのまま渡す
     scraped_data: product.scraped_data, // scraped_dataをそのまま渡す
     sm_lowest_price: product.sm_lowest_price, // SellerMirror最低価格

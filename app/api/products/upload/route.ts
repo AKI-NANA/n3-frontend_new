@@ -1,6 +1,7 @@
 // app/api/products/upload/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { euResponsiblePersonService } from '@/lib/services/euResponsiblePersonService'
 
 interface UploadOptions {
   clearExisting: boolean
@@ -17,6 +18,7 @@ interface CSVRow {
   sku?: string
   upc?: string
   brand?: string
+  manufacturer?: string
   category?: string
   weight?: number | string
   length?: number | string
@@ -26,6 +28,17 @@ interface CSVRow {
   cost_price?: number | string
   source_url?: string
   shipping_policy_name?: string
+  // EU責任者フィールド
+  eu_responsible_company_name?: string
+  eu_responsible_address_line1?: string
+  eu_responsible_address_line2?: string
+  eu_responsible_city?: string
+  eu_responsible_state_or_province?: string
+  eu_responsible_postal_code?: string
+  eu_responsible_country?: string
+  eu_responsible_email?: string
+  eu_responsible_phone?: string
+  eu_responsible_contact_url?: string
   [key: string]: any
 }
 
@@ -82,80 +95,97 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 3. データ変換（既存のテーブル構造に合わせる）
-    const products = csvData
-      .filter(row => {
+    // 3. EU責任者情報の自動補完
+    console.log('🇪🇺 EU責任者情報を補完中...')
+    const enrichedData = await euResponsiblePersonService.enrichMultipleProducts(
+      csvData.filter(row => {
         // 重複スキップ
         if (options.skipDuplicates && row.sku && existingSkus.has(row.sku)) {
           return false
         }
         return true
       })
-      .map((row, index) => {
-        // 既存のテーブル構造に合わせたマッピング
-        const product: any = {
-          // 必須フィールド
-          item_id: row.sku || `ITEM-${Date.now()}-${index}`,
-          title: row.title || '',
-          sku: row.sku || `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          
-          // 価格情報（既存テーブルのカラム名に合わせる）
-          acquired_price_jpy: row.cost_price ? Math.round(parseFloat(String(row.cost_price))) : null,
-          ddp_price_usd: row.price ? parseFloat(String(row.price)) : null,
-          ddu_price_usd: row.price ? parseFloat(String(row.price)) : null,
-          
-          // 在庫
-          stock_quantity: parseInt(String(row.quantity || 1)),
-          condition: row.condition || 'New',
-          
-          // サイズ・重量
-          weight_g: row.weight ? parseFloat(String(row.weight)) * 1000 : null, // kgからgに変換
-          length_cm: row.length ? parseFloat(String(row.length)) : null,
-          width_cm: row.width ? parseFloat(String(row.width)) : null,
-          height_cm: row.height ? parseFloat(String(row.height)) : null,
-          
-          // カテゴリ
-          category_name: row.category_name || row.category || null,
-          category_number: row.category_id || null,
-          
-          // 画像（配列形式に変換）
-          image_urls: row.images 
-            ? (row.images as string).split(',').map(url => url.trim()).filter(Boolean)
-            : [],
-          image_count: row.images 
-            ? (row.images as string).split(',').filter(Boolean).length
-            : 0,
-          
-          // 配送情報
-          shipping_policy: row.shipping_policy_name || null,
-          shipping_service: row.shipping_policy_name || null,
-          handling_time: '1 day', // デフォルト値
-          
-          // HTML
-          html_description: row.description || null,
-          html_applied: false,
-          
-          // ステータス
-          ready_to_list: false,
-          listed_marketplaces: [],
-          
-          // Seller Mirror（初期値）
-          sm_competitors: null,
-          sm_min_price_usd: null,
-          sm_profit_margin: null,
-          sm_analyzed_at: null,
-          
-          // スコア（初期値）
-          listing_score: null,
-          score_calculated_at: null,
-          
-          // メタデータ
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }
+    )
+    console.log(`✅ EU責任者情報の補完完了`)
 
-        return product
-      })
+    // 4. データ変換（既存のテーブル構造に合わせる）
+    const products = enrichedData.map((row, index) => {
+      // 既存のテーブル構造に合わせたマッピング
+      const product: any = {
+        // 必須フィールド
+        item_id: row.sku || `ITEM-${Date.now()}-${index}`,
+        title: row.title || '',
+        sku: row.sku || `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        
+        // 価格情報（既存テーブルのカラム名に合わせる）
+        acquired_price_jpy: row.cost_price ? Math.round(parseFloat(String(row.cost_price))) : null,
+        ddp_price_usd: row.price ? parseFloat(String(row.price)) : null,
+        ddu_price_usd: row.price ? parseFloat(String(row.price)) : null,
+        
+        // 在庫
+        stock_quantity: parseInt(String(row.quantity || 1)),
+        condition: row.condition || 'New',
+        
+        // サイズ・重量
+        weight_g: row.weight ? parseFloat(String(row.weight)) * 1000 : null, // kgからgに変換
+        length_cm: row.length ? parseFloat(String(row.length)) : null,
+        width_cm: row.width ? parseFloat(String(row.width)) : null,
+        height_cm: row.height ? parseFloat(String(row.height)) : null,
+        
+        // カテゴリ
+        category_name: row.category_name || row.category || null,
+        category_number: row.category_id || null,
+        
+        // 画像（配列形式に変換）
+        image_urls: row.images 
+          ? (row.images as string).split(',').map(url => url.trim()).filter(Boolean)
+          : [],
+        image_count: row.images 
+          ? (row.images as string).split(',').filter(Boolean).length
+          : 0,
+        
+        // 配送情報
+        shipping_policy: row.shipping_policy_name || null,
+        shipping_service: row.shipping_policy_name || null,
+        handling_time: '1 day', // デフォルト値
+        
+        // HTML
+        html_description: row.description || null,
+        html_applied: false,
+        
+        // EU責任者情報
+        eu_responsible_company_name: row.eu_responsible_company_name || null,
+        eu_responsible_address_line1: row.eu_responsible_address_line1 || null,
+        eu_responsible_address_line2: row.eu_responsible_address_line2 || null,
+        eu_responsible_city: row.eu_responsible_city || null,
+        eu_responsible_state_or_province: row.eu_responsible_state_or_province || null,
+        eu_responsible_postal_code: row.eu_responsible_postal_code || null,
+        eu_responsible_country: row.eu_responsible_country || null,
+        eu_responsible_email: row.eu_responsible_email || null,
+        eu_responsible_phone: row.eu_responsible_phone || null,
+        eu_responsible_contact_url: row.eu_responsible_contact_url || null,
+        
+        // ステータス
+        ready_to_list: false,
+        listed_marketplaces: [],
+        
+        // Seller Mirror（初期値）
+        sm_competitors: null,
+        sm_min_price_usd: null,
+        sm_profit_margin: null,
+        sm_analyzed_at: null,
+        
+        // スコア（初期値）
+        listing_score: null,
+        score_calculated_at: null,
+        
+        // メタデータ
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+
+      return product
+    })
 
     console.log(`🔄 ${products.length}件の商品データを変換しました`)
 
@@ -168,7 +198,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // 4. バッチインサート（1000件ずつ）
+    // 5. バッチインサート（1000件ずつ）
     const batchSize = 1000
     let insertedCount = 0
     const errors: string[] = []
