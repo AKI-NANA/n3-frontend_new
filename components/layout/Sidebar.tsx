@@ -31,7 +31,6 @@ const statusLabels = {
 
 const navigationItems = [
   { id: "dashboard", label: "ダッシュボード", icon: "home", link: "/" },
-  { id: "git-deploy", label: "Git & デプロイ", icon: "git-branch", link: "/tools/git-deploy" },
   {
     id: "listing-tools", label: "出品ツール", icon: "upload",
     submenu: [
@@ -106,6 +105,7 @@ const navigationItems = [
   {
     id: "system", label: "システム管理", icon: "settings",
     submenu: [
+      { text: "Git & デプロイ", link: "/tools/git-deploy", icon: "git-branch", status: "ready" as const },
       { text: "ユーザー管理", link: "/users", icon: "users", status: "ready" as const },
       { text: "権限設定", link: "/permissions", icon: "shield", status: "ready" as const },
       { text: "バックアップ", link: "/backup", icon: "database", status: "new" as const },
