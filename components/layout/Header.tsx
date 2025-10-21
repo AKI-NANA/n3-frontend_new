@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Search, Bell, Palette, TrendingUp, BookOpen, User, Pin } from "lucide-react"
+import { Search, Bell, Palette, TrendingUp, BookOpen, User, Pin, LogOut } from "lucide-react"
+import { useAuth } from "@/contexts/AuthContext"
 
 interface WorldClocks {
   la: string
@@ -11,12 +12,16 @@ interface WorldClocks {
 }
 
 export default function Header() {
-  const [isVisible, setIsVisible] = useState(true)
-  const [isPinned, setIsPinned] = useState(true)
+  const [isVisible, setIsVisible] = useState(false)
+  const [isPinned, setIsPinned] = useState(false)
   const [theme, setTheme] = useState<"standard" | "blue" | "zen" | "gentle" | "dark">("standard")
   const [clocks, setClocks] = useState<WorldClocks>({ la: "", ny: "", berlin: "", tokyo: "" })
   const [rates, setRates] = useState({ usdJpy: 154.39, eurJpy: 167.52 })
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const headerRef = useRef<HTMLDivElement>(null)
+  const userMenuRef = useRef<HTMLDivElement>(null)
+  
+  const { user, logout } = useAuth()
 
   useEffect(() => {
     const updateClocks = () => {
@@ -67,6 +72,20 @@ export default function Header() {
     }
   }, [isVisible, isPinned])
 
+  // メニュー外クリックで閉じる
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false)
+      }
+    }
+
+    if (isUserMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isUserMenuOpen])
+
   const cycleTheme = () => {
     const themes: Array<"standard" | "blue" | "zen" | "gentle" | "dark"> = ["standard", "blue", "zen", "gentle", "dark"]
     const next = themes[(themes.indexOf(theme) + 1) % 5]
@@ -90,6 +109,11 @@ export default function Header() {
       case "gentle": return "目に優しい"
       case "dark": return "ダーク"
     }
+  }
+
+  const handleLogout = async () => {
+    setIsUserMenuOpen(false)
+    await logout()
   }
 
   return (
@@ -173,9 +197,36 @@ export default function Header() {
           <BookOpen size={18} />
         </button>
         
-        <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-          <User size={18} />
-        </button>
+        {/* User Menu */}
+        <div className="relative" ref={userMenuRef}>
+          <button 
+            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            <User size={18} />
+          </button>
+
+          {/* Dropdown Menu */}
+          {isUserMenuOpen && user && (
+            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50">
+              <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{user.username}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                  {user.role === 'admin' ? '管理者' : 'ユーザー'}
+                </p>
+              </div>
+              
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 border-t border-gray-200 dark:border-gray-700 mt-1"
+              >
+                <LogOut size={16} />
+                ログアウト
+              </button>
+            </div>
+          )}
+        </div>
 
         <button 
           onClick={() => setIsPinned(!isPinned)}

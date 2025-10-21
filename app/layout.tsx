@@ -1,10 +1,11 @@
 import type { Metadata } from "next"
-import { AuthProvider } from "@/lib/auth/hooks"
 import Header from "@/components/layout/Header"
 import Sidebar from "@/components/layout/Sidebar"
 import Footer from "@/components/layout/Footer"
 import RightSidebar from "@/components/layout/RightSidebar"
 import MainContent from "@/components/layout/MainContent"
+import { AuthProvider } from "@/contexts/AuthContext"
+import LayoutWrapper from "@/components/layout/LayoutWrapper"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -31,13 +32,9 @@ export default function RootLayout({
       </head>
       <body>
         <AuthProvider>
-          <Header />
-          <Sidebar />
-          <RightSidebar />
-          <MainContent>
+          <LayoutWrapper>
             {children}
-          </MainContent>
-          <Footer />
+          </LayoutWrapper>
         </AuthProvider>
       </body>
     </html>

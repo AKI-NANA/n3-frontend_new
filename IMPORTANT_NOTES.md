@@ -1,72 +1,132 @@
-# Next.js Configuration - 重要な注意事項
+# ⚠️ 重要な注意事項
 
-## ⚠️ 絶対にやってはいけないこと
+このファイルには、開発中に必ず守るべきルールと注意点をまとめています。
 
-### 1. next.config.ts の不正なパス設定
-❌ **絶対に追加しないでください：**
-```typescript
-experimental: {
-  turbo: {
-    root: '/Users/...' // 絶対パスを指定しない
-  }
-}
-```
+---
 
-✅ **正しい設定：**
-```typescript
-import type { NextConfig } from "next";
+## 🚨 絶対に守るべきルール
 
-const nextConfig: NextConfig = {
-  /* 必要な設定のみ */
-};
+### **1. 環境変数の管理**
+- **.env.local は絶対にGitにコミットしない**
+- センシティブな情報（APIキー、パスワード）は必ず環境変数に格納
+- `.gitignore` に `.env.local` が含まれていることを確認
 
-export default nextConfig;
-```
+### **2. データベース操作**
+- **本番データベースへの直接アクセスは禁止**
+- 必ずマイグレーションファイルを作成
+- テーブル削除は慎重に（バックアップ必須）
 
-### 2. 実行前のチェックリスト
+### **3. 認証・認可**
+- **認証なしでAPIエンドポイントを公開しない**
+- ユーザーの権限を必ずチェック
+- JWTトークンは安全に管理
 
-サーバー起動前に必ず確認：
-- [ ] next.config.ts に不要な設定がないか
-- [ ] .next ディレクトリが存在する場合は削除
-- [ ] node_modules/.cache が残っていないか
+### **4. コードスタイル**
+- TypeScriptの型定義を必ず記述
+- `any` 型の使用は最小限に
+- ESLintの警告を無視しない
 
-### 3. トラブル時の標準手順
+---
 
+## 📝 開発ルール
+
+### **ディレクトリ構造**
+1. 新しいツールは `app/tools/[tool-name]/` 配下に作成
+2. ツール固有のコンポーネントは `components/` 配下に配置しない
+3. 共通コンポーネントのみ `components/` に配置
+
+### **命名規則**
+- **ファイル名**: kebab-case（例: `user-profile.tsx`）
+- **コンポーネント名**: PascalCase（例: `UserProfile`）
+- **変数・関数名**: camelCase（例: `getUserData`）
+- **定数**: UPPER_SNAKE_CASE（例: `MAX_RETRY_COUNT`）
+
+### **API Routes**
+- 必ずエラーハンドリングを実装
+- レスポンスは必ず JSON 形式
+- HTTPステータスコードを適切に使用
+
+---
+
+## 🔐 セキュリティ
+
+### **認証トークン**
+- localStorageではなく、httpOnly Cookieを使用推奨
+- トークンの有効期限を設定
+- リフレッシュトークンの実装
+
+### **SQL インジェクション対策**
+- Supabaseのクエリビルダーを使用
+- 生SQLの使用は最小限に
+
+### **XSS対策**
+- ユーザー入力は必ずサニタイズ
+- `dangerouslySetInnerHTML` の使用は避ける
+
+---
+
+## 🐛 デバッグ
+
+### **開発時の確認事項**
+1. ブラウザのコンソールエラーをチェック
+2. ネットワークタブでAPI通信を確認
+3. React Developer Toolsで状態を確認
+
+### **よくあるエラーと対処法**
+
+#### **エラー: "Module not found"**
 ```bash
-# 1. プロセスを停止
-pkill -9 -f "next"
-
-# 2. キャッシュをクリア
-rm -rf .next node_modules/.cache
-
-# 3. 起動
-npm run dev
+# node_modulesを再インストール
+rm -rf node_modules package-lock.json
+npm install
 ```
 
-## 問題が起きた時の診断手順
+#### **エラー: "Hydration failed"**
+- サーバーとクライアントのレンダリング結果が異なる
+- `useEffect` でクライアント専用コードを実行
 
-1. **SWC警告が出た場合**
-   ```bash
-   rm -rf node_modules package-lock.json .next
-   npm install
-   npm run dev
-   ```
+#### **エラー: "Failed to fetch"**
+- APIエンドポイントのURLを確認
+- CORSエラーの場合は Next.js の設定を確認
 
-2. **接続拒否エラーの場合**
-   - next.config.ts を確認
-   - コンポーネントの構文エラーを確認
-   - ターミナルのエラーログを確認
+---
 
-3. **404エラーの場合**
-   - ファイル構造を確認
-   - app/ディレクトリのpage.tsxが存在するか確認
+## 📊 パフォーマンス
 
-## バックアップ戦略
+### **最適化のポイント**
+1. 画像は Next.js の `Image` コンポーネントを使用
+2. 大きなリストは仮想化（react-window）を検討
+3. 不要な再レンダリングを防ぐ（React.memo, useMemo）
 
-重要なファイルは定期的にバックアップ：
-- app/
-- components/
-- lib/
-- next.config.ts
-- package.json
-- tsconfig.json
+---
+
+## 🧪 テスト
+
+### **テスト方針**
+- 重要なビジネスロジックは必ずユニットテスト
+- API Routesは統合テスト
+- UIは必要に応じてE2Eテスト
+
+---
+
+## 📦 デプロイ前チェックリスト
+
+- [ ] 環境変数がすべて設定されている
+- [ ] ビルドエラーがない (`npm run build`)
+- [ ] ESLintエラーがない (`npm run lint`)
+- [ ] TypeScriptエラーがない (`npx tsc --noEmit`)
+- [ ] 本番用データベースの接続情報を確認
+- [ ] 不要なconsole.logを削除
+
+---
+
+## 🆘 問題が発生したら
+
+1. **エラーメッセージを確認**
+2. **ブラウザのコンソールをチェック**
+3. **PROJECT_MAP.md で該当箇所を確認**
+4. **それでも解決しない場合は Claude に相談**
+
+---
+
+**最終更新**: 2025-10-21

@@ -5,10 +5,16 @@ export const metadata: Metadata = {
   description: 'NAGANO-3 に ログイン',
 }
 
-export default function AuthLayout({
+export default function LoginLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  return <>{children}</>
+  return (
+    <html lang="ja">
+      <body>
+        {children}
+      </body>
+    </html>
+  )
 }

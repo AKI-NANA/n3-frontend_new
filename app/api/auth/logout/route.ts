@@ -1,22 +1,33 @@
-import { supabase } from '@/lib/auth/supabase'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * POST /api/auth/logout
- * ログアウト処理
+ * ログアウト処理（auth_token Cookieを削除）
  */
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
-    await supabase.auth.signOut()
+    console.log('✅ ログアウト処理を実行');
     
+    const response = NextResponse.json({
+      success: true,
+      message: 'ログアウトしました',
+    });
+
+    // Cookieを削除
+    response.cookies.set('auth_token', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 0,
+      path: '/',
+    });
+
+    return response;
+  } catch (error) {
+    console.error('❌ Logout error:', error);
     return NextResponse.json(
-      { message: 'Logged out successfully' },
-      { status: 200 }
-    )
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message },
+      { error: 'ログアウト処理中にエラーが発生しました' },
       { status: 500 }
-    )
+    );
   }
 }

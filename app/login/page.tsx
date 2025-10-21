@@ -1,16 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/auth/supabase'
+import { useAuth } from '@/contexts/AuthContext'
 import { LogIn, AlertCircle, Loader } from 'lucide-react'
 
 export default function LoginPage() {
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  
+  const { login } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -18,28 +18,12 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      // Supabase でログイン
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      if (authError) {
-        setError(authError.message || 'ログインに失敗しました')
-        setIsLoading(false)
-        return
-      }
-
-      if (!data.user) {
-        setError('ログインに失敗しました')
-        setIsLoading(false)
-        return
-      }
-
-      // ログイン成功 → ダッシュボードにリダイレクト
-      router.push('/dashboard')
+      await login(email, password)
+      // ログイン成功時は AuthContext 内で自動的にリダイレクト
     } catch (err: any) {
-      setError(err.message || 'エラーが発生しました')
+      setError(err.message || 'ログインに失敗しました')
+      console.error('ログインエラー:', err)
+    } finally {
       setIsLoading(false)
     }
   }
@@ -47,7 +31,6 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* ロゴ・タイトル */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
             <div className="bg-blue-600 p-3 rounded-lg">
@@ -58,10 +41,8 @@ export default function LoginPage() {
           <p className="text-slate-400">統合 eコマース管理システム</p>
         </div>
 
-        {/* ログインフォーム */}
         <div className="bg-slate-800 rounded-xl shadow-2xl p-8 border border-slate-700">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* エラーメッセージ */}
             {error && (
               <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4 flex gap-3">
                 <AlertCircle className="text-red-500 flex-shrink-0" size={20} />
@@ -69,7 +50,6 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* メール入力 */}
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 メールアドレス
@@ -87,7 +67,6 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* パスワード入力 */}
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 パスワード
@@ -105,7 +84,6 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* ログインボタン */}
             <button
               type="submit"
               disabled={isLoading}
@@ -125,22 +103,17 @@ export default function LoginPage() {
                 </>
               )}
             </button>
-
-            {/* フッター情報 */}
-            <p className="text-center text-slate-500 text-sm">
-              テストアカウント: demo@example.com / password123
-            </p>
           </form>
         </div>
 
-        {/* セキュリティ情報 */}
-        <div className="mt-6 p-4 bg-slate-700/50 rounded-lg border border-slate-600">
-          <p className="text-slate-400 text-xs">
-            このサイトは暗号化されています。
-            <br />
-            ログイン情報は安全に保護されます。
-          </p>
-        </div>
+        {/* デバッグ情報（開発環境のみ） */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-4 p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+            <p className="text-xs text-slate-400 mb-2">開発環境テスト情報:</p>
+            <p className="text-xs text-slate-300">メール: test@example.com</p>
+            <p className="text-xs text-slate-300">パスワード: test1234</p>
+          </div>
+        )}
       </div>
     </div>
   )
