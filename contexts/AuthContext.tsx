@@ -38,10 +38,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const data = await response.json();
         setUser(data.user);
       } else {
+        // 401エラーは正常（未ログイン状態）なので、エラーログを出さない
         setUser(null);
       }
     } catch (error) {
-      console.error('Failed to fetch user:', error);
+      // ネットワークエラーなど予期しないエラーのみログ出力
+      console.error('認証チェックエラー:', error);
       setUser(null);
     } finally {
       setLoading(false);
@@ -70,10 +72,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const data = await response.json();
     setUser(data.user);
     
-    // returnUrl パラメータがあればそこへ、なければダッシュボードへ
-    const searchParams = new URLSearchParams(window.location.search);
-    const returnUrl = searchParams.get('returnUrl') || '/';
-    router.push(returnUrl);
+    // ログイン成功後はダッシュボードへ
+    router.push('/dashboard');
   };
 
   const logout = async () => {
@@ -83,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         credentials: 'include',
       });
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('ログアウトエラー:', error);
     } finally {
       setUser(null);
       router.push('/login');
