@@ -6,7 +6,7 @@ import {
   Link, List, Plus, Tags, BarChart3,
   TrendingUp, Archive, Truck, AlertCircle, Zap, Target, Database,
   FileText, DollarSign, Users, Shield, Globe,
-  Pin, ChevronRight, Upload, Cog, CheckCircle, Edit, Calendar, Code, LogOut
+  Pin, ChevronRight, Upload, Cog, CheckCircle, Edit, Calendar, Code, LogOut, GitBranch
 } from "lucide-react"
 
 type SidebarState = "hidden" | "expanded" | "icon-only"
@@ -20,7 +20,7 @@ const iconMap: any = {
   database: Database, "file-text": FileText, "dollar-sign": DollarSign,
   users: Users, shield: Shield, globe: Globe, upload: Upload,
   cog: Cog, "check-circle": CheckCircle, edit: Edit, calendar: Calendar,
-  code: Code, logout: LogOut
+  code: Code, logout: LogOut, "git-branch": GitBranch
 }
 
 const statusLabels = {
@@ -31,6 +31,7 @@ const statusLabels = {
 
 const navigationItems = [
   { id: "dashboard", label: "ダッシュボード", icon: "home", link: "/" },
+  { id: "git-deploy", label: "Git & デプロイ", icon: "git-branch", link: "/tools/git-deploy" },
   {
     id: "listing-tools", label: "出品ツール", icon: "upload",
     submenu: [
