@@ -18,6 +18,8 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd ~/n3-frontend_new
+            # 必ずmainブランチにいることを確保
+            git checkout main
             git pull origin main
             npm install --production
             npm run build

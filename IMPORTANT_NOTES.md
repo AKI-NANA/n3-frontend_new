@@ -26,6 +26,12 @@
 - `any` 型の使用は最小限に
 - ESLintの警告を無視しない
 
+### **5. VPSブランチ管理**
+- **VPSは必ず main ブランチにいること**
+- デプロイ前に `git branch` で確認
+- feature branchにいると変更が反映されない
+- VPSで作業する際は必ず `git checkout main` から開始
+
 ---
 
 ## 📝 開発ルール
