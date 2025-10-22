@@ -176,6 +176,9 @@ export default function EditingPage() {
 
   const readyCount = products.filter(p => p.ready_to_list).length
   const incompleteCount = products.length - readyCount
+  const euResponsibleCount = products.filter(p =>
+    p.eu_responsible_company_name && p.eu_responsible_company_name.trim() !== ''
+  ).length
 
   const handleExportCSV = () => {
     if (products.length === 0) {
@@ -202,6 +205,84 @@ export default function EditingPage() {
     link.click()
 
     showToast(`${products.length}件をエクスポートしました`)
+  }
+
+  // モール別CSV出力（eBay用）
+  const handleExportEbayCSV = () => {
+    if (products.length === 0) {
+      showToast('エクスポートする商品がありません', 'error')
+      return
+    }
+
+    const ebayFields = ['sku', 'title', 'price', 'condition', 'description', 'category_name', 'shipping_info', 'brand', 'upc', 'mpn', 'images']
+    const headers = ebayFields.join(',')
+    const rows = products.map(product =>
+      ebayFields.map(field => {
+        const value = (product as any)[field] || ''
+        return typeof value === 'string' && value.includes(',') ? `"${value}"` : value
+      }).join(',')
+    )
+    const csv = [headers, ...rows].join('\n')
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `products_ebay_${new Date().toISOString().split('T')[0]}.csv`
+    link.click()
+
+    showToast(`eBay用 ${products.length}件をエクスポートしました`)
+  }
+
+  // モール別CSV出力（Yahoo用）
+  const handleExportYahooCSV = () => {
+    if (products.length === 0) {
+      showToast('エクスポートする商品がありません', 'error')
+      return
+    }
+
+    const yahooFields = ['sku', 'title', 'price', 'condition', 'description', 'category_name', 'images']
+    const headers = yahooFields.join(',')
+    const rows = products.map(product =>
+      yahooFields.map(field => {
+        const value = (product as any)[field] || ''
+        return typeof value === 'string' && value.includes(',') ? `"${value}"` : value
+      }).join(',')
+    )
+    const csv = [headers, ...rows].join('\n')
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `products_yahoo_${new Date().toISOString().split('T')[0]}.csv`
+    link.click()
+
+    showToast(`Yahoo用 ${products.length}件をエクスポートしました`)
+  }
+
+  // モール別CSV出力（Mercari用）
+  const handleExportMercariCSV = () => {
+    if (products.length === 0) {
+      showToast('エクスポートする商品がありません', 'error')
+      return
+    }
+
+    const mercariFields = ['sku', 'title', 'price', 'condition', 'description', 'images', 'shipping_info']
+    const headers = mercariFields.join(',')
+    const rows = products.map(product =>
+      mercariFields.map(field => {
+        const value = (product as any)[field] || ''
+        return typeof value === 'string' && value.includes(',') ? `"${value}"` : value
+      }).join(',')
+    )
+    const csv = [headers, ...rows].join('\n')
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `products_mercari_${new Date().toISOString().split('T')[0]}.csv`
+    link.click()
+
+    showToast(`Mercari用 ${products.length}件をエクスポートしました`)
   }
 
   // 選択された商品をオブジェクト配列に変換
@@ -358,6 +439,9 @@ export default function EditingPage() {
           onSave={handleSaveAll}
           onDelete={handleDelete}
           onExport={handleExportCSV}
+          onExportEbay={handleExportEbayCSV}
+          onExportYahoo={handleExportYahooCSV}
+          onExportMercari={handleExportMercariCSV}
           onList={handleListToMarketplace}
           onLoadData={loadProducts}
           onCSVUpload={() => setShowCSVModal(true)}
@@ -382,6 +466,7 @@ export default function EditingPage() {
           ready={readyCount}
           incomplete={incompleteCount}
           selected={selectedIds.size}
+          euResponsibleCount={euResponsibleCount}
         />
 
         <EditingTable
