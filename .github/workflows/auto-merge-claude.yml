@@ -30,7 +30,6 @@ jobs:
         run: |
           echo "Auto-merging PR #${{ github.event.pull_request.number }}"
           gh pr merge ${{ github.event.pull_request.number }} \
-            --auto \
             --squash \
             --delete-branch \
-            --repo ${{ github.repository }}
+            --repo ${{ github.repository }} || echo "Merge failed, will retry..."
