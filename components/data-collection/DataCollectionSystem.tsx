@@ -36,10 +36,10 @@ export function DataCollectionSystem({ className }: DataCollectionSystemProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [results, setResults] = useState<any[]>([])
   const [stats] = useState({
-    total: 45678,
-    success: 42345,
-    failed: 567,
-    inProgress: 2766
+    total: 0,
+    success: 0,
+    failed: 0,
+    inProgress: 0
   })
 
   // カテゴリ展開トグル
@@ -95,19 +95,7 @@ export function DataCollectionSystem({ className }: DataCollectionSystemProps) {
       setResults(prev => [...data.results, ...prev])
     } catch (error) {
       console.error('データ取得エラー:', error)
-      // フォールバック処理
-      const mockResults = urlInput.split('\n').filter(url => url.trim()).map((url, index) => ({
-        id: `result-${Date.now()}-${index}`,
-        url,
-        platform: selectedPlatforms[0] || 'auto-detect',
-        title: `商品タイトル ${index + 1}`,
-        price: Math.floor(Math.random() * 50000) + 1000,
-        status: Math.random() > 0.1 ? 'success' : 'error',
-        timestamp: new Date().toISOString(),
-        stock: Math.random() > 0.3 ? '在庫あり' : '在庫なし',
-        condition: ['新品', '中古-良', '中古-可'][Math.floor(Math.random() * 3)]
-      }))
-      setResults(prev => [...mockResults, ...prev])
+      alert('データ取得に失敗しました。APIが実装されていません。')
     } finally {
       setIsLoading(false)
       setUrlInput('')
