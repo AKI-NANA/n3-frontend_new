@@ -9,7 +9,8 @@ export async function POST() {
     // SSH経由でVPSにデプロイコマンド実行
     const commands = [
       'cd ~/n3-frontend_new',
-      'git pull origin main',
+      'git fetch origin',
+      'git reset --hard origin/main',
       'npm install',
       'npm run build',
       'pm2 restart n3-frontend'

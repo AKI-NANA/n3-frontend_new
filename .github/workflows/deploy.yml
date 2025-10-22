@@ -18,7 +18,8 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd ~/n3-frontend_new
-            git pull origin main
+            git fetch origin
+            git reset --hard origin/main
             npm install --production
             npm run build
             pm2 restart n3-frontend
