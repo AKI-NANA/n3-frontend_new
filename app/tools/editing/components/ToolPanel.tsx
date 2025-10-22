@@ -1,8 +1,9 @@
 // app/tools/editing/components/ToolPanel.tsx
 'use client'
 
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { RefreshCw, Upload } from 'lucide-react'
+import { RefreshCw, Upload, ChevronDown } from 'lucide-react'
 
 interface ToolPanelProps {
   modifiedCount: number
@@ -20,6 +21,9 @@ interface ToolPanelProps {
   onSave: () => void
   onDelete: () => void
   onExport: () => void
+  onExportEbay?: () => void
+  onExportYahoo?: () => void
+  onExportMercari?: () => void
   onList: () => void
   onLoadData: () => void
   onCSVUpload: () => void // 追加
@@ -41,10 +45,14 @@ export function ToolPanel({
   onSave,
   onDelete,
   onExport,
+  onExportEbay,
+  onExportYahoo,
+  onExportMercari,
   onList,
   onLoadData,
   onCSVUpload // 追加
 }: ToolPanelProps) {
+  const [showCSVMenu, setShowCSVMenu] = useState(false)
   return (
     <div className="bg-card border border-border rounded-lg mb-3 shadow-sm">
       <div className="border-b border-border bg-muted/50 px-3 py-2 flex items-center justify-between">
@@ -161,15 +169,51 @@ export function ToolPanel({
           削除
         </Button>
         
-        <Button
-          onClick={onExport}
-          disabled={processing}
-          variant="outline"
-          size="sm"
-          className="h-8 text-xs"
-        >
-          CSV
-        </Button>
+        <div className="relative inline-block">
+          <Button
+            onClick={() => setShowCSVMenu(!showCSVMenu)}
+            disabled={processing}
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs flex items-center gap-1"
+          >
+            CSV <ChevronDown className="w-3 h-3" />
+          </Button>
+          {showCSVMenu && (
+            <div className="absolute right-0 mt-1 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50">
+              <button
+                onClick={() => { onExport(); setShowCSVMenu(false) }}
+                className="w-full px-3 py-2 text-left text-xs hover:bg-gray-100 dark:hover:bg-gray-700 first:rounded-t-md"
+              >
+                全項目
+              </button>
+              {onExportEbay && (
+                <button
+                  onClick={() => { onExportEbay(); setShowCSVMenu(false) }}
+                  className="w-full px-3 py-2 text-left text-xs hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  eBay用
+                </button>
+              )}
+              {onExportYahoo && (
+                <button
+                  onClick={() => { onExportYahoo(); setShowCSVMenu(false) }}
+                  className="w-full px-3 py-2 text-left text-xs hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  Yahoo用
+                </button>
+              )}
+              {onExportMercari && (
+                <button
+                  onClick={() => { onExportMercari(); setShowCSVMenu(false) }}
+                  className="w-full px-3 py-2 text-left text-xs hover:bg-gray-100 dark:hover:bg-gray-700 last:rounded-b-md"
+                >
+                  Mercari用
+                </button>
+              )}
+            </div>
+          )}
+        </div>
         
         <Button
           onClick={onCSVUpload}

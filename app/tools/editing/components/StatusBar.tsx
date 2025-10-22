@@ -7,9 +7,10 @@ interface StatusBarProps {
   ready: number
   incomplete: number
   selected: number
+  euResponsibleCount?: number
 }
 
-export function StatusBar({ total, unsaved, ready, incomplete, selected }: StatusBarProps) {
+export function StatusBar({ total, unsaved, ready, incomplete, selected, euResponsibleCount = 0 }: StatusBarProps) {
   return (
     <div className="bg-card border border-border rounded-lg mb-3 p-2.5 shadow-sm">
       <div className="flex items-center justify-between text-xs">
@@ -26,6 +27,9 @@ export function StatusBar({ total, unsaved, ready, incomplete, selected }: Statu
           </span>
           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
             未完了: {incomplete}
+          </span>
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+            EU責任者: {euResponsibleCount}
           </span>
         </div>
 

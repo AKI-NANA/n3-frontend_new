@@ -92,10 +92,18 @@ export function DataCollectionSystem({ className }: DataCollectionSystemProps) {
       })
       
       const data = await response.json()
+
+      // 警告メッセージがある場合は表示
+      if (data.warning || data.isMockData) {
+        const warningMsg = data.warning || 'モックデータを使用しています'
+        const errorDetails = data.errors ? `\n\n詳細:\n${data.errors.join('\n')}` : ''
+        alert(`⚠️ ${warningMsg}${errorDetails}`)
+      }
+
       setResults(prev => [...data.results, ...prev])
     } catch (error) {
       console.error('データ取得エラー:', error)
-      alert('データ取得に失敗しました。APIが実装されていません。')
+      alert('データ取得に失敗しました。APIサーバーに接続できません。')
     } finally {
       setIsLoading(false)
       setUrlInput('')

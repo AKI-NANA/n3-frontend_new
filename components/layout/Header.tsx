@@ -12,8 +12,8 @@ interface WorldClocks {
 }
 
 export default function Header() {
-  const [isVisible, setIsVisible] = useState(false)
-  const [isPinned, setIsPinned] = useState(false)
+  const [isVisible, setIsVisible] = useState(true)
+  const [isPinned, setIsPinned] = useState(true)
   const [theme, setTheme] = useState<"standard" | "blue" | "zen" | "gentle" | "dark">("standard")
   const [clocks, setClocks] = useState<WorldClocks>({ la: "", ny: "", berlin: "", tokyo: "" })
   const [rates, setRates] = useState({ usdJpy: 154.39, eurJpy: 167.52 })
