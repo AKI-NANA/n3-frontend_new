@@ -44,6 +44,8 @@ export default function GitDeployPage() {
   const [envInfo, setEnvInfo] = useState<any>(null)
   const [checkingEnv, setCheckingEnv] = useState(false)
   const [syncingEnv, setSyncingEnv] = useState(false)
+  const [showEnvContent, setShowEnvContent] = useState(false)
+  const [envContent, setEnvContent] = useState('')
 
   // Git状態をチェック
   const checkGitStatus = async () => {
@@ -162,36 +164,25 @@ export default function GitDeployPage() {
     }
   }
 
-  const handleEnvSync = async () => {
-    if (!confirm('ローカルの .env.local をVPSに同期します。よろしいですか？')) {
-      return
-    }
-
-    setSyncingEnv(true)
-    setResult(null)
-
+  const loadEnvContent = async () => {
     try {
-      const response = await fetch('/api/env/sync', {
-        method: 'POST',
-      })
-
+      const response = await fetch('/api/env/content')
       const data = await response.json()
-      setResult({
-        success: response.ok,
-        message: data.message || data.error
-      })
-
-      if (response.ok) {
-        await checkEnvStatus()
+      if (data.success) {
+        setEnvContent(data.content)
+        setShowEnvContent(true)
       }
     } catch (error) {
-      setResult({
-        success: false,
-        message: '環境変数の同期に失敗しました'
-      })
-    } finally {
-      setSyncingEnv(false)
+      console.error('Failed to load env content:', error)
     }
+  }
+
+  const copyEnvContent = () => {
+    navigator.clipboard.writeText(envContent)
+    setResult({
+      success: true,
+      message: '環境変数の内容をクリップボードにコピーしました！VPSで貼り付けてください。'
+    })
   }
 
   useEffect(() => {
@@ -599,34 +590,55 @@ export default function GitDeployPage() {
                 <AlertCircle className="w-4 h-4 text-amber-600" />
                 <AlertDescription className="text-xs text-amber-800 dark:text-amber-200">
                   <strong>重要:</strong> .env.local ファイルはGitには含まれません。
-                  VPSに直接アップロードする必要があります。
+                  手動でVPSにコピーする必要があります。
                 </AlertDescription>
               </Alert>
 
-              <Button
-                onClick={handleEnvSync}
-                disabled={syncingEnv || !envInfo?.exists}
-                className="w-full bg-amber-600 hover:bg-amber-700"
-              >
-                {syncingEnv ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    同期中...
-                  </>
-                ) : (
-                  <>
-                    <Database className="w-4 h-4 mr-2" />
-                    VPSに環境変数を同期
-                  </>
-                )}
-              </Button>
+              {!showEnvContent ? (
+                <Button
+                  onClick={loadEnvContent}
+                  disabled={!envInfo?.exists}
+                  className="w-full bg-amber-600 hover:bg-amber-700"
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  環境変数の内容を表示
+                </Button>
+              ) : (
+                <div className="space-y-3">
+                  <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded border">
+                    <pre className="text-xs overflow-x-auto whitespace-pre-wrap">
+                      {envContent}
+                    </pre>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={copyEnvContent}
+                      className="flex-1 bg-green-600 hover:bg-green-700"
+                    >
+                      <Code className="w-4 h-4 mr-2" />
+                      クリップボードにコピー
+                    </Button>
+                    <Button
+                      onClick={() => setShowEnvContent(false)}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      閉じる
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               <div className="text-xs text-muted-foreground space-y-1">
-                <p className="font-medium">実行内容：</p>
+                <p className="font-medium">VPSでの手順：</p>
                 <code className="block bg-slate-100 dark:bg-slate-800 p-2 rounded">
-                  1. ローカルの .env.local を読み取り<br/>
-                  2. VPSに SCP でアップロード<br/>
-                  3. pm2 restart n3-frontend を実行
+                  ssh ubuntu@tk2-236-27682.vs.sakura.ne.jp<br/>
+                  cd ~/n3-frontend_new<br/>
+                  nano .env.local<br/>
+                  # 上記でコピーした内容を貼り付け<br/>
+                  # Ctrl+O → Enter → Ctrl+X<br/>
+                  pm2 restart n3-frontend
                 </code>
               </div>
             </CardContent>

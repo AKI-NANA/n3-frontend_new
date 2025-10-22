@@ -23,23 +23,19 @@ export async function POST() {
 
     const envContent = fs.readFileSync(envLocalPath, 'utf-8')
 
-    // 2. 一時ファイルに保存
-    const tempFilePath = path.join(process.cwd(), '.env.local.tmp')
-    fs.writeFileSync(tempFilePath, envContent)
+    // 2. SSH経由でVPSにファイル内容を送信
+    // エスケープ処理：シングルクォート内でシングルクォートを使えるようにする
+    const escapedContent = envContent.replace(/'/g, "'\\''")
 
-    // 3. VPSにSCP経由でアップロード
-    const scpCommand = `scp -o StrictHostKeyChecking=no ${tempFilePath} ${VPS_HOST}:${VPS_PROJECT_PATH}/.env.local`
+    const uploadCommand = `ssh -o StrictHostKeyChecking=no ${VPS_HOST} "echo '${escapedContent}' > ${VPS_PROJECT_PATH}/.env.local"`
 
     try {
-      const { stdout, stderr } = await execAsync(scpCommand, {
+      const { stdout, stderr } = await execAsync(uploadCommand, {
         timeout: 30000,
         maxBuffer: 10 * 1024 * 1024
       })
 
-      // 一時ファイルを削除
-      fs.unlinkSync(tempFilePath)
-
-      // 4. VPSでpm2を再起動
+      // 3. VPSでpm2を再起動
       const restartCommand = `ssh -o StrictHostKeyChecking=no ${VPS_HOST} "cd ${VPS_PROJECT_PATH} && pm2 restart n3-frontend"`
       await execAsync(restartCommand, { timeout: 30000 })
 
@@ -54,11 +50,6 @@ export async function POST() {
       })
 
     } catch (error: any) {
-      // 一時ファイルをクリーンアップ
-      if (fs.existsSync(tempFilePath)) {
-        fs.unlinkSync(tempFilePath)
-      }
-
       console.error('VPS同期エラー:', error)
 
       return NextResponse.json({
