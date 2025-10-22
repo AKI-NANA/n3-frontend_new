@@ -82,8 +82,8 @@ export function useProductData() {
   async function deleteSelected(ids: string[]) {
     try {
       await deleteProducts(ids)
-      const idsNum = ids.map(id => parseInt(id, 10))
-      setProducts(prev => prev.filter(p => !idsNum.includes(p.id)))
+      // 削除後にデータベースから再読み込み
+      await loadProducts()
       return { success: true }
     } catch (err) {
       return {

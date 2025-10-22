@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Code, Send, Globe } from 'lucide-react'
+import { Code, Send, Globe, X } from 'lucide-react'
 import { HTMLPublishModal } from './HTMLPublishModal'
 
 interface Product {
@@ -18,6 +18,7 @@ interface Product {
 interface HTMLPublishPanelProps {
   selectedProducts: Product[]
   onPublish?: (result: any) => void
+  onClose?: () => void
 }
 
 const MALLS = [
@@ -33,7 +34,8 @@ const MALLS = [
  */
 export function HTMLPublishPanel({
   selectedProducts,
-  onPublish
+  onPublish,
+  onClose
 }: HTMLPublishPanelProps) {
   const [selectedMall, setSelectedMall] = useState('ebay')
   const [selectedCountry, setSelectedCountry] = useState('US')
@@ -82,18 +84,43 @@ export function HTMLPublishPanel({
         padding: '1.5rem',
         marginBottom: '1.5rem'
       }}>
-        <h3 style={{
-          margin: '0 0 1.5rem 0',
-          fontSize: '1.1rem',
-          fontWeight: 600,
-          color: '#146C94',
+        <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '0.5rem'
+          justifyContent: 'space-between',
+          marginBottom: '1.5rem'
         }}>
-          <Code size={20} />
-          HTML生成・出品
-        </h3>
+          <h3 style={{
+            margin: 0,
+            fontSize: '1.1rem',
+            fontWeight: 600,
+            color: '#146C94',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            <Code size={20} />
+            HTML生成・出品
+          </h3>
+          {onClose && (
+            <button
+              onClick={onClose}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: '#666',
+                padding: '0.25rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              title="閉じる"
+            >
+              <X size={20} />
+            </button>
+          )}
+        </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
           {/* モール選択 */}

@@ -49,6 +49,7 @@ export default function EditingPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [showPasteModal, setShowPasteModal] = useState(false)
   const [showCSVModal, setShowCSVModal] = useState(false)
+  const [showHTMLPanel, setShowHTMLPanel] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -176,6 +177,33 @@ export default function EditingPage() {
   const readyCount = products.filter(p => p.ready_to_list).length
   const incompleteCount = products.length - readyCount
 
+  const handleExportCSV = () => {
+    if (products.length === 0) {
+      showToast('エクスポートする商品がありません', 'error')
+      return
+    }
+
+    // CSV生成
+    const headers = Object.keys(products[0]).join(',')
+    const rows = products.map(product =>
+      Object.values(product).map(value =>
+        typeof value === 'string' && value.includes(',')
+          ? `"${value}"`
+          : value
+      ).join(',')
+    )
+    const csv = [headers, ...rows].join('\n')
+
+    // ダウンロード
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `products_all_${new Date().toISOString().split('T')[0]}.csv`
+    link.click()
+
+    showToast(`${products.length}件をエクスポートしました`)
+  }
+
   // 選択された商品をオブジェクト配列に変換
   const selectedProducts = products.filter(p => selectedIds.has(String(p.id)))
 
@@ -275,19 +303,9 @@ export default function EditingPage() {
               showToast(result.error || '利益計算に失敗しました', 'error')
             }
           }}
-          onHTML={async () => {
-            if (selectedIds.size === 0) {
-              showToast('商品を選択してください', 'error')
-              return
-            }
-            const productIds = Array.from(selectedIds)
-            const result = await runBatchHTML(productIds)
-            if (result.success) {
-              showToast(`HTML生成完了: ${result.updated}件`)
-              await loadProducts()
-            } else {
-              showToast(result.error || 'HTML生成に失敗しました', 'error')
-            }
+          onHTML={() => {
+            // HTMLパネルを表示
+            setShowHTMLPanel(true)
           }}
           onSellerMirror={async () => {
             console.log('=== SM分析開始 ===')
@@ -339,7 +357,7 @@ export default function EditingPage() {
           onScores={() => runBatchScores(products)}
           onSave={handleSaveAll}
           onDelete={handleDelete}
-          onExport={() => showToast('CSV出力')}
+          onExport={handleExportCSV}
           onList={handleListToMarketplace}
           onLoadData={loadProducts}
           onCSVUpload={() => setShowCSVModal(true)}
@@ -350,10 +368,13 @@ export default function EditingPage() {
           onChange={setMarketplaces}
         />
 
-        {/* HTML生成・出品パネル - 新規追加 */}
-        <HTMLPublishPanel
-          selectedProducts={selectedProducts}
-        />
+        {/* HTML生成・出品パネル - HTMLボタンが押されたときのみ表示 */}
+        {showHTMLPanel && (
+          <HTMLPublishPanel
+            selectedProducts={selectedProducts}
+            onClose={() => setShowHTMLPanel(false)}
+          />
+        )}
 
         <StatusBar
           total={total}
