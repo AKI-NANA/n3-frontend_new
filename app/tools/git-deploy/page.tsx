@@ -8,20 +8,22 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { 
-  GitBranch, 
-  Upload, 
-  RefreshCw, 
-  Terminal, 
-  BookOpen, 
-  CheckCircle, 
+import {
+  GitBranch,
+  Upload,
+  RefreshCw,
+  Terminal,
+  BookOpen,
+  CheckCircle,
   XCircle,
   Loader2,
   Server,
   Code,
   FileText,
   AlertCircle,
-  Eye
+  Eye,
+  Key,
+  Database
 } from 'lucide-react'
 
 interface GitStatus {
@@ -39,6 +41,9 @@ export default function GitDeployPage() {
   const [commitMessage, setCommitMessage] = useState('')
   const [diffInfo, setDiffInfo] = useState<any>(null)
   const [showingDiff, setShowingDiff] = useState(false)
+  const [envInfo, setEnvInfo] = useState<any>(null)
+  const [checkingEnv, setCheckingEnv] = useState(false)
+  const [syncingEnv, setSyncingEnv] = useState(false)
 
   // Git状態をチェック
   const checkGitStatus = async () => {
@@ -143,6 +148,55 @@ export default function GitDeployPage() {
       setShowingDiff(false)
     }
   }
+
+  const checkEnvStatus = async () => {
+    setCheckingEnv(true)
+    try {
+      const response = await fetch('/api/env/sync')
+      const data = await response.json()
+      setEnvInfo(data)
+    } catch (error) {
+      console.error('Env check failed:', error)
+    } finally {
+      setCheckingEnv(false)
+    }
+  }
+
+  const handleEnvSync = async () => {
+    if (!confirm('ローカルの .env.local をVPSに同期します。よろしいですか？')) {
+      return
+    }
+
+    setSyncingEnv(true)
+    setResult(null)
+
+    try {
+      const response = await fetch('/api/env/sync', {
+        method: 'POST',
+      })
+
+      const data = await response.json()
+      setResult({
+        success: response.ok,
+        message: data.message || data.error
+      })
+
+      if (response.ok) {
+        await checkEnvStatus()
+      }
+    } catch (error) {
+      setResult({
+        success: false,
+        message: '環境変数の同期に失敗しました'
+      })
+    } finally {
+      setSyncingEnv(false)
+    }
+  }
+
+  useEffect(() => {
+    checkEnvStatus()
+  }, [])
 
   const commands = [
     {
@@ -471,6 +525,112 @@ export default function GitDeployPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* 環境変数同期 */}
+          <Card className="border-2 border-amber-200 dark:border-amber-800">
+            <CardHeader className="bg-amber-50 dark:bg-amber-900/20">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Key className="w-5 h-5" />
+                  環境変数同期 (.env.local)
+                </CardTitle>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={checkEnvStatus}
+                  disabled={checkingEnv}
+                >
+                  {checkingEnv ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+              <CardDescription>
+                ローカルの環境変数をVPSに安全に同期
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-6">
+              {envInfo ? (
+                <div className="space-y-3">
+                  {envInfo.exists ? (
+                    <>
+                      <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded border border-green-200">
+                        <div className="flex items-center gap-2 mb-2">
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                          <span className="font-medium text-sm">ローカル環境変数ファイル検出</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                          <div>
+                            <span className="font-medium">環境変数:</span> {envInfo.envVariables}個
+                          </div>
+                          <div>
+                            <span className="font-medium">ファイルサイズ:</span> {envInfo.fileSize} bytes
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded">
+                        <p className="text-xs font-medium mb-2">検出された環境変数キー:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {envInfo.keys?.map((key: string, idx: number) => (
+                            <Badge key={idx} variant="outline" className="text-xs">
+                              {key}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <Alert variant="destructive">
+                      <AlertCircle className="w-4 h-4" />
+                      <AlertDescription>
+                        .env.local ファイルが見つかりません
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">読み込み中...</p>
+              )}
+
+              <Alert className="bg-amber-50 dark:bg-amber-900/20 border-amber-200">
+                <AlertCircle className="w-4 h-4 text-amber-600" />
+                <AlertDescription className="text-xs text-amber-800 dark:text-amber-200">
+                  <strong>重要:</strong> .env.local ファイルはGitには含まれません。
+                  VPSに直接アップロードする必要があります。
+                </AlertDescription>
+              </Alert>
+
+              <Button
+                onClick={handleEnvSync}
+                disabled={syncingEnv || !envInfo?.exists}
+                className="w-full bg-amber-600 hover:bg-amber-700"
+              >
+                {syncingEnv ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    同期中...
+                  </>
+                ) : (
+                  <>
+                    <Database className="w-4 h-4 mr-2" />
+                    VPSに環境変数を同期
+                  </>
+                )}
+              </Button>
+
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p className="font-medium">実行内容：</p>
+                <code className="block bg-slate-100 dark:bg-slate-800 p-2 rounded">
+                  1. ローカルの .env.local を読み取り<br/>
+                  2. VPSに SCP でアップロード<br/>
+                  3. pm2 restart n3-frontend を実行
+                </code>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 

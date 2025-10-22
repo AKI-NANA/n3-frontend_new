@@ -1,10 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { createClient } from '@/lib/supabase/client'
 
 // 標準60重量帯の定義
 const STANDARD_WEIGHT_RANGES = [
@@ -34,6 +29,7 @@ const AFRICAN_COUNTRIES = [
  * 重量に最も近いマスターデータを検索
  */
 async function findClosestPrice(
+  supabase: any,
   serviceType: string,
   countryCode: string,
   weightFrom: number,
@@ -62,6 +58,7 @@ async function findClosestPrice(
  * アフリカ諸国の平均価格を計算
  */
 async function calculateAfricaAveragePrice(
+  supabase: any,
   serviceType: string,
   weightFrom: number,
   weightTo: number
@@ -70,7 +67,7 @@ async function calculateAfricaAveragePrice(
   const additionals: number[] = []
 
   for (const countryCode of AFRICAN_COUNTRIES) {
-    const pricing = await findClosestPrice(serviceType, countryCode, weightFrom, weightTo)
+    const pricing = await findClosestPrice(supabase, serviceType, countryCode, weightFrom, weightTo)
     if (pricing) {
       prices.push(pricing.recommended_price_usd)
       additionals.push(pricing.additional_item_usd)
@@ -90,9 +87,9 @@ async function calculateAfricaAveragePrice(
 /**
  * 新Rate Table生成
  */
-async function generateUnifiedRateTable(serviceType: string) {
+async function generateUnifiedRateTable(supabase: any, serviceType: string) {
   const rateTableName = `RT_${serviceType}`
-  
+
   console.log(`\n🔄 ${rateTableName} 生成開始...`)
 
   // 既存データ削除
@@ -132,6 +129,7 @@ async function generateUnifiedRateTable(serviceType: string) {
     // 通常国
     for (const country of uniqueCountries) {
       const pricing = await findClosestPrice(
+        supabase,
         serviceType,
         country.country_code,
         range.from,
@@ -156,6 +154,7 @@ async function generateUnifiedRateTable(serviceType: string) {
 
     // アフリカ（1つにまとめる）
     const africaPricing = await calculateAfricaAveragePrice(
+      supabase,
       serviceType,
       range.from,
       range.to
@@ -212,15 +211,17 @@ async function generateUnifiedRateTable(serviceType: string) {
  */
 export async function POST() {
   try {
+    const supabase = createClient()
+
     console.log('🚀 Rate Table再構築開始\n')
     console.log('📋 設定:')
     console.log(`  - 重量帯: ${STANDARD_WEIGHT_RANGES.length}種類`)
     console.log(`  - アフリカ: ${AFRICAN_COUNTRIES.length}カ国を統合\n`)
 
     const results = {
-      Express: await generateUnifiedRateTable('Express'),
-      Standard: await generateUnifiedRateTable('Standard'),
-      Economy: await generateUnifiedRateTable('Economy')
+      Express: await generateUnifiedRateTable(supabase, 'Express'),
+      Standard: await generateUnifiedRateTable(supabase, 'Standard'),
+      Economy: await generateUnifiedRateTable(supabase, 'Economy')
     }
 
     const totalEntries = 
