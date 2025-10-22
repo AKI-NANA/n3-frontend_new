@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { createClient } from '@/lib/supabase/client'
 
 export async function GET(request: NextRequest) {
   try {
+    const supabase = createClient()
     const { searchParams } = new URL(request.url)
     const service = searchParams.get('service') || 'Express'
 
@@ -20,7 +16,7 @@ export async function GET(request: NextRequest) {
     let allData: any[] = []
     let from = 0
     const batchSize = 1000
-    
+
     while (true) {
       const { data: batch, error: fetchError } = await supabase
         .from('ebay_rate_table_entries')
