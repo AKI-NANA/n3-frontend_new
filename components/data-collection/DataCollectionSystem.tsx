@@ -79,7 +79,7 @@ export function DataCollectionSystem({ className }: DataCollectionSystemProps) {
     }
 
     setIsLoading(true)
-    
+
     // APIコール
     try {
       const response = await fetch('/api/scraping/execute', {
@@ -90,7 +90,7 @@ export function DataCollectionSystem({ className }: DataCollectionSystemProps) {
           platforms: selectedPlatforms
         })
       })
-      
+
       const data = await response.json()
 
       // 警告メッセージがある場合は表示
@@ -108,6 +108,46 @@ export function DataCollectionSystem({ className }: DataCollectionSystemProps) {
       setIsLoading(false)
       setUrlInput('')
     }
+  }
+
+  // CSVエクスポート
+  const handleExportCSV = () => {
+    if (results.length === 0) {
+      alert('エクスポートするデータがありません')
+      return
+    }
+
+    // CSVヘッダー
+    const headers = ['タイトル', '価格', 'URL', '在庫状況', 'コンディション', 'ステータス', '取得日時']
+
+    // CSVデータ
+    const rows = results.map(result => [
+      result.title || '',
+      result.price || '',
+      result.url || '',
+      result.stock || '',
+      result.condition || '',
+      result.status || '',
+      result.timestamp || ''
+    ])
+
+    // CSV文字列を作成
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n')
+
+    // BOMを追加（Excelで文字化けしないように）
+    const bom = '\uFEFF'
+    const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' })
+
+    // ダウンロード
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `scraping_results_${new Date().toISOString().split('T')[0]}.csv`
+    link.click()
+
+    alert(`${results.length}件をCSVエクスポートしました`)
   }
 
   // 総プラットフォーム数を計算
@@ -356,7 +396,7 @@ export function DataCollectionSystem({ className }: DataCollectionSystemProps) {
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle>取得結果</CardTitle>
-                      <Button variant="link" size="sm">
+                      <Button variant="link" size="sm" onClick={handleExportCSV}>
                         <Download className="mr-1 h-3 w-3" />
                         CSVエクスポート
                       </Button>
