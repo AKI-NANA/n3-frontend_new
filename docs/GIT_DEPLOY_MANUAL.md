@@ -186,6 +186,45 @@ git push origin main
 1. 先に「Git Push 実行」を完了させる
 2. ローカルで `npm run build` を実行してエラーがないか確認
 
+### Q4: デプロイしたのに変更が反映されない
+**原因:**
+- VPSが間違ったブランチ（feature branch）にいる
+- mainブランチではなく、古いfeature branchからデプロイされている
+
+**症状:**
+- GitHub Actions は成功している
+- ビルドも成功している
+- でも本番サイトに変更が見られない
+
+**確認方法:**
+```bash
+ssh ubuntu@tk2-236-27682.vs.sakura.ne.jp
+cd ~/n3-frontend_new
+git branch              # 現在のブランチを確認
+git log --oneline -3    # 現在のコミットを確認
+```
+
+**解決策:**
+```bash
+# mainブランチに切り替え
+git checkout main
+
+# 最新を取得
+git pull origin main
+
+# クリーンビルド
+rm -rf .next
+npm run build
+
+# 再起動
+pm2 restart n3-frontend
+```
+
+**予防策:**
+- VPSで作業する際は必ず `git checkout main` を確認
+- デプロイ後は `git branch` で main にいることを確認
+- VPSは常に main ブランチを追跡すべき
+
 ---
 
 ## 📚 参考情報
