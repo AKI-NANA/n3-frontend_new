@@ -106,6 +106,7 @@ const navigationItems = [
     id: "system", label: "システム管理", icon: "settings",
     submenu: [
       { text: "Git & デプロイ", link: "/tools/git-deploy", icon: "git-branch", status: "ready" as const },
+      { text: "eBay OAuth認証", link: "/tools/ebay-oauth", icon: "shield", status: "ready" as const },
       { text: "ユーザー管理", link: "/users", icon: "users", status: "ready" as const },
       { text: "権限設定", link: "/permissions", icon: "shield", status: "ready" as const },
       { text: "バックアップ", link: "/backup", icon: "database", status: "new" as const },
