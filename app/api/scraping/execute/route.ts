@@ -177,9 +177,18 @@ async function scrapeYahooAuction(url: string): Promise<ScrapingResult> {
 
   } catch (error) {
     console.error(`[Scraping] エラー:`, error)
+    console.error(`[Scraping] エラー詳細:`, {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    })
 
     if (browser) {
-      await browser.close()
+      try {
+        await browser.close()
+      } catch (closeError) {
+        console.error('[Scraping] ブラウザクローズエラー:', closeError)
+      }
     }
 
     return {
@@ -192,7 +201,11 @@ async function scrapeYahooAuction(url: string): Promise<ScrapingResult> {
       timestamp: new Date().toISOString(),
       stock: '不明',
       condition: '不明',
-      error: error instanceof Error ? error.message : 'スクレイピング失敗'
+      error: error instanceof Error ? error.message : 'スクレイピング失敗',
+      debugInfo: {
+        errorType: error instanceof Error ? error.name : 'Unknown',
+        suggestion: 'Run: npx puppeteer browsers install chrome'
+      }
     }
   }
 }
@@ -203,7 +216,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { urls, platforms } = body
 
-    console.log(`[API] スクレイピングリクエスト受信: ${urls.length}件`)
+    console.log(`[API] スクレイピングリクエスト受信: ${urls?.length || 0}件`)
+    console.log(`[API] 環境:`, {
+      nodeEnv: process.env.NODE_ENV,
+      hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      hasSupabaseKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+    })
 
     // 各URLをスクレイピング
     const results: ScrapingResult[] = []
