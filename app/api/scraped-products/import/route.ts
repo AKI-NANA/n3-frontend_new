@@ -116,6 +116,23 @@ export async function POST(request: NextRequest) {
 
         console.log('[Import] インポート実行:', productData.title)
 
+        // 重複チェック: 既に同じitem_idが存在するか確認
+        const { data: existingProduct } = await supabase
+          .from('products')
+          .select('id, item_id, title')
+          .eq('item_id', productData.item_id)
+          .maybeSingle()
+
+        if (existingProduct) {
+          console.log('[Import] スキップ (既に存在):', existingProduct.item_id)
+          errors.push({
+            scrapedId: scraped.id,
+            title: scraped.title,
+            error: `既に商品マスターに存在します (ID: ${existingProduct.id})`
+          })
+          continue
+        }
+
         // products テーブルに挿入
         const { data: inserted, error: insertError } = await supabase
           .from('products')
