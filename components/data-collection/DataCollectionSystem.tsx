@@ -36,6 +36,8 @@ export function DataCollectionSystem({ className }: DataCollectionSystemProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [results, setResults] = useState<any[]>([])
   const [selectedResult, setSelectedResult] = useState<any | null>(null)
+  const [selectedResultIds, setSelectedResultIds] = useState<number[]>([])
+  const [isImporting, setIsImporting] = useState(false)
   const [stats, setStats] = useState({
     total: 0,
     success: 0,
@@ -113,6 +115,72 @@ export function DataCollectionSystem({ className }: DataCollectionSystemProps) {
     } finally {
       setIsLoading(false)
       setUrlInput('')
+    }
+  }
+
+  // チェックボックスの選択/解除
+  const toggleResultSelection = (resultId: number) => {
+    setSelectedResultIds(prev =>
+      prev.includes(resultId)
+        ? prev.filter(id => id !== resultId)
+        : [...prev, resultId]
+    )
+  }
+
+  // 全選択/全解除
+  const toggleAllResults = () => {
+    if (selectedResultIds.length === results.length) {
+      setSelectedResultIds([])
+    } else {
+      setSelectedResultIds(results.map(r => r.id))
+    }
+  }
+
+  // インポート実行
+  const handleImport = async () => {
+    if (selectedResultIds.length === 0) {
+      alert('インポートする商品を選択してください')
+      return
+    }
+
+    const confirmed = confirm(`${selectedResultIds.length}件の商品を商品マスターにインポートしますか？`)
+    if (!confirmed) return
+
+    setIsImporting(true)
+
+    try {
+      const response = await fetch('/api/scraped-products/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          scrapedIds: selectedResultIds
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'インポートに失敗しました')
+      }
+
+      alert(`✅ ${data.imported}件の商品をインポートしました\n❌ ${data.failed}件が失敗しました`)
+
+      // 選択をクリア
+      setSelectedResultIds([])
+
+      // オプション: /tools/editingにリダイレクト
+      if (data.imported > 0) {
+        const redirect = confirm('商品編集ページに移動しますか？')
+        if (redirect) {
+          window.location.href = '/tools/editing'
+        }
+      }
+
+    } catch (error) {
+      console.error('インポートエラー:', error)
+      alert('インポートに失敗しました: ' + (error instanceof Error ? error.message : '不明なエラー'))
+    } finally {
+      setIsImporting(false)
     }
   }
 
@@ -402,20 +470,59 @@ export function DataCollectionSystem({ className }: DataCollectionSystemProps) {
                 <Card>
                   <CardHeader>
                     <div className="flex items-center justify-between">
-                      <CardTitle>取得結果 ({results.length}件)</CardTitle>
-                      <Button variant="link" size="sm" onClick={handleExportCSV}>
-                        <Download className="mr-1 h-3 w-3" />
-                        CSVエクスポート
-                      </Button>
+                      <div className="flex items-center gap-3">
+                        <CardTitle>取得結果 ({results.length}件)</CardTitle>
+                        {selectedResultIds.length > 0 && (
+                          <Badge variant="secondary">
+                            {selectedResultIds.length}件選択中
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {selectedResultIds.length > 0 && (
+                          <Button onClick={handleImport} disabled={isImporting}>
+                            {isImporting ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                インポート中...
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="mr-2 h-4 w-4" />
+                                商品として登録
+                              </>
+                            )}
+                          </Button>
+                        )}
+                        <Button variant="link" size="sm" onClick={handleExportCSV}>
+                          <Download className="mr-1 h-3 w-3" />
+                          CSVエクスポート
+                        </Button>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>
+                    <div className="mb-3 flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedResultIds.length === results.length && results.length > 0}
+                        onChange={toggleAllResults}
+                        className="rounded border-input"
+                      />
+                      <span className="text-sm text-muted-foreground">全て選択</span>
+                    </div>
                     <div className="space-y-3">
                       {results.slice(0, 5).map(result => (
-                        <div 
+                        <div
                           key={result.id}
-                          className="p-4 rounded-lg border bg-background flex items-center justify-between"
+                          className="p-4 rounded-lg border bg-background flex items-center gap-3"
                         >
+                          <input
+                            type="checkbox"
+                            checked={selectedResultIds.includes(result.id)}
+                            onChange={() => toggleResultSelection(result.id)}
+                            className="rounded border-input"
+                          />
                           <div className="flex-1" onClick={() => setSelectedResult(result)} style={{ cursor: 'pointer' }}>
                             <div className="flex items-center gap-3 mb-2">
                               <h4 className="font-medium">{result.title}</h4>
