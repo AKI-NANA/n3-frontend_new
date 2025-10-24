@@ -622,6 +622,505 @@ async function scrapeYahooAuction(url: string): Promise<ScrapingResult> {
   }
 }
 
+// PayPayフリマ（Yahoo!フリマ）から構造ベーススクレイピング
+async function scrapePayPayFleamarket(url: string): Promise<ScrapingResult> {
+  let browser
+  const resultId = `result-${Date.now()}`
+
+  try {
+    console.log(`[Scraping] PayPayフリマ スクレイピング開始: ${url}`)
+
+    browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu'
+      ]
+    })
+
+    const page = await browser.newPage()
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+
+    // ページにアクセス
+    await page.goto(url, {
+      waitUntil: 'networkidle2',
+      timeout: 30000
+    })
+
+    // 少し待機
+    await new Promise(resolve => setTimeout(resolve, 2000))
+
+    // データを抽出（構造ベース）
+    const data = await page.evaluate(() => {
+      const result = {
+        title: null as string | null,
+        price: null as number | null,
+        shippingCost: null as number | null,
+        condition: null as string | null,
+        images: [] as string[],
+        description: null as string | null,
+        sellerName: null as string | null,
+        categoryPath: null as string | null,
+        shippingDays: null as string | null,
+        shippingMethod: null as string | null,
+        shippingFrom: null as string | null,
+        itemId: null as string | null,
+        titleFound: false,
+        priceFound: false,
+        shippingFound: false,
+        conditionFound: false,
+        imagesFound: false,
+        descriptionFound: false,
+        sellerFound: false,
+        categoryPathFound: false,
+        shippingDaysFound: false,
+        itemIdFound: false
+      }
+
+      // 1. タイトル - 商品タイトル
+      const titleElement = document.querySelector('h1')
+      if (titleElement && titleElement.textContent) {
+        const titleText = titleElement.textContent.trim()
+        if (titleText.length > 0) {
+          result.title = titleText
+          result.titleFound = true
+        }
+      }
+
+      // 2. 価格 - 「円」を含む大きなテキスト
+      const priceElements = Array.from(document.querySelectorAll('[class*="price"], [class*="Price"]'))
+      for (const elem of priceElements) {
+        const priceText = elem.textContent || ''
+        const priceMatch = priceText.match(/(\d{1,3}(?:,\d{3})*)[\s]*円/)
+        if (priceMatch) {
+          const priceNum = parseInt(priceMatch[1].replace(/,/g, ''))
+          if (!isNaN(priceNum) && priceNum > 0) {
+            result.price = priceNum
+            result.priceFound = true
+            break
+          }
+        }
+      }
+
+      // 価格がまだ見つからない場合、別パターンを試す
+      if (!result.priceFound) {
+        const allText = document.body.textContent || ''
+        const priceMatch = allText.match(/(\d{1,3}(?:,\d{3})*)円/)
+        if (priceMatch) {
+          const priceNum = parseInt(priceMatch[1].replace(/,/g, ''))
+          if (!isNaN(priceNum) && priceNum > 0 && priceNum < 10000000) {
+            result.price = priceNum
+            result.priceFound = true
+          }
+        }
+      }
+
+      // 3. 送料 - PayPayフリマは基本的に送料無料
+      const bodyText = document.body.textContent || ''
+      if (bodyText.includes('送料無料') || bodyText.includes('全品送料無料')) {
+        result.shippingCost = 0
+        result.shippingFound = true
+      }
+
+      // 4. 商品の状態
+      const allDtElements = Array.from(document.querySelectorAll('dt, th'))
+      const conditionDt = allDtElements.find(dt =>
+        dt.textContent?.includes('商品の状態') ||
+        dt.textContent?.includes('状態')
+      )
+      if (conditionDt) {
+        const nextElement = conditionDt.nextElementSibling
+        if (nextElement && nextElement.textContent) {
+          const conditionText = nextElement.textContent.trim()
+          if (conditionText.length > 0) {
+            result.condition = conditionText
+            result.conditionFound = true
+          }
+        }
+      }
+
+      // 5. 画像
+      const imageElements = document.querySelectorAll('img')
+      const imageUrls = new Set<string>()
+
+      imageElements.forEach(img => {
+        const src = img.getAttribute('src') || img.getAttribute('data-src')
+        if (src &&
+            (src.includes('yahoo') || src.includes('paypay')) &&
+            !src.includes('icon') &&
+            !src.includes('logo') &&
+            !src.includes('banner') &&
+            src.startsWith('http')) {
+          imageUrls.add(src)
+        }
+      })
+
+      result.images = Array.from(imageUrls)
+      result.imagesFound = result.images.length > 0
+
+      // 6. 商品説明
+      const descriptionSelectors = [
+        '[class*="description"]',
+        '[class*="Description"]',
+        '[id*="description"]',
+        'pre',
+        '[class*="detail"]'
+      ]
+
+      for (const selector of descriptionSelectors) {
+        const descElement = document.querySelector(selector)
+        if (descElement && descElement.textContent) {
+          const descText = descElement.textContent.trim()
+          if (descText.length > 50) {
+            result.description = descText
+            result.descriptionFound = true
+            break
+          }
+        }
+      }
+
+      // 7. カテゴリ
+      const categoryDt = allDtElements.find(dt =>
+        dt.textContent?.trim() === 'カテゴリ' ||
+        dt.textContent?.includes('カテゴリー')
+      )
+      if (categoryDt) {
+        const categoryDd = categoryDt.nextElementSibling
+        if (categoryDd && categoryDd.textContent) {
+          const categoryText = categoryDd.textContent.trim()
+          if (categoryText.length > 0) {
+            result.categoryPath = categoryText
+            result.categoryPathFound = true
+          }
+        }
+      }
+
+      // 8. 配送方法
+      const shippingMethodDt = allDtElements.find(dt =>
+        dt.textContent?.includes('配送の方法')
+      )
+      if (shippingMethodDt) {
+        const shippingMethodDd = shippingMethodDt.nextElementSibling
+        if (shippingMethodDd && shippingMethodDd.textContent) {
+          result.shippingMethod = shippingMethodDd.textContent.trim()
+        }
+      }
+
+      // 9. 発送日数
+      const shippingDaysDt = allDtElements.find(dt =>
+        dt.textContent?.includes('発送までの日数')
+      )
+      if (shippingDaysDt) {
+        const shippingDaysDd = shippingDaysDt.nextElementSibling
+        if (shippingDaysDd && shippingDaysDd.textContent) {
+          const shippingDaysText = shippingDaysDd.textContent.trim()
+          if (shippingDaysText.length > 0) {
+            result.shippingDays = shippingDaysText
+            result.shippingDaysFound = true
+          }
+        }
+      }
+
+      // 10. 発送元
+      const shippingFromDt = allDtElements.find(dt =>
+        dt.textContent?.includes('発送元の地域')
+      )
+      if (shippingFromDt) {
+        const shippingFromDd = shippingFromDt.nextElementSibling
+        if (shippingFromDd && shippingFromDd.textContent) {
+          result.shippingFrom = shippingFromDd.textContent.trim()
+        }
+      }
+
+      // 11. 商品ID
+      const itemIdDt = allDtElements.find(dt =>
+        dt.textContent?.includes('商品ID')
+      )
+      if (itemIdDt) {
+        const itemIdDd = itemIdDt.nextElementSibling
+        if (itemIdDd && itemIdDd.textContent) {
+          const itemIdText = itemIdDd.textContent.trim()
+          if (itemIdText.length > 0) {
+            result.itemId = itemIdText
+            result.itemIdFound = true
+          }
+        }
+      }
+
+      // URLから商品IDを抽出（フォールバック）
+      if (!result.itemIdFound) {
+        const urlMatch = window.location.href.match(/item\/([a-z0-9]+)/i)
+        if (urlMatch && urlMatch[1]) {
+          result.itemId = urlMatch[1]
+          result.itemIdFound = true
+        }
+      }
+
+      return result
+    })
+
+    console.log(`[Scraping] 抽出結果:`, data)
+
+    await browser.close()
+
+    // データ品質チェック
+    const warnings: string[] = []
+
+    // 必須フィールドチェック
+    if (!data.titleFound) {
+      warnings.push('タイトルを取得できませんでした')
+    }
+    if (!data.priceFound) {
+      warnings.push('価格を取得できませんでした')
+    }
+
+    // オプションフィールドチェック
+    if (!data.shippingFound) {
+      warnings.push('送料情報を取得できませんでした')
+    }
+    if (!data.conditionFound) {
+      warnings.push('商品状態を取得できませんでした')
+    }
+    if (!data.imagesFound) {
+      warnings.push('画像を取得できませんでした')
+    }
+    if (!data.descriptionFound) {
+      warnings.push('商品説明を取得できませんでした')
+    }
+    if (!data.categoryPathFound) {
+      warnings.push('カテゴリを取得できませんでした')
+    }
+    if (!data.shippingDaysFound) {
+      warnings.push('発送日数を取得できませんでした')
+    }
+    if (!data.itemIdFound) {
+      warnings.push('商品IDを取得できませんでした')
+    }
+
+    // 必須フィールドが取得できなかった場合はエラー
+    if (!data.titleFound || !data.priceFound) {
+      console.error('[Scraping] 必須データ取得失敗:', warnings)
+      return {
+        id: resultId,
+        url,
+        platform: 'PayPay Fleamarket',
+        title: data.title || '【取得失敗】タイトルを取得できませんでした',
+        price: data.price,
+        shippingCost: data.shippingCost,
+        totalCost: null,
+        status: 'error',
+        timestamp: new Date().toISOString(),
+        stock: '取得失敗',
+        condition: data.condition || '取得失敗',
+        images: data.images,
+        description: data.description,
+        categoryPath: data.categoryPath,
+        shippingDays: data.shippingDays,
+        auctionId: data.itemId,
+        error: '必須データ（タイトルまたは価格）の取得に失敗しました',
+        warnings,
+        dataQuality: {
+          titleFound: data.titleFound,
+          priceFound: data.priceFound,
+          shippingFound: data.shippingFound,
+          conditionFound: data.conditionFound,
+          bidsFound: false,
+          imagesFound: data.imagesFound,
+          descriptionFound: data.descriptionFound,
+          sellerFound: data.sellerFound,
+          categoryPathFound: data.categoryPathFound,
+          quantityFound: false,
+          shippingDaysFound: data.shippingDaysFound,
+          auctionIdFound: data.itemIdFound,
+          startingPriceFound: false
+        }
+      }
+    }
+
+    // 仕入れ値計算（価格 + 送料）
+    let totalCost: number | null = null
+    if (data.price !== null) {
+      if (data.shippingCost !== null) {
+        totalCost = data.price + data.shippingCost
+      } else {
+        totalCost = data.price
+        warnings.push('送料が不明なため、仕入れ値は価格のみです')
+      }
+    }
+
+    // 部分的な取得の場合
+    const status = warnings.length > 0 ? 'partial' : 'success'
+
+    // Supabaseに保存
+    const productData = {
+      title: data.title!,
+      price: data.price!,
+      shipping_cost: data.shippingCost,
+      total_cost: totalCost,
+      source_url: url,
+      condition: data.condition || null,
+      stock_status: null,
+      bid_count: null,
+      images: data.images.length > 0 ? data.images : null,
+      description: data.description || null,
+      seller_name: data.sellerName || null,
+      seller_rating: null,
+      end_time: null,
+      category: null,
+      category_path: data.categoryPath || null,
+      quantity: null,
+      shipping_days: data.shippingDays || null,
+      auction_id: data.itemId || null,
+      starting_price: null,
+      platform: 'PayPay Fleamarket',
+      scraped_at: new Date().toISOString(),
+      scraping_method: 'structure_based_puppeteer_paypay_fleamarket'
+    }
+
+    console.log('[Database] 保存データ:', productData)
+
+    const { error: dbError } = await supabase
+      .from('scraped_products')
+      .insert([productData])
+
+    if (dbError) {
+      console.error('[Database] 保存エラー:', dbError)
+      warnings.push('データベース保存に失敗しました: ' + dbError.message)
+    } else {
+      console.log('[Database] 保存成功')
+    }
+
+    return {
+      id: resultId,
+      url,
+      platform: 'PayPay Fleamarket',
+      title: data.title!,
+      price: data.price!,
+      shippingCost: data.shippingCost,
+      totalCost,
+      status,
+      timestamp: new Date().toISOString(),
+      stock: '在庫情報なし',
+      condition: data.condition || '取得失敗',
+      images: data.images,
+      description: data.description,
+      categoryPath: data.categoryPath,
+      shippingDays: data.shippingDays,
+      auctionId: data.itemId,
+      warnings: warnings.length > 0 ? warnings : undefined,
+      dataQuality: {
+        titleFound: data.titleFound,
+        priceFound: data.priceFound,
+        shippingFound: data.shippingFound,
+        conditionFound: data.conditionFound,
+        bidsFound: false,
+        imagesFound: data.imagesFound,
+        descriptionFound: data.descriptionFound,
+        sellerFound: data.sellerFound,
+        categoryPathFound: data.categoryPathFound,
+        quantityFound: false,
+        shippingDaysFound: data.shippingDaysFound,
+        auctionIdFound: data.itemIdFound,
+        startingPriceFound: false
+      }
+    }
+
+  } catch (error) {
+    console.error(`[Scraping] エラー:`, error)
+    console.error(`[Scraping] エラー詳細:`, {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    })
+
+    if (browser) {
+      try {
+        await browser.close()
+      } catch (closeError) {
+        console.error('[Scraping] ブラウザクローズエラー:', closeError)
+      }
+    }
+
+    return {
+      id: resultId,
+      url,
+      platform: 'PayPay Fleamarket',
+      title: '【エラー】スクレイピング実行失敗',
+      price: null,
+      shippingCost: null,
+      totalCost: null,
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      stock: '取得失敗',
+      condition: '取得失敗',
+      error: error instanceof Error ? error.message : String(error),
+      dataQuality: {
+        titleFound: false,
+        priceFound: false,
+        shippingFound: false,
+        conditionFound: false,
+        bidsFound: false,
+        imagesFound: false,
+        descriptionFound: false,
+        sellerFound: false,
+        categoryPathFound: false,
+        quantityFound: false,
+        shippingDaysFound: false,
+        auctionIdFound: false,
+        startingPriceFound: false
+      }
+    }
+  }
+}
+
+// 品質スコア計算関数
+function calculateQualityScore(dataQuality: any): { score: number; total: number; successful: number; failed: number } {
+  const fields = Object.keys(dataQuality)
+  const total = fields.length
+  const successful = fields.filter(key => dataQuality[key] === true).length
+  const failed = total - successful
+  const score = total > 0 ? Math.round((successful / total) * 100) : 0
+
+  return { score, total, successful, failed }
+}
+
+// 品質ログを保存
+async function saveQualityLog(result: ScrapingResult) {
+  try {
+    if (!result.dataQuality) return
+
+    const qualityMetrics = calculateQualityScore(result.dataQuality)
+
+    const logData = {
+      platform: result.platform,
+      test_url: result.url,
+      quality_score: qualityMetrics.score,
+      total_fields: qualityMetrics.total,
+      successful_fields: qualityMetrics.successful,
+      failed_fields: qualityMetrics.failed,
+      status: result.status,
+      error_message: result.error || null,
+      warnings: result.warnings || null,
+      data_quality: result.dataQuality,
+      checked_at: new Date().toISOString()
+    }
+
+    const { error } = await supabase
+      .from('scraping_quality_logs')
+      .insert([logData])
+
+    if (error) {
+      console.error('[Quality Log] 保存エラー:', error)
+    } else {
+      console.log('[Quality Log] 品質スコア:', qualityMetrics.score, '%')
+    }
+  } catch (error) {
+    console.error('[Quality Log] 予期しないエラー:', error)
+  }
+}
+
 // メインPOSTハンドラー
 export async function POST(request: NextRequest) {
   try {
@@ -633,9 +1132,20 @@ export async function POST(request: NextRequest) {
     const results: ScrapingResult[] = []
 
     for (const url of urls) {
+      let result: ScrapingResult
+
       if (url.includes('auctions.yahoo.co.jp') || url.includes('page.auctions.yahoo.co.jp')) {
-        const result = await scrapeYahooAuction(url)
+        // Yahoo Auction
+        result = await scrapeYahooAuction(url)
         results.push(result)
+        // 品質ログを保存（構造変化検知用）
+        await saveQualityLog(result)
+      } else if (url.includes('paypayfleamarket.yahoo.co.jp')) {
+        // PayPay Fleamarket (Yahoo! Flea Market)
+        result = await scrapePayPayFleamarket(url)
+        results.push(result)
+        // 品質ログを保存（構造変化検知用）
+        await saveQualityLog(result)
       } else {
         results.push({
           id: `result-${Date.now()}-${results.length}`,
@@ -649,7 +1159,7 @@ export async function POST(request: NextRequest) {
           timestamp: new Date().toISOString(),
           stock: '取得失敗',
           condition: '取得失敗',
-          error: 'Yahoo Auction以外のURLは現在対応していません',
+          error: '現在対応しているのは Yahoo Auction と PayPay Fleamarket のみです',
           dataQuality: {
             titleFound: false,
             priceFound: false,
@@ -658,7 +1168,12 @@ export async function POST(request: NextRequest) {
             bidsFound: false,
             imagesFound: false,
             descriptionFound: false,
-            sellerFound: false
+            sellerFound: false,
+            categoryPathFound: false,
+            quantityFound: false,
+            shippingDaysFound: false,
+            auctionIdFound: false,
+            startingPriceFound: false
           }
         })
       }
