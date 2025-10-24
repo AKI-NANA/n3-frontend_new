@@ -25,7 +25,8 @@ export async function POST(request: Request) {
       'pm2 restart n3-frontend'
     ].join(' && ')
 
-    const sshCommand = `ssh ubuntu@tk2-236-27682.vs.sakura.ne.jp "${commands}"`
+    // SSH鍵を指定してVPSに接続
+    const sshCommand = `ssh -i ~/.ssh/id_rsa ubuntu@tk2-236-27682.vs.sakura.ne.jp "${commands}"`
 
     const { stdout, stderr } = await execAsync(sshCommand, {
       timeout: 300000 // 5分タイムアウト
