@@ -303,6 +303,9 @@ async function scrapeYahooAuction(url: string): Promise<ScrapingResult> {
         }
       }
 
+      // 全ての dt 要素を取得（複数セクションで使用）
+      const allDtElements = Array.from(document.querySelectorAll('dt'))
+
       // 8. 出品者情報
       // 複数のパターンで出品者情報を探す
       const sellerPatterns = [
@@ -361,8 +364,6 @@ async function scrapeYahooAuction(url: string): Promise<ScrapingResult> {
       }
 
       // 11. 商品情報セクションから詳細情報を取得
-      const allDtElements = Array.from(document.querySelectorAll('dt'))
-
       // 11-1. カテゴリパス（完全なパス - eBayマッピング用）
       const categoryDt = allDtElements.find(dt => dt.textContent?.trim() === 'カテゴリ')
       if (categoryDt) {
