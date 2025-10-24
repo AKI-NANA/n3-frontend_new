@@ -251,6 +251,10 @@ async function scrapeYahooAuction(url: string): Promise<ScrapingResult> {
             !src.includes('logo') &&
             !src.includes('banner') &&
             !src.includes('thumb') &&
+            // 広告・プロモーション画像を除外
+            !src.includes('salespromotion') &&
+            !src.includes('/promotion/') &&
+            !src.includes('/ad/') &&
             // サムネイル系URLを除外
             !src.includes('na_170x170') &&
             !src.includes('/s_') &&
