@@ -46,18 +46,18 @@ export function ProductModal({ product, onClose, onSave }: ProductModalProps) {
     master_key: product.master_key,
     title: product.title,
     english_title: product.english_title, // 英語タイトル追加
-    description: product.listing_data?.html_description || '',
-    price: product.listing_data?.ddp_price_usd || product.price_usd || 0,
+    description: product.listing_data?.html_description || product.scraped_data?.description_jp || '',
+    price: product.price_jpy || 0,  // JPY価格を表示
     price_jpy: product.price_jpy, // JPY価格追加
     price_usd: product.price_usd, // USD価格追加
-    cost: product.price_jpy || 0,
+    cost: product.scraped_data?.cost_price_jpy || product.price_jpy || 0,  // 仕入れ値
     profit: product.profit_amount_usd || 0,
     images,
     selectedImages,
     category: {
       id: product.ebay_api_data?.category_id || '',
-      name: product.ebay_api_data?.category_name || '',
-      path: product.ebay_api_data?.category_name ? [product.ebay_api_data.category_name] : [],
+      name: product.ebay_api_data?.category_name || product.scraped_data?.category_path || '',
+      path: product.scraped_data?.category_path ? [product.scraped_data.category_path] : (product.ebay_api_data?.category_name ? [product.ebay_api_data.category_name] : []),
       confidence: 1
     },
     stock: {
