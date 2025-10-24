@@ -526,19 +526,21 @@ async function scrapeYahooAuction(url: string): Promise<ScrapingResult> {
 
     console.log('[Database] 保存データ:', productData)
 
-    const { error: dbError } = await supabase
+    const { data: insertedData, error: dbError } = await supabase
       .from('scraped_products')
       .insert([productData])
+      .select()
+      .single()
 
-    if (dbError) {
+    if (dbError || !insertedData) {
       console.error('[Database] 保存エラー:', dbError)
-      warnings.push('データベース保存に失敗しました: ' + dbError.message)
+      warnings.push('データベース保存に失敗しました: ' + (dbError?.message || '不明なエラー'))
     } else {
-      console.log('[Database] 保存成功')
+      console.log('[Database] 保存成功 ID:', insertedData.id)
     }
 
     return {
-      id: resultId,
+      id: insertedData?.id?.toString() || resultId,
       url,
       platform: 'Yahoo Auction',
       title: data.title!,
@@ -981,19 +983,21 @@ async function scrapePayPayFleamarket(url: string): Promise<ScrapingResult> {
 
     console.log('[Database] 保存データ:', productData)
 
-    const { error: dbError } = await supabase
+    const { data: insertedData, error: dbError } = await supabase
       .from('scraped_products')
       .insert([productData])
+      .select()
+      .single()
 
-    if (dbError) {
+    if (dbError || !insertedData) {
       console.error('[Database] 保存エラー:', dbError)
-      warnings.push('データベース保存に失敗しました: ' + dbError.message)
+      warnings.push('データベース保存に失敗しました: ' + (dbError?.message || '不明なエラー'))
     } else {
-      console.log('[Database] 保存成功')
+      console.log('[Database] 保存成功 ID:', insertedData.id)
     }
 
     return {
-      id: resultId,
+      id: insertedData?.id?.toString() || resultId,
       url,
       platform: 'PayPay Fleamarket',
       title: data.title!,
