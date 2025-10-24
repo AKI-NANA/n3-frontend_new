@@ -215,20 +215,18 @@ async function scrapeYahooAuction(url: string): Promise<ScrapingResult> {
       }
 
       // 6. 画像全取得（Yahoo画像サーバーから）
-      // まず商品画像エリアを特定して、そこから画像を取得
+      // Yahoo Auctionの画像URLパターン: auctions.c.yimg.jp/images.auctions.yahoo.co.jp/image/...
       const imageUrls = new Set<string>()
+      const imageUrlsArray: string[] = []
 
-      // 商品画像エリアの候補セレクタ
+      // 商品画像エリアの候補セレクタ（より具体的に）
       const imageContainerSelectors = [
         '[class*="ProductImage"]',
         '[class*="productImage"]',
-        '[class*="product-image"]',
-        '[class*="ProductMedia"]',
-        '[id*="ProductImage"]',
         '[class*="ImageGallery"]',
         '[class*="imageGallery"]',
         '[class*="Slideshow"]',
-        '.ProductImage',  // 一般的なクラス名
+        '.ProductImage',
       ]
 
       // 商品画像エリアを探す
@@ -244,26 +242,44 @@ async function scrapeYahooAuction(url: string): Promise<ScrapingResult> {
 
       imageElements.forEach(img => {
         const src = img.getAttribute('src') || img.getAttribute('data-src')
-        const width = img.naturalWidth || img.width || 0
-        const height = img.naturalHeight || img.height || 0
 
         if (src &&
-            (src.includes('auctions.c.yimg.jp') || src.includes('yimg.jp')) &&
+            (src.includes('auctions.c.yimg.jp') || src.includes('yimg.jp/images')) &&
             !src.includes('placeholder') &&
             !src.includes('loading') &&
-            !src.includes('na_170x170') &&  // サムネイル除外
             !src.includes('icon') &&
             !src.includes('logo') &&
             !src.includes('banner') &&
-            width >= 100 &&  // 最小サイズフィルタ（小さいアイコン除外）
-            height >= 100 &&
+            !src.includes('thumb') &&
+            // サムネイル系URLを除外
+            !src.includes('na_170x170') &&
+            !src.includes('/s_') &&
+            !src.includes('/t_') &&
+            // 最小サイズ: 実際の商品画像のみ
+            (img.naturalWidth >= 300 || img.width >= 300) &&
             src.startsWith('http')) {
-          imageUrls.add(src)
+
+          // 重複チェック: 同じ画像の異なるサイズを除外
+          // ベースURLを抽出（サイズパラメータを除く）
+          const baseUrl = src.split('?')[0].replace(/\/[stm]_/, '/')
+
+          if (!imageUrls.has(baseUrl)) {
+            imageUrls.add(baseUrl)
+            imageUrlsArray.push(src)
+          }
         }
       })
 
-      // 商品画像は通常10枚以内なので、最大15枚に制限
-      result.images = Array.from(imageUrls).slice(0, 15)
+      // Yahoo Auctionの1枚目は通常プレースホルダーなので、2枚目以降を使用
+      // かつ、最大10枚に制限
+      if (imageUrlsArray.length > 1) {
+        // 2枚目から始めて最大10枚
+        result.images = imageUrlsArray.slice(1, 11)
+      } else {
+        // 1枚しかない場合はそのまま使用
+        result.images = imageUrlsArray.slice(0, 10)
+      }
+
       result.imagesFound = result.images.length > 0
 
       // 7. 商品説明
@@ -288,20 +304,39 @@ async function scrapeYahooAuction(url: string): Promise<ScrapingResult> {
       }
 
       // 8. 出品者情報
-      // 「出品者」「さん」などのパターン
+      // 複数のパターンで出品者情報を探す
       const sellerPatterns = [
         { selector: 'a[href*="/user/"]', type: 'link' },
         { selector: '[class*="seller"]', type: 'class' },
+        { selector: '[class*="Seller"]', type: 'class' },
+        { selector: '[class*="user"]', type: 'class' },
+        { selector: 'a[href*="/users/"]', type: 'link' },
       ]
 
       for (const pattern of sellerPatterns) {
         const sellerElement = document.querySelector(pattern.selector)
         if (sellerElement && sellerElement.textContent) {
           const sellerText = sellerElement.textContent.trim()
-          if (sellerText.length > 0 && sellerText.length < 50) {
+          if (sellerText.length > 0 && sellerText.length < 50 && !sellerText.includes('出品者')) {
             result.sellerName = sellerText.replace('さん', '').trim()
             result.sellerFound = true
             break
+          }
+        }
+      }
+
+      // dtベースのフォールバック: 「出品者」というラベルを探す
+      if (!result.sellerFound) {
+        const sellerDt = allDtElements.find(dt => dt.textContent?.includes('出品者'))
+        if (sellerDt) {
+          const sellerDd = sellerDt.nextElementSibling
+          if (sellerDd) {
+            const sellerLink = sellerDd.querySelector('a')
+            const sellerText = (sellerLink?.textContent || sellerDd.textContent || '').trim()
+            if (sellerText.length > 0 && sellerText.length < 50) {
+              result.sellerName = sellerText.replace('さん', '').trim()
+              result.sellerFound = true
+            }
           }
         }
       }
@@ -393,18 +428,26 @@ async function scrapeYahooAuction(url: string): Promise<ScrapingResult> {
         }
       }
 
-      // 11-6. 開始時の価格
-      const startingPriceDt = allDtElements.find(dt => dt.textContent?.includes('開始時の価格'))
-      if (startingPriceDt) {
-        const startingPriceDd = startingPriceDt.nextElementSibling
-        if (startingPriceDd && startingPriceDd.textContent) {
-          const priceText = startingPriceDd.textContent.trim()
-          const priceMatch = priceText.match(/(\d{1,3}(?:,\d{3})*)[\s]*円/)
-          if (priceMatch) {
-            const priceNum = parseInt(priceMatch[1].replace(/,/g, ''))
-            if (!isNaN(priceNum)) {
-              result.startingPrice = priceNum
-              result.startingPriceFound = true
+      // 11-6. 開始価格（複数パターン対応）
+      const startingPricePatterns = ['開始時の価格', '開始価格', 'スタート価格', '開始']
+      for (const pattern of startingPricePatterns) {
+        const startingPriceDt = allDtElements.find(dt => {
+          const text = dt.textContent?.trim() || ''
+          return text === pattern || text.includes(pattern)
+        })
+
+        if (startingPriceDt) {
+          const startingPriceDd = startingPriceDt.nextElementSibling
+          if (startingPriceDd && startingPriceDd.textContent) {
+            const priceText = startingPriceDd.textContent.trim()
+            const priceMatch = priceText.match(/(\d{1,3}(?:,\d{3})*)[\s]*円/)
+            if (priceMatch) {
+              const priceNum = parseInt(priceMatch[1].replace(/,/g, ''))
+              if (!isNaN(priceNum) && priceNum > 0) {
+                result.startingPrice = priceNum
+                result.startingPriceFound = true
+                break
+              }
             }
           }
         }
