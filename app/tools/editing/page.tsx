@@ -1,7 +1,7 @@
-// app/tools/editing/page.tsx  
+// app/tools/editing/page.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { EditingTable } from './components/EditingTable'
 import { ToolPanel } from './components/ToolPanel'
 import { MarketplaceSelector } from './components/MarketplaceSelector'
@@ -15,6 +15,13 @@ import { useBatchProcess } from './hooks/useBatchProcess'
 import type { Product, MarketplaceSelection } from './types/product'
 
 export default function EditingPage() {
+  const [isImported, setIsImported] = useState(false)
+
+  // クライアントサイドでのみURLパラメータをチェック
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    setIsImported(params.get('imported') === 'true')
+  }, [])
   const {
     products,
     loading,
@@ -315,9 +322,6 @@ export default function EditingPage() {
   const selectedProducts = products.filter(p => selectedIds.has(String(p.id)))
 
   if (loading) {
-    // URLパラメータからインポート直後かどうかを判定
-    const isImported = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('imported') === 'true'
-
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
