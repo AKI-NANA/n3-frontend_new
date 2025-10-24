@@ -58,19 +58,45 @@ export default function EditingPage() {
   }
 
   const handleRunAll = async () => {
-    if (products.length === 0) {
-      showToast('商品がありません', 'error')
+    if (selectedIds.size === 0) {
+      showToast('商品を選択してください', 'error')
       return
     }
-    
-    const productIds = products.map(p => p.id)
-    const result = await runBatchHTML(productIds)
-    
-    if (result.success) {
-      showToast('全処理完了')
+
+    if (!confirm(`${selectedIds.size}件の商品に対して全処理を実行しますか？\n\n含まれる処理:\n- カテゴリ分析\n- 送料計算\n- 利益計算\n- SellerMirror分析\n- HTML生成\n- フィルターチェック`)) {
+      return
+    }
+
+    const productIds = Array.from(selectedIds).map(id => parseInt(id, 10))
+
+    showToast('バッチ処理を開始しています...', 'success')
+
+    try {
+      const response = await fetch('/api/tools/batch-process', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productIds })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'バッチ処理に失敗しました')
+      }
+
+      const { summary } = result
+
+      showToast(
+        `バッチ処理完了: 成功${summary.success}件, 一部${summary.partial}件, 失敗${summary.failed}件`,
+        summary.failed > 0 ? 'error' : 'success'
+      )
+
       await loadProducts()
-    } else {
-      showToast(result.error || '処理に失敗しました', 'error')
+      setSelectedIds(new Set())
+
+    } catch (error: any) {
+      console.error('Batch process error:', error)
+      showToast(error.message || 'バッチ処理に失敗しました', 'error')
     }
   }
 

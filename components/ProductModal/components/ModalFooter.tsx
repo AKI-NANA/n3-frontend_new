@@ -7,9 +7,18 @@ export interface ModalFooterProps {
   onTabChange: (tab: string) => void;
   onSave?: () => void;
   onClose?: () => void;
+  isSaving?: boolean;
+  hasChanges?: boolean;
 }
 
-export function ModalFooter({ currentTab, onTabChange, onSave, onClose }: ModalFooterProps) {
+export function ModalFooter({
+  currentTab,
+  onTabChange,
+  onSave,
+  onClose,
+  isSaving = false,
+  hasChanges = false
+}: ModalFooterProps) {
   const handlePrevious = () => {
     const tabs = ['overview', 'data', 'images', 'tools', 'mirror', 'listing', 'shipping', 'html', 'final'];
     const currentIndex = tabs.indexOf(currentTab);
@@ -30,9 +39,6 @@ export function ModalFooter({ currentTab, onTabChange, onSave, onClose }: ModalF
     if (onSave) {
       onSave();
     }
-    if (onClose) {
-      onClose();
-    }
   };
 
   const isFinalTab = currentTab === 'final';
@@ -42,7 +48,7 @@ export function ModalFooter({ currentTab, onTabChange, onSave, onClose }: ModalF
     <footer className={styles.footer}>
       <div style={{ display: 'flex', gap: '1rem' }}>
         {!isFirstTab && (
-          <button 
+          <button
             className={`${styles.btn} ${styles.btnPrimary}`}
             onClick={handlePrevious}
           >
@@ -50,7 +56,7 @@ export function ModalFooter({ currentTab, onTabChange, onSave, onClose }: ModalF
           </button>
         )}
         {!isFinalTab && (
-          <button 
+          <button
             className={`${styles.btn} ${styles.btnPrimary}`}
             onClick={handleNext}
           >
@@ -58,18 +64,29 @@ export function ModalFooter({ currentTab, onTabChange, onSave, onClose }: ModalF
           </button>
         )}
       </div>
-      
+
       <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-        <div style={{ fontSize: '0.85rem', color: 'var(--ilm-text-secondary)' }}>
-          <i className="fas fa-clock"></i> 
-          <span style={{ marginLeft: '0.5rem' }}>処理時間: --秒</span>
-        </div>
-        <button 
+        {hasChanges && (
+          <div style={{ fontSize: '0.85rem', color: '#ff6600', fontWeight: 600 }}>
+            <i className="fas fa-exclamation-circle"></i>
+            <span style={{ marginLeft: '0.5rem' }}>未保存の変更があります</span>
+          </div>
+        )}
+        <button
           className={`${styles.btn} ${styles.btnSuccess}`}
           style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
           onClick={handleSaveAndClose}
+          disabled={isSaving || !hasChanges}
         >
-          <i className="fas fa-save"></i> 保存して閉じる
+          {isSaving ? (
+            <>
+              <i className="fas fa-spinner fa-spin"></i> 保存中...
+            </>
+          ) : (
+            <>
+              <i className="fas fa-save"></i> 保存して閉じる
+            </>
+          )}
         </button>
       </div>
     </footer>

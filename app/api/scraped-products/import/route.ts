@@ -1,6 +1,8 @@
 // API Route for importing scraped products to products table
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { generateSKU } from '@/lib/sku/generator'
+import { generateMasterKeyFromProduct } from '@/lib/master-key/generator'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -151,6 +153,34 @@ export async function POST(request: NextRequest) {
         }
 
         console.log('[Import] 成功:', inserted.id)
+
+        // SKUとMaster Keyを生成してアップデート
+        try {
+          const sku = generateSKU(inserted.id)
+          const masterKey = generateMasterKeyFromProduct(inserted)
+
+          console.log(`[Import] SKU生成: ${sku}`)
+          console.log(`[Import] Master Key生成: ${masterKey.substring(0, 50)}...`)
+
+          const { error: updateError } = await supabase
+            .from('products')
+            .update({
+              sku,
+              master_key: masterKey,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', inserted.id)
+
+          if (updateError) {
+            console.error('[Import] SKU/Master Key更新エラー:', updateError)
+            // エラーでも続行（商品自体はインポート済み）
+          } else {
+            console.log(`[Import] SKU/Master Key更新成功: ${inserted.id}`)
+          }
+        } catch (keyError) {
+          console.error('[Import] SKU/Master Key生成エラー:', keyError)
+          // エラーでも続行（商品自体はインポート済み）
+        }
 
         results.push({
           scrapedId: scraped.id,

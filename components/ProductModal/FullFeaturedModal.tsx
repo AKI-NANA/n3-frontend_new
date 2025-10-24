@@ -64,34 +64,91 @@ const MARKETPLACE_CONFIG = {
   },
 };
 
-export function FullFeaturedModal({ 
-  product, 
-  open, 
+export function FullFeaturedModal({
+  product,
+  open,
   onOpenChange,
   onSave
 }: FullFeaturedModalProps) {
   const [currentTab, setCurrentTab] = useState('overview');
   const [currentMarketplace, setCurrentMarketplace] = useState('ebay');
-  
+
+  // 変更管理state
+  const [changes, setChanges] = useState<any>({});
+  const [isSaving, setIsSaving] = useState(false);
+
   // マーケットプレイス切り替え時の処理
   const handleMarketplaceChange = (mp: string) => {
     console.log('[FullFeaturedModal] Marketplace changed:', mp);
     setCurrentMarketplace(mp);
-    
+
     // 画像選択タブにいる場合は、最大枚数の変更を反映
     if (currentTab === 'images') {
       const maxImages = MARKETPLACE_CONFIG[mp as keyof typeof MARKETPLACE_CONFIG]?.maxImages || 12;
       console.log(`Max images for ${mp}:`, maxImages);
     }
   };
-  
+
+  // 変更を記録
+  const handleChange = (field: string, value: any) => {
+    console.log('[FullFeaturedModal] Change:', field, value);
+    setChanges((prev: any) => ({ ...prev, [field]: value }));
+  };
+
+  // 保存処理
+  const handleSaveAll = async () => {
+    if (!product || Object.keys(changes).length === 0) {
+      alert('変更がありません');
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      console.log('[FullFeaturedModal] Saving changes:', changes);
+
+      const response = await fetch(`/api/products/${product.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(changes)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || '保存に失敗しました');
+      }
+
+      console.log('[FullFeaturedModal] Save success:', data);
+
+      // 親コンポーネントに通知
+      if (onSave) {
+        onSave(changes);
+      }
+
+      // 変更をクリア
+      setChanges({});
+
+      alert('✅ 保存しました');
+
+      // モーダルを閉じる
+      onOpenChange(false);
+
+    } catch (error: any) {
+      console.error('[FullFeaturedModal] Save error:', error);
+      alert(`保存に失敗しました: ${error.message}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   // 現在のMP設定を取得
   const currentMPConfig = MARKETPLACE_CONFIG[currentMarketplace as keyof typeof MARKETPLACE_CONFIG];
-  
+
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay 
+        <DialogPrimitive.Overlay
           style={{
             position: 'fixed',
             inset: 0,
@@ -118,8 +175,8 @@ export function FullFeaturedModal({
               {product?.title || '商品編集モーダル'}
             </DialogPrimitive.Title>
           </VisuallyHidden>
-          
-          <div 
+
+          <div
             className={styles.modal}
             style={{
               background: 'white',
@@ -133,89 +190,97 @@ export function FullFeaturedModal({
             }}
           >
             {/* ヘッダー */}
-            <ModalHeader 
-              product={product} 
-              onClose={() => onOpenChange(false)} 
+            <ModalHeader
+              product={product}
+              onClose={() => onOpenChange(false)}
             />
-            
+
             {/* ボディ */}
             <div className={styles.body}>
               {/* マーケットプレイス選択 */}
-              <MarketplaceSelector 
+              <MarketplaceSelector
                 current={currentMarketplace}
                 onChange={handleMarketplaceChange}
               />
-              
+
               {/* タブナビゲーション */}
-              <TabNavigation 
+              <TabNavigation
                 current={currentTab}
                 onChange={setCurrentTab}
               />
-              
+
               {/* タブコンテンツ */}
               <div className={styles.tabContent}>
                 <div className={`${styles.tabPane} ${currentTab === 'overview' ? styles.active : ''}`}>
-                  <TabOverview product={product} marketplace={currentMarketplace} />
+                  <TabOverview
+                    product={product}
+                    marketplace={currentMarketplace}
+                    onChange={handleChange}
+                  />
                 </div>
                 <div className={`${styles.tabPane} ${currentTab === 'data' ? styles.active : ''}`}>
-                  <TabData product={product} />
+                  <TabData
+                    product={product}
+                    onChange={handleChange}
+                  />
                 </div>
                 <div className={`${styles.tabPane} ${currentTab === 'images' ? styles.active : ''}`}>
-                  <TabImages 
-                    product={product} 
+                  <TabImages
+                    product={product}
                     maxImages={currentMPConfig?.maxImages || 12}
                     marketplace={currentMarketplace}
+                    onChange={handleChange}
                   />
                 </div>
                 <div className={`${styles.tabPane} ${currentTab === 'tools' ? styles.active : ''}`}>
-                  <TabTools product={product} onSave={onSave} />
+                  <TabTools
+                    product={product}
+                    onSave={onSave}
+                    onChange={handleChange}
+                  />
                 </div>
                 <div className={`${styles.tabPane} ${currentTab === 'mirror' ? styles.active : ''}`}>
                   <TabMirror product={product} />
                 </div>
                 <div className={`${styles.tabPane} ${currentTab === 'listing' ? styles.active : ''}`}>
-                  <TabListing 
-                    product={product} 
+                  <TabListing
+                    product={product}
                     marketplace={currentMarketplace}
                     marketplaceName={currentMPConfig?.name || 'Unknown'}
                   />
                 </div>
                 <div className={`${styles.tabPane} ${currentTab === 'shipping' ? styles.active : ''}`}>
-                  <TabShipping 
-                    product={product} 
+                  <TabShipping
+                    product={product}
                     marketplace={currentMarketplace}
                     marketplaceName={currentMPConfig?.name || 'Unknown'}
                   />
                 </div>
                 <div className={`${styles.tabPane} ${currentTab === 'html' ? styles.active : ''}`}>
-                  <TabHTML 
-                    product={product} 
+                  <TabHTML
+                    product={product}
                     marketplace={currentMarketplace}
                     marketplaceName={currentMPConfig?.name || 'Unknown'}
                   />
                 </div>
                 <div className={`${styles.tabPane} ${currentTab === 'final' ? styles.active : ''}`}>
-                  <TabFinal 
-                    product={product} 
+                  <TabFinal
+                    product={product}
                     marketplace={currentMarketplace}
                     marketplaceName={currentMPConfig?.name || 'Unknown'}
                   />
                 </div>
               </div>
             </div>
-            
+
             {/* フッター */}
-            <ModalFooter 
+            <ModalFooter
               currentTab={currentTab}
               onTabChange={setCurrentTab}
-              onSave={() => {
-                // 現在の変更をすべて保存
-                if (onSave) {
-                  console.log('[FullFeaturedModal] Saving all changes');
-                  // ここで必要に応じて他のタブの変更も保存
-                }
-              }}
+              onSave={handleSaveAll}
               onClose={() => onOpenChange(false)}
+              isSaving={isSaving}
+              hasChanges={Object.keys(changes).length > 0}
             />
           </div>
         </DialogPrimitive.Content>
