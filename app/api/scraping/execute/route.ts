@@ -13,13 +13,20 @@ interface ScrapingResult {
   url: string
   platform: string
   title: string
-  price: number
-  status: 'success' | 'error'
+  price: number | null
+  status: 'success' | 'partial' | 'error'
   timestamp: string
   stock: string
   condition: string
   bids?: string
   error?: string
+  warnings?: string[]
+  dataQuality?: {
+    titleFound: boolean
+    priceFound: boolean
+    conditionFound: boolean
+    bidsFound: boolean
+  }
 }
 
 // Yahoo Auctionから構造ベーススクレイピング
@@ -57,12 +64,28 @@ async function scrapeYahooAuction(url: string): Promise<ScrapingResult> {
 
     // データを抽出（構造ベース）
     const data = await page.evaluate(() => {
+      const result = {
+        title: null as string | null,
+        price: null as number | null,
+        condition: null as string | null,
+        bids: null as string | null,
+        titleFound: false,
+        priceFound: false,
+        conditionFound: false,
+        bidsFound: false
+      }
+
       // 1. タイトル - 最初のh1タグ（クラス名不要）
       const titleElement = document.querySelector('h1')
-      const title = titleElement?.textContent?.trim() || ''
+      if (titleElement && titleElement.textContent) {
+        const titleText = titleElement.textContent.trim()
+        if (titleText.length > 0) {
+          result.title = titleText
+          result.titleFound = true
+        }
+      }
 
       // 2. 価格 - 「即決」というテキストを含むdtタグを探し、その次のdd > spanから取得
-      let price = 0
       const dtElements = Array.from(document.querySelectorAll('dt'))
       const sokketsuDt = dtElements.find(dt => dt.textContent?.includes('即決'))
 
@@ -72,79 +95,119 @@ async function scrapeYahooAuction(url: string): Promise<ScrapingResult> {
         const priceText = priceSpan?.textContent || ''
         // 数字とカンマのみ抽出（HTMLコメントも除去）
         const cleanPrice = priceText.replace(/[^0-9,]/g, '').replace(/,/g, '')
-        price = parseInt(cleanPrice) || 0
+        const priceNum = parseInt(cleanPrice)
+        if (!isNaN(priceNum) && priceNum > 0) {
+          result.price = priceNum
+          result.priceFound = true
+        }
       }
 
       // 価格が取れなかった場合、「現在価格」を探す
-      if (price === 0) {
+      if (!result.priceFound) {
         const genzaiDt = dtElements.find(dt => dt.textContent?.includes('現在'))
         if (genzaiDt) {
           const dd = genzaiDt.nextElementSibling
           const priceSpan = dd?.querySelector('span')
           const priceText = priceSpan?.textContent || ''
           const cleanPrice = priceText.replace(/[^0-9,]/g, '').replace(/,/g, '')
-          price = parseInt(cleanPrice) || 0
+          const priceNum = parseInt(cleanPrice)
+          if (!isNaN(priceNum) && priceNum > 0) {
+            result.price = priceNum
+            result.priceFound = true
+          }
         }
       }
 
       // 3. 商品状態 - aria-label="状態"を持つsvgの兄弟要素のspanを探す
       const conditionSvg = document.querySelector('svg[aria-label="状態"]')
-      let condition = '不明'
-
       if (conditionSvg) {
-        // 親要素から次のspanを探す
         const parentLi = conditionSvg.closest('li')
         const conditionSpan = parentLi?.querySelector('span:not(:has(svg))')
-        const conditionText = conditionSpan?.textContent?.trim() || '不明'
-
-        // テキストから状態を判定
-        if (conditionText.includes('新品') || conditionText.includes('未使用') || conditionText.includes('未開封')) {
-          condition = '新品'
-        } else if (conditionText.includes('目立った傷や汚れなし')) {
-          condition = '目立った傷や汚れなし'
-        } else if (conditionText.includes('傷や汚れあり')) {
-          condition = '傷や汚れあり'
-        } else if (conditionText.includes('ジャンク')) {
-          condition = 'ジャンク品'
-        } else {
-          condition = conditionText
+        if (conditionSpan && conditionSpan.textContent) {
+          const conditionText = conditionSpan.textContent.trim()
+          if (conditionText.length > 0) {
+            result.condition = conditionText
+            result.conditionFound = true
+          }
         }
       }
 
       // 4. 入札数 - aria-label="入札"を持つsvgの兄弟要素のリンクを探す
       const bidsSvg = document.querySelector('svg[aria-label="入札"]')
-      let bids = '0件'
-
       if (bidsSvg) {
         const parentLi = bidsSvg.closest('li')
         const bidsLink = parentLi?.querySelector('a')
-        bids = bidsLink?.textContent?.trim() || '0件'
+        if (bidsLink && bidsLink.textContent) {
+          const bidsText = bidsLink.textContent.trim()
+          if (bidsText.length > 0) {
+            result.bids = bidsText
+            result.bidsFound = true
+          }
+        }
       }
 
-      // 5. 在庫状況 - オークションは基本的に在庫あり
-      const stock = '在庫あり'
-
-      return {
-        title,
-        price,
-        condition,
-        stock,
-        bids
-      }
+      return result
     })
 
-    console.log(`[Scraping] 抽出成功:`, data)
+    console.log(`[Scraping] 抽出結果:`, data)
 
     await browser.close()
 
-    // Supabaseに保存
+    // データ品質チェック
+    const warnings: string[] = []
+
+    // 必須フィールドチェック
+    if (!data.titleFound) {
+      warnings.push('タイトルを取得できませんでした')
+    }
+    if (!data.priceFound) {
+      warnings.push('価格を取得できませんでした')
+    }
+
+    // オプションフィールドチェック
+    if (!data.conditionFound) {
+      warnings.push('商品状態を取得できませんでした')
+    }
+    if (!data.bidsFound) {
+      warnings.push('入札数を取得できませんでした')
+    }
+
+    // 必須フィールドが取得できなかった場合はエラー
+    if (!data.titleFound || !data.priceFound) {
+      console.error('[Scraping] 必須データ取得失敗:', warnings)
+      return {
+        id: resultId,
+        url,
+        platform: 'Yahoo Auction',
+        title: data.title || '【取得失敗】タイトルを取得できませんでした',
+        price: data.price,
+        status: 'error',
+        timestamp: new Date().toISOString(),
+        stock: '取得失敗',
+        condition: data.condition || '取得失敗',
+        bids: data.bids,
+        error: '必須データ（タイトルまたは価格）の取得に失敗しました',
+        warnings,
+        dataQuality: {
+          titleFound: data.titleFound,
+          priceFound: data.priceFound,
+          conditionFound: data.conditionFound,
+          bidsFound: data.bidsFound
+        }
+      }
+    }
+
+    // 部分的な取得の場合
+    const status = warnings.length > 0 ? 'partial' : 'success'
+
+    // Supabaseに保存（必須データが取得できた場合のみ）
     const productData = {
-      title: data.title,
-      price: data.price,
+      title: data.title!,
+      price: data.price!,
       source_url: url,
-      condition: data.condition,
-      stock_status: data.stock,
-      bid_count: data.bids,
+      condition: data.condition || null,
+      stock_status: null, // 推測しない
+      bid_count: data.bids || null,
       platform: 'Yahoo Auction',
       scraped_at: new Date().toISOString(),
       scraping_method: 'structure_based_puppeteer_v2025'
@@ -158,6 +221,7 @@ async function scrapeYahooAuction(url: string): Promise<ScrapingResult> {
 
     if (dbError) {
       console.error('[Database] 保存エラー:', dbError)
+      warnings.push('データベース保存に失敗しました')
     } else {
       console.log('[Database] 保存成功')
     }
@@ -166,13 +230,20 @@ async function scrapeYahooAuction(url: string): Promise<ScrapingResult> {
       id: resultId,
       url,
       platform: 'Yahoo Auction',
-      title: data.title || '取得失敗',
-      price: data.price || 0,
-      status: 'success',
+      title: data.title!,
+      price: data.price!,
+      status,
       timestamp: new Date().toISOString(),
-      stock: data.stock,
-      condition: data.condition,
-      bids: data.bids
+      stock: '在庫情報なし', // Yahoo Auctionでは在庫情報は提供されない
+      condition: data.condition || '取得失敗',
+      bids: data.bids || '取得失敗',
+      warnings: warnings.length > 0 ? warnings : undefined,
+      dataQuality: {
+        titleFound: data.titleFound,
+        priceFound: data.priceFound,
+        conditionFound: data.conditionFound,
+        bidsFound: data.bidsFound
+      }
     }
 
   } catch (error) {
@@ -195,16 +266,18 @@ async function scrapeYahooAuction(url: string): Promise<ScrapingResult> {
       id: resultId,
       url,
       platform: 'Yahoo Auction',
-      title: 'スクレイピング失敗',
-      price: 0,
+      title: '【エラー】スクレイピング実行失敗',
+      price: null,
       status: 'error',
       timestamp: new Date().toISOString(),
-      stock: '不明',
-      condition: '不明',
-      error: error instanceof Error ? error.message : 'スクレイピング失敗',
-      debugInfo: {
-        errorType: error instanceof Error ? error.name : 'Unknown',
-        suggestion: 'Run: npx puppeteer browsers install chrome'
+      stock: '取得失敗',
+      condition: '取得失敗',
+      error: error instanceof Error ? error.message : 'スクレイピング実行中にエラーが発生しました',
+      dataQuality: {
+        titleFound: false,
+        priceFound: false,
+        conditionFound: false,
+        bidsFound: false
       }
     }
   }
@@ -237,13 +310,19 @@ export async function POST(request: NextRequest) {
           id: `result-${Date.now()}-${results.length}`,
           url,
           platform: '未対応',
-          title: '対応していないURLです',
-          price: 0,
+          title: '【エラー】対応していないURL',
+          price: null,
           status: 'error',
           timestamp: new Date().toISOString(),
-          stock: '不明',
-          condition: '不明',
-          error: 'Yahoo Auction以外は現在対応していません'
+          stock: '取得失敗',
+          condition: '取得失敗',
+          error: 'Yahoo Auction以外のURLは現在対応していません',
+          dataQuality: {
+            titleFound: false,
+            priceFound: false,
+            conditionFound: false,
+            bidsFound: false
+          }
         })
       }
     }
@@ -252,6 +331,7 @@ export async function POST(request: NextRequest) {
     const stats = {
       total: results.length,
       success: results.filter(r => r.status === 'success').length,
+      partial: results.filter(r => r.status === 'partial').length,
       failed: results.filter(r => r.status === 'error').length
     }
 
@@ -261,7 +341,7 @@ export async function POST(request: NextRequest) {
       success: true,
       results,
       stats,
-      message: `${stats.success}件のデータ取得に成功しました`
+      message: `成功: ${stats.success}件、部分的: ${stats.partial}件、失敗: ${stats.failed}件`
     })
 
   } catch (error) {
@@ -282,8 +362,14 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     success: true,
     message: 'Yahoo Auction Structure-Based Scraping API is running',
-    version: '2025-v1',
-    method: 'structure_based (no class names)',
+    version: '2025-v2-safe',
+    method: 'structure_based (no class names, no assumptions)',
+    safetyFeatures: [
+      '必須データ（タイトル・価格）が取得できない場合はエラー',
+      '推測値は絶対に返さない',
+      'データ品質フラグで取得状況を明示',
+      '警告メッセージで部分的な取得を通知'
+    ],
     endpoints: {
       scrape: '/api/scraping/execute (POST)',
       test: '/api/scraping/execute (GET)'
