@@ -7,7 +7,7 @@
  * フォーマット: MK_ + LZ圧縮JSON
  */
 
-import LZString from 'lz-string';
+import * as LZString from 'lz-string';
 
 /**
  * マスターキーデータ構造（50+フィールド）
