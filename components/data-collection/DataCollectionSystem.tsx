@@ -29,12 +29,13 @@ export function DataCollectionSystem({ className }: DataCollectionSystemProps) {
     hobby: false,
     others: false
   })
-  
+
   const [activeTab, setActiveTab] = useState('collect')
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
   const [urlInput, setUrlInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [results, setResults] = useState<any[]>([])
+  const [selectedResult, setSelectedResult] = useState<any | null>(null)
   const [stats, setStats] = useState({
     total: 0,
     success: 0,
@@ -415,11 +416,17 @@ export function DataCollectionSystem({ className }: DataCollectionSystemProps) {
                           key={result.id}
                           className="p-4 rounded-lg border bg-background flex items-center justify-between"
                         >
-                          <div className="flex-1">
+                          <div className="flex-1" onClick={() => setSelectedResult(result)} style={{ cursor: 'pointer' }}>
                             <div className="flex items-center gap-3 mb-2">
                               <h4 className="font-medium">{result.title}</h4>
-                              <Badge variant={result.status === 'success' ? 'default' : 'destructive'}>
-                                {result.status === 'success' ? '成功' : 'エラー'}
+                              <Badge variant={
+                                result.status === 'success' ? 'default' :
+                                result.status === 'partial' ? 'secondary' :
+                                'destructive'
+                              }>
+                                {result.status === 'success' ? '成功' :
+                                 result.status === 'partial' ? '部分成功' :
+                                 'エラー'}
                               </Badge>
                             </div>
                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -430,7 +437,7 @@ export function DataCollectionSystem({ className }: DataCollectionSystemProps) {
                               <span>{result.condition}</span>
                             </div>
                           </div>
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" onClick={() => setSelectedResult(result)}>
                             <ChevronRight className="h-4 w-4" />
                           </Button>
                         </div>
@@ -476,6 +483,203 @@ export function DataCollectionSystem({ className }: DataCollectionSystemProps) {
           </Tabs>
         </div>
       </div>
+
+      {/* 詳細モーダル */}
+      {selectedResult && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedResult(null)}>
+          <div className="bg-background rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-background border-b p-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold">スクレイピング詳細</h2>
+              <Button variant="ghost" size="icon" onClick={() => setSelectedResult(null)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* タイトルとステータス */}
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <h3 className="text-lg font-medium">{selectedResult.title}</h3>
+                  <Badge variant={
+                    selectedResult.status === 'success' ? 'default' :
+                    selectedResult.status === 'partial' ? 'secondary' :
+                    'destructive'
+                  }>
+                    {selectedResult.status === 'success' ? '成功' :
+                     selectedResult.status === 'partial' ? '部分成功' :
+                     'エラー'}
+                  </Badge>
+                </div>
+                <a href={selectedResult.url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline flex items-center gap-1">
+                  {selectedResult.url} <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+
+              {/* 価格情報 */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">価格情報</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">価格</p>
+                    <p className="text-xl font-bold">¥{selectedResult.price?.toLocaleString() || '不明'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">送料</p>
+                    <p className="text-xl font-bold">
+                      {selectedResult.shippingCost === 0 ? '無料' :
+                       selectedResult.shippingCost ? `¥${selectedResult.shippingCost.toLocaleString()}` : '不明'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">仕入れ値（合計）</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      ¥{selectedResult.totalCost?.toLocaleString() || '不明'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">プラットフォーム</p>
+                    <p className="text-lg font-medium">{selectedResult.platform}</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 商品情報 */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">商品情報</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {selectedResult.condition && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">商品の状態</p>
+                      <p>{selectedResult.condition}</p>
+                    </div>
+                  )}
+                  {selectedResult.categoryPath && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">カテゴリ</p>
+                      <p>{selectedResult.categoryPath}</p>
+                    </div>
+                  )}
+                  {selectedResult.auctionId && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">商品ID</p>
+                      <p className="font-mono">{selectedResult.auctionId}</p>
+                    </div>
+                  )}
+                  {selectedResult.quantity && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">個数</p>
+                      <p>{selectedResult.quantity}</p>
+                    </div>
+                  )}
+                  {selectedResult.shippingDays && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">発送日数</p>
+                      <p>{selectedResult.shippingDays}</p>
+                    </div>
+                  )}
+                  {selectedResult.bids && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">入札数</p>
+                      <p>{selectedResult.bids}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* 画像 */}
+              {selectedResult.images && selectedResult.images.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">商品画像 ({selectedResult.images.length}枚)</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-3 gap-4">
+                      {selectedResult.images.map((img: string, idx: number) => (
+                        <div key={idx} className="border rounded overflow-hidden">
+                          <img
+                            src={img}
+                            alt={`商品画像 ${idx + 1}`}
+                            className="w-full h-40 object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement
+                              target.style.display = 'none'
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* 商品説明 */}
+              {selectedResult.description && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">商品説明</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="whitespace-pre-wrap text-sm">{selectedResult.description}</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* データ品質 */}
+              {selectedResult.dataQuality && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">データ品質</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-3 gap-2 text-sm">
+                      {Object.entries(selectedResult.dataQuality).map(([key, value]) => (
+                        <div key={key} className="flex items-center gap-2">
+                          {value ? <Check className="h-4 w-4 text-green-500" /> : <X className="h-4 w-4 text-red-500" />}
+                          <span className={value ? 'text-green-700' : 'text-red-700'}>
+                            {key.replace('Found', '')}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* 警告 */}
+              {selectedResult.warnings && selectedResult.warnings.length > 0 && (
+                <Card className="border-yellow-200 bg-yellow-50">
+                  <CardHeader>
+                    <CardTitle className="text-base text-yellow-800">警告</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="list-disc list-inside space-y-1 text-sm text-yellow-700">
+                      {selectedResult.warnings.map((warning: string, idx: number) => (
+                        <li key={idx}>{warning}</li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* エラー */}
+              {selectedResult.error && (
+                <Card className="border-red-200 bg-red-50">
+                  <CardHeader>
+                    <CardTitle className="text-base text-red-800">エラー</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-red-700">{selectedResult.error}</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
