@@ -1,6 +1,7 @@
 // app/tools/editing/components/ProductModal.tsx
 'use client'
 
+import { useMemo } from 'react'
 import { FullFeaturedModal } from '@/components/ProductModal'
 import { SKUInfoPanel } from '@/components/SKUInfoPanel'
 import type { Product as EditingProduct, ProductUpdate } from '../types/product'
@@ -24,22 +25,24 @@ export function ProductModal({ product, onClose, onSave }: ProductModalProps) {
     city: product.eu_responsible_city,
     country: product.eu_responsible_country
   });
-  
-  // 画像データを取得
-  const imageUrls = product.scraped_data?.image_urls || product.listing_data?.image_urls || []
-  const images = Array.isArray(imageUrls) 
-    ? imageUrls.map((url, index) => ({
-        id: `img${index + 1}`,
-        url: url,
-        isMain: index === 0,
-        order: index + 1
-      }))
-    : []
-  
-  const selectedImages = images.map(img => img.id)
-  
-  // EditingProduct を ModalProduct に変換
-  const modalProduct: ModalProduct = {
+
+  // 画像データを取得（useMemoでメモ化して無限ループを防止）
+  const images = useMemo(() => {
+    const imageUrls = product.scraped_data?.image_urls || product.listing_data?.image_urls || []
+    return Array.isArray(imageUrls)
+      ? imageUrls.map((url, index) => ({
+          id: `img${index + 1}`,
+          url: url,
+          isMain: index === 0,
+          order: index + 1
+        }))
+      : []
+  }, [product.scraped_data?.image_urls, product.listing_data?.image_urls])
+
+  const selectedImages = useMemo(() => images.map(img => img.id), [images])
+
+  // EditingProduct を ModalProduct に変換（useMemoでメモ化）
+  const modalProduct: ModalProduct = useMemo(() => ({
     id: String(product.id), // 文字列に変換
     asin: product.source_item_id || '',
     sku: product.sku || '',
@@ -96,7 +99,42 @@ export function ProductModal({ product, onClose, onSave }: ProductModalProps) {
     source_item_id: product.source_item_id, // source_item_id
     createdAt: product.created_at || new Date().toISOString(),
     updatedAt: product.updated_at || new Date().toISOString()
-  } as any; // 型エラー回避のためas any
+  } as any), [
+    product.id,
+    product.source_item_id,
+    product.sku,
+    product.master_key,
+    product.title,
+    product.english_title,
+    product.listing_data,
+    product.price_usd,
+    product.price_jpy,
+    product.profit_amount_usd,
+    product.ebay_api_data,
+    product.scraped_data,
+    product.sm_lowest_price,
+    product.sm_average_price,
+    product.sm_competitor_count,
+    product.sm_profit_margin,
+    product.sm_profit_amount_usd,
+    product.profit_margin,
+    product.status,
+    product.current_stock,
+    product.created_at,
+    product.updated_at,
+    product.eu_responsible_company_name,
+    product.eu_responsible_address_line1,
+    product.eu_responsible_address_line2,
+    product.eu_responsible_city,
+    product.eu_responsible_state_or_province,
+    product.eu_responsible_postal_code,
+    product.eu_responsible_country,
+    product.eu_responsible_email,
+    product.eu_responsible_phone,
+    product.eu_responsible_contact_url,
+    images,
+    selectedImages
+  ]) // 型エラー回避のためas any
 
   return (
     <FullFeaturedModal
