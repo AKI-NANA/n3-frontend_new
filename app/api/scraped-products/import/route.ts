@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
         // マッピング: scraped_products → products
         const productData = {
           // 基本情報
+          item_id: scraped.auction_id || `IMPORT-${scraped.id}`,  // eBay item_id (一時的)
           source_item_id: scraped.auction_id || scraped.id.toString(),
           sku: null,  // 後で生成
           master_key: null,
