@@ -289,11 +289,18 @@ export default function EditingPage() {
   const selectedProducts = products.filter(p => selectedIds.has(String(p.id)))
 
   if (loading) {
+    // URLパラメータからインポート直後かどうかを判定
+    const isImported = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('imported') === 'true'
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <div className="text-lg font-semibold mb-2 text-foreground">読み込み中...</div>
-          <div className="text-sm text-muted-foreground">商品データを取得しています</div>
+          <div className="text-lg font-semibold mb-2 text-foreground">
+            {isImported ? 'インポート完了' : '読み込み中...'}
+          </div>
+          <div className="text-sm text-muted-foreground">
+            {isImported ? 'インポートした商品データを読み込んでいます...' : '商品データを取得しています'}
+          </div>
         </div>
       </div>
     )

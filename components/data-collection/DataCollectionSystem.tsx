@@ -163,7 +163,12 @@ export function DataCollectionSystem({ className }: DataCollectionSystemProps) {
         throw new Error(data.error || 'インポートに失敗しました')
       }
 
-      alert(`✅ ${data.imported}件の商品をインポートしました\n❌ ${data.failed}件が失敗しました`)
+      // 成功メッセージを表示
+      const successMessage = data.imported > 0
+        ? `✅ ${data.imported}件の商品をインポートしました${data.failed > 0 ? `\n❌ ${data.failed}件が失敗しました` : ''}`
+        : `❌ ${data.failed}件のインポートが失敗しました`
+
+      alert(successMessage)
 
       // 選択をクリア
       setSelectedResultIds([])
@@ -172,7 +177,10 @@ export function DataCollectionSystem({ className }: DataCollectionSystemProps) {
       if (data.imported > 0) {
         const redirect = confirm('商品編集ページに移動しますか？')
         if (redirect) {
-          window.location.href = '/tools/editing'
+          // データベースへのコミットが完全に反映されるよう少し待機
+          await new Promise(resolve => setTimeout(resolve, 500))
+          // リダイレクト（インポート完了を示すパラメータ付き）
+          window.location.href = '/tools/editing?imported=true'
         }
       }
 

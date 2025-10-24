@@ -215,22 +215,55 @@ async function scrapeYahooAuction(url: string): Promise<ScrapingResult> {
       }
 
       // 6. 画像全取得（Yahoo画像サーバーから）
-      const imageElements = document.querySelectorAll('img')
+      // まず商品画像エリアを特定して、そこから画像を取得
       const imageUrls = new Set<string>()
+
+      // 商品画像エリアの候補セレクタ
+      const imageContainerSelectors = [
+        '[class*="ProductImage"]',
+        '[class*="productImage"]',
+        '[class*="product-image"]',
+        '[class*="ProductMedia"]',
+        '[id*="ProductImage"]',
+        '[class*="ImageGallery"]',
+        '[class*="imageGallery"]',
+        '[class*="Slideshow"]',
+        '.ProductImage',  // 一般的なクラス名
+      ]
+
+      // 商品画像エリアを探す
+      let imageContainer = null
+      for (const selector of imageContainerSelectors) {
+        imageContainer = document.querySelector(selector)
+        if (imageContainer) break
+      }
+
+      // 商品画像エリアが見つかった場合はそこから、見つからない場合は全体から
+      const searchArea = imageContainer || document
+      const imageElements = searchArea.querySelectorAll('img')
 
       imageElements.forEach(img => {
         const src = img.getAttribute('src') || img.getAttribute('data-src')
+        const width = img.naturalWidth || img.width || 0
+        const height = img.naturalHeight || img.height || 0
+
         if (src &&
             (src.includes('auctions.c.yimg.jp') || src.includes('yimg.jp')) &&
             !src.includes('placeholder') &&
             !src.includes('loading') &&
             !src.includes('na_170x170') &&  // サムネイル除外
+            !src.includes('icon') &&
+            !src.includes('logo') &&
+            !src.includes('banner') &&
+            width >= 100 &&  // 最小サイズフィルタ（小さいアイコン除外）
+            height >= 100 &&
             src.startsWith('http')) {
           imageUrls.add(src)
         }
       })
 
-      result.images = Array.from(imageUrls)
+      // 商品画像は通常10枚以内なので、最大15枚に制限
+      result.images = Array.from(imageUrls).slice(0, 15)
       result.imagesFound = result.images.length > 0
 
       // 7. 商品説明
@@ -744,22 +777,54 @@ async function scrapePayPayFleamarket(url: string): Promise<ScrapingResult> {
       }
 
       // 5. 画像
-      const imageElements = document.querySelectorAll('img')
+      // まず商品画像エリアを特定して、そこから画像を取得
       const imageUrls = new Set<string>()
+
+      // 商品画像エリアの候補セレクタ
+      const imageContainerSelectors = [
+        '[class*="ProductImage"]',
+        '[class*="productImage"]',
+        '[class*="product-image"]',
+        '[class*="ProductMedia"]',
+        '[id*="ProductImage"]',
+        '[class*="ImageGallery"]',
+        '[class*="imageGallery"]',
+        '[class*="Slideshow"]',
+        '.ProductImage',
+      ]
+
+      // 商品画像エリアを探す
+      let imageContainer = null
+      for (const selector of imageContainerSelectors) {
+        imageContainer = document.querySelector(selector)
+        if (imageContainer) break
+      }
+
+      // 商品画像エリアが見つかった場合はそこから、見つからない場合は全体から
+      const searchArea = imageContainer || document
+      const imageElements = searchArea.querySelectorAll('img')
 
       imageElements.forEach(img => {
         const src = img.getAttribute('src') || img.getAttribute('data-src')
+        const width = img.naturalWidth || img.width || 0
+        const height = img.naturalHeight || img.height || 0
+
         if (src &&
             (src.includes('yahoo') || src.includes('paypay')) &&
             !src.includes('icon') &&
             !src.includes('logo') &&
             !src.includes('banner') &&
+            !src.includes('placeholder') &&
+            !src.includes('loading') &&
+            width >= 100 &&  // 最小サイズフィルタ
+            height >= 100 &&
             src.startsWith('http')) {
           imageUrls.add(src)
         }
       })
 
-      result.images = Array.from(imageUrls)
+      // 商品画像は通常10枚以内なので、最大15枚に制限
+      result.images = Array.from(imageUrls).slice(0, 15)
       result.imagesFound = result.images.length > 0
 
       // 6. 商品説明
