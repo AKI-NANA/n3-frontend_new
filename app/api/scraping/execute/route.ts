@@ -52,8 +52,8 @@ async function scrapeYahooAuction(url: string): Promise<ScrapingResult> {
       timeout: 30000
     })
 
-    // ページが読み込まれるまで待つ
-    await page.waitForTimeout(2000)
+    // 少し待機（networkidle2の後に追加で待つ）
+    await new Promise(resolve => setTimeout(resolve, 2000))
 
     // データを抽出（構造ベース）
     const data = await page.evaluate(() => {
