@@ -7,15 +7,22 @@ const execAsync = promisify(exec)
 export async function POST() {
   try {
     const projectRoot = process.cwd()
-    
-    // Git pull実行
-    const { stdout, stderr } = await execAsync('git pull origin main', {
+
+    // 現在のブランチを取得
+    const { stdout: branchOutput } = await execAsync('git branch --show-current', {
       cwd: projectRoot
     })
-    
+    const currentBranch = branchOutput.trim()
+
+    // Git pull実行
+    const { stdout, stderr } = await execAsync(`git pull origin ${currentBranch}`, {
+      cwd: projectRoot
+    })
+
     return NextResponse.json({
       success: true,
-      message: 'Git pullが完了しました',
+      message: `Git pullが完了しました (${currentBranch}ブランチ)`,
+      branch: currentBranch,
       output: stdout + stderr
     })
   } catch (error: any) {
