@@ -235,7 +235,7 @@ export default function GitDeployPage() {
 
   const copyMacSyncCommand = () => {
     const currentBranch = gitStatus?.branch || 'main'
-    const commands = `cd ~/n3-frontend && ./sync-mac.sh`
+    const commands = `cd ~/n3-frontend_new && ./sync-mac.sh`
 
     navigator.clipboard.writeText(commands)
     setMacCommandCopied(true)
@@ -533,7 +533,7 @@ export default function GitDeployPage() {
                       <div className="text-xs text-muted-foreground space-y-1 pt-4 border-t">
                         <p className="font-medium">💡 Mac の同期状態を確認するには:</p>
                         <code className="text-xs block bg-slate-100 dark:bg-slate-800 p-2 rounded">
-                          cd ~/n3-frontend && ./check-sync-status.sh
+                          cd ~/n3-frontend_new && ./check-sync-status.sh
                         </code>
                       </div>
                     </>
@@ -579,7 +579,7 @@ export default function GitDeployPage() {
               <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded border">
                 <p className="text-sm font-medium mb-2">実行されるコマンド:</p>
                 <code className="text-xs block bg-slate-100 dark:bg-slate-800 p-3 rounded">
-                  cd ~/n3-frontend && ./sync-mac.sh
+                  cd ~/n3-frontend_new && ./sync-mac.sh
                 </code>
                 <p className="text-xs text-muted-foreground mt-2">
                   ※ 初回はMacで git clone が必要です（MAC_SETUP.md参照）
@@ -616,7 +616,7 @@ export default function GitDeployPage() {
               <div className="text-xs text-muted-foreground space-y-1">
                 <p className="font-medium">Mac同期の仕組み:</p>
                 <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded">
-                  Mac (~/n3-frontend)<br />
+                  Mac (~/n3-frontend_new)<br />
                   ↓ sync-mac.sh 実行<br />
                   ↓ git push<br />
                   GitHub<br />
