@@ -1,0 +1,1647 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>八尾ピアノ教室｜山内ピアノ教室</title>
+    <meta
+      name="description"
+      content="大阪府八尾市にあるピアノ教室・山内ピアノ教室の紹介サイトです。JR八尾駅から近く、お子様だけでも通いやすい場所にあります。山内ピアノ教室は基礎からしっかりとお子様の才能を育てます。"
+    />
+    <meta
+      name="keywords"
+      content="永畑小学校,龍華小学校,亀井小学校,山内ピアノ,ピアノ教室,八尾　ピアノ教室,JR八尾駅,長畑　ピアノ教室,龍華　ピアノ教室,亀井　ピアノ教室,永畑,植松,亀井"
+    />
+    <style>
+      @import url("https://fonts.googleapis.com/jpg2?family=Cormorant+Garamond:wght@300;400;600&family=Playfair+Display:wght@400;700&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@300;400;600&display=swap");
+
+      :root {
+        --primary: #2c2416;
+        --secondary: #8b7355;
+        --accent: #b8956a;
+        --light: #f8f6f3;
+        --white: #ffffff;
+        --shadow: rgba(0, 0, 0, 0.1);
+        --shadow-heavy: rgba(0, 0, 0, 0.2);
+        --sepia: rgba(222, 211, 195, 0.15);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Noto Sans JP", "Yu Gothic", "游ゴシック", "Hiragino Sans",
+          sans-serif;
+        color: var(--primary);
+        line-height: 1.8;
+        background: var(--white);
+        overflow-x: hidden;
+      }
+
+      /* 音楽再生モーダル */
+      .music-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        opacity: 1;
+        transition: opacity 0.5s ease;
+      }
+
+      .music-modal.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .music-modal-content {
+        background: var(--white);
+        padding: 3rem;
+        text-align: center;
+        max-width: 500px;
+        animation: modalSlideUp 0.6s ease;
+      }
+
+      @keyframes modalSlideUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .music-modal h3 {
+        font-family: "Playfair Display", serif;
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: var(--primary);
+      }
+
+      .music-modal p {
+        color: #666;
+        margin-bottom: 2rem;
+        font-size: 0.95rem;
+      }
+
+      .music-modal-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+      }
+
+      .modal-btn {
+        padding: 1rem 2.5rem;
+        border: 1px solid var(--primary);
+        background: transparent;
+        color: var(--primary);
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        letter-spacing: 0.1em;
+      }
+
+      .modal-btn:hover {
+        background: var(--primary);
+        color: var(--white);
+      }
+
+      .modal-btn.primary {
+        background: var(--primary);
+        color: var(--white);
+      }
+
+      .modal-btn.primary:hover {
+        background: var(--secondary);
+      }
+
+      /* 音楽コントロール（右下） */
+      .music-control {
+        position: fixed;
+        bottom: 120px;
+        right: 40px;
+        width: 60px;
+        height: 60px;
+        background: var(--primary);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 5px 30px var(--shadow-heavy);
+        z-index: 998;
+        opacity: 0;
+        transition: all 0.3s ease;
+        color: var(--white);
+        font-size: 1.5rem;
+      }
+
+      .music-control.visible {
+        opacity: 1;
+      }
+
+      .music-control:hover {
+        background: var(--secondary);
+        transform: scale(1.1);
+      }
+
+      .music-control.playing::before {
+        content: "⏸";
+      }
+
+      .music-control.paused::before {
+        content: "▶";
+      }
+
+      /* ナビゲーション */
+      .header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: transparent;
+        z-index: 1000;
+        transition: all 0.5s ease;
+        padding: 2rem 0;
+      }
+
+      .header.scrolled {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        padding: 1rem 0;
+        box-shadow: 0 2px 30px var(--shadow);
+      }
+
+      .nav-container {
+        max-width: 1600px;
+        margin: 0 auto;
+        padding: 0 4rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .logo {
+        font-family: "Playfair Display", serif;
+        font-size: 1.5rem;
+        color: var(--white);
+        text-decoration: none;
+        font-weight: 400;
+        letter-spacing: 0.05em;
+        transition: color 0.3s ease;
+      }
+
+      .header.scrolled .logo {
+        color: var(--primary);
+      }
+
+      .nav-menu {
+        display: flex;
+        list-style: none;
+        gap: 3rem;
+      }
+
+      .nav-menu a {
+        text-decoration: none;
+        color: var(--white);
+        font-size: 0.85rem;
+        letter-spacing: 0.15em;
+        transition: all 0.3s ease;
+        position: relative;
+        font-weight: 400;
+      }
+
+      .header.scrolled .nav-menu a {
+        color: var(--primary);
+      }
+
+      .nav-menu a::after {
+        content: "";
+        position: absolute;
+        bottom: -5px;
+        left: 50%;
+        width: 0;
+        height: 1px;
+        background: var(--accent);
+        transition: all 0.3s ease;
+        transform: translateX(-50%);
+      }
+
+      .nav-menu a:hover::after {
+        width: 100%;
+      }
+
+      /* ハンバーガーメニュー */
+      .menu-toggle {
+        display: none;
+        flex-direction: column;
+        cursor: pointer;
+        gap: 5px;
+      }
+
+      .menu-toggle span {
+        width: 25px;
+        height: 2px;
+        background: var(--white);
+        transition: all 0.3s ease;
+      }
+
+      .header.scrolled .menu-toggle span {
+        background: var(--primary);
+      }
+
+      /* ヒーローセクション - ノスタルジックでクラシック */
+      .hero {
+        height: 100vh;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+
+      .hero-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+      }
+
+      .hero-slide {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        transition: opacity 2.5s ease-in-out;
+      }
+
+      .hero-slide.active {
+        opacity: 1;
+      }
+
+      .hero-slide img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        filter: brightness(0.4) contrast(1.1) saturate(0.8);
+        transform: scale(1);
+        transition: transform 12s ease-out;
+      }
+
+      .hero-slide.active img {
+        transform: scale(1.08);
+      }
+
+      /* ノスタルジックなセピア調のガラス質オーバーレイ */
+      .hero-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(
+            circle at 30% 50%,
+            rgba(222, 211, 195, 0.25),
+            transparent 60%
+          ),
+          radial-gradient(
+            circle at 70% 60%,
+            rgba(184, 149, 106, 0.2),
+            transparent 50%
+          ),
+          linear-gradient(
+            135deg,
+            rgba(44, 36, 22, 0.4) 0%,
+            rgba(139, 115, 85, 0.3) 40%,
+            rgba(44, 36, 22, 0.4) 100%
+          );
+        z-index: 2;
+        backdrop-filter: blur(0.5px);
+      }
+
+      /* ガラス質のテクスチャ効果 */
+      .hero-overlay::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 2px,
+          rgba(255, 255, 255, 0.03) 2px,
+          rgba(255, 255, 255, 0.03) 4px
+        );
+        opacity: 0.5;
+        z-index: 1;
+      }
+
+      /* ビネット効果 */
+      .hero-overlay::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(
+          ellipse at center,
+          transparent 0%,
+          transparent 50%,
+          rgba(0, 0, 0, 0.4) 100%
+        );
+        z-index: 2;
+      }
+
+      .hero-content {
+        position: relative;
+        z-index: 3;
+        text-align: center;
+        color: var(--white);
+        max-width: 1200px;
+        padding: 0 2rem;
+      }
+
+      .hero-title {
+        font-family: "Playfair Display", serif;
+        font-size: clamp(2rem, 5.5vw, 7rem);
+        margin-bottom: 2rem;
+        font-weight: 400;
+        letter-spacing: 0.12em;
+        opacity: 0;
+        animation: fadeInUp 1.5s ease-out 0.3s forwards;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3),
+          0 4px 20px rgba(0, 0, 0, 0.2), 0 0 40px rgba(255, 255, 255, 0.1);
+        line-height: 1.1;
+        white-space: nowrap;
+        position: relative;
+        display: inline-block;
+      }
+
+      .hero-title::after {
+        content: "";
+        position: absolute;
+        bottom: -15px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60%;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.5) 20%,
+          rgba(255, 255, 255, 0.8) 50%,
+          rgba(255, 255, 255, 0.5) 80%,
+          transparent
+        );
+        opacity: 0;
+        animation: fadeIn 1s ease-out 1.8s forwards;
+      }
+
+      .hero-info {
+        font-size: clamp(0.95rem, 1.5vw, 1.15rem);
+        font-weight: 400;
+        margin-bottom: 2.5rem;
+        opacity: 0;
+        animation: fadeInUp 1.5s ease-out 0.8s forwards;
+        letter-spacing: 0.25em;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+        font-family: "Noto Sans JP", sans-serif;
+        padding: 0 1rem;
+      }
+
+      .hero-description {
+        font-family: "Noto Serif JP", serif;
+        font-size: clamp(0.85rem, 1.1vw, 0.95rem);
+        font-weight: 300;
+        line-height: 2;
+        margin-bottom: 3.5rem;
+        opacity: 0;
+        animation: fadeInUp 1.5s ease-out 1.1s forwards;
+        max-width: 850px;
+        margin-left: auto;
+        margin-right: auto;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+        padding: 0 2rem;
+      }
+
+      .hero-cta {
+        opacity: 0;
+        animation: fadeInUp 1.5s ease-out 1.4s forwards;
+      }
+
+      .cta-button {
+        display: inline-block;
+        padding: 1.3rem 3.5rem;
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--white);
+        border: 2px solid rgba(255, 255, 255, 0.8);
+        text-decoration: none;
+        font-size: 1rem;
+        letter-spacing: 0.2em;
+        transition: all 0.5s ease;
+        position: relative;
+        overflow: hidden;
+        font-weight: 500;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      }
+
+      .cta-button::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.95);
+        transition: left 0.5s ease;
+        z-index: -1;
+      }
+
+      .cta-button:hover::before {
+        left: 0;
+      }
+
+      .cta-button:hover {
+        color: var(--primary);
+        border-color: rgba(255, 255, 255, 0.95);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 30px rgba(0, 0, 0, 0.4);
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(40px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* スクロールインジケーター */
+      .scroll-indicator {
+        position: absolute;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 3;
+        opacity: 0;
+        animation: fadeIn 1s ease-out 2.5s forwards;
+      }
+
+      .scroll-indicator::before {
+        content: "";
+        display: none;
+      }
+
+      .scroll-line {
+        width: 1px;
+        height: 60px;
+        background: rgba(255, 255, 255, 0.4);
+        margin: 0 auto;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .scroll-line::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 30px;
+        background: rgba(255, 255, 255, 0.8);
+        animation: scrollAnimation 2.5s ease-in-out infinite;
+      }
+
+      @keyframes scrollAnimation {
+        0% {
+          transform: translateY(-30px);
+        }
+        100% {
+          transform: translateY(60px);
+        }
+      }
+
+      @keyframes fadeIn {
+        to {
+          opacity: 1;
+        }
+      }
+
+      /* セクション共通 */
+      section {
+        padding: 8rem 4rem;
+        position: relative;
+      }
+
+      .section-container {
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      .section-label {
+        font-size: 0.75rem;
+        letter-spacing: 0.3em;
+        color: var(--secondary);
+        text-align: center;
+        margin-bottom: 1rem;
+        font-weight: 500;
+      }
+
+      .section-title {
+        font-family: "Playfair Display", serif;
+        font-size: clamp(2.5rem, 5vw, 4rem);
+        text-align: center;
+        margin-bottom: 3rem;
+        color: var(--primary);
+        font-weight: 400;
+        letter-spacing: 0.05em;
+      }
+
+      /* Welcomeセクション */
+      .welcome {
+        background: var(--light);
+      }
+
+      .welcome-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6rem;
+        align-items: center;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .welcome-text {
+        padding: 2rem 0;
+      }
+
+      .welcome-text h3 {
+        font-size: clamp(1.5rem, 3vw, 2rem);
+        line-height: 1.8;
+        margin-bottom: 2rem;
+        font-weight: 500;
+        color: var(--primary);
+      }
+
+      .welcome-text p {
+        color: #666;
+        margin-bottom: 1.5rem;
+        font-size: 0.95rem;
+        line-height: 2;
+      }
+
+      .welcome-image {
+        position: relative;
+        box-shadow: 0 20px 60px var(--shadow-heavy);
+      }
+
+      .welcome-image img {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+
+      /* 教室の雰囲気セクション */
+      .atmosphere {
+        background: var(--white);
+      }
+
+      .atmosphere-content {
+        max-width: 1000px;
+        margin: 0 auto;
+        text-align: center;
+      }
+
+      .atmosphere-text {
+        margin-bottom: 3rem;
+      }
+
+      .atmosphere-text p {
+        color: #666;
+        line-height: 2.2;
+        margin-bottom: 1.5rem;
+        font-size: 1.05rem;
+      }
+
+      .atmosphere-features {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 4rem;
+        margin: 5rem 0;
+      }
+
+      .feature-item {
+        padding: 2rem 1rem;
+      }
+
+      .feature-icon {
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 2rem;
+        position: relative;
+      }
+
+      .feature-icon img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.1));
+      }
+
+      .feature-item h3 {
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+        color: var(--primary);
+        font-weight: 500;
+        line-height: 1.6;
+      }
+
+      .feature-item p {
+        color: #999;
+        font-size: 0.9rem;
+        line-height: 1.8;
+      }
+
+      .atmosphere-image {
+        margin-top: 4rem;
+      }
+
+      .atmosphere-image img {
+        width: 100%;
+        max-width: 800px;
+        margin: 0 auto;
+        display: block;
+        box-shadow: 0 20px 60px var(--shadow-heavy);
+      }
+
+      /* プロフィールセクション */
+      .profile {
+        background: var(--light);
+      }
+
+      .profile-content {
+        display: grid;
+        grid-template-columns: 400px 1fr;
+        gap: 6rem;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .profile-image-box {
+        position: sticky;
+        top: 150px;
+      }
+
+      .profile-image {
+        width: 100%;
+        box-shadow: 0 20px 60px var(--shadow-heavy);
+        margin-bottom: 2rem;
+      }
+
+      .profile-name {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: var(--primary);
+        margin-bottom: 0.5rem;
+        letter-spacing: 0.1em;
+      }
+
+      .profile-kana {
+        font-size: 0.85rem;
+        color: #999;
+        margin-bottom: 1.5rem;
+        letter-spacing: 0.1em;
+      }
+
+      .profile-education {
+        font-size: 0.85rem;
+        color: #666;
+        line-height: 1.8;
+      }
+
+      .profile-text h3 {
+        font-size: 1.8rem;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #e0e0e0;
+        font-weight: 500;
+      }
+
+      .profile-text p {
+        color: #666;
+        margin-bottom: 1.5rem;
+        line-height: 2;
+      }
+
+      /* ギャラリーセクション */
+      .gallery {
+        background: var(--white);
+      }
+
+      .gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2rem;
+        margin-bottom: 3rem;
+      }
+
+      .gallery-item {
+        aspect-ratio: 4/3;
+        overflow: hidden;
+        position: relative;
+        cursor: pointer;
+        box-shadow: 0 10px 40px var(--shadow);
+      }
+
+      .gallery-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+      }
+
+      .gallery-item:hover img {
+        transform: scale(1.05);
+      }
+
+      /* アクセスセクション */
+      .access {
+        background: var(--light);
+      }
+
+      .access-content {
+        display: grid;
+        grid-template-columns: 1fr 1.5fr;
+        gap: 4rem;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .access-info h3 {
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+        margin-top: 2.5rem;
+        font-weight: 500;
+      }
+
+      .access-info h3:first-child {
+        margin-top: 0;
+      }
+
+      .access-info address {
+        font-style: normal;
+        color: #666;
+        line-height: 2;
+        margin-bottom: 1rem;
+      }
+
+      .access-info p {
+        color: #666;
+        line-height: 1.9;
+      }
+
+      .access-info a {
+        color: var(--secondary);
+        text-decoration: none;
+        transition: color 0.3s ease;
+      }
+
+      .access-info a:hover {
+        color: var(--accent);
+      }
+
+      .map-container {
+        position: relative;
+        height: 500px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px var(--shadow-heavy);
+      }
+
+      .map-container iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+      }
+
+      /* コンタクトセクション */
+      .contact {
+        background: var(--white);
+        text-align: center;
+      }
+
+      .contact-text {
+        max-width: 700px;
+        margin: 0 auto 3rem;
+        color: #666;
+        font-size: 1.05rem;
+        line-height: 2;
+      }
+
+      .contact-buttons {
+        display: flex;
+        gap: 2rem;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .contact-btn {
+        padding: 1.2rem 3rem;
+        border: 1px solid var(--primary);
+        background: transparent;
+        color: var(--primary);
+        text-decoration: none;
+        font-size: 0.9rem;
+        letter-spacing: 0.1em;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.8rem;
+      }
+
+      .contact-btn:hover {
+        background: var(--primary);
+        color: var(--white);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px var(--shadow-heavy);
+      }
+
+      /* フッター */
+      footer {
+        background: var(--primary);
+        color: var(--white);
+        padding: 4rem 4rem 2rem;
+      }
+
+      .footer-content {
+        max-width: 1400px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr;
+        gap: 4rem;
+        margin-bottom: 3rem;
+      }
+
+      .footer-section h4 {
+        font-family: "Playfair Display", serif;
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+        font-weight: 400;
+      }
+
+      .footer-section p {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.9rem;
+        line-height: 1.8;
+      }
+
+      .footer-links {
+        list-style: none;
+      }
+
+      .footer-links a {
+        color: rgba(255, 255, 255, 0.7);
+        text-decoration: none;
+        font-size: 0.9rem;
+        display: block;
+        margin-bottom: 0.8rem;
+        transition: color 0.3s ease;
+      }
+
+      .footer-links a:hover {
+        color: var(--accent);
+      }
+
+      .footer-bottom {
+        text-align: center;
+        padding-top: 2rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 0.85rem;
+      }
+
+      .footer-credit {
+        margin-top: 0.5rem;
+        font-size: 0.7rem;
+        opacity: 0.5;
+      }
+
+      .footer-credit a {
+        color: rgba(255, 255, 255, 0.5);
+        text-decoration: none;
+        transition: opacity 0.3s ease;
+      }
+
+      .footer-credit a:hover {
+        opacity: 0.8;
+      }
+
+      /* TOPに戻るボタン（右下） */
+      .back-to-top {
+        position: fixed;
+        bottom: 40px;
+        right: 40px;
+        width: 60px;
+        height: 60px;
+        background: var(--primary);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 5px 30px var(--shadow-heavy);
+        z-index: 999;
+        opacity: 0;
+        transition: all 0.3s ease;
+        color: var(--white);
+        font-size: 1.8rem;
+        pointer-events: none;
+      }
+
+      .back-to-top.visible {
+        opacity: 1;
+        pointer-events: all;
+      }
+
+      .back-to-top:hover {
+        background: var(--secondary);
+        transform: scale(1.1) translateY(-3px);
+      }
+
+      .back-to-top::before {
+        content: "♪";
+      }
+
+      /* レスポンシブ */
+      @media (max-width: 1024px) {
+        section {
+          padding: 6rem 2rem;
+        }
+
+        .nav-container {
+          padding: 0 2rem;
+        }
+
+        .nav-menu {
+          display: none;
+        }
+
+        .menu-toggle {
+          display: flex;
+        }
+
+        .welcome-content,
+        .profile-content,
+        .access-content {
+          grid-template-columns: 1fr;
+          gap: 3rem;
+        }
+
+        .profile-image-box {
+          position: static;
+        }
+
+        .atmosphere-features {
+          grid-template-columns: 1fr;
+          gap: 3rem;
+        }
+
+        .gallery-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .footer-content {
+          grid-template-columns: 1fr;
+          gap: 2rem;
+        }
+
+        .back-to-top {
+          right: 20px;
+          bottom: 20px;
+          width: 50px;
+          height: 50px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .gallery-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 音楽再生モーダル -->
+    <div class="music-modal" id="musicModal">
+      <div class="music-modal-content">
+        <h3>Welcome</h3>
+        <p>BGMと共に山内ピアノ教室をご覧になりますか？</p>
+        <div class="music-modal-buttons">
+          <button class="modal-btn" onclick="declineMusic()">OFF</button>
+          <button class="modal-btn primary" onclick="acceptMusic()">ON</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 音楽プレーヤー（非表示） -->
+    <audio id="bgmPlayer" loop>
+      <source src="mp3/nocturne-op9-2.mp3" type="audio/mpeg" />
+    </audio>
+
+    <script>
+      // BGMの初期音量を設定（0.0〜1.0、デフォルトは0.3 = 30%）
+      document.getElementById("bgmPlayer").volume = 0.3;
+    </script>
+
+    <!-- 音楽コントロール（右下） -->
+    <div class="music-control paused" id="musicControl"></div>
+
+    <!-- ナビゲーション -->
+    <header class="header" id="header">
+      <nav class="nav-container">
+        <a href="#" class="logo">Yamauchi Piano Studio</a>
+        <ul class="nav-menu" id="navMenu">
+          <li><a href="#home">HOME</a></li>
+          <li><a href="#welcome">ABOUT</a></li>
+          <li><a href="#atmosphere">教室の雰囲気</a></li>
+          <li><a href="#profile">PROFILE</a></li>
+          <li><a href="#gallery">GALLERY</a></li>
+          <li><a href="#access">ACCESS</a></li>
+          <li><a href="#contact">CONTACT</a></li>
+        </ul>
+        <div class="menu-toggle" id="menuToggle">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </nav>
+    </header>
+
+    <!-- ヒーロー（画像スライドショー + ノスタルジック効果） -->
+    <section id="home" class="hero">
+      <div class="hero-bg">
+        <div class="hero-slide active">
+          <img src="jpg/hero_main.jpg" alt="Piano" />
+        </div>
+        <div class="hero-slide">
+          <img src="jpg/hero_slide2.jpg" alt="Piano" />
+        </div>
+        <div class="hero-slide">
+          <img src="jpg/hero_slide3.jpg" alt="Piano" />
+        </div>
+      </div>
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <h1 class="hero-title">Yamauchi Piano Studio</h1>
+        <p class="hero-info">3歳から大人まで ー 心に響く音楽を、あなたの手で</p>
+        <p class="hero-description">
+          基礎から高度な表現力を磨きたい方まで幅広くレッスン致します。<br />
+          一人一人に合わせたレッスンスタイルで音楽を演奏する楽しさと喜びをお伝えします。<br />
+          クラシックやポップスなど、お好きな曲を自由に演奏できることを目指して個性を伸ばし、自由なスタイルで感性・創造性を育てます。
+        </p>
+        <div class="hero-cta">
+          <a href="#contact" class="cta-button">体験レッスン随時受付中</a>
+        </div>
+      </div>
+      <div class="scroll-indicator">
+        <div class="scroll-line"></div>
+      </div>
+    </section>
+
+    <!-- Welcome -->
+    <section id="welcome" class="welcome">
+      <div class="section-container">
+        <p class="section-label">WELCOME</p>
+        <h2 class="section-title">ピアノを楽しむために</h2>
+        <div class="welcome-content">
+          <div class="welcome-text">
+            <h3>続けることが大切です</h3>
+            <p>
+              ピアノは誰でも必ず弾けるようになります。ピアノを通して、「自分は頑張る事ができる」「頑張れば嬉しい事がある」と少しでも多くの子供達に知って頂けたら幸いです。
+            </p>
+            <p>
+              一つの曲が弾けるようになれば、次はまたレベルを上げて新しい曲に挑戦し、物事に対する諦めない姿勢と気持ちが育ちます。
+            </p>
+            <p>
+              子育てと真剣に向き合っているお母様にご協力できれば幸いです。ピアノを通してお子様の才能を一緒に育てていきましょう。
+            </p>
+          </div>
+          <div class="welcome-image">
+            <img src="jpg/welcome.jpg" alt="Piano Lesson" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 教室の雰囲気 -->
+    <section id="atmosphere" class="atmosphere">
+      <div class="section-container">
+        <p class="section-label">ATMOSPHERE</p>
+        <h2 class="section-title">教室の雰囲気</h2>
+        <div class="atmosphere-content">
+          <div class="atmosphere-text">
+            <p>のびのびとピアノを楽しむ生徒さんが多い教室です。</p>
+            <p>
+              学校の伴奏のオーディションを受けたいからと楽譜を持ってくる子も多く、チャレンジ精神旺盛です。
+            </p>
+            <p>発表会の選曲もこだわって妥協しません。</p>
+            <p>
+              上手く弾けた時、大喜びする子もいれば、控えめな性格の子も口元がにんまりしています。
+            </p>
+          </div>
+
+          <div class="atmosphere-features">
+            <div class="feature-item">
+              <div class="feature-icon">
+                <img src="jpg/icon_child.png" alt="幼少期から" />
+              </div>
+              <h3>幼少期から<br />たくさんの経験を</h3>
+            </div>
+            <div class="feature-item">
+              <div class="feature-icon">
+                <img src="jpg/icon_student.png" alt="中学生・高校生" />
+              </div>
+              <h3>中学生・高校生も<br />受験期・部活動の両立をサポート</h3>
+            </div>
+            <div class="feature-item">
+              <div class="feature-icon">
+                <img src="jpg/icon_stage.png" alt="舞台に挑戦" />
+              </div>
+              <h3>いくつになっても<br />舞台に挑戦</h3>
+            </div>
+          </div>
+
+          <div class="atmosphere-text">
+            <p
+              style="font-weight: 500; font-size: 1.1rem; color: var(--primary)"
+            >
+              譜読み、指の強さなど基礎力を磨きつつ、<br />
+              発表会は好きな曲をセレクト
+            </p>
+            <p
+              style="
+                margin-top: 2rem;
+                font-weight: 500;
+                color: var(--secondary);
+              "
+            >
+              発表会は毎年夏に開催
+            </p>
+          </div>
+
+          <div class="atmosphere-image">
+            <img src="jpg/atmosphere.jpg" alt="教室の様子" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Profile -->
+    <section id="profile" class="profile">
+      <div class="section-container">
+        <p class="section-label">PROFILE</p>
+        <h2 class="section-title">講師紹介</h2>
+        <div class="profile-content">
+          <div class="profile-image-box">
+            <img src="jpg/profile.jpg" alt="山内紋子" class="profile-image" />
+            <p class="profile-name">山内 紋子</p>
+            <p class="profile-kana">YAMAUCHI AYAKO</p>
+            <p class="profile-education">
+              相愛高等学校音楽科<br />
+              相愛大学音楽学部ピアノ専攻卒業<br />
+              同高校・大学各卒業演奏会出演
+            </p>
+          </div>
+          <div class="profile-text">
+            <h3>ご挨拶</h3>
+            <p>
+              ５歳よりピアノを始め、小学生のころからピアノの先生になることが夢でした。
+            </p>
+            <p>
+              ピアノは誰でも必ず弾けるようになります。ピアノを通して「自分は頑張る事ができる」「頑張れば嬉しい事がある」と少しでも多くの子ども達に知って貰えたらと思います。
+            </p>
+            <p>
+              誰かに認めてもらうことも大切ですが、自分のために頑張り、自分のことを認めることが出来れば、心が強くなり、誰かや何かに振り回されることなく安定した人格へと育ちます。
+            </p>
+            <p>
+              また、ピアノを自由に演奏し、音楽が日常にある豊かな生活を楽しみ、良質な気分転換が出来るようになることが山内ピアノ教室の一番の目標です。
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Gallery -->
+    <section id="gallery" class="gallery">
+      <div class="section-container">
+        <p class="section-label">GALLERY</p>
+        <h2 class="section-title">教室の様子</h2>
+        <div class="gallery-grid">
+          <div class="gallery-item">
+            <img src="jpg/gallery_01.jpg" alt="Gallery 1" />
+          </div>
+          <div class="gallery-item">
+            <img src="jpg/gallery_02.jpg" alt="Gallery 2" />
+          </div>
+          <div class="gallery-item">
+            <img src="jpg/gallery_03.jpg" alt="Gallery 3" />
+          </div>
+          <div class="gallery-item">
+            <img src="jpg/gallery_04.jpg" alt="Gallery 4" />
+          </div>
+          <div class="gallery-item">
+            <img src="jpg/gallery_05.jpg" alt="Gallery 5" />
+          </div>
+          <div class="gallery-item">
+            <img src="jpg/gallery_06.jpg" alt="Gallery 6" />
+          </div>
+          <div class="gallery-item">
+            <img src="jpg/gallery_07.jpg" alt="Gallery 7" />
+          </div>
+          <div class="gallery-item">
+            <img src="jpg/gallery_08.jpg" alt="Gallery 8" />
+          </div>
+          <div class="gallery-item">
+            <img src="jpg/gallery_09.jpg" alt="Gallery 9" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Access -->
+    <section id="access" class="access">
+      <div class="section-container">
+        <p class="section-label">ACCESS</p>
+        <h2 class="section-title">アクセス</h2>
+        <div class="access-content">
+          <div class="access-info">
+            <h3>教室所在地</h3>
+            <address>
+              〒581-0084<br />
+              大阪府八尾市植松町4丁目<br />
+              <a href="tel:07056570373">Tel: 070-5657-0373</a><br />
+              <a href="mailto:ayako.piano.1023@gmail.com"
+                >Email: ayako.piano.1023@gmail.com</a
+              >
+            </address>
+
+            <h3>アクセス方法</h3>
+            <p>
+              JR八尾駅から徒歩5分以内です。<br />
+              お子様だけでも通いやすい場所にあります。
+            </p>
+
+            <h3>最寄り小学校</h3>
+            <p>
+              永畑小学校・龍華小学校・亀井小学校<br />
+              各小学校区からアクセス良好です。
+            </p>
+          </div>
+
+          <div class="map-container">
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3283.478933726919!2d135.59242526553066!3d34.617335445185596!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6000d8ac43a578d7%3A0x4613f6c5c2bd34d0!2z44CSNTgxLTAwODQg5aSn6Ziq5bqc5YWr5bC-5biC5qSN5p2-55S677yU5LiB55uu!5e0!3m2!1sja!2sjp!4v1579674828241!5m2!1sja!2sjp"
+              allowfullscreen=""
+              loading="lazy"
+            >
+            </iframe>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact -->
+    <section id="contact" class="contact">
+      <div class="section-container">
+        <p class="section-label">CONTACT</p>
+        <h2 class="section-title">お問い合わせ</h2>
+        <p class="contact-text">
+          ピアノ教室に関するご質問、体験レッスンのお申込みなど<br />
+          お気軽にお問い合わせください
+        </p>
+
+        <div class="contact-buttons">
+          <a href="mailto:ayako.piano.1023@gmail.com" class="contact-btn">
+            <span>✉</span>
+            メールで問い合わせ
+          </a>
+          <a
+            href="https://line.me/ti/p/YOUR_LINE_ID"
+            class="contact-btn"
+            target="_blank"
+            rel="noopener"
+          >
+            <span>💬</span>
+            LINEで問い合わせ
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <div class="footer-content">
+        <div class="footer-section">
+          <h4>Yamauchi Piano Studio</h4>
+          <p>
+            山内ピアノ教室<br />
+            〒581-0084<br />
+            大阪府八尾市植松町4丁目<br />
+            Tel: 070-5657-0373<br />
+            Email: ayako.piano.1023@gmail.com
+          </p>
+        </div>
+        <div class="footer-section">
+          <h4>Menu</h4>
+          <ul class="footer-links">
+            <li><a href="#home">HOME</a></li>
+            <li><a href="#welcome">ABOUT</a></li>
+            <li><a href="#atmosphere">教室の雰囲気</a></li>
+            <li><a href="#profile">PROFILE</a></li>
+            <li><a href="#gallery">GALLERY</a></li>
+            <li><a href="#access">ACCESS</a></li>
+            <li><a href="#contact">CONTACT</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h4>Access</h4>
+          <p>
+            JR八尾駅より徒歩5分<br />
+            お子様だけでも通いやすい<br />
+            場所にあります
+          </p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2025 Yamauchi Piano Studio. All Rights Reserved.</p>
+        <p class="footer-credit">
+          BGM:
+          <a href="https://pocket-se.info/" target="_blank" rel="noopener"
+            >ポケットサウンド/効果音素材</a
+          >
+        </p>
+      </div>
+    </footer>
+
+    <!-- TOPに戻るボタン -->
+    <div class="back-to-top" id="backToTop"></div>
+
+    <script>
+      // 音楽プレーヤー関連
+      const musicModal = document.getElementById("musicModal");
+      const bgmPlayer = document.getElementById("bgmPlayer");
+      const musicControl = document.getElementById("musicControl");
+      let musicAccepted = false;
+
+      function acceptMusic() {
+        musicAccepted = true;
+        musicModal.classList.add("hidden");
+        bgmPlayer.play().catch((e) => console.log("Audio play failed:", e));
+        musicControl.classList.add("visible", "playing");
+        musicControl.classList.remove("paused");
+      }
+
+      function declineMusic() {
+        musicModal.classList.add("hidden");
+        musicControl.classList.add("visible", "paused");
+        musicControl.classList.remove("playing");
+      }
+
+      // 音楽コントロールのクリックイベント
+      musicControl.addEventListener("click", () => {
+        if (bgmPlayer.paused) {
+          bgmPlayer.play().catch((e) => console.log("Audio play failed:", e));
+          musicControl.classList.add("playing");
+          musicControl.classList.remove("paused");
+        } else {
+          bgmPlayer.pause();
+          musicControl.classList.add("paused");
+          musicControl.classList.remove("playing");
+        }
+      });
+
+      // ページ読み込み時にモーダルを表示
+      window.addEventListener("load", () => {
+        setTimeout(() => {
+          musicModal.style.display = "flex";
+        }, 500);
+      });
+
+      // ナビゲーション
+      const header = document.getElementById("header");
+
+      window.addEventListener("scroll", () => {
+        if (window.scrollY > 100) {
+          header.classList.add("scrolled");
+        } else {
+          header.classList.remove("scrolled");
+        }
+      });
+
+      // スムーススクロール
+      document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+        anchor.addEventListener("click", function (e) {
+          e.preventDefault();
+          const target = document.querySelector(this.getAttribute("href"));
+          if (target) {
+            target.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        });
+      });
+
+      // ヒーロースライダー（ゆっくりとした切り替え）
+      const slides = document.querySelectorAll(".hero-slide");
+      let currentSlide = 0;
+
+      function nextSlide() {
+        slides[currentSlide].classList.remove("active");
+        currentSlide = (currentSlide + 1) % slides.length;
+        slides[currentSlide].classList.add("active");
+      }
+
+      setInterval(nextSlide, 7000); // 7秒ごとに切り替え
+
+      // TOPに戻るボタン
+      const backToTop = document.getElementById("backToTop");
+
+      window.addEventListener("scroll", () => {
+        if (window.scrollY > 500) {
+          backToTop.classList.add("visible");
+        } else {
+          backToTop.classList.remove("visible");
+        }
+      });
+
+      backToTop.addEventListener("click", () => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+
+      // セクションのフェードイン効果
+      const observerOptions = {
+        threshold: 0.1,
+        rootMargin: "0px 0px -100px 0px",
+      };
+
+      const fadeInOnScroll = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.style.opacity = "1";
+            entry.target.style.transform = "translateY(0)";
+          }
+        });
+      }, observerOptions);
+
+      // 各セクションに適用
+      document.querySelectorAll("section:not(#home)").forEach((section) => {
+        section.style.opacity = "0";
+        section.style.transform = "translateY(30px)";
+        section.style.transition = "opacity 1s ease-out, transform 1s ease-out";
+        fadeInOnScroll.observe(section);
+      });
+
+      // 画像のホバー効果強化
+      document
+        .querySelectorAll(
+          ".gallery-item, .welcome-image, .profile-image, .atmosphere-image img"
+        )
+        .forEach((item) => {
+          item.addEventListener("mouseenter", function () {
+            this.style.transition =
+              "transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)";
+          });
+        });
+
+      // Feature itemsのホバー効果
+      document.querySelectorAll(".feature-item").forEach((item) => {
+        item.addEventListener("mouseenter", function () {
+          this.style.transform = "translateY(-10px)";
+          this.style.transition = "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)";
+
+          const icon = this.querySelector(".feature-icon img");
+          if (icon) {
+            icon.style.transform = "scale(1.1) rotate(5deg)";
+            icon.style.transition =
+              "all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)";
+          }
+        });
+
+        item.addEventListener("mouseleave", function () {
+          this.style.transform = "translateY(0)";
+
+          const icon = this.querySelector(".feature-icon img");
+          if (icon) {
+            icon.style.transform = "scale(1) rotate(0deg)";
+          }
+        });
+      });
+
+      // CTAボタンのパルス効果
+      const ctaButton = document.querySelector(".cta-button");
+      if (ctaButton) {
+        setInterval(() => {
+          ctaButton.style.animation = "pulse 1.5s ease-in-out";
+          setTimeout(() => {
+            ctaButton.style.animation = "";
+          }, 1500);
+        }, 5000);
+      }
+
+      // パルスアニメーションの定義
+      const style = document.createElement("style");
+      style.textContent = `
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+      }
+
+      .feature-item {
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+
+      .gallery-item {
+        transition: all 0.3s ease;
+      }
+
+      .gallery-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 60px var(--shadow-heavy);
+      }
+
+      .contact-btn {
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+
+      .contact-btn:hover {
+        transform: translateY(-3px) scale(1.02);
+      }
+
+      /* ナビゲーションメニューのホバー効果強化 */
+      .nav-menu a {
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+
+      .nav-menu a:hover {
+        transform: translateY(-2px);
+      }
+
+      /* プロフィール画像のホバー */
+      .profile-image {
+        transition: all 0.5s ease;
+      }
+
+      .profile-image:hover {
+        transform: scale(1.02);
+        box-shadow: 0 25px 70px var(--shadow-heavy);
+      }
+
+      /* Welcome画像のホバー */
+      .welcome-image img {
+        transition: all 0.5s ease;
+      }
+
+      .welcome-image:hover img {
+        transform: scale(1.03);
+      }
+    `;
+      document.head.appendChild(style);
+
+      // パララックス効果（軽微）
+      window.addEventListener("scroll", () => {
+        const scrolled = window.pageYOffset;
+        const parallaxElements = document.querySelectorAll(".hero-overlay");
+
+        parallaxElements.forEach((el) => {
+          const speed = 0.5;
+          el.style.transform = `translateY(${scrolled * speed}px)`;
+        });
+      });
+
+      // テキストのタイピング効果（オプション）
+      const heroTitle = document.querySelector(".hero-title");
+      if (heroTitle) {
+        heroTitle.addEventListener("animationend", () => {
+          heroTitle.style.borderRight = "2px solid transparent";
+        });
+      }
+    </script>
+  </body>
+</html>
