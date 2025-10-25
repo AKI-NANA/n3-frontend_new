@@ -50,6 +50,7 @@ export default function GitDeployPage() {
   const [syncSteps, setSyncSteps] = useState<string[]>([])
   const [syncing, setSyncing] = useState(false)
   const [showSyncConfirm, setShowSyncConfirm] = useState(false)
+  const [macCommandCopied, setMacCommandCopied] = useState(false)
 
   // Git状態をチェック
   const checkGitStatus = async () => {
@@ -230,6 +231,20 @@ export default function GitDeployPage() {
     }
   }
 
+  const copyMacSyncCommand = () => {
+    const currentBranch = gitStatus?.branch || 'main'
+    const commands = `cd ~/n3-frontend && ./sync-mac.sh`
+
+    navigator.clipboard.writeText(commands)
+    setMacCommandCopied(true)
+    setResult({
+      success: true,
+      message: 'Mac同期コマンドをコピーしました！Macのターミナルで貼り付けて実行してください。'
+    })
+
+    setTimeout(() => setMacCommandCopied(false), 3000)
+  }
+
   useEffect(() => {
     checkEnvStatus()
   }, [])
@@ -372,6 +387,80 @@ export default function GitDeployPage() {
               ) : (
                 <p className="text-sm text-muted-foreground">読み込み中...</p>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Mac同期カード */}
+          <Card className="border-2 border-purple-200 dark:border-purple-800">
+            <CardHeader className="bg-purple-50 dark:bg-purple-900/20">
+              <CardTitle className="flex items-center gap-2">
+                <Terminal className="w-5 h-5 text-purple-600" />
+                💻 Mac同期（ワンクリックコピー）
+              </CardTitle>
+              <CardDescription>
+                Macのローカル環境にGitデータを同期するコマンドをコピー
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-6">
+              <Alert className="bg-purple-50 dark:bg-purple-900/20 border-purple-200">
+                <AlertCircle className="w-4 h-4 text-purple-600" />
+                <AlertDescription className="text-sm">
+                  <strong>📌 Mac同期の手順:</strong><br />
+                  1️⃣ 下のボタンをクリック（コマンドがコピーされます）<br />
+                  2️⃣ Macのターミナルを開く<br />
+                  3️⃣ Cmd+V で貼り付けて Enter<br />
+                  4️⃣ 自動的にGitの最新データがMacに反映されます
+                </AlertDescription>
+              </Alert>
+
+              <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded border">
+                <p className="text-sm font-medium mb-2">実行されるコマンド:</p>
+                <code className="text-xs block bg-slate-100 dark:bg-slate-800 p-3 rounded">
+                  cd ~/n3-frontend && ./sync-mac.sh
+                </code>
+                <p className="text-xs text-muted-foreground mt-2">
+                  ※ 初回はMacで git clone が必要です（MAC_SETUP.md参照）
+                </p>
+              </div>
+
+              <Button
+                onClick={copyMacSyncCommand}
+                className="w-full bg-purple-600 hover:bg-purple-700"
+                size="lg"
+              >
+                {macCommandCopied ? (
+                  <>
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    コピー完了！
+                  </>
+                ) : (
+                  <>
+                    <Terminal className="w-4 h-4 mr-2" />
+                    Mac同期コマンドをコピー
+                  </>
+                )}
+              </Button>
+
+              <Alert className="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200">
+                <AlertCircle className="w-4 h-4 text-yellow-600" />
+                <AlertDescription className="text-xs">
+                  <strong>⚠️ 初回セットアップが必要な場合:</strong><br />
+                  Macでまだ git clone していない場合は、<br />
+                  MAC_SETUP.md を参照して初回セットアップを実行してください。
+                </AlertDescription>
+              </Alert>
+
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p className="font-medium">Mac同期の仕組み:</p>
+                <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded">
+                  Mac (~/n3-frontend)<br />
+                  ↓ sync-mac.sh 実行<br />
+                  ↓ git push<br />
+                  GitHub<br />
+                  ↓ git pull<br />
+                  VPS (本番環境)
+                </div>
+              </div>
             </CardContent>
           </Card>
 
