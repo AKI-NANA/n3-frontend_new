@@ -51,20 +51,10 @@ export default function GitDeployPage() {
   const [syncing, setSyncing] = useState(false)
   const [showSyncConfirm, setShowSyncConfirm] = useState(false)
   const [macCommandCopied, setMacCommandCopied] = useState(false)
-  const [macFullSyncCopied, setMacFullSyncCopied] = useState(false)
-  const [isLocalhost, setIsLocalhost] = useState(false)
-  const [currentHost, setCurrentHost] = useState("")
   const [syncStatus, setSyncStatus] = useState<any>(null)
   const [checkingSyncStatus, setCheckingSyncStatus] = useState(false)
 
   // Git状態をチェック
-  useEffect(() => {
-    const hostname = window.location.hostname
-    setCurrentHost(hostname)
-    setIsLocalhost(hostname === "localhost" || hostname === "127.0.0.1")
-  }, [])
-
-
   const checkGitStatus = async () => {
     setCheckingStatus(true)
     try {
@@ -255,14 +245,6 @@ export default function GitDeployPage() {
     })
 
     setTimeout(() => setMacCommandCopied(false), 3000)
-  }
-
-  const copyMacFullSyncCommand = () => {
-    const command = `cd ~ && mv n3-frontend_new n3-frontend_new.backup.$(date +%Y%m%d_%H%M%S) && git clone https://github.com/AKI-NANA/n3-frontend_new.git && cd n3-frontend_new && git checkout claude/fix-database-schema-011CUSEGuXMNhFc8xKiQv2DG && npm install && echo "✅ 完全同期完了！npm run dev を実行してください"`
-    navigator.clipboard.writeText(command)
-    setMacFullSyncCopied(true)
-    setResult({ success: true, message: "完全同期コマンドをコピーしました！" })
-    setTimeout(() => setMacFullSyncCopied(false), 3000)
   }
 
   const checkSyncStatus = async () => {
@@ -642,64 +624,6 @@ export default function GitDeployPage() {
                   VPS (本番環境)
                 </div>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Mac完全同期カード */}
-          <Card className="border-l-4 border-l-orange-500">
-            <CardHeader className="bg-gradient-to-r from-orange-50 to-orange-100">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <RefreshCw className="w-5 h-5 text-orange-600" />
-                🔄 Mac完全同期（クリーンインストール）
-              </CardTitle>
-              <CardDescription>
-                GitHubから全て取り直す（トラブル時用）
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-6">
-              <Alert className="bg-orange-50 border-orange-200">
-                <AlertCircle className="w-4 h-4 text-orange-600" />
-                <AlertDescription className="text-sm">
-                  <strong>⚠️ 完全同期が必要な時:</strong><br />
-                  • CSSが効かない<br />
-                  • 設定ファイルが足りない<br />
-                  • 確実に最新にしたい
-                </AlertDescription>
-              </Alert>
-
-              <div className="bg-slate-50 p-4 rounded border">
-                <p className="text-sm font-medium mb-2">実行される処理:</p>
-                <div className="text-xs space-y-1">
-                  <p>1. 現在のフォルダをバックアップ</p>
-                  <p>2. GitHubから全てクローン</p>
-                  <p>3. npm install実行</p>
-                  <p>4. 完了</p>
-                </div>
-              </div>
-
-              <Button
-                onClick={copyMacFullSyncCommand}
-                className="w-full bg-orange-600 hover:bg-orange-700 text-white"
-              >
-                {macFullSyncCopied ? (
-                  <>
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    コピー完了！
-                  </>
-                ) : (
-                  <>
-                    <Terminal className="w-4 h-4 mr-2" />
-                    完全同期コマンドをコピー
-                  </>
-                )}
-              </Button>
-
-              <Alert className="bg-red-50 border-red-200">
-                <AlertCircle className="w-4 h-4 text-red-600" />
-                <AlertDescription className="text-xs">
-                  <strong>💾 安全:</strong> 現在のフォルダは自動バックアップ
-                </AlertDescription>
-              </Alert>
             </CardContent>
           </Card>
 
