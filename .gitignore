@@ -18,6 +18,7 @@ out/
 .turbo/
 *.log
 .DS_Store
+*.tsbuildinfo
 
 # データ
 backend/data/*.csv
