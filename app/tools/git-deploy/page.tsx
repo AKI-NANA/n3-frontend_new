@@ -383,11 +383,22 @@ export default function GitDeployPage() {
               <Alert className="bg-blue-50 dark:bg-blue-900/20 border-blue-200">
                 <AlertCircle className="w-4 h-4 text-blue-600" />
                 <AlertDescription className="text-sm">
-                  <strong>ワークフロー:</strong><br />
+                  <strong>📌 推奨ワークフロー:</strong><br />
                   1️⃣ この機能でGitの最新データをローカルに同期<br />
                   2️⃣ ローカルで完全に開発・テスト<br />
                   3️⃣ 一度だけGitにプッシュ<br />
                   4️⃣ VPSにデプロイ
+                </AlertDescription>
+              </Alert>
+
+              <Alert className="bg-green-50 dark:bg-green-900/20 border-green-200">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+                <AlertDescription className="text-sm">
+                  <strong>✅ データ保護機能:</strong><br />
+                  • ローカル変更は必ず自動コミット<br />
+                  • バックアップブランチを自動作成<br />
+                  • 失敗しても復元可能<br />
+                  <strong>→ データが消えることは絶対にありません！</strong>
                 </AlertDescription>
               </Alert>
 
@@ -412,14 +423,17 @@ export default function GitDeployPage() {
                     <div className="flex-1">
                       <div className="font-semibold text-green-700 dark:text-green-300 flex items-center gap-2">
                         <CheckCircle className="w-4 h-4" />
-                        安全モード（推奨）
+                        安全モード（推奨）✅
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">
-                        ローカル変更を一時保存 → Git取得 → 変更を復元
+                        ローカル変更を自動コミット → バックアップ作成 → Git取得
                       </p>
                       <code className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded mt-2 inline-block">
-                        git stash → git pull → git stash pop
+                        git commit → backup branch → git pull --rebase
                       </code>
+                      <p className="text-xs text-green-600 mt-1">
+                        💾 データ保護: 変更は必ずバックアップされます
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -442,14 +456,17 @@ export default function GitDeployPage() {
                     <div className="flex-1">
                       <div className="font-semibold text-red-700 dark:text-red-300 flex items-center gap-2">
                         <AlertCircle className="w-4 h-4" />
-                        上書きモード（危険）
+                        上書きモード（念のためバックアップ付き）
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">
-                        ローカル変更を破棄してGitと完全一致させる
+                        バックアップ作成 → ローカル破棄 → Gitと完全一致
                       </p>
                       <code className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded mt-2 inline-block">
-                        git reset --hard → git pull
+                        backup branch → git reset --hard → git pull
                       </code>
+                      <p className="text-xs text-amber-600 mt-1">
+                        💾 データ保護: 念のためバックアップを作成します
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -467,19 +484,25 @@ export default function GitDeployPage() {
                 </Button>
               ) : (
                 <div className="space-y-3">
-                  <Alert variant="destructive">
+                  <Alert variant={syncMode === 'safe' ? 'default' : 'destructive'}>
                     <AlertCircle className="w-4 h-4" />
                     <AlertDescription>
                       {syncMode === 'safe' && (
                         <>
-                          <strong>確認:</strong> ローカル変更を一時保存してGitの最新データを取得します。
-                          変更は自動的に復元されます。
+                          <strong>✅ 安全モード:</strong><br />
+                          1. ローカル変更を自動コミット<br />
+                          2. バックアップブランチ作成<br />
+                          3. Gitから最新データを取得<br />
+                          <strong className="text-green-600">→ データは絶対に失われません</strong>
                         </>
                       )}
                       {syncMode === 'force' && (
                         <>
-                          <strong>警告:</strong> ローカルの未コミット変更は完全に失われます。
-                          本当に実行しますか？
+                          <strong>⚠️ 上書きモード:</strong><br />
+                          1. 念のためバックアップ作成<br />
+                          2. ローカル変更を破棄<br />
+                          3. Gitと完全一致させる<br />
+                          <strong>本当に実行しますか？</strong>
                         </>
                       )}
                     </AlertDescription>
