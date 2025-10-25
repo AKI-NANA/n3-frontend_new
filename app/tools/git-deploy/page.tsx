@@ -51,6 +51,8 @@ export default function GitDeployPage() {
   const [syncing, setSyncing] = useState(false)
   const [showSyncConfirm, setShowSyncConfirm] = useState(false)
   const [macCommandCopied, setMacCommandCopied] = useState(false)
+  const [syncStatus, setSyncStatus] = useState<any>(null)
+  const [checkingSyncStatus, setCheckingSyncStatus] = useState(false)
 
   // Git状態をチェック
   const checkGitStatus = async () => {
@@ -245,6 +247,20 @@ export default function GitDeployPage() {
     setTimeout(() => setMacCommandCopied(false), 3000)
   }
 
+  const checkSyncStatus = async () => {
+    setCheckingSyncStatus(true)
+    try {
+      const response = await fetch('/api/git/sync-status')
+      const data = await response.json()
+      setSyncStatus(data)
+    } catch (error) {
+      console.error('Sync status check failed:', error)
+      setSyncStatus({ error: '同期状態の確認に失敗しました' })
+    } finally {
+      setCheckingSyncStatus(false)
+    }
+  }
+
   useEffect(() => {
     checkEnvStatus()
   }, [])
@@ -386,6 +402,153 @@ export default function GitDeployPage() {
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">読み込み中...</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* 同期状態チェックカード */}
+          <Card className="border-2 border-emerald-200 dark:border-emerald-800">
+            <CardHeader className="bg-emerald-50 dark:bg-emerald-900/20">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <RefreshCw className="w-5 h-5 text-emerald-600" />
+                  🔍 同期状態チェック
+                </CardTitle>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={checkSyncStatus}
+                  disabled={checkingSyncStatus}
+                >
+                  {checkingSyncStatus ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+              <CardDescription>
+                Mac、Git、VPS の同期状態を確認
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-6">
+              {syncStatus ? (
+                <>
+                  {syncStatus.error ? (
+                    <Alert className="bg-red-50 dark:bg-red-900/20 border-red-200">
+                      <AlertCircle className="w-4 h-4 text-red-600" />
+                      <AlertDescription>{syncStatus.error}</AlertDescription>
+                    </Alert>
+                  ) : (
+                    <>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-sm">
+                            {syncStatus.branch} ブランチ
+                          </Badge>
+                          {syncStatus.status === 'synced' && (
+                            <Badge className="bg-green-500">完全同期済み</Badge>
+                          )}
+                          {syncStatus.status === 'vps-outdated' && (
+                            <Badge className="bg-yellow-500">VPSが古い</Badge>
+                          )}
+                          {syncStatus.status === 'uncommitted' && (
+                            <Badge className="bg-orange-500">未コミット</Badge>
+                          )}
+                        </div>
+
+                        <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded border space-y-3">
+                          <div className="text-sm">
+                            <div className="font-medium mb-2">📊 環境別の状態:</div>
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="border-b">
+                                  <th className="text-left py-2 px-2">環境</th>
+                                  <th className="text-left py-2 px-2">コミット</th>
+                                  <th className="text-left py-2 px-2">状態</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr className="border-b">
+                                  <td className="py-2 px-2">🐙 Git</td>
+                                  <td className="py-2 px-2 font-mono">{syncStatus.environments.git.commit}</td>
+                                  <td className="py-2 px-2">
+                                    <Badge variant="outline" className="text-xs">基準</Badge>
+                                  </td>
+                                </tr>
+                                <tr className="border-b">
+                                  <td className="py-2 px-2">🖥️ VPS</td>
+                                  <td className="py-2 px-2 font-mono">{syncStatus.environments.vps.commit}</td>
+                                  <td className="py-2 px-2">
+                                    {syncStatus.environments.vps.status === 'synced' ? (
+                                      <Badge className="bg-green-500 text-xs">✅ 同期</Badge>
+                                    ) : syncStatus.environments.vps.status === 'uncommitted' ? (
+                                      <Badge className="bg-orange-500 text-xs">⚠️ 未コミット</Badge>
+                                    ) : (
+                                      <Badge className="bg-yellow-500 text-xs">❌ 古い</Badge>
+                                    )}
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td className="py-2 px-2">💻 Mac</td>
+                                  <td className="py-2 px-2 font-mono text-slate-400">手動確認</td>
+                                  <td className="py-2 px-2">
+                                    <Badge variant="outline" className="text-xs">要確認</Badge>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+
+                          {syncStatus.environments.vps.uncommitted && (
+                            <Alert className="bg-orange-50 dark:bg-orange-900/20 border-orange-200">
+                              <AlertCircle className="w-4 h-4 text-orange-600" />
+                              <AlertDescription className="text-xs">
+                                VPSに未コミットの変更が {syncStatus.environments.vps.uncommittedCount} ファイルあります
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                        </div>
+
+                        <div className="text-xs text-muted-foreground">
+                          <p className="font-medium mb-1">最新コミット:</p>
+                          <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded">
+                            {syncStatus.environments.git.message}
+                          </div>
+                        </div>
+
+                        {syncStatus.nextAction && (
+                          <Alert className="bg-blue-50 dark:bg-blue-900/20 border-blue-200">
+                            <AlertCircle className="w-4 h-4 text-blue-600" />
+                            <AlertDescription className="text-xs">
+                              <strong>💡 推奨アクション:</strong><br />
+                              <code className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
+                                {syncStatus.nextAction}
+                              </code>
+                            </AlertDescription>
+                          </Alert>
+                        )}
+                      </div>
+
+                      <div className="text-xs text-muted-foreground space-y-1 pt-4 border-t">
+                        <p className="font-medium">💡 Mac の同期状態を確認するには:</p>
+                        <code className="text-xs block bg-slate-100 dark:bg-slate-800 p-2 rounded">
+                          cd ~/n3-frontend && ./check-sync-status.sh
+                        </code>
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-sm text-muted-foreground mb-4">
+                    同期状態を確認するには右上の更新ボタンをクリック
+                  </p>
+                  <Button onClick={checkSyncStatus} variant="outline" size="sm">
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    同期状態を確認
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>
