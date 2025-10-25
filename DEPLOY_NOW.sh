@@ -1,0 +1,23 @@
+#!/bin/bash
+# VPSで実行するデプロイコマンド
+
+echo "🚀 Mac同期機能をデプロイします"
+echo ""
+echo "VPSで以下を実行してください："
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "ssh ubuntu@n3.emverze.com"
+echo "cd /home/ubuntu/n3-frontend_new"
+echo "git fetch origin"
+echo "git checkout claude/fix-database-schema-011CUSEGuXMNhFc8xKiQv2DG"
+echo "git pull origin claude/fix-database-schema-011CUSEGuXMNhFc8xKiQv2DG"
+echo "PUPPETEER_SKIP_DOWNLOAD=true npm install"
+echo "npm run build"
+echo "pm2 restart n3-frontend"
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "✅ デプロイ後、以下を確認："
+echo "📍 https://n3.emverze.com/tools/git-deploy"
+echo "💻 紫色の「Mac同期（ワンクリックコピー）」カードが表示されます"
+echo ""
