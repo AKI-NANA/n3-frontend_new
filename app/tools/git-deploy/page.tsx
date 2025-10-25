@@ -395,10 +395,10 @@ export default function GitDeployPage() {
                 <CheckCircle className="w-4 h-4 text-green-600" />
                 <AlertDescription className="text-sm">
                   <strong>✅ データ保護機能:</strong><br />
-                  • ローカル変更は必ず自動コミット<br />
-                  • バックアップブランチを自動作成<br />
-                  • 失敗しても復元可能<br />
-                  <strong>→ データが消えることは絶対にありません！</strong>
+                  • ローカル変更は必ずGitに保存<br />
+                  • Gitの既存データは損なわれない<br />
+                  • バックアップブランチも自動作成<br />
+                  <strong>→ ローカルもGitも両方保護！損失ゼロ！</strong>
                 </AlertDescription>
               </Alert>
 
@@ -426,13 +426,13 @@ export default function GitDeployPage() {
                         安全モード（推奨）✅
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">
-                        ローカル変更を自動コミット → バックアップ作成 → Git取得
+                        ローカル→Git保存 → バックアップ作成 → Git→ローカル取得
                       </p>
                       <code className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded mt-2 inline-block">
-                        git commit → backup branch → git pull --rebase
+                        git commit → git push → backup → git pull
                       </code>
                       <p className="text-xs text-green-600 mt-1">
-                        💾 データ保護: 変更は必ずバックアップされます
+                        💾 データ保護: ローカル→Git→ローカルの順で損失ゼロ
                       </p>
                     </div>
                   </div>
@@ -491,9 +491,10 @@ export default function GitDeployPage() {
                         <>
                           <strong>✅ 安全モード:</strong><br />
                           1. ローカル変更を自動コミット<br />
-                          2. バックアップブランチ作成<br />
-                          3. Gitから最新データを取得<br />
-                          <strong className="text-green-600">→ データは絶対に失われません</strong>
+                          2. ローカルをGitにプッシュ（Gitは損なわれない）<br />
+                          3. バックアップブランチ作成<br />
+                          4. Gitから最新データを取得<br />
+                          <strong className="text-green-600">→ ローカルもGitも両方保護されます</strong>
                         </>
                       )}
                       {syncMode === 'force' && (

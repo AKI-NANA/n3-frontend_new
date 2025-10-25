@@ -42,16 +42,30 @@ export async function POST(request: Request) {
             { cwd: projectRoot }
           )
           outputs.push(`コミット結果: ${commitOut}`)
-          steps.push('✅ ローカル変更をコミットしました（データ保護完了）')
+          steps.push('✅ ローカル変更をコミットしました')
         } catch (error: any) {
           outputs.push(`コミット情報: ${error.message}`)
           steps.push('ℹ️ コミット不要でした')
         }
 
-        // 2. バックアップブランチを作成
+        // 2. ローカルをGitにプッシュ（重要！先にGitに保存）
+        steps.push('2️⃣ ローカル変更をGitにプッシュ中...')
+        try {
+          const { stdout: pushOut } = await execAsync(
+            `git push origin ${currentBranch}`,
+            { cwd: projectRoot }
+          )
+          outputs.push(`プッシュ結果: ${pushOut}`)
+          steps.push('✅ ローカルデータをGitに保存しました（Gitは損なわれません）')
+        } catch (error: any) {
+          outputs.push(`プッシュ情報: ${error.message}`)
+          steps.push('ℹ️ プッシュ不要でした（すでに最新）')
+        }
+
+        // 3. バックアップブランチを作成
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19)
         backupBranch = `backup-${timestamp}`
-        steps.push(`2️⃣ バックアップブランチを作成中: ${backupBranch}`)
+        steps.push(`3️⃣ バックアップブランチを作成中: ${backupBranch}`)
         try {
           await execAsync(`git branch ${backupBranch}`, { cwd: projectRoot })
           steps.push(`✅ バックアップ完了: ${backupBranch}`)
@@ -63,10 +77,10 @@ export async function POST(request: Request) {
         steps.push('ℹ️ ローカルに変更はありません（バックアップ不要）')
       }
 
-      // 3. Gitから最新を取得
-      steps.push('3️⃣ Gitから最新データを取得中...')
+      // 4. Gitから最新を取得
+      steps.push('4️⃣ Gitから最新データを取得中...')
       try {
-        const { stdout: pullOut } = await execAsync('git pull --rebase origin main', {
+        const { stdout: pullOut } = await execAsync(`git pull --rebase origin ${currentBranch}`, {
           cwd: projectRoot
         })
         outputs.push(`Pull結果: ${pullOut}`)
@@ -141,7 +155,7 @@ export async function POST(request: Request) {
 
       // Gitから最新を取得
       steps.push('3️⃣ Gitから最新データを取得中...')
-      const { stdout: pullOut } = await execAsync('git pull origin main', {
+      const { stdout: pullOut } = await execAsync(`git pull origin ${currentBranch}`, {
         cwd: projectRoot
       })
       outputs.push(`Pull結果: ${pullOut}`)
