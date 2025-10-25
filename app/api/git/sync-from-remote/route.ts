@@ -11,7 +11,6 @@ export async function POST(request: Request) {
 
     let steps: string[] = []
     let outputs: string[] = []
-    let backupBranch = ''
 
     // 現在のブランチを取得
     const { stdout: currentBranchOut } = await execAsync('git branch --show-current', {
@@ -27,7 +26,7 @@ export async function POST(request: Request) {
     const hasChanges = statusOut.trim().length > 0
 
     if (mode === 'safe') {
-      // 安全モード: データを絶対に失わない
+      // 安全モード: 通常のGit開発フロー
 
       if (hasChanges) {
         steps.push('⚠️ ローカルに未コミットの変更があります')
@@ -38,7 +37,7 @@ export async function POST(request: Request) {
           await execAsync('git add .', { cwd: projectRoot })
           const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
           const { stdout: commitOut } = await execAsync(
-            `git commit -m "backup: 同期前の自動保存 (${timestamp})"`,
+            `git commit -m "auto: 同期前の自動保存 (${timestamp})"`,
             { cwd: projectRoot }
           )
           outputs.push(`コミット結果: ${commitOut}`)
@@ -56,29 +55,17 @@ export async function POST(request: Request) {
             { cwd: projectRoot }
           )
           outputs.push(`プッシュ結果: ${pushOut}`)
-          steps.push('✅ ローカルデータをGitに保存しました（Gitは損なわれません）')
+          steps.push('✅ ローカルデータをGitに保存しました')
         } catch (error: any) {
           outputs.push(`プッシュ情報: ${error.message}`)
           steps.push('ℹ️ プッシュ不要でした（すでに最新）')
         }
-
-        // 3. バックアップブランチを作成
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19)
-        backupBranch = `backup-${timestamp}`
-        steps.push(`3️⃣ バックアップブランチを作成中: ${backupBranch}`)
-        try {
-          await execAsync(`git branch ${backupBranch}`, { cwd: projectRoot })
-          steps.push(`✅ バックアップ完了: ${backupBranch}`)
-          outputs.push(`バックアップブランチ: ${backupBranch}`)
-        } catch (error: any) {
-          outputs.push(`バックアップエラー: ${error.message}`)
-        }
       } else {
-        steps.push('ℹ️ ローカルに変更はありません（バックアップ不要）')
+        steps.push('ℹ️ ローカルに変更はありません')
       }
 
-      // 4. Gitから最新を取得
-      steps.push('4️⃣ Gitから最新データを取得中...')
+      // 3. Gitから最新を取得
+      steps.push('3️⃣ Gitから最新データを取得中...')
       try {
         const { stdout: pullOut } = await execAsync(`git pull --rebase origin ${currentBranch}`, {
           cwd: projectRoot
@@ -93,12 +80,10 @@ export async function POST(request: Request) {
 
         return NextResponse.json({
           success: true,
-          message: hasChanges
-            ? `✅ 安全同期完了！ローカル変更は保護されています。\nバックアップ: ${backupBranch}`
-            : '✅ 安全同期完了！すでに最新でした。',
+          message: '✅ Git同期完了！すべての変更はGitのコミット履歴に保存されています。',
           steps,
           outputs,
-          backupBranch: hasChanges ? backupBranch : null
+          recovery: 'もし問題があれば: git reflog で履歴を確認し、git reset --hard HEAD@{n} で復元できます'
         })
       } catch (error: any) {
         steps.push('❌ 同期に失敗しました')
@@ -109,41 +94,19 @@ export async function POST(request: Request) {
           error: 'Git同期に失敗しました',
           steps,
           outputs,
-          recovery: hasChanges
-            ? `データは保護されています。\n復元方法: git checkout ${backupBranch}`
-            : '変更はありませんでした。',
-          backupBranch: hasChanges ? backupBranch : null
+          recovery: 'git reflog で履歴を確認してください'
         })
       }
 
     } else if (mode === 'force') {
-      // 上書きモード: でも一応バックアップを取る
+      // 上書きモード: ローカル変更を破棄してGitに合わせる
 
       if (hasChanges) {
         steps.push('⚠️ ローカルに未コミットの変更があります')
-
-        // 念のためバックアップブランチを作成
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19)
-        backupBranch = `backup-before-reset-${timestamp}`
-        steps.push(`1️⃣ 念のためバックアップブランチ作成: ${backupBranch}`)
-
-        try {
-          // まず現在の状態をコミット
-          await execAsync('git add .', { cwd: projectRoot })
-          await execAsync(
-            `git commit -m "backup: reset前の自動保存 (${timestamp})"`,
-            { cwd: projectRoot }
-          )
-          // バックアップブランチ作成
-          await execAsync(`git branch ${backupBranch}`, { cwd: projectRoot })
-          steps.push(`✅ バックアップ完了: ${backupBranch}（必要なら復元可能）`)
-          outputs.push(`バックアップブランチ: ${backupBranch}`)
-        } catch (error: any) {
-          outputs.push(`バックアップエラー: ${error.message}`)
-        }
+        steps.push('⚠️ これらの変更は破棄されます')
 
         // ローカル変更を破棄
-        steps.push('2️⃣ ローカル変更を破棄します...')
+        steps.push('1️⃣ ローカル変更を破棄します...')
         const { stdout: resetOut } = await execAsync('git reset --hard HEAD', {
           cwd: projectRoot
         })
@@ -154,7 +117,7 @@ export async function POST(request: Request) {
       }
 
       // Gitから最新を取得
-      steps.push('3️⃣ Gitから最新データを取得中...')
+      steps.push('2️⃣ Gitから最新データを取得中...')
       const { stdout: pullOut } = await execAsync(`git pull origin ${currentBranch}`, {
         cwd: projectRoot
       })
@@ -163,12 +126,9 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         success: true,
-        message: hasChanges
-          ? `✅ 上書き同期完了！Gitと完全一致しています。\n念のためバックアップ: ${backupBranch}`
-          : '✅ 上書き同期完了！Gitと完全一致しています。',
+        message: '✅ 上書き同期完了！Gitと完全一致しています。',
         steps,
-        outputs,
-        backupBranch: hasChanges ? backupBranch : null
+        outputs
       })
 
     } else {
