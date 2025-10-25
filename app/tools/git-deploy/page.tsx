@@ -110,14 +110,21 @@ export default function GitDeployPage() {
   const handleVPSDeploy = async () => {
     setLoading(true)
     setResult(null)
-    
+
     try {
       const response = await fetch('/api/deploy/vps', {
         method: 'POST',
       })
-      
+
       const data = await response.json()
-      setResult({ success: response.ok, message: data.message || data.error })
+
+      // 手動デプロイの案内を表示
+      if (data.commands) {
+        const fullMessage = `${data.message}\n\n以下のコマンドを実行してください：\n\n${data.commands}`
+        setResult({ success: false, message: fullMessage })
+      } else {
+        setResult({ success: response.ok, message: data.message || data.error })
+      }
     } catch (error) {
       setResult({ success: false, message: 'VPSデプロイに失敗しました' })
     } finally {
@@ -695,42 +702,48 @@ export default function GitDeployPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Server className="w-5 h-5" />
-                  VPS デプロイ
+                  VPS デプロイ（手動）
                 </CardTitle>
                 <CardDescription>
-                  VPSに最新コードをデプロイ
+                  手動でVPSにSSH接続してデプロイ
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Badge variant="outline">https://n3.emverze.com</Badge>
-                  <p className="text-sm text-muted-foreground">
-                    VPSで git pull → build → 再起動を実行
-                  </p>
+                  <Alert className="bg-blue-50 dark:bg-blue-900/20 border-blue-200">
+                    <AlertCircle className="w-4 h-4 text-blue-600" />
+                    <AlertDescription className="text-xs">
+                      自動デプロイは利用できません。<br />
+                      このボタンでデプロイコマンドを表示します。
+                    </AlertDescription>
+                  </Alert>
                 </div>
-                
-                <Button 
-                  onClick={handleVPSDeploy} 
+
+                <Button
+                  onClick={handleVPSDeploy}
                   disabled={loading}
                   className="w-full"
-                  variant="default"
+                  variant="outline"
                 >
                   {loading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      デプロイ中...
+                      確認中...
                     </>
                   ) : (
                     <>
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      VPS デプロイ実行
+                      <Terminal className="w-4 h-4 mr-2" />
+                      デプロイコマンドを表示
                     </>
                   )}
                 </Button>
 
                 <div className="text-xs text-muted-foreground space-y-1">
-                  <p className="font-medium">実行されるコマンド：</p>
+                  <p className="font-medium">VPSで実行するコマンド：</p>
                   <code className="block bg-slate-100 dark:bg-slate-800 p-2 rounded">
+                    ssh ubuntu@n3.emverze.com<br/>
+                    cd /home/ubuntu/n3-frontend_new<br/>
                     git pull origin main<br/>
                     npm install<br/>
                     npm run build<br/>
@@ -741,7 +754,7 @@ export default function GitDeployPage() {
                 <Alert>
                   <AlertCircle className="w-4 h-4" />
                   <AlertDescription className="text-xs">
-                    Git Pushが完了してから実行してください
+                    Git Pushが完了してからVPSにデプロイしてください
                   </AlertDescription>
                 </Alert>
               </CardContent>
