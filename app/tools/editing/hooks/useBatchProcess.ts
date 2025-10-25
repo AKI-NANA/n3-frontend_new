@@ -17,23 +17,23 @@ export function useBatchProcess() {
   const [processing, setProcessing] = useState(false)
   const [currentStep, setCurrentStep] = useState<string>('')
 
-  async function runBatchHTML(productIds: string[]) {
+  async function runBatchHTMLGenerate(productIds: string[]) {
     setProcessing(true)
     setCurrentStep('HTML生成中...')
-    
+
     try {
       const response = await fetch('/api/tools/html-generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productIds })
       })
-      
+
       const result = await response.json()
-      
+
       if (!response.ok) {
         throw new Error(result.error || 'HTML生成に失敗しました')
       }
-      
+
       return { success: true, updated: result.updated }
     } catch (error: any) {
       return { success: false, error: error.message }
@@ -174,34 +174,32 @@ export function useBatchProcess() {
     }
   }
 
-  async function runBatchSellerMirror(productIds: number[]) {
+  async function runBatchSellerMirror(productIds: string[]) {
     console.log('🔍 runBatchSellerMirror開始')
     console.log('productIds:', productIds)
     console.log('productIds JSON:', JSON.stringify(productIds))
     console.log('productIdsの型:', productIds.map(id => typeof id))
-    console.log('productIdsの値:', productIds.map(id => ({ value: id, isNaN: isNaN(id), isNull: id === null, type: typeof id })))
-    
-    // NaN、null、undefined、負の値をフィルタリング
-    const validIds = productIds.filter(id => 
-      id !== null && 
-      id !== undefined && 
-      !isNaN(id) && 
-      typeof id === 'number' && 
-      id > 0
+
+    // 空文字、null、undefinedをフィルタリング
+    const validIds = productIds.filter(id =>
+      id !== null &&
+      id !== undefined &&
+      typeof id === 'string' &&
+      id.trim().length > 0
     )
-    
+
     if (validIds.length === 0) {
       console.error('❌ 有効なIDがありません')
-      return { 
-        success: false, 
-        error: '有効な商品IDがありません' 
+      return {
+        success: false,
+        error: '有効な商品IDがありません'
       }
     }
-    
+
     if (validIds.length !== productIds.length) {
       console.warn(`⚠️ 無効なIDをスキップ: ${productIds.length - validIds.length}件`)
     }
-    
+
     console.log('validIds:', validIds)
     
     setProcessing(true)
@@ -285,6 +283,7 @@ export function useBatchProcess() {
     processing,
     currentStep,
     runBatchHTML,
+    runBatchHTMLGenerate,
     runBatchCategory,
     runBatchShipping,
     runBatchProfit,

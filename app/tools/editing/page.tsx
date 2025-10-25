@@ -34,6 +34,7 @@ export default function EditingPage() {
     runBatchShipping,
     runBatchProfit,
     runBatchHTML,
+    runBatchHTMLGenerate,
     runBatchSellerMirror,
     runBatchScores,
     runAllProcesses
@@ -58,19 +59,67 @@ export default function EditingPage() {
   }
 
   const handleRunAll = async () => {
-    if (products.length === 0) {
-      showToast('商品がありません', 'error')
+    // 選択された商品がない場合はエラー
+    if (selectedIds.size === 0) {
+      showToast('商品を選択してください', 'error')
       return
     }
-    
-    const productIds = products.map(p => p.id)
-    const result = await runBatchHTML(productIds)
-    
-    if (result.success) {
-      showToast('全処理完了')
+
+    // 選択された商品のみを取得
+    const selectedProducts = products.filter(p => selectedIds.has(p.id))
+    const selectedProductIds = selectedProducts.map(p => p.id)
+
+    showToast(`${selectedProducts.length}件の商品に対して全処理を開始します...`, 'success')
+
+    try {
+      // ステップ1: カテゴリ分析
+      showToast('1/6: カテゴリ分析中...', 'success')
+      const categoryResult = await runBatchCategory(selectedProductIds)
+      if (!categoryResult.success) {
+        throw new Error(`カテゴリ分析失敗: ${categoryResult.error}`)
+      }
+
+      // ステップ2: 送料計算
+      showToast('2/6: 送料計算中...', 'success')
+      const shippingResult = await runBatchShipping(selectedProductIds)
+      if (!shippingResult.success) {
+        throw new Error(`送料計算失敗: ${shippingResult.error}`)
+      }
+
+      // ステップ3: 利益計算
+      showToast('3/6: 利益計算中...', 'success')
+      const profitResult = await runBatchProfit(selectedProductIds)
+      if (!profitResult.success) {
+        throw new Error(`利益計算失敗: ${profitResult.error}`)
+      }
+
+      // ステップ4: SellerMirror分析
+      showToast('4/6: SellerMirror分析中...', 'success')
+      const smResult = await runBatchSellerMirror(selectedProductIds)
+      if (!smResult.success) {
+        throw new Error(`SellerMirror分析失敗: ${smResult.error}`)
+      }
+
+      // ステップ5: HTML生成
+      showToast('5/6: HTML生成中...', 'success')
+      const htmlResult = await runBatchHTMLGenerate(selectedProductIds)
+      if (!htmlResult.success) {
+        throw new Error(`HTML生成失敗: ${htmlResult.error}`)
+      }
+
+      // ステップ6: スコア計算
+      showToast('6/6: スコア計算中...', 'success')
+      const scoresResult = await runBatchScores(selectedProducts)
+      if (!scoresResult.success) {
+        throw new Error(`スコア計算失敗: ${scoresResult.error}`)
+      }
+
+      // 完了
+      showToast(`✅ 全処理完了！${selectedProducts.length}件の商品を処理しました`, 'success')
       await loadProducts()
-    } else {
-      showToast(result.error || '処理に失敗しました', 'error')
+
+    } catch (error: any) {
+      showToast(error.message || '処理中にエラーが発生しました', 'error')
     }
   }
 
@@ -79,10 +128,10 @@ export default function EditingPage() {
       showToast('商品がありません', 'error')
       return
     }
-    
+
     const productIds = products.map(p => p.id)
-    const result = await runBatchHTML(productIds)
-    
+    const result = await runBatchHTMLGenerate(productIds)
+
     if (result.success) {
       showToast(`HTML生成完了: ${result.updated}件`)
       await loadProducts()
