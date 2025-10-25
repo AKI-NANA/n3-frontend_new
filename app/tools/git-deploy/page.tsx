@@ -46,6 +46,10 @@ export default function GitDeployPage() {
   const [syncingEnv, setSyncingEnv] = useState(false)
   const [showEnvContent, setShowEnvContent] = useState(false)
   const [envContent, setEnvContent] = useState('')
+  const [syncMode, setSyncMode] = useState<'safe' | 'force'>('safe')
+  const [syncSteps, setSyncSteps] = useState<string[]>([])
+  const [syncing, setSyncing] = useState(false)
+  const [showSyncConfirm, setShowSyncConfirm] = useState(false)
 
   // Git状態をチェック
   const checkGitStatus = async () => {
@@ -183,6 +187,40 @@ export default function GitDeployPage() {
       success: true,
       message: '環境変数の内容をクリップボードにコピーしました！VPSで貼り付けてください。'
     })
+  }
+
+  const handleSyncFromGit = async () => {
+    if (!showSyncConfirm) {
+      setShowSyncConfirm(true)
+      return
+    }
+
+    setSyncing(true)
+    setSyncSteps([])
+    setResult(null)
+
+    try {
+      const response = await fetch('/api/git/sync-from-remote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: syncMode })
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setSyncSteps(data.steps || [])
+        setResult({ success: true, message: data.message })
+        await checkGitStatus()
+      } else {
+        setResult({ success: false, message: data.error || 'Git同期に失敗しました' })
+      }
+    } catch (error) {
+      setResult({ success: false, message: 'Git同期に失敗しました' })
+    } finally {
+      setSyncing(false)
+      setShowSyncConfirm(false)
+    }
   }
 
   useEffect(() => {
@@ -327,6 +365,175 @@ export default function GitDeployPage() {
               ) : (
                 <p className="text-sm text-muted-foreground">読み込み中...</p>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Git完全同期カード */}
+          <Card className="border-2 border-blue-200 dark:border-blue-800">
+            <CardHeader className="bg-blue-50 dark:bg-blue-900/20">
+              <CardTitle className="flex items-center gap-2">
+                <Database className="w-5 h-5 text-blue-600" />
+                🔄 Git完全同期（Git → ローカル）
+              </CardTitle>
+              <CardDescription>
+                Gitの最新データをローカルに安全に取り込みます
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-6">
+              <Alert className="bg-blue-50 dark:bg-blue-900/20 border-blue-200">
+                <AlertCircle className="w-4 h-4 text-blue-600" />
+                <AlertDescription className="text-sm">
+                  <strong>ワークフロー:</strong><br />
+                  1️⃣ この機能でGitの最新データをローカルに同期<br />
+                  2️⃣ ローカルで完全に開発・テスト<br />
+                  3️⃣ 一度だけGitにプッシュ<br />
+                  4️⃣ VPSにデプロイ
+                </AlertDescription>
+              </Alert>
+
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">同期モードを選択</Label>
+
+                <div
+                  onClick={() => setSyncMode('safe')}
+                  className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                    syncMode === 'safe'
+                      ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                      : 'border-gray-200 hover:border-green-300'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="radio"
+                      checked={syncMode === 'safe'}
+                      onChange={() => setSyncMode('safe')}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-green-700 dark:text-green-300 flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4" />
+                        安全モード（推奨）
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        ローカル変更を一時保存 → Git取得 → 変更を復元
+                      </p>
+                      <code className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded mt-2 inline-block">
+                        git stash → git pull → git stash pop
+                      </code>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => setSyncMode('force')}
+                  className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                    syncMode === 'force'
+                      ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                      : 'border-gray-200 hover:border-red-300'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="radio"
+                      checked={syncMode === 'force'}
+                      onChange={() => setSyncMode('force')}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-red-700 dark:text-red-300 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4" />
+                        上書きモード（危険）
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        ローカル変更を破棄してGitと完全一致させる
+                      </p>
+                      <code className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded mt-2 inline-block">
+                        git reset --hard → git pull
+                      </code>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {!showSyncConfirm ? (
+                <Button
+                  onClick={handleSyncFromGit}
+                  disabled={syncing}
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  size="lg"
+                >
+                  <Database className="w-4 h-4 mr-2" />
+                  Gitからローカルに同期
+                </Button>
+              ) : (
+                <div className="space-y-3">
+                  <Alert variant="destructive">
+                    <AlertCircle className="w-4 h-4" />
+                    <AlertDescription>
+                      {syncMode === 'safe' && (
+                        <>
+                          <strong>確認:</strong> ローカル変更を一時保存してGitの最新データを取得します。
+                          変更は自動的に復元されます。
+                        </>
+                      )}
+                      {syncMode === 'force' && (
+                        <>
+                          <strong>警告:</strong> ローカルの未コミット変更は完全に失われます。
+                          本当に実行しますか？
+                        </>
+                      )}
+                    </AlertDescription>
+                  </Alert>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleSyncFromGit}
+                      disabled={syncing}
+                      variant={syncMode === 'force' ? 'destructive' : 'default'}
+                      className="flex-1"
+                    >
+                      {syncing ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          同期中...
+                        </>
+                      ) : (
+                        <>実行する</>
+                      )}
+                    </Button>
+                    <Button
+                      onClick={() => setShowSyncConfirm(false)}
+                      variant="outline"
+                      disabled={syncing}
+                      className="flex-1"
+                    >
+                      キャンセル
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {syncSteps.length > 0 && (
+                <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded border">
+                  <p className="font-medium text-sm mb-2">実行ログ:</p>
+                  <div className="space-y-1">
+                    {syncSteps.map((step, idx) => (
+                      <div key={idx} className="text-xs font-mono">
+                        {step}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <Alert className="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200">
+                <AlertCircle className="w-4 h-4 text-yellow-600" />
+                <AlertDescription className="text-xs">
+                  <strong>いつ使う？</strong><br />
+                  • Claude Codeで変更した後<br />
+                  • 他のメンバーがプッシュした後<br />
+                  • ローカル開発を始める前に最新を取得したい時
+                </AlertDescription>
+              </Alert>
             </CardContent>
           </Card>
 
