@@ -4,19 +4,15 @@
 -- 目的: product_idカラムの型不一致を一括修正（INT/BIGINT → UUID）
 -- ============================================================================
 
-BEGIN;
-
 -- ステップ1: listing_history.product_id を UUID型に変更
 -- ============================================================================
-RAISE NOTICE '🔧 Step 1/4: listing_history.product_id の型変更開始...';
 
--- 既存のデータを確認
 DO $$
-DECLARE
-    row_count INTEGER;
 BEGIN
-    SELECT COUNT(*) INTO row_count FROM listing_history;
-    RAISE NOTICE '  現在のlisting_historyレコード数: %', row_count;
+    RAISE NOTICE '🔧 Step 1/4: listing_history.product_id の型変更開始...';
+
+    -- 既存のデータ数を確認
+    RAISE NOTICE '  現在のlisting_historyレコード数: %', (SELECT COUNT(*) FROM listing_history);
 END $$;
 
 -- 外部キー制約を削除（存在する場合）
@@ -32,14 +28,17 @@ BEGIN
     END IF;
 END $$;
 
--- カラムの型を変更（既存データがあればクリア）
+-- カラムの型を変更（既存データは互換性がないためNULLに）
 ALTER TABLE listing_history
 ALTER COLUMN product_id DROP DEFAULT,
-ALTER COLUMN product_id TYPE UUID USING NULL;  -- 既存データは互換性がないためNULLに
+ALTER COLUMN product_id TYPE UUID USING NULL;
 
-RAISE NOTICE '  ✓ listing_history.product_id を UUID型に変更しました';
+DO $$
+BEGIN
+    RAISE NOTICE '  ✓ listing_history.product_id を UUID型に変更しました';
+END $$;
 
--- productsテーブルへの外部キー制約を追加（products.idがUUIDであることを前提）
+-- productsテーブルへの外部キー制約を追加
 DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'products') THEN
@@ -52,38 +51,45 @@ END $$;
 
 -- ステップ2: product_html_generated.product_id を UUID型に変更
 -- ============================================================================
-RAISE NOTICE '🔧 Step 2/4: product_html_generated.product_id の型変更開始...';
 
--- 既存のデータを確認
 DO $$
-DECLARE
-    row_count INTEGER;
 BEGIN
-    SELECT COUNT(*) INTO row_count FROM product_html_generated;
-    RAISE NOTICE '  現在のproduct_html_generatedレコード数: %', row_count;
+    RAISE NOTICE '🔧 Step 2/4: product_html_generated.product_id の型変更開始...';
+
+    -- 既存のデータ数を確認
+    RAISE NOTICE '  現在のproduct_html_generatedレコード数: %', (SELECT COUNT(*) FROM product_html_generated);
 END $$;
 
 -- UNIQUE制約を削除（product_id, marketplace）
 ALTER TABLE product_html_generated
 DROP CONSTRAINT IF EXISTS product_html_generated_product_id_marketplace_key;
 
-RAISE NOTICE '  ✓ UNIQUE制約を削除しました';
+DO $$
+BEGIN
+    RAISE NOTICE '  ✓ UNIQUE制約を削除しました';
+END $$;
 
--- カラムの型を変更（既存データがあればクリア）
+-- カラムの型を変更（既存データは互換性がないためNULLに）
 ALTER TABLE product_html_generated
 ALTER COLUMN product_id DROP DEFAULT,
-ALTER COLUMN product_id TYPE UUID USING NULL;  -- 既存データは互換性がないためNULLに
+ALTER COLUMN product_id TYPE UUID USING NULL;
 
-RAISE NOTICE '  ✓ product_html_generated.product_id を UUID型に変更しました';
+DO $$
+BEGIN
+    RAISE NOTICE '  ✓ product_html_generated.product_id を UUID型に変更しました';
+END $$;
 
 -- UNIQUE制約を再追加
 ALTER TABLE product_html_generated
 ADD CONSTRAINT product_html_generated_product_id_marketplace_key
 UNIQUE (product_id, marketplace);
 
-RAISE NOTICE '  ✓ UNIQUE制約を再追加しました';
+DO $$
+BEGIN
+    RAISE NOTICE '  ✓ UNIQUE制約を再追加しました';
+END $$;
 
--- productsテーブルへの外部キー制約を追加（products.idがUUIDであることを前提）
+-- productsテーブルへの外部キー制約を追加
 DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'products') THEN
@@ -96,19 +102,30 @@ END $$;
 
 -- ステップ3: インデックスを再作成
 -- ============================================================================
-RAISE NOTICE '🔧 Step 3/4: インデックスの再作成...';
+
+DO $$
+BEGIN
+    RAISE NOTICE '🔧 Step 3/4: インデックスの再作成...';
+END $$;
 
 DROP INDEX IF EXISTS idx_listing_history_product_id;
 CREATE INDEX idx_listing_history_product_id ON listing_history(product_id);
-RAISE NOTICE '  ✓ listing_history.product_id インデックス作成';
+
+DO $$
+BEGIN
+    RAISE NOTICE '  ✓ listing_history.product_id インデックス作成';
+END $$;
 
 DROP INDEX IF EXISTS idx_product_html_generated_product_id;
 CREATE INDEX idx_product_html_generated_product_id ON product_html_generated(product_id);
-RAISE NOTICE '  ✓ product_html_generated.product_id インデックス作成';
+
+DO $$
+BEGIN
+    RAISE NOTICE '  ✓ product_html_generated.product_id インデックス作成';
+END $$;
 
 -- ステップ4: スキーマ検証
 -- ============================================================================
-RAISE NOTICE '🔧 Step 4/4: スキーマ検証...';
 
 DO $$
 DECLARE
@@ -116,6 +133,8 @@ DECLARE
     phg_type TEXT;
     products_type TEXT;
 BEGIN
+    RAISE NOTICE '🔧 Step 4/4: スキーマ検証...';
+
     -- listing_history.product_id の型を取得
     SELECT data_type INTO lh_type
     FROM information_schema.columns
@@ -145,15 +164,12 @@ BEGIN
     ELSE
         RAISE WARNING '  ⚠️ 一部のカラムの型が期待と異なります';
     END IF;
+
+    RAISE NOTICE '  ';
+    RAISE NOTICE '🎉 マイグレーション完了！';
+    RAISE NOTICE '  ';
+    RAISE NOTICE '⚠️ 注意: 既存のlisting_historyとproduct_html_generatedのデータは';
+    RAISE NOTICE '   型の互換性がないためクリアされました。';
+    RAISE NOTICE '   新しいデータは自動的に正しい型で保存されます。';
+    RAISE NOTICE '  ';
 END $$;
-
--- 完了メッセージ
-RAISE NOTICE '  ';
-RAISE NOTICE '🎉 マイグレーション完了！';
-RAISE NOTICE '  ';
-RAISE NOTICE '⚠️ 注意: 既存のlisting_historyとproduct_html_generatedのデータは';
-RAISE NOTICE '   型の互換性がないためクリアされました。';
-RAISE NOTICE '   新しいデータは自動的に正しい型で保存されます。';
-RAISE NOTICE '  ';
-
-COMMIT;
