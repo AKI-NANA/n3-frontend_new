@@ -1,19 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getEbayAccessToken } from '@/lib/ebay/token'
 
 export async function GET(req: NextRequest) {
   try {
-    const account = req.nextUrl.searchParams.get('account') || 'green'
+    const account = (req.nextUrl.searchParams.get('account') || 'green') as 'mjt' | 'green'
     
-    // トークン取得
-    const token = account === 'mjt'
-      ? process.env.EBAY_USER_ACCESS_TOKEN_MJT
-      : process.env.EBAY_USER_ACCESS_TOKEN_GREEN
-    
-    if (!token) {
-      throw new Error('eBay access token not found')
-    }
-
     console.log(`🔍 ${account}アカウントのRate Tableを取得中...`)
+
+    // トークン取得
+    const token = await getEbayAccessToken(account)
 
     // eBay APIでRate Table一覧を取得
     const response = await fetch(
