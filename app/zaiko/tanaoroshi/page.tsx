@@ -63,11 +63,17 @@ export default function TanaoroshiPage() {
   const loadEbayProducts = async (account: string) => {
     setLoading(true)
     try {
+      // 開発環境ではモックデータを使用
+      const isDev = process.env.NODE_ENV === 'development' || typeof window !== 'undefined'
+      const apiEndpoint = isDev ? '/api/ebay/inventory/mock' : '/api/ebay/inventory/list'
+
+      console.log(`📡 Loading eBay products from: ${apiEndpoint}?account=${account}`)
+
       if (account === 'all') {
         // green と mjt の両方を取得
         const [greenRes, mjtRes] = await Promise.all([
-          fetch('/api/ebay/inventory/list?account=green'),
-          fetch('/api/ebay/inventory/list?account=mjt')
+          fetch(`${apiEndpoint}?account=green`),
+          fetch(`${apiEndpoint}?account=mjt`)
         ])
 
         const [greenData, mjtData] = await Promise.all([
@@ -82,8 +88,10 @@ export default function TanaoroshiPage() {
         setProducts(allProducts)
         calculateStats(allProducts)
       } else {
-        const response = await fetch(`/api/ebay/inventory/list?account=${account}`)
+        const response = await fetch(`${apiEndpoint}?account=${account}`)
         const data = await response.json()
+
+        console.log(`✅ Received ${data.total} products from ${apiEndpoint}`)
 
         if (data.success) {
           setProducts(data.products || [])
