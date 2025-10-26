@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const credentials = Buffer.from(
-      `${process.env.EBAY_APP_ID}:${process.env.EBAY_CERT_ID}`
+      `${process.env.EBAY_CLIENT_ID_MJT}:${process.env.EBAY_CLIENT_SECRET_MJT}`
     ).toString('base64');
 
     const response = await fetch('https://api.ebay.com/identity/v1/oauth2/token', {

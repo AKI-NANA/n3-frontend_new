@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Zap, Settings, BarChart3, Grid3x3, Calculator, FileSpreadsheet, Upload, Eye, Play, DollarSign, Database } from 'lucide-react'
+import { Zap, Settings, BarChart3, Grid3x3, Calculator, FileSpreadsheet, Upload, Eye, Play, DollarSign, Database, Globe } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { EbayStylePolicyCreator } from '@/components/shipping-policy/EbayStylePolicyCreator'
 import { AutoPolicyGenerator } from '@/components/shipping-policy/AutoPolicyGenerator'
@@ -15,33 +15,44 @@ import { PolicyTestUploader } from '@/components/shipping-policy/PolicyTestUploa
 import { EbayPolicyList } from '@/components/shipping-policy/EbayPolicyList'
 import { UsaDdpCostTable } from '@/components/shipping-policy/UsaDdpCostTable'
 import { RateTableViewer } from '@/components/shipping-policy/RateTableViewer'
+import { UsaDdpPolicyCreator } from '@/components/shipping-policy/UsaDdpPolicyCreator'
+import { ExcludedCountriesManager } from '@/components/shipping-policy/ExcludedCountriesManager'
+import { ShippingPolicyTable } from '@/components/shipping-policy/ShippingPolicyTable'
+import { BulkPolicyUploader } from '@/components/shipping-policy/BulkPolicyUploader'
+import { PartialBulkUploader } from '@/components/shipping-policy/PartialBulkUploader'
 
 export default function ShippingPolicyManagerPage() {
-  const [activeTab, setActiveTab] = useState<'usa-cost' | 'rate-tables' | 'test' | 'preview' | 'uploader' | 'ddp-matrix' | 'distribution' | 'manual' | 'auto' | 'matrix' | 'full-matrix'>('usa-cost')
+  const [activeTab, setActiveTab] = useState<'usa-cost' | 'usa-ddp-creator' | 'rate-tables' | 'excluded-countries' | 'test' | 'preview' | 'uploader' | 'ddp-matrix' | 'distribution' | 'manual' | 'auto' | 'matrix' | 'full-matrix'>('usa-cost')
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-[1800px] mx-auto">
-        {/* ヘッダー */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">配送ポリシー管理</h1>
           <p className="text-gray-600">eBay配送ポリシーの作成・管理・分析</p>
         </div>
 
-        {/* タブ切り替え */}
         <Tabs 
           value={activeTab} 
           onValueChange={(v) => setActiveTab(v as any)} 
           className="w-full"
         >
-          <TabsList className="grid w-full grid-cols-11 max-w-full mb-6">
+          <TabsList className="grid w-full grid-cols-13 max-w-full mb-6">
             <TabsTrigger value="usa-cost" className="flex items-center gap-2">
               <DollarSign className="w-4 h-4" />
               USA料金表
             </TabsTrigger>
+            <TabsTrigger value="usa-ddp-creator" className="flex items-center gap-2">
+              <Zap className="w-4 h-4" />
+              DDP作成
+            </TabsTrigger>
             <TabsTrigger value="rate-tables" className="flex items-center gap-2">
               <Database className="w-4 h-4" />
               Rate Tables
+            </TabsTrigger>
+            <TabsTrigger value="excluded-countries" className="flex items-center gap-2">
+              <Globe className="w-4 h-4" />
+              除外国
             </TabsTrigger>
             <TabsTrigger value="test" className="flex items-center gap-2">
               <Play className="w-4 h-4" />
@@ -81,58 +92,62 @@ export default function ShippingPolicyManagerPage() {
             </TabsTrigger>
           </TabsList>
 
-          {/* USA DDP配送コスト表（NEW - 最初に表示） */}
           <TabsContent value="usa-cost" className="space-y-6">
             <UsaDdpCostTable />
           </TabsContent>
 
-          {/* Rate Tables（NEW） */}
+          <TabsContent value="usa-ddp-creator">
+            <UsaDdpPolicyCreator />
+          </TabsContent>
+
           <TabsContent value="rate-tables">
             <RateTableViewer />
           </TabsContent>
 
-          {/* ポリシー一覧 */}
+          <TabsContent value="excluded-countries">
+            <ExcludedCountriesManager />
+          </TabsContent>
+
           <TabsContent value="test" className="space-y-6">
+            <ShippingPolicyTable />
             <EbayPolicyList />
             <PolicyTestUploader />
           </TabsContent>
 
-          {/* ポリシープレビュー */}
           <TabsContent value="preview">
             <PolicyPreview />
           </TabsContent>
 
-          {/* eBayアップローダー */}
           <TabsContent value="uploader">
-            <EbayPolicyUploader />
+            <PartialBulkUploader />
+            <div className="mt-6">
+              <BulkPolicyUploader />
+            </div>
+            <div className="mt-6">
+              <EbayPolicyUploader />
+            </div>
           </TabsContent>
 
-          {/* USA DDPコストマトリックス（Excel風） */}
           <TabsContent value="ddp-matrix">
             <DDPCostMatrix />
           </TabsContent>
 
-          {/* 配送ポリシー分布計画タブ */}
           <TabsContent value="distribution">
             <ShippingPolicyDistribution />
           </TabsContent>
 
-          {/* 60重量帯マトリックス */}
           <TabsContent value="full-matrix">
             <RateTableMatrix60 />
           </TabsContent>
 
-          {/* 手動作成タブ */}
           <TabsContent value="manual">
             <EbayStylePolicyCreator />
           </TabsContent>
 
-          {/* 自動生成タブ */}
           <TabsContent value="auto">
             <AutoPolicyGenerator />
           </TabsContent>
 
-          {/* 概要マトリックス表示タブ */}
           <TabsContent value="matrix">
             <PolicyMatrixViewer />
           </TabsContent>
