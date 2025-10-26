@@ -73,7 +73,7 @@ const navigationItems = [
       { text: "在庫一覧", link: "/zaiko", icon: "bar-chart", status: "ready" as const },
       { text: "入庫管理", link: "/zaiko/nyuko", icon: "trending-up", status: "ready" as const },
       { text: "出庫管理", link: "/zaiko/shukko", icon: "archive", status: "ready" as const },
-      { text: "棚卸し", link: "/zaiko/tanaoroshi", icon: "list", status: "new" as const },
+      { text: "棚卸し", link: "/zaiko/tanaoroshi", icon: "warehouse", status: "ready" as const },
       { text: "在庫調整", link: "/zaiko/chosei", icon: "settings", status: "pending" as const },
     ],
   },
