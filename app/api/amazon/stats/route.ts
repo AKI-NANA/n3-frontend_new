@@ -6,22 +6,23 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = createRouteHandlerClient({ cookies })
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    // TODO: 認証を実装したら、ユーザーチェックを有効化
+    // const { data: { user } } = await supabase.auth.getUser()
+    // if (!user) {
+    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // }
 
     // 総商品数
     const { count: totalProducts } = await supabase
       .from('amazon_products')
       .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
+      // .eq('user_id', user.id)  // TODO: 認証実装後に有効化
 
     // 平均スコア
     const { data: avgScoreData } = await supabase
       .from('amazon_products')
       .select('profit_score')
-      .eq('user_id', user.id)
+      // .eq('user_id', user.id)  // TODO: 認証実装後に有効化
       .not('profit_score', 'is', null)
 
     const avgProfitScore = avgScoreData && avgScoreData.length > 0
@@ -32,14 +33,14 @@ export async function GET(request: NextRequest) {
     const { count: highProfitCount } = await supabase
       .from('amazon_products')
       .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
+      // .eq('user_id', user.id)  // TODO: 認証実装後に有効化
       .gte('profit_score', 80)
 
     // 在庫あり商品数
     const { count: inStockCount } = await supabase
       .from('amazon_products')
       .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
+      // .eq('user_id', user.id)  // TODO: 認証実装後に有効化
       .eq('availability_status', 'In Stock')
 
     return NextResponse.json({

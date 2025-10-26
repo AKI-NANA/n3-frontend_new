@@ -6,10 +6,11 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = createRouteHandlerClient({ cookies })
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    // TODO: 認証を実装したら、ユーザーチェックを有効化
+    // const { data: { user } } = await supabase.auth.getUser()
+    // if (!user) {
+    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // }
 
     const { searchParams } = new URL(request.url)
     const sortBy = searchParams.get('sortBy') || 'created_at'
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('amazon_products')
       .select('*')
-      .eq('user_id', user.id)
+      // .eq('user_id', user.id)  // TODO: 認証実装後に有効化
 
     // ソート
     if (sortBy === 'profit_score') {
