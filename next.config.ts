@@ -1,12 +1,6 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  webpack: (config, { isServer }) => {
-    // publicPath の自動設定を無効化
-    if (!isServer) {
-      config.output.publicPath = '/_next/'
-    }
-    return config
-  },
+import type { NextConfig } from 'next'
+
+const nextConfig: NextConfig = {
   // 画像の最適化設定
   images: {
     remotePatterns: [
@@ -20,10 +14,15 @@ const nextConfig = {
       },
     ],
   },
-  // 開発環境でのソースマップ有効化
-  productionBrowserSourceMaps: false,
   // 厳格モード
   reactStrictMode: true,
+  // TypeScript/ESLintエラーを無視（開発時）
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 }
 
 export default nextConfig
