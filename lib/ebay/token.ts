@@ -1,7 +1,7 @@
 /**
  * eBayアクセストークンを自動取得・更新
  */
-export async function getEbayAccessToken(account: 'mjt' | 'green'): Promise<string> {
+export async function getAccessToken(account: 'mjt' | 'green'): Promise<{ access_token: string }> {
   const credentials = account === 'mjt' 
     ? {
         clientId: process.env.EBAY_CLIENT_ID_MJT!,
@@ -47,5 +47,11 @@ export async function getEbayAccessToken(account: 'mjt' | 'green'): Promise<stri
 
   const data = await response.json()
   console.log(`✅ Got fresh token (length: ${data.access_token?.length})`)
-  return data.access_token
+  return { access_token: data.access_token }
+}
+
+// 後方互換性のため
+export async function getEbayAccessToken(account: 'mjt' | 'green'): Promise<string> {
+  const result = await getAccessToken(account)
+  return result.access_token
 }
