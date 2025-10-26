@@ -38,7 +38,7 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
 
   const imageUrl = Array.isArray(product.images) && product.images.length > 0
     ? product.images[0]
-    : '/placeholder-product.jpg'
+    : 'https://placehold.co/400x400/e2e8f0/64748b?text=No+Image'
 
   return (
     <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border">
@@ -49,6 +49,8 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
           alt={product.product_name}
           className="w-full h-full object-cover"
           onError={(e) => {
+            // 無限ループ防止：一度だけ実行
+            e.currentTarget.onerror = null
             e.currentTarget.src = 'https://placehold.co/400x400/e2e8f0/64748b?text=No+Image'
           }}
         />
