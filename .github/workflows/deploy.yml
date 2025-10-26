@@ -18,9 +18,15 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd ~/n3-frontend_new
+            # 未コミットの変更を一時保存
+            git stash
             # 必ずmainブランチにいることを確保
             git checkout main
+            # 最新コードを取得
             git pull origin main
+            # 依存関係のインストール
             npm install --production
+            # 本番ビルド
             npm run build
+            # Next.jsサーバーを再起動
             pm2 restart n3-frontend
