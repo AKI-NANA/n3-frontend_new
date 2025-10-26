@@ -15,7 +15,7 @@ export interface InventoryProduct {
   listing_quantity: number
   cost_price: number
   selling_price: number
-  condition_name: ConditionType
+  condition_name: ConditionType | string
   category: string
   subcategory: string | null
   images: string[]
@@ -26,6 +26,21 @@ export interface InventoryProduct {
   notes: string | null
   created_at: string
   updated_at: string
+  // マーケットプレイス情報
+  marketplace?: 'ebay' | 'shopee' | 'amazon-global' | 'amazon-jp' | 'coupang' | 'shopify' | 'q10'
+  account?: string  // green, mjt など
+  currency?: string // USD, JPY など
+  // eBay固有データ
+  ebay_data?: {
+    offer_id?: string
+    listing_id?: string
+    status?: string
+    marketplace_id?: string
+    description?: string
+    aspects?: Record<string, string[]>
+    weight?: any
+    dimensions?: any
+  }
   // セット品の場合の構成情報
   set_components?: SetComponent[]
 }
