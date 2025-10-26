@@ -14,7 +14,12 @@ export function TabFinal({ product, marketplace, marketplaceName }: TabFinalProp
   const englishTitle = (product as any)?.english_title || product?.title || '';
   const sku = product?.sku || '';
   const masterKey = (product as any)?.master_key || '';
-  
+
+  // セット商品の判定（棚卸しからの連携）
+  const scrapedData = (product as any)?.scraped_data || {};
+  const isSetProduct = scrapedData.is_set === true;
+  const setComponents = scrapedData.set_components || [];
+
   // 検証ロジック
   const validation = {
     hasTitle: englishTitle.length > 0,
@@ -27,7 +32,7 @@ export function TabFinal({ product, marketplace, marketplaceName }: TabFinalProp
     hasImages: (product?.images?.length || 0) > 0,
     hasStock: (product?.stock?.available || 0) > 0,
   };
-  
+
   const allValid = Object.values(validation).every(v => v);
   const profitAmount = (product as any)?.profit_amount_usd || 0;
   const isProfitable = profitAmount > 0;
@@ -37,13 +42,28 @@ export function TabFinal({ product, marketplace, marketplaceName }: TabFinalProp
       alert('❌ 出品できません\n\n必須項目が不足しています。各タブを確認してください。');
       return;
     }
-    
+
     if (!isProfitable) {
-      alert('⚠️ 警告\n\nこの商品は利益がマイナスです。本当に出品しますか？');
-      return;
+      const proceed = confirm('⚠️ 警告\n\nこの商品は利益がマイナスです。本当に出品しますか？');
+      if (!proceed) return;
     }
-    
+
+    // セット商品の場合の特別処理
+    if (isSetProduct && setComponents.length > 0) {
+      const componentNames = setComponents.map((c: any) => {
+        const comp = c.component || {};
+        return `• ${comp.product_name || 'Unknown'} × ${c.quantity_required}`;
+      }).join('\n');
+
+      const message = `📦 セット商品の出品確認\n\nこのセット商品を出品すると、以下の構成商品の出品が自動的に停止されます：\n\n${componentNames}\n\n出品を実行しますか？`;
+
+      const proceed = confirm(message);
+      if (!proceed) return;
+    }
+
     alert(`✓ ${marketplaceName}に出品処理を実行します`);
+    // TODO: 実際の出品API呼び出し
+    // TODO: セット商品の場合、構成商品の出品停止処理
   };
   
   return (
@@ -117,7 +137,102 @@ export function TabFinal({ product, marketplace, marketplaceName }: TabFinalProp
           </div>
         </div>
       </div>
-      
+
+      {/* セット商品情報 */}
+      {isSetProduct && setComponents.length > 0 && (
+        <div className={styles.dataSection} style={{ marginTop: '1rem' }}>
+          <div className={styles.sectionHeader} style={{ background: '#fff3cd', color: '#856404' }}>
+            <i className="fas fa-layer-group"></i> セット商品構成
+          </div>
+          <div style={{ padding: '1rem' }}>
+            <div style={{
+              padding: '0.75rem',
+              background: '#fef9e7',
+              border: '2px solid #f39c12',
+              borderRadius: '6px',
+              marginBottom: '1rem'
+            }}>
+              <strong style={{ color: '#856404' }}>
+                <i className="fas fa-info-circle"></i> 重要:
+              </strong>
+              <span style={{ color: '#856404', marginLeft: '0.5rem' }}>
+                このセット商品を出品すると、以下の構成商品の出品が自動的に停止されます。
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gap: '0.75rem' }}>
+              {setComponents.map((comp: any, index: number) => {
+                const component = comp.component || {};
+                return (
+                  <div
+                    key={index}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '1rem',
+                      padding: '0.75rem',
+                      background: '#f8f9fa',
+                      border: '1px solid #dee2e6',
+                      borderRadius: '6px'
+                    }}
+                  >
+                    {/* 画像 */}
+                    {component.images && component.images[0] ? (
+                      <img
+                        src={component.images[0]}
+                        alt={component.product_name}
+                        style={{
+                          width: '60px',
+                          height: '60px',
+                          objectFit: 'cover',
+                          borderRadius: '4px',
+                          border: '1px solid #dee2e6'
+                        }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: '60px',
+                        height: '60px',
+                        background: '#e9ecef',
+                        borderRadius: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <i className="fas fa-image" style={{ color: '#adb5bd' }}></i>
+                      </div>
+                    )}
+
+                    {/* 商品情報 */}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>
+                        {component.product_name || 'Unknown Product'}
+                      </div>
+                      <div style={{ fontSize: '0.85rem', color: '#6c757d' }}>
+                        {component.sku && `SKU: ${component.sku} | `}
+                        在庫: {component.physical_quantity || 0}個
+                      </div>
+                    </div>
+
+                    {/* 必要数 */}
+                    <div style={{
+                      padding: '0.5rem 1rem',
+                      background: '#fff',
+                      border: '2px solid #f39c12',
+                      borderRadius: '6px',
+                      fontWeight: 700,
+                      color: '#856404'
+                    }}>
+                      × {comp.quantity_required}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 検証結果 */}
       <div className={styles.dataSection} style={{ marginTop: '1rem' }}>
         <div className={styles.sectionHeader}>
