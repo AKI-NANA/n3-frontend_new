@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
 
+// このルートを動的にして、ビルド時の静的評価を無効化
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/ebay/rate-tables
  * Rate Table統計情報取得
