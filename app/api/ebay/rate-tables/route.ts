@@ -1,9 +1,4 @@
 import { NextResponse } from 'next/server'
-import {
-  generateAllRateTables,
-  getRateTableStats,
-  getRateTablePreview
-} from '@/lib/shipping/ebay-rate-table'
 
 /**
  * GET /api/ebay/rate-tables
@@ -11,6 +6,20 @@ import {
  */
 export async function GET(request: Request) {
   try {
+    // 環境変数チェック
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Supabase configuration missing'
+        },
+        { status: 503 }
+      )
+    }
+
+    // 動的インポート（必要な時だけロード）
+    const { getRateTableStats, getRateTablePreview } = await import('@/lib/shipping/ebay-rate-table')
+
     const { searchParams } = new URL(request.url)
     const preview = searchParams.get('preview')
     const table = searchParams.get('table')
@@ -29,9 +38,9 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('Rate Table取得エラー:', error)
     return NextResponse.json(
-      { 
-        success: false, 
-        error: (error as Error).message 
+      {
+        success: false,
+        error: (error as Error).message
       },
       { status: 500 }
     )
@@ -44,7 +53,21 @@ export async function GET(request: Request) {
  */
 export async function POST() {
   try {
+    // 環境変数チェック
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Supabase configuration missing'
+        },
+        { status: 503 }
+      )
+    }
+
     console.log('🚀 Rate Table生成API実行開始')
+
+    // 動的インポート
+    const { generateAllRateTables } = await import('@/lib/shipping/ebay-rate-table')
 
     const result = await generateAllRateTables()
 
