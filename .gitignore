@@ -32,3 +32,4 @@ cleanup-*.sh
 fix-git-*.sh
 GIT_PUSH_*.md
 .secrets/
+バックアップ/
