@@ -26,7 +26,8 @@ interface ToolPanelProps {
   onExportMercari?: () => void
   onList: () => void
   onLoadData: () => void
-  onCSVUpload: () => void // 追加
+  onCSVUpload: () => void
+  onBulkResearch: () => void // 一括リサーチ追加
 }
 
 export function ToolPanel({
@@ -50,7 +51,8 @@ export function ToolPanel({
   onExportMercari,
   onList,
   onLoadData,
-  onCSVUpload // 追加
+  onCSVUpload,
+  onBulkResearch // 一括リサーチ追加
 }: ToolPanelProps) {
   const [showCSVMenu, setShowCSVMenu] = useState(false)
   return (
@@ -137,6 +139,16 @@ export function ToolPanel({
           className="h-8 text-xs border-amber-500 text-amber-700 hover:bg-amber-50 dark:border-amber-600 dark:text-amber-400 dark:hover:bg-amber-950"
         >
           SM分析
+        </Button>
+        
+        <Button
+          onClick={onBulkResearch}
+          disabled={processing}
+          variant="outline"
+          size="sm"
+          className="h-8 text-xs bg-gradient-to-r from-purple-500 to-indigo-600 text-white border-0 hover:from-purple-600 hover:to-indigo-700 font-semibold"
+        >
+          🔍 一括リサーチ
         </Button>
         
         <Button

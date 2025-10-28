@@ -28,7 +28,8 @@ export function ProductModal({ product, onClose, onSave }: ProductModalProps) {
 
   // 画像データを取得（useMemoでメモ化して無限ループを防止）
   const images = useMemo(() => {
-    const imageUrls = product.scraped_data?.image_urls || product.listing_data?.image_urls || []
+    // 全画像は scraped_data から取得
+    const imageUrls = product.scraped_data?.image_urls || []
     return Array.isArray(imageUrls)
       ? imageUrls.map((url, index) => ({
           id: `img${index + 1}`,
@@ -37,9 +38,20 @@ export function ProductModal({ product, onClose, onSave }: ProductModalProps) {
           order: index + 1
         }))
       : []
-  }, [product.scraped_data?.image_urls, product.listing_data?.image_urls])
+  }, [product.scraped_data?.image_urls])
 
-  const selectedImages = useMemo(() => images.map(img => img.id), [images])
+  // 選択された画像は listing_data から復元
+  const selectedImages = useMemo(() => {
+    const savedImageUrls = product.listing_data?.image_urls
+    if (savedImageUrls && Array.isArray(savedImageUrls)) {
+      // 保存されたURLからIDを復元
+      return images
+        .filter(img => savedImageUrls.includes(img.url))
+        .map(img => img.id)
+    }
+    // 保存データがなければ全選択（初回のみ）
+    return images.map(img => img.id)
+  }, [images, product.listing_data?.image_urls])
 
   // EditingProduct を ModalProduct に変換（useMemoでメモ化）
   const modalProduct: ModalProduct = useMemo(() => ({

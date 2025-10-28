@@ -12,7 +12,7 @@ export async function GET() {
     const { data: policies, error } = await supabase
       .from('ebay_shipping_policies_v2')
       .select('*')
-      .eq('is_active', true)
+      .eq('active', true)
       .order('weight_min_kg', { ascending: true })
     
     if (error) {

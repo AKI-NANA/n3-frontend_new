@@ -48,49 +48,43 @@ export async function POST(request: NextRequest) {
         console.log(`   仕入: ${price_jpy}円, 重量: ${weight_g}g (${(weight_g/1000).toFixed(2)}kg)`)
 
         // 🇺🇸 USA DDP価格計算（精密版V3）
-        // 🇺🇸 USA DDP価格計算（精密版V3）
         const usaPriceResult = await calculateUsaPriceV3({
           costJPY: price_jpy,
           weight_kg: weight_g / 1000,  // gをkgに変換
+          length_cm: listingData.length_cm || 30,
+          width_cm: listingData.width_cm || 20,
+          height_cm: listingData.height_cm || 15,
           hsCode: listingData.hs_code || '9620.00.20.00',
           originCountry: 'JP',
           targetMargin: 15,  // デフォルト15%
-          storeType: 'none',  // ストアなし
-          fvfRate: 0.1515,    // FVF 15.15%
           exchangeRate: 150  // デフォルト150円/USD
         })
 
-        if (!usaPriceResult.success || !usaPriceResult.breakdown) {
+        if (!usaPriceResult.success) {
           throw new Error(usaPriceResult.error || 'USA DDP計算失敗')
         }
 
-        const breakdown = usaPriceResult.breakdown
-
         console.log(`💰 USA DDP計算結果:`)
-        console.log(`   ポリシー名: ${breakdown.selectedPolicyName}`)
-        console.log(`   商品価格: ${breakdown.finalProductPrice.toFixed(2)}`)
-        console.log(`   DDP送料: ${breakdown.finalShipping.toFixed(2)}`)
-        console.log(`   総売上: ${breakdown.finalTotal.toFixed(2)}`)
-        console.log(`   利益率（還付前）: ${breakdown.profitMargin.toFixed(2)}%`)
-        console.log(`   利益率（還付後）: ${breakdown.profitMarginWithRefund.toFixed(2)}%`)
+        console.log(`   ポリシー名: ${usaPriceResult.policy?.name}`)
+        console.log(`   商品価格: $${usaPriceResult.productPrice?.toFixed(2)}`)
+        console.log(`   DDP送料: $${usaPriceResult.shipping?.toFixed(2)}`)
+        console.log(`   総売上: $${usaPriceResult.totalRevenue?.toFixed(2)}`)
+        console.log(`   利益率: ${usaPriceResult.profitMargin_NoRefund?.toFixed(2)}%`)
 
         // listing_dataを更新（既存データを保持）
         const updatedListingData = {
           ...listingData,
-          // ポリシー情報
-          usa_shipping_policy_name: breakdown.selectedPolicyName,
-          shipping_service: 'USA DDP (RT Express)',
+          // 🎯 最重要: ポリシー名
+          usa_shipping_policy_name: usaPriceResult.policy?.name || null,
           // 価格情報
-          ddp_price_usd: breakdown.finalTotal,              // DDP価格（総売上）
-          ddu_price_usd: breakdown.finalProductPrice,        // DDU価格（商品価格のみ）
-          product_price_usd: breakdown.finalProductPrice,    // 商品価格のみ
+          ddp_price_usd: usaPriceResult.totalRevenue || 0,
+          product_price_usd: usaPriceResult.productPrice || 0,
           // 送料情報
-          shipping_cost_usd: breakdown.finalShipping,       // DDP送料
+          shipping_cost_usd: usaPriceResult.shipping || 0,
+          shipping_service: 'USA DDP (RT Express)',
           // 利益情報
-          profit_margin: breakdown.profitMargin,             // 利益率（還付前）
-          profit_amount_usd: breakdown.profit,               // 利益額（還付前）
-          profit_margin_refund: breakdown.profitMarginWithRefund,  // 利益率（還付後）
-          profit_amount_refund: breakdown.profitWithRefund         // 利益額（還付後）
+          profit_margin: usaPriceResult.profitMargin_NoRefund || 0,
+          profit_amount_usd: usaPriceResult.profitUSD_NoRefund || 0
         }
 
         const { error: updateError } = await supabase
@@ -98,12 +92,8 @@ export async function POST(request: NextRequest) {
           .update({
             listing_data: updatedListingData,
             // トップレベルにも保存（検索・ソート用）
-            ddu_price_usd: breakdown.finalProductPrice,
-            ddp_price_usd: breakdown.finalTotal,
-            shipping_cost_usd: breakdown.finalShipping,
-            shipping_policy: breakdown.selectedPolicyName,
-            sm_profit_margin: breakdown.profitMargin,
-            profit_amount_usd: breakdown.profit,
+            profit_margin: usaPriceResult.profitMargin_NoRefund,
+            profit_amount_usd: usaPriceResult.profitUSD_NoRefund,
             updated_at: new Date().toISOString()
           })
           .eq('id', product.id)

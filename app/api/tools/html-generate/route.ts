@@ -31,11 +31,17 @@ export async function POST(request: NextRequest) {
       try {
         const html = generateProductHTML(product)
 
+        // listing_dataを取得または初期化
+        const listingData = product.listing_data || {}
+        
         const { error: updateError } = await supabase
           .from('products')
           .update({
-            html_description: html,
-            html_applied: true,
+            listing_data: {
+              ...listingData,
+              html_description: html,
+              html_applied: true,
+            },
             updated_at: new Date().toISOString()
           })
           .eq('id', product.id)
@@ -71,7 +77,7 @@ export async function POST(request: NextRequest) {
 function generateProductHTML(product: any): string {
   const imageHTML = product.image_urls && product.image_urls.length > 0
     ? product.image_urls.map((url: string, index: number) => 
-        `<img src="${url}" alt="${product.title} - Image ${index + 1}" style="max-width: 100%; height: auto; margin: 10px 0;" />`
+        `<img src="${url}" alt="${product.english_title || product.title} - Image ${index + 1}" style="max-width: 100%; height: auto; margin: 10px 0;" />`
       ).join('\n')
     : ''
 
@@ -95,7 +101,7 @@ function generateProductHTML(product: any): string {
 </head>
 <body>
   <div class="product-container">
-    <h1 class="product-title">${product.title || 'Product Title'}</h1>
+    <h1 class="product-title">${product.english_title || product.title || 'Product Title'}</h1>
     
     <div class="product-images">
       ${imageHTML}

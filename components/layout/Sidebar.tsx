@@ -53,7 +53,6 @@ const navigationItems = [
       { text: "Yahoo!オークション", link: "/yahoo-auction-dashboard", icon: "globe", status: "ready" as const },
       { text: "メルカリ", link: "/mercari", icon: "shopping-cart", status: "ready" as const },
       { text: "eBay", link: "/ebay", icon: "globe", status: "ready" as const },
-      { text: "eBay API テスト", link: "/ebay-api-test", icon: "zap", status: "new" as const },
       { text: "一括出品", link: "/bulk-listing", icon: "list", status: "ready" as const },
     ],
   },
@@ -107,6 +106,8 @@ const navigationItems = [
     submenu: [
       { text: "Git & デプロイ", link: "/tools/git-deploy", icon: "git-branch", status: "ready" as const },
       { text: "Supabase接続", link: "/tools/supabase-connection", icon: "database", status: "ready" as const },
+      { text: "API テストツール", link: "/tools/api-test", icon: "zap", status: "ready" as const },
+      { text: "eBay Token取得", link: "/api/ebay/auth/authorize", icon: "cog", status: "ready" as const },
       { text: "ユーザー管理", link: "/users", icon: "users", status: "ready" as const },
       { text: "権限設定", link: "/permissions", icon: "shield", status: "ready" as const },
       { text: "バックアップ", link: "/backup", icon: "database", status: "new" as const },

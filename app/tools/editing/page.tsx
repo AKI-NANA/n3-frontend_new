@@ -140,6 +140,70 @@ export default function EditingPage() {
     }
   }
 
+  const handleBulkResearch = async () => {
+    // 選択された商品がない場合はエラー
+    if (selectedIds.size === 0) {
+      showToast('商品を選択してください', 'error')
+      return
+    }
+
+    const selectedProducts = products.filter(p => selectedIds.has(p.id))
+    const productIds = selectedProducts.map(p => parseInt(p.id, 10)).filter(id => !isNaN(id))
+
+    if (productIds.length === 0) {
+      showToast('有効な商品IDがありません', 'error')
+      return
+    }
+
+    showToast(`${productIds.length}件の商品を一括リサーチします...`, 'success')
+
+    try {
+      // APIエンドポイントを呼び出し
+      const response = await fetch('/api/bulk-research', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          productIds: productIds,
+          includeFields: {
+            category: true,
+            shipping: true,
+            profit: true,
+            competitors: true,
+            sellerMirror: true
+          }
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      if (data.success) {
+        const successCount = data.results.filter((r: any) => r.success).length
+        const failCount = data.results.length - successCount
+        
+        if (failCount > 0) {
+          showToast(`✅ 完了: 成功${successCount}件、失敗${failCount}件`, 'success')
+        } else {
+          showToast(`✅ 一括リサーチ完了！${successCount}件の商品を処理しました`, 'success')
+        }
+        
+        // データ再読み込み
+        await loadProducts()
+      } else {
+        throw new Error(data.error || '一括リサーチに失敗しました')
+      }
+
+    } catch (error: any) {
+      console.error('Bulk research error:', error)
+      showToast(error.message || '一括リサーチ中にエラーが発生しました', 'error')
+    }
+  }
+
   const handleSaveAll = async () => {
     const result = await saveAllModified()
     if (result.success > 0) {
@@ -494,6 +558,7 @@ export default function EditingPage() {
           onList={handleListToMarketplace}
           onLoadData={loadProducts}
           onCSVUpload={() => setShowCSVModal(true)}
+          onBulkResearch={handleBulkResearch}
         />
 
         <MarketplaceSelector

@@ -1,7 +1,7 @@
 // app/api/tools/profit-calculate/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { calculateUsaPriceV2 } from '@/lib/ebay-pricing/usa-price-calculator-v2'
+import { calculateUsaPriceV3 } from '@/lib/ebay-pricing/usa-price-calculator-v3'
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     // 商品データを取得
     const { data: products, error: fetchError } = await supabase
-      .from('yahoo_scraped_products')
+      .from('products')
       .select('*')
       .in('id', productIds)
 
@@ -45,18 +45,18 @@ export async function POST(request: NextRequest) {
         }
 
         // eBay価格計算システムを使用
-        const pricingResult = await calculateUsaPriceV2({
+        const pricingResult = await calculateUsaPriceV3({
           costJPY: costJPY,
           weight_kg: weightKg,
-          targetProductPriceRatio: 0.8,  // 商品価格比率 80%
-          targetMargin: 0.15,             // 目標利益率 15%
+          targetMargin: 15,             // 目標利益率 15%
           hsCode: '9620.00.20.00',        // デフォルトHTS
           originCountry: 'JP',
           storeType: 'none',
-          fvfRate: 0.1315
+          fvfRate: 0.1515,
+          exchangeRate: 150  // デフォルト150円/USD
         })
 
-        if (!pricingResult || !pricingResult.success) {
+        if (!pricingResult || !pricingResult.success || !pricingResult.breakdown) {
           console.warn(`⚠️ 価格計算失敗: ${product.title}`)
           errors.push({ 
             id: product.id, 
@@ -65,32 +65,47 @@ export async function POST(request: NextRequest) {
           continue
         }
 
-        // 計算結果を取得
-        const productPrice = pricingResult.productPrice
-        const shippingCost = pricingResult.shipping
-        const ddpPrice = pricingResult.totalRevenue
-        const profitMargin = pricingResult.profitMargin_NoRefund
-        const profitAmount = pricingResult.profitUSD_NoRefund  // 利益額を追加
-        const policyName = pricingResult.policy?.policy_name || null
+        const breakdown = pricingResult.breakdown
 
         console.log(`✅ 利益計算完了: ${product.title}`)
-        console.log(`   商品価格: ${productPrice.toFixed(2)}`)
-        console.log(`   送料: ${shippingCost.toFixed(2)}`)
-        console.log(`   DDP価格: ${ddpPrice.toFixed(2)}`)
-        console.log(`   利益率: ${profitMargin.toFixed(1)}%`)
-        console.log(`   利益額: ${profitAmount.toFixed(2)}`)
-        console.log(`   ポリシー: ${policyName || '未選択'}`)
+        console.log(`   ポリシー名: ${breakdown.selectedPolicyName}`)
+        console.log(`   商品価格: ${breakdown.finalProductPrice.toFixed(2)}`)
+        console.log(`   DDP送料: ${breakdown.finalShipping.toFixed(2)}`)
+        console.log(`   総売上: ${breakdown.finalTotal.toFixed(2)}`)
+        console.log(`   利益率（還付前）: ${breakdown.profitMargin.toFixed(2)}%`)
+        console.log(`   利益額（還付前）: ${breakdown.profit.toFixed(2)}`)
 
         const { error: updateError } = await supabase
           .from('products')
           .update({
-            ddu_price_usd: productPrice,                    // 商品価格（送料別）
-            ddp_price_usd: ddpPrice,                        // DDP価格（送料込）
-            shipping_cost_usd: pricingResult.shippingCost,  // 実費送料
-            shipping_cost_total_usd: shippingCost,          // 合計送料
-            shipping_policy: policyName,                    // 配送ポリシー名
-            sm_profit_margin: profitMargin,                 // 利益率
-            profit_amount_usd: profitAmount,                // 利益額
+            listing_data: {
+              ...listingData,
+              // ポリシー情報
+              usa_shipping_policy_name: breakdown.selectedPolicyName,
+              shipping_service: `${breakdown.carrierName} - ${breakdown.serviceName}`,
+              carrier_name: breakdown.carrierName,
+              carrier_service: breakdown.serviceName,
+              carrier_code: breakdown.carrierCode,
+              // 価格情報
+              ddp_price_usd: breakdown.finalTotal,
+              ddu_price_usd: breakdown.finalProductPrice,
+              product_price_usd: breakdown.finalProductPrice,
+              // 送料情報
+              base_shipping_usd: breakdown.selectedBaseShipping,  // 実送料（DDPなし）
+              shipping_cost_usd: breakdown.finalShipping,  // 送料合計（DDP込）
+              // 利益情報
+              profit_margin: breakdown.profitMargin,
+              profit_amount_usd: breakdown.profit,
+              profit_margin_refund: breakdown.profitMarginWithRefund,
+              profit_amount_refund: breakdown.profitWithRefund
+            },
+            // トップレベルにも保存（検索・ソート用）
+            ddu_price_usd: breakdown.finalProductPrice,
+            ddp_price_usd: breakdown.finalTotal,
+            shipping_cost_usd: breakdown.finalShipping,
+            shipping_policy: breakdown.selectedPolicyName,
+            sm_profit_margin: breakdown.profitMargin,
+            profit_amount_usd: breakdown.profit,
             updated_at: new Date().toISOString()
           })
           .eq('id', product.id)

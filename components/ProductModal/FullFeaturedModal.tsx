@@ -165,6 +165,7 @@ export function FullFeaturedModal({
                     product={product} 
                     maxImages={currentMPConfig?.maxImages || 12}
                     marketplace={currentMarketplace}
+                    onSave={onSave}
                   />
                 </div>
                 <div className={`${styles.tabPane} ${currentTab === 'tools' ? styles.active : ''}`}>

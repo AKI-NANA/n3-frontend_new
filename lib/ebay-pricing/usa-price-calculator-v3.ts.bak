@@ -89,11 +89,6 @@ export interface DetailedBreakdown {
   selectedBaseShipping: number
   selectedTotalShipping: number
   
-  // 配送会社情報
-  carrierName: string
-  serviceName: string
-  carrierCode: string
-  
   finalProductPrice: number
   finalShipping: number
   finalTotal: number
@@ -277,15 +272,15 @@ export async function calculateUsaPriceV3(
     })
 
     // STEP 3: 最安送料ポリシー取得
-    const estimatedProductPrice = Math.ceil(costUSD * 2.0)
+    const estimatedProductPrice = costUSD * 2.0
     
     const { data: minPolicy, error: minError } = await supabase
       .from('usa_ddp_rates')
       .select('*')
-      .lte('weight_min_kg', weight_kg)
+      .lt('weight_min_kg', weight_kg)
       .gte('weight_max_kg', weight_kg)
-      .gte('product_price_usd', estimatedProductPrice)
-      .order('product_price_usd', { ascending: true })
+      .lte('product_price_usd', estimatedProductPrice)
+      .order('total_shipping_usd', { ascending: true })
       .limit(1)
       .maybeSingle()
 
@@ -352,10 +347,10 @@ export async function calculateUsaPriceV3(
     const { data: allPolicies } = await supabase
       .from('usa_ddp_rates')
       .select('*')
-      .lte('weight_min_kg', weight_kg)
+      .lt('weight_min_kg', weight_kg)
       .gte('weight_max_kg', weight_kg)
       .gte('product_price_usd', initialPrice)
-      .order('product_price_usd', { ascending: true })
+      .order('total_shipping_usd', { ascending: true })
       .limit(10)
 
     let selectedPolicy = minPolicy
@@ -473,45 +468,6 @@ export async function calculateUsaPriceV3(
       ]
     })
 
-    // 配送会社情報をebay_shipping_masterから取得
-    // 商品価格に応じて配送タイプをフィルタリング
-    const isHighValue = finalProductPrice >= 100 // $100以上は高額商品
-    
-    // Economy配送を除外するサービス名パターン（$100以上の場合）
-    const economyPatterns = [
-      'SpeedPAK',
-      '小型包装物',
-      '書状',
-      '国際小包'
-    ]
-    
-    let carrierQuery = supabase
-      .from('ebay_shipping_master')
-      .select('carrier_name, service_name, service_code')
-      .eq('country_code', 'US')
-      .lte('weight_from_kg', weight_kg)
-      .gte('weight_to_kg', weight_kg)
-    
-    // 高額商品の場合、Economy配送を除外
-    if (isHighValue) {
-      // EMS、FedEx、DHL、UPSのみに限定
-      carrierQuery = carrierQuery.or(
-        'service_name.ilike.%EMS%,' +
-        'service_name.ilike.%FedEx%,' +
-        'service_name.ilike.%DHL%,' +
-        'service_name.ilike.%UPS%'
-      )
-    }
-    
-    const { data: carrierInfo } = await carrierQuery
-      .order('shipping_cost_with_margin_usd', { ascending: true })
-      .limit(1)
-      .single()
-
-    const carrierName = carrierInfo?.carrier_name || 'RT Express'
-    const serviceName = carrierInfo?.service_name || 'RT Express DDP Service'
-    const carrierCode = carrierInfo?.service_code || 'RT'
-
     const breakdown: DetailedBreakdown = {
       costJPY,
       costUSD,
@@ -556,11 +512,6 @@ export async function calculateUsaPriceV3(
       selectedPolicyName: selectedPolicy.policy_name,
       selectedBaseShipping: selectedPolicy.base_shipping_usd,
       selectedTotalShipping: selectedPolicy.total_shipping_usd,
-      
-      // 配送会社情報
-      carrierName,
-      serviceName,
-      carrierCode,
       finalProductPrice,
       finalShipping: selectedPolicy.total_shipping_usd,
       finalTotal: finalTotalRevenue,

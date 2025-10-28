@@ -85,15 +85,23 @@ export async function fetchProductById(id: string) {
   return data as Product
 }
 
-export async function updateProduct(id: string, updates: ProductUpdate) {
+export async function updateProduct(id: string | number, updates: ProductUpdate) {
+  // IDを文字列に正規化（UUIDは文字列のまま）
+  const normalizedId = String(id)
+  
+  console.log('💾 保存しようとしているデータ:', { id: normalizedId, updates })
+  
   const { data, error } = await supabase
     .from('products')
     .update(updates)
-    .eq('id', id)
+    .eq('id', normalizedId)
     .select()
     .single()
 
-  if (error) throw error
+  if (error) {
+    console.error('❌ Supabaseエラー:', error)
+    throw error
+  }
   return data as Product
 }
 

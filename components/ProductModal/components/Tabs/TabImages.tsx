@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styles from '../../FullFeaturedModal.module.css';
 import type { Product } from '@/types/product';
 
@@ -8,9 +8,10 @@ export interface TabImagesProps {
   product: Product | null;
   maxImages: number;
   marketplace: string;
+  onSave?: (updates: any) => void;
 }
 
-export function TabImages({ product, maxImages, marketplace }: TabImagesProps) {
+export function TabImages({ product, maxImages, marketplace, onSave }: TabImagesProps) {
   const [selectedImages, setSelectedImages] = useState<string[]>(product?.selectedImages || []);
   const [imageSettings, setImageSettings] = useState({
     resize: true,
@@ -19,6 +20,31 @@ export function TabImages({ product, maxImages, marketplace }: TabImagesProps) {
   });
   
   const availableImages = product?.images || [];
+  const isFirstRender = useRef(true); // 初回レンダリングを追跡
+  
+  // 画像の選択が変更されたらDBに保存（初回はスキップ）
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    
+    if (onSave) {
+      const selectedUrls = availableImages
+        .filter(img => selectedImages.includes(img.id))
+        .map(img => img.url);
+      
+      console.log('🖼️ 画像選択が変更されました:', { count: selectedUrls.length });
+      
+      onSave({
+        listing_data: {
+          ...product?.listing_data,
+          image_urls: selectedUrls,
+          image_count: selectedUrls.length
+        }
+      });
+    }
+  }, [selectedImages]); // selectedImagesのみを監視
   
   const toggleImage = (imageId: string) => {
     setSelectedImages(prev => {
