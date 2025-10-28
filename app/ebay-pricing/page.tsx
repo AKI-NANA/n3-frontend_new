@@ -25,7 +25,7 @@ import {
 } from '@/hooks/use-ebay-pricing'
 import { CalculatorTabComplete } from '@/components/ebay-pricing/calculator-tab-complete'
 import { CalculatorTabCompleteV2 } from '@/components/ebay-pricing/calculator-tab-complete-v2'
-import { analyzeDatabase, generateShippingPolicies, runFullAnalysisAndGeneration } from '@/scripts/analyze-database-and-generate-policies'
+// import { analyzeDatabase, generateShippingPolicies, runFullAnalysisAndGeneration } from '@/scripts/analyze-database-and-generate-policies'
 import { MarginSettingsEdit } from '@/components/ebay-pricing/margin-settings-edit'
 import { ShippingPoliciesTab } from '@/components/ebay-pricing/shipping-policies-tab'
 import { ShippingPoliciesV2Tab } from '@/components/ebay-pricing/shipping-policies-v2-tab'
@@ -246,11 +246,11 @@ export default function EbayPricingPage() {
 
   useEffect(() => {
     // スクリプトをグローバルに公開
-    if (typeof window !== 'undefined') {
-      (window as any).analyzeDatabase = analyzeDatabase
-      (window as any).generateShippingPolicies = generateShippingPolicies
-      (window as any).runFullAnalysisAndGeneration = runFullAnalysisAndGeneration
-    }
+    // if (typeof window !== 'undefined') {
+    //   (window as any).analyzeDatabase = analyzeDatabase
+    //   (window as any).generateShippingPolicies = generateShippingPolicies
+    //   (window as any).runFullAnalysisAndGeneration = runFullAnalysisAndGeneration
+    // }
   }, [])
 
   const handleInputChange = (field: string, value: any) => {
