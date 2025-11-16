@@ -232,7 +232,7 @@ export const navigationItems: NavigationItem[] = [
       { text: "在庫一覧", link: "/zaiko", icon: "bar-chart", status: "pending", priority: 2 },
       { text: "入庫管理", link: "/zaiko/nyuko", icon: "trending-up", status: "pending", priority: 3 },
       { text: "出庫管理", link: "/zaiko/shukko", icon: "archive", status: "pending", priority: 4 },
-      { text: "棚卸し", link: "/zaiko/tanaoroshi", icon: "list", status: "pending", priority: 5 },
+      { text: "棚卸しツール", link: "/zaiko/tanaoroshi", icon: "package-check", status: "ready", priority: 5 },
       { text: "在庫調整", link: "/zaiko/chosei", icon: "settings", status: "pending", priority: 6 },
       { text: "在庫価格設定", link: "/inventory-pricing", icon: "dollar-sign", status: "ready", priority: 7 },
     ]
