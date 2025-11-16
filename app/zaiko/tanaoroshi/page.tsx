@@ -38,6 +38,7 @@ export default function TanaoroshiPage() {
   const [categories, setCategories] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [pendingCount, setPendingCount] = useState(0)
+  const [syncing, setSyncing] = useState(false)
   
   // Modal State
   const [showRegistrationModal, setShowRegistrationModal] = useState(false)
@@ -219,6 +220,35 @@ export default function TanaoroshiPage() {
     setShowBulkUpload(false)
     setEditingProduct(null)
     loadProducts()
+    loadPendingCount() // 判定待ち件数も更新
+  }
+
+  // eBay同期実行
+  const handleEbaySync = async (account: 'mjt' | 'green' | 'all') => {
+    if (!confirm(`eBay ${account.toUpperCase()}アカウントのデータを同期しますか？`)) return
+    
+    setSyncing(true)
+    try {
+      const response = await fetch('/api/sync/ebay-to-queue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ account, limit: 100 })
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        alert(`✅ 同期完了\n新規: ${data.total_synced}件\nスキップ: ${data.total_skipped}件`)
+        loadPendingCount() // 判定待ち件数を更新
+      } else {
+        alert(`❌ 同期エラー: ${data.error}`)
+      }
+    } catch (error: any) {
+      console.error('同期エラー:', error)
+      alert(`同期エラー: ${error.message}`)
+    } finally {
+      setSyncing(false)
+    }
   }
 
   if (loading) {
@@ -302,6 +332,28 @@ export default function TanaoroshiPage() {
           <i className="fas fa-layer-group mr-2"></i>
           セット商品作成 ({selectedProducts.size})
         </Button>
+
+        {/* eBay同期ボタン */}
+        <div className="relative">
+          <Button
+            onClick={() => handleEbaySync('all')}
+            disabled={syncing}
+            variant="outline"
+            className="border-blue-300 text-blue-700 hover:bg-blue-50"
+          >
+            {syncing ? (
+              <>
+                <i className="fas fa-spinner fa-spin mr-2"></i>
+                同期中...
+              </>
+            ) : (
+              <>
+                <i className="fas fa-cloud-download-alt mr-2"></i>
+                eBay同期
+              </>
+            )}
+          </Button>
+        </div>
 
         <div className="flex-1"></div>
 
