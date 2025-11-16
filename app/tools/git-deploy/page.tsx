@@ -587,6 +587,145 @@ export default function GitDeployPage() {
             </CardContent>
           </Card>
 
+          {/* リモート差分チェックカード */}
+          <Card className="border-2 border-indigo-200 dark:border-indigo-800">
+            <CardHeader className="bg-indigo-50 dark:bg-indigo-900/20">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Database className="w-5 h-5 text-indigo-600" />
+                  📂 GitHubにあってローカルにないファイル
+                </CardTitle>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={checkRemoteDiff}
+                  disabled={checkingRemoteDiff}
+                >
+                  {checkingRemoteDiff ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+              <CardDescription>
+                GitHubにあるがローカルに存在しないファイルを確認
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-6">
+              {remoteDiff ? (
+                <>
+                  {remoteDiff.error ? (
+                    <Alert className="bg-red-50 dark:bg-red-900/20 border-red-200">
+                      <AlertCircle className="w-4 h-4 text-red-600" />
+                      <AlertDescription>{remoteDiff.error}</AlertDescription>
+                    </Alert>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-3 gap-4 mb-4">
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded border border-blue-200">
+                          <div className="text-2xl font-bold text-blue-600">{remoteDiff.onlyInRemote?.length || 0}</div>
+                          <div className="text-xs text-muted-foreground">GitHubのみ</div>
+                        </div>
+                        <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded border border-orange-200">
+                          <div className="text-2xl font-bold text-orange-600">{remoteDiff.onlyInLocal?.length || 0}</div>
+                          <div className="text-xs text-muted-foreground">ローカルのみ</div>
+                        </div>
+                        <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded border border-purple-200">
+                          <div className="text-2xl font-bold text-purple-600">{remoteDiff.modifiedFiles?.length || 0}</div>
+                          <div className="text-xs text-muted-foreground">変更あり</div>
+                        </div>
+                      </div>
+
+                      {remoteDiff.onlyInRemote && remoteDiff.onlyInRemote.length > 0 && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <p className="font-medium text-sm">🆕 GitHubにのみ存在するファイル ({remoteDiff.onlyInRemote.length}件):</p>
+                            <Badge className="bg-blue-500">要取得</Badge>
+                          </div>
+                          <div className="bg-slate-50 dark:bg-slate-900 rounded p-3 max-h-60 overflow-y-auto border">
+                            {remoteDiff.onlyInRemote.map((file: string, idx: number) => (
+                              <div key={idx} className="text-xs font-mono text-blue-600 dark:text-blue-400 py-1">
+                                + {file}
+                              </div>
+                            ))}
+                          </div>
+                          <Alert className="bg-blue-50 dark:bg-blue-900/20 border-blue-200">
+                            <AlertCircle className="w-4 h-4 text-blue-600" />
+                            <AlertDescription className="text-xs">
+                              これらのファイルを取得するには「Git Pull」を実行してください
+                            </AlertDescription>
+                          </Alert>
+                        </div>
+                      )}
+
+                      {remoteDiff.onlyInLocal && remoteDiff.onlyInLocal.length > 0 && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <p className="font-medium text-sm">💻 ローカルにのみ存在するファイル ({remoteDiff.onlyInLocal.length}件):</p>
+                            <Badge className="bg-orange-500">未プッシュ</Badge>
+                          </div>
+                          <div className="bg-slate-50 dark:bg-slate-900 rounded p-3 max-h-60 overflow-y-auto border">
+                            {remoteDiff.onlyInLocal.map((file: string, idx: number) => (
+                              <div key={idx} className="text-xs font-mono text-orange-600 dark:text-orange-400 py-1">
+                                - {file}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {remoteDiff.modifiedFiles && remoteDiff.modifiedFiles.length > 0 && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <p className="font-medium text-sm">✏️ 変更されたファイル ({remoteDiff.modifiedFiles.length}件):</p>
+                            <Badge className="bg-purple-500">差分あり</Badge>
+                          </div>
+                          <div className="bg-slate-50 dark:bg-slate-900 rounded p-3 max-h-60 overflow-y-auto border">
+                            {remoteDiff.modifiedFiles.map((file: string, idx: number) => (
+                              <div key={idx} className="text-xs font-mono text-purple-600 dark:text-purple-400 py-1">
+                                M {file}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {(!remoteDiff.onlyInRemote || remoteDiff.onlyInRemote.length === 0) &&
+                       (!remoteDiff.onlyInLocal || remoteDiff.onlyInLocal.length === 0) &&
+                       (!remoteDiff.modifiedFiles || remoteDiff.modifiedFiles.length === 0) && (
+                        <Alert className="bg-green-50 dark:bg-green-900/20 border-green-200">
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                          <AlertDescription>
+                            ✅ ローカルとGitHubは完全に同期されています
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
+                      <div className="text-xs text-muted-foreground pt-4 border-t">
+                        <p className="font-medium mb-1">統計情報:</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>GitHub総ファイル数: {remoteDiff.totalRemoteFiles}</div>
+                          <div>ローカル総ファイル数: {remoteDiff.totalLocalFiles}</div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-sm text-muted-foreground mb-4">
+                    リモート差分を確認するには右上の更新ボタンをクリック
+                  </p>
+                  <Button onClick={checkRemoteDiff} variant="outline" size="sm">
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    差分を確認
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Mac同期カード */}
           <Card className="border-2 border-purple-200 dark:border-purple-800">
             <CardHeader className="bg-purple-50 dark:bg-purple-900/20">
