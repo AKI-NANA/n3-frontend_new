@@ -252,6 +252,9 @@ export const navigationItems: NavigationItem[] = [
       { text: "返品管理", link: "/henpin", icon: "alert-circle", status: "pending", priority: 3 },
       { text: "配送追跡", link: "/haisou", icon: "truck", status: "pending", priority: 4 },
       { text: "注文管理システムV2", link: "/tools/order-management-v2", icon: "shopping-cart", status: "ready", priority: 5 },
+      { text: "注文管理", link: "/order-management", icon: "package", status: "ready", priority: 6 },
+      { text: "配送管理", link: "/shipping-management", icon: "truck", status: "ready", priority: 7 },
+      { text: "問い合わせ管理", link: "/inquiry-management", icon: "message-circle", status: "ready", priority: 8 },
     ]
   },
 
@@ -267,6 +270,7 @@ export const navigationItems: NavigationItem[] = [
       { text: "eBay リサーチ", link: "/research/ebay-research", icon: "globe", status: "ready", priority: 1 },
       { text: "市場リサーチ", link: "/research/market-research", icon: "trending-up", status: "ready", priority: 2 },
       { text: "スコアリング", link: "/research/scoring", icon: "bar-chart", status: "ready", priority: 3 },
+      { text: "Amazon リサーチ", link: "/tools/amazon-research", icon: "shopping-cart", status: "ready", priority: 4 },
     ]
   },
 
@@ -285,6 +289,7 @@ export const navigationItems: NavigationItem[] = [
       { text: "顧客分析", link: "/analytics/customers", icon: "users", status: "pending", priority: 4 },
       { text: "プレミアム価格分析", link: "/tools/premium-price-analysis", icon: "trending-up", status: "ready", priority: 5 },
       { text: "リサーチ分析", link: "/tools/research-analytics", icon: "bar-chart", status: "ready", priority: 6 },
+      { text: "ポリシー分析", link: "/analyze-policies", icon: "shield", status: "ready", priority: 7 },
     ]
   },
 
@@ -332,9 +337,10 @@ export const navigationItems: NavigationItem[] = [
       { text: "BUYMA仕入れシミュレーター", link: "/tools/buyma-simulator", icon: "globe", status: "ready", priority: 1 },
       { text: "古物買取管理", link: "/tools/kobutsu-management", icon: "archive", status: "ready", priority: 2 },
       { text: "古物買取査定ツール", link: "/tools/kobutsu-assessment", icon: "clipboard", status: "ready", priority: 3 },
-      { text: "刈り取り自動選定", link: "/tools/arbitrage-selector", icon: "zap", status: "ready", priority: 4 },
-      { text: "製品主導型仕入れ", link: "/tools/product-sourcing", icon: "package", status: "ready", priority: 5 },
-      { text: "楽天せどりツール", link: "/tools/rakuten-arbitrage", icon: "shopping-cart", status: "ready", priority: 6 },
+      { text: "古物台帳", link: "/kobutsu-ledger", icon: "book", status: "ready", priority: 4 },
+      { text: "刈り取り自動選定", link: "/tools/arbitrage-selector", icon: "zap", status: "ready", priority: 5 },
+      { text: "製品主導型仕入れ", link: "/tools/product-sourcing", icon: "package", status: "ready", priority: 6 },
+      { text: "楽天せどりツール", link: "/tools/rakuten-arbitrage", icon: "shopping-cart", status: "ready", priority: 7 },
     ]
   },
 
@@ -408,10 +414,13 @@ export const navigationItems: NavigationItem[] = [
       { text: "Supabase接続", link: "/tools/supabase-connection", icon: "database", status: "ready", priority: 2 },
       { text: "API テストツール", link: "/tools/api-test", icon: "zap", status: "ready", priority: 3 },
       { text: "eBay Token取得", link: "/api/ebay/auth/authorize", icon: "cog", status: "ready", priority: 4 },
-      { text: "ユーザー管理", link: "/users", icon: "users", status: "pending", priority: 5 },
-      { text: "権限設定", link: "/permissions", icon: "shield", status: "pending", priority: 6 },
-      { text: "バックアップ", link: "/backup", icon: "database", status: "pending", priority: 7 },
-      { text: "ログ管理", link: "/logs", icon: "file-text", status: "pending", priority: 8 },
+      { text: "外注管理", link: "/admin/outsourcer-management", icon: "users", status: "ready", priority: 5 },
+      { text: "データ収集補助", link: "/data-collection-helper", icon: "database", status: "ready", priority: 6 },
+      { text: "マスター一覧表示", link: "/master-view", icon: "table", status: "ready", priority: 7 },
+      { text: "ユーザー管理", link: "/users", icon: "users", status: "pending", priority: 8 },
+      { text: "権限設定", link: "/permissions", icon: "shield", status: "pending", priority: 9 },
+      { text: "バックアップ", link: "/backup", icon: "database", status: "pending", priority: 10 },
+      { text: "ログ管理", link: "/logs", icon: "file-text", status: "pending", priority: 11 },
     ]
   },
 
