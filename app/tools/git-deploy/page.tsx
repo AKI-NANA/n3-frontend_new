@@ -56,6 +56,8 @@ export default function GitDeployPage() {
   const [currentHost, setCurrentHost] = useState("")
   const [syncStatus, setSyncStatus] = useState<any>(null)
   const [checkingSyncStatus, setCheckingSyncStatus] = useState(false)
+  const [remoteDiff, setRemoteDiff] = useState<any>(null)
+  const [checkingRemoteDiff, setCheckingRemoteDiff] = useState(false)
 
   // Git状態をチェック
   useEffect(() => {
@@ -276,6 +278,20 @@ export default function GitDeployPage() {
       setSyncStatus({ error: '同期状態の確認に失敗しました' })
     } finally {
       setCheckingSyncStatus(false)
+    }
+  }
+
+  const checkRemoteDiff = async () => {
+    setCheckingRemoteDiff(true)
+    try {
+      const response = await fetch('/api/git/remote-diff')
+      const data = await response.json()
+      setRemoteDiff(data)
+    } catch (error) {
+      console.error('Remote diff check failed:', error)
+      setRemoteDiff({ error: 'リモート差分の確認に失敗しました' })
+    } finally {
+      setCheckingRemoteDiff(false)
     }
   }
 
