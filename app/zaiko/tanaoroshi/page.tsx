@@ -1,37 +1,25 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { InventoryProduct, InventoryFilter, InventoryStats } from '@/types/inventory'
+import { StatsHeader } from './components/StatsHeader'
+import { FilterPanel } from './components/FilterPanel'
+import { ProductCard } from './components/ProductCard'
+import { ProductRegistrationModal } from './components/ProductRegistrationModal'
+import { SetProductModal } from './components/SetProductModal'
+import { BulkImageUpload } from './components/BulkImageUpload'
+import { MarketplaceSelector } from './components/MarketplaceSelector'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Input } from '@/components/ui/input'
-import {
-  RefreshCw,
-  Package,
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  Search,
-  Filter,
-  Plus,
-  Download
-} from 'lucide-react'
-import { MarketplaceSelector } from './components/MarketplaceSelector'
-import { ProductCard } from './components/ProductCard'
-import { StatsHeader } from './components/StatsHeader'
-import type { InventoryProduct, InventoryStats } from '@/types/inventory'
+import Link from 'next/link'
 
 export default function TanaoroshiPage() {
+  const supabase = createClientComponentClient()
+  
+  // State
   const [products, setProducts] = useState<InventoryProduct[]>([])
   const [filteredProducts, setFilteredProducts] = useState<InventoryProduct[]>([])
-  const [loading, setLoading] = useState(false)
-  const [syncing, setSyncing] = useState(false)
-  const [selectedMarketplace, setSelectedMarketplace] = useState('ebay')
-  const [selectedAccount, setSelectedAccount] = useState('green')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [activeTab, setActiveTab] = useState('all')
-
   const [stats, setStats] = useState<InventoryStats>({
     total: 0,
     in_stock: 0,
@@ -41,236 +29,358 @@ export default function TanaoroshiPage() {
     set_count: 0,
     total_value: 0
   })
+  const [filter, setFilter] = useState<InventoryFilter>({
+    product_type: 'all',
+    stock_status: 'all',
+    condition: 'all'
+  })
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set())
+  const [categories, setCategories] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
+  const [pendingCount, setPendingCount] = useState(0)
+  
+  // Modal State
+  const [showRegistrationModal, setShowRegistrationModal] = useState(false)
+  const [showSetModal, setShowSetModal] = useState(false)
+  const [showBulkUpload, setShowBulkUpload] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<InventoryProduct | null>(null)
+  const [selectedMarketplace, setSelectedMarketplace] = useState('all')
 
-  useEffect(() => {
-    loadProducts()
-  }, [selectedMarketplace, selectedAccount])
-
-  useEffect(() => {
-    applyFilters()
-  }, [products, searchQuery, activeTab])
-
+  // データ取得
   const loadProducts = async () => {
-    if (selectedMarketplace === 'all') {
-      // 全モールのデータを取得（今はeBayのみ）
-      await loadEbayProducts('all')
-    } else if (selectedMarketplace === 'ebay') {
-      await loadEbayProducts(selectedAccount)
-    }
-    // 他のモールは後で追加
-  }
-
-  const loadEbayProducts = async (account: string) => {
     setLoading(true)
     try {
-      if (account === 'all') {
-        // green と mjt の両方を取得
-        const [greenRes, mjtRes] = await Promise.all([
-          fetch('/api/ebay/inventory/list?account=green'),
-          fetch('/api/ebay/inventory/list?account=mjt')
-        ])
+      const { data, error } = await supabase
+        .from('inventory_master')
+        .select('*')
+        .order('created_at', { ascending: false })
 
-        const [greenData, mjtData] = await Promise.all([
-          greenRes.json(),
-          mjtRes.json()
-        ])
+      if (error) throw error
 
-        const allProducts = [
-          ...(greenData.products || []),
-          ...(mjtData.products || [])
-        ]
-        setProducts(allProducts)
-        calculateStats(allProducts)
-      } else {
-        const response = await fetch(`/api/ebay/inventory/list?account=${account}`)
-        const data = await response.json()
+      const inventoryProducts: InventoryProduct[] = (data || []).map(item => ({
+        id: item.id,
+        unique_id: item.unique_id,
+        product_name: item.product_name,
+        sku: item.sku,
+        product_type: item.product_type,
+        physical_quantity: item.physical_quantity || 0,
+        listing_quantity: item.listing_quantity || 0,
+        cost_price: item.cost_price || 0,
+        selling_price: item.selling_price || 0,
+        condition_name: item.condition_name,
+        category: item.category,
+        subcategory: item.subcategory,
+        images: item.images || [],
+        source_data: item.source_data,
+        supplier_info: item.supplier_info,
+        is_manual_entry: item.is_manual_entry,
+        priority_score: item.priority_score || 0,
+        notes: item.notes,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        marketplace: item.marketplace || 'manual',
+        account: item.account
+      }))
 
-        if (data.success) {
-          setProducts(data.products || [])
-          calculateStats(data.products || [])
-        } else {
-          console.error('Failed to load eBay products:', data.error)
-          setProducts([])
-        }
+      setProducts(inventoryProducts)
+
+      // カテゴリリストを抽出
+      const uniqueCategories = [...new Set(inventoryProducts.map(p => p.category))]
+      setCategories(uniqueCategories.filter(Boolean))
+
+      // 統計計算
+      const newStats: InventoryStats = {
+        total: inventoryProducts.length,
+        in_stock: inventoryProducts.filter(p => p.physical_quantity > 0).length,
+        out_of_stock: inventoryProducts.filter(p => p.physical_quantity === 0).length,
+        stock_count: inventoryProducts.filter(p => p.product_type === 'stock').length,
+        dropship_count: inventoryProducts.filter(p => p.product_type === 'dropship').length,
+        set_count: inventoryProducts.filter(p => p.product_type === 'set').length,
+        total_value: inventoryProducts.reduce((sum, p) => sum + (p.cost_price * p.physical_quantity), 0)
       }
-    } catch (error) {
-      console.error('Error loading eBay products:', error)
-      setProducts([])
+      setStats(newStats)
+
+    } catch (error: any) {
+      console.error('データ取得エラー:', error)
+      alert(`データ取得失敗: ${error.message}`)
     } finally {
       setLoading(false)
     }
   }
 
-  const calculateStats = (data: InventoryProduct[]) => {
-    const newStats: InventoryStats = {
-      total: data.length,
-      in_stock: data.filter(p => p.physical_quantity > 0).length,
-      out_of_stock: data.filter(p => p.physical_quantity === 0).length,
-      stock_count: data.filter(p => p.product_type === 'stock').length,
-      dropship_count: data.filter(p => p.product_type === 'dropship').length,
-      set_count: data.filter(p => p.product_type === 'set').length,
-      total_value: data.reduce((sum, p) =>
-        sum + (p.selling_price || 0) * (p.physical_quantity || 0), 0
-      )
-    }
-    setStats(newStats)
-  }
-
-  const applyFilters = () => {
+  // フィルター適用
+  useEffect(() => {
     let filtered = [...products]
 
-    // 検索フィルター
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(p =>
-        p.product_name?.toLowerCase().includes(query) ||
-        p.sku?.toLowerCase().includes(query)
-      )
+    // マーケットプレイスフィルター
+    if (selectedMarketplace !== 'all') {
+      filtered = filtered.filter(p => p.marketplace === selectedMarketplace)
     }
 
-    // タブフィルター
-    if (activeTab !== 'all') {
-      if (activeTab === 'in_stock') {
+    // 商品タイプフィルター
+    if (filter.product_type && filter.product_type !== 'all') {
+      filtered = filtered.filter(p => p.product_type === filter.product_type)
+    }
+
+    // 在庫状態フィルター
+    if (filter.stock_status && filter.stock_status !== 'all') {
+      if (filter.stock_status === 'in_stock') {
         filtered = filtered.filter(p => p.physical_quantity > 0)
-      } else if (activeTab === 'out_of_stock') {
+      } else {
         filtered = filtered.filter(p => p.physical_quantity === 0)
-      } else if (activeTab === 'low_stock') {
-        filtered = filtered.filter(p => p.physical_quantity > 0 && p.physical_quantity < 5)
       }
     }
 
+    // コンディションフィルター
+    if (filter.condition && filter.condition !== 'all') {
+      filtered = filtered.filter(p => p.condition_name === filter.condition)
+    }
+
+    // カテゴリフィルター
+    if (filter.category) {
+      filtered = filtered.filter(p => p.category === filter.category)
+    }
+
+    // 検索フィルター
+    if (filter.search) {
+      const searchLower = filter.search.toLowerCase()
+      filtered = filtered.filter(p =>
+        p.product_name.toLowerCase().includes(searchLower) ||
+        (p.sku && p.sku.toLowerCase().includes(searchLower))
+      )
+    }
+
     setFilteredProducts(filtered)
+  }, [products, filter, selectedMarketplace])
+
+  // 判定待ち件数取得
+  const loadPendingCount = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('stock_classification_queue')
+        .select('*', { count: 'exact', head: true })
+        .is('is_stock', null)
+      
+      if (!error && data !== null) {
+        setPendingCount(data as any as number)
+      }
+    } catch (error) {
+      console.error('判定待ち件数取得エラー:', error)
+    }
   }
 
-  const handleSync = async () => {
-    setSyncing(true)
-    await loadProducts()
-    setSyncing(false)
+  // 初回ロード
+  useEffect(() => {
+    loadProducts()
+    loadPendingCount()
+  }, [])
+
+  // 商品選択トグル
+  const toggleProductSelection = (productId: string) => {
+    const newSelection = new Set(selectedProducts)
+    if (newSelection.has(productId)) {
+      newSelection.delete(productId)
+    } else {
+      newSelection.add(productId)
+    }
+    setSelectedProducts(newSelection)
+  }
+
+  // 商品編集
+  const handleEdit = (product: InventoryProduct) => {
+    setEditingProduct(product)
+    setShowRegistrationModal(true)
+  }
+
+  // 商品削除
+  const handleDelete = async (product: InventoryProduct) => {
+    if (!confirm(`「${product.product_name}」を削除しますか？`)) return
+
+    try {
+      const { error } = await supabase
+        .from('inventory_master')
+        .delete()
+        .eq('id', product.id)
+
+      if (error) throw error
+
+      alert('商品を削除しました')
+      loadProducts()
+    } catch (error: any) {
+      console.error('削除エラー:', error)
+      alert(`削除失敗: ${error.message}`)
+    }
+  }
+
+  // モーダル成功時
+  const handleModalSuccess = () => {
+    setShowRegistrationModal(false)
+    setShowSetModal(false)
+    setShowBulkUpload(false)
+    setEditingProduct(null)
+    loadProducts()
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <i className="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4"></i>
+          <p className="text-lg text-slate-600">読み込み中...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="min-h-screen bg-slate-50 p-6">
       {/* ヘッダー */}
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold">棚卸し・在庫管理</h1>
-          <p className="text-muted-foreground mt-2">
-            マルチモール統合在庫管理システム
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={handleSync}
-            disabled={syncing || loading}
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
-            {syncing ? '同期中...' : '同期'}
-          </Button>
-          <Button variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            CSVエクスポート
-          </Button>
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            商品登録
-          </Button>
-        </div>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-slate-900 mb-2">
+          📦 棚卸し・在庫管理
+        </h1>
+        <p className="text-slate-600">
+          全モールの在庫を一元管理。eBay、Amazon、Shopeeの出品中商品も統合表示されます。
+        </p>
       </div>
 
-      {/* モール・アカウント選択 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>データソース選択</CardTitle>
-          <CardDescription>
-            表示するモールとアカウントを選択してください
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <MarketplaceSelector
-            selectedMarketplace={selectedMarketplace}
-            selectedAccount={selectedAccount}
-            onMarketplaceChange={setSelectedMarketplace}
-            onAccountChange={setSelectedAccount}
-          />
-        </CardContent>
-      </Card>
+      {/* 統計ヘッダー */}
+      <StatsHeader stats={stats} selectedCount={selectedProducts.size} />
 
-      {/* 統計情報 */}
-      <StatsHeader stats={stats} />
+      {/* マーケットプレイス選択 */}
+      <MarketplaceSelector
+        selectedMarketplace={selectedMarketplace}
+        onMarketplaceChange={setSelectedMarketplace}
+      />
 
-      {/* タブとフィルター */}
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>在庫一覧</CardTitle>
-            <div className="flex gap-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="商品名・SKU検索..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 w-[300px]"
-                />
-              </div>
+      {/* フィルターパネル */}
+      <FilterPanel
+        filter={filter}
+        onFilterChange={setFilter}
+        categories={categories}
+      />
+
+      {/* アクションボタン */}
+      <div className="bg-white rounded-xl shadow-sm p-4 mb-6 flex gap-3 flex-wrap">
+        {/* 有在庫判定バッジ（件数がある場合のみ表示） */}
+        {pendingCount > 0 && (
+          <Link href="/zaiko/tanaoroshi/classification">
+            <Button className="bg-orange-600 hover:bg-orange-700 relative">
+              <i className="fas fa-clipboard-check mr-2"></i>
+              有在庫判定
+              <Badge className="ml-2 bg-white text-orange-600 hover:bg-white">
+                {pendingCount}
+              </Badge>
+            </Button>
+          </Link>
+        )}
+
+        <Button
+          onClick={() => {
+            setEditingProduct(null)
+            setShowRegistrationModal(true)
+          }}
+          className="bg-green-600 hover:bg-green-700"
+        >
+          <i className="fas fa-plus mr-2"></i>
+          新規商品登録
+        </Button>
+
+        <Button
+          onClick={() => setShowBulkUpload(true)}
+          variant="outline"
+        >
+          <i className="fas fa-images mr-2"></i>
+          画像一括登録
+        </Button>
+
+        <Button
+          onClick={() => setShowSetModal(true)}
+          disabled={selectedProducts.size < 2}
+          variant="outline"
+        >
+          <i className="fas fa-layer-group mr-2"></i>
+          セット商品作成 ({selectedProducts.size})
+        </Button>
+
+        <div className="flex-1"></div>
+
+        <Button
+          onClick={loadProducts}
+          variant="outline"
+        >
+          <i className="fas fa-sync mr-2"></i>
+          更新
+        </Button>
+      </div>
+
+      {/* 商品一覧 */}
+      {filteredProducts.length === 0 ? (
+        <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+          <i className="fas fa-box-open text-6xl text-slate-300 mb-4"></i>
+          <p className="text-xl text-slate-600 mb-2">商品がありません</p>
+          <p className="text-slate-400 mb-6">
+            新規商品を登録するか、他のモールからデータを同期してください
+          </p>
+          <Button
+            onClick={() => setShowRegistrationModal(true)}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <i className="fas fa-plus mr-2"></i>
+            最初の商品を登録
+          </Button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4">
+          {filteredProducts.map(product => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              onEdit={() => handleEdit(product)}
+              onDelete={() => handleDelete(product)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* モーダル */}
+      {showRegistrationModal && (
+        <ProductRegistrationModal
+          product={editingProduct}
+          onClose={() => {
+            setShowRegistrationModal(false)
+            setEditingProduct(null)
+          }}
+          onSuccess={handleModalSuccess}
+        />
+      )}
+
+      {showSetModal && (
+        <SetProductModal
+          selectedProductIds={Array.from(selectedProducts)}
+          onClose={() => setShowSetModal(false)}
+          onSuccess={handleModalSuccess}
+        />
+      )}
+
+      {showBulkUpload && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-slate-900">画像一括登録</h2>
+              <button
+                onClick={() => setShowBulkUpload(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <i className="fas fa-times text-2xl"></i>
+              </button>
+            </div>
+            <div className="p-6">
+              <BulkImageUpload />
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
-              <TabsTrigger value="all">
-                全て ({stats.total})
-              </TabsTrigger>
-              <TabsTrigger value="in_stock">
-                在庫あり ({stats.in_stock})
-              </TabsTrigger>
-              <TabsTrigger value="out_of_stock">
-                在庫なし ({stats.out_of_stock})
-              </TabsTrigger>
-              <TabsTrigger value="low_stock">
-                <span className="flex items-center gap-1">
-                  <TrendingDown className="w-4 h-4" />
-                  少量在庫
-                </span>
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value={activeTab} className="mt-6">
-              {loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <RefreshCw className="w-8 h-8 animate-spin text-muted-foreground" />
-                  <span className="ml-3 text-muted-foreground">読み込み中...</span>
-                </div>
-              ) : filteredProducts.length === 0 ? (
-                <div className="text-center py-12">
-                  <Package className="w-12 h-12 mx-auto text-muted-foreground" />
-                  <p className="mt-4 text-muted-foreground">
-                    {searchQuery ? '検索結果が見つかりません' : '商品がありません'}
-                  </p>
-                  {selectedMarketplace === 'ebay' && (
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      eBay {selectedAccount}アカウントにInventory Itemが登録されていません
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {filteredProducts.map((product) => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      onEdit={() => {}}
-                      onDelete={() => {}}
-                    />
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+        </div>
+      )}
     </div>
   )
 }
