@@ -1,12 +1,9 @@
-<<<<<<< HEAD
-=======
 /**
  * Collapsible Component
  */
 
 "use client"
 
->>>>>>> 3dbe5f3 (feat: ローカルとリモートの変更をマージ)
 import * as React from "react"
 import * as CollapsiblePrimitive from "@radix-ui/react-collapsible"
 
