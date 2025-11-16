@@ -14,6 +14,27 @@ export interface Product {
   cost?: number;
   profit?: number;
   
+  // HTS分類情報（学習システム用）
+  category_name?: string | null;
+  brand_name?: string | null;
+  material?: string | null;
+  hts_code?: string | null;
+  origin_country?: string | null;
+  
+  // HTS自動判定結果
+  suggested_category?: string;
+  suggested_brand?: string;
+  suggested_material?: string;
+  suggested_hts?: string;
+  hts_score?: number;
+  hts_confidence?: 'very_high' | 'high' | 'medium' | 'low' | 'uncertain';
+  hts_source?: 'learning' | 'category_master' | 'brand_master' | 'material_pattern' | 'official';
+  origin_country_hint?: string;
+  
+  // 確認状態
+  hts_needs_review?: boolean;
+  hts_is_approved?: boolean;
+  
   // 画像データ
   images: ProductImage[];
   selectedImages: string[];
@@ -136,4 +157,51 @@ export interface ProductModalActions {
   save: () => Promise<void>;
   reset: () => void;
   updateField: (field: keyof Product, value: any) => void;
+}
+
+/**
+ * HTS学習システム型
+ */
+
+export interface HtsSearchResult {
+  hts_code: string;
+  score: number;
+  confidence: 'very_high' | 'high' | 'medium' | 'low' | 'uncertain';
+  source: 'learning' | 'category_master' | 'brand_master' | 'material_pattern' | 'official';
+  description: string;
+  general_rate?: string;
+  origin_country_hint?: string;
+}
+
+export interface HtsSearchRequest {
+  title_ja?: string;
+  category?: string;
+  brand?: string;
+  material?: string;
+  keywords?: string;
+}
+
+export interface HtsSearchResponse {
+  success: boolean;
+  data?: {
+    candidates: HtsSearchResult[];
+    count: number;
+    autoSelected?: {
+      hts_code: string;
+      confidence: string;
+      score: number;
+    };
+  };
+  error?: string;
+}
+
+export interface HtsLearningRecord {
+  product_title: string;
+  category: string;
+  brand: string;
+  material: string;
+  hts_code: string;
+  origin_country: string;
+  keywords: string;
+  score: number;
 }

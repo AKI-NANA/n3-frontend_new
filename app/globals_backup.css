@@ -1,0 +1,191 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
+/* ===== 5テーマシステム完全実装 ===== */
+
+/* テーマ1: 標準モード */
+:root {
+  --background: #ffffff;
+  --foreground: #22577E;
+  --card: #f8fafc;
+  --card-foreground: #22577E;
+  --primary: #22577E;
+  --primary-foreground: #ffffff;
+  --secondary: #5584AC;
+  --accent: #95D1CC;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --border: #e2e8f0;
+  --input: #ffffff;  /* 入力フィールドの背景を白に */
+  --ring: #22577E;
+  --radius: 0.5rem;
+  
+  /* ポップオーバーとデストラクティブ */
+  --popover: #ffffff;
+  --popover-foreground: #22577E;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  
+  --sidebar-bg: #22577E;
+  --sidebar-hover: rgba(85, 132, 172, 0.3);
+  --submenu-bg: #5584AC;
+  
+  --header-bg: #ffffff;
+  --header-border: #e2e8f0;
+  --logo-gradient: linear-gradient(135deg, #22577E 0%, #5584AC 100%);
+}
+
+/* テーマ2: ブルー（落ち着いた青） */
+[data-theme="blue"] {
+  --background: #ffffff;
+  --foreground: #1e293b;
+  --card: #f8fafc;
+  --card-foreground: #1e293b;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --secondary: #3b82f6;
+  --accent: #60a5fa;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --border: #e2e8f0;
+  --input: #ffffff;
+  --ring: #2563eb;
+  
+  --popover: #ffffff;
+  --popover-foreground: #1e293b;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  
+  --sidebar-bg: #1e3a8a;
+  --sidebar-hover: rgba(37, 99, 235, 0.25);
+  --submenu-bg: #1e40af;
+  
+  --header-bg: #ffffff;
+  --header-border: #e2e8f0;
+  --logo-gradient: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+}
+
+/* テーマ3: 禅モード（モノクロ） */
+[data-theme="zen"] {
+  --background: #ffffff;
+  --foreground: #171717;
+  --card: #fafafa;
+  --card-foreground: #171717;
+  --primary: #404040;
+  --primary-foreground: #ffffff;
+  --secondary: #737373;
+  --accent: #a3a3a3;
+  --muted: #f5f5f5;
+  --muted-foreground: #737373;
+  --border: #e5e5e5;
+  --input: #ffffff;
+  --ring: #404040;
+  
+  --popover: #ffffff;
+  --popover-foreground: #171717;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  
+  --sidebar-bg: #262626;
+  --sidebar-hover: rgba(115, 115, 115, 0.2);
+  --submenu-bg: #404040;
+  
+  --header-bg: #ffffff;
+  --header-border: #e5e5e5;
+  --logo-gradient: linear-gradient(135deg, #262626 0%, #525252 100%);
+}
+
+/* テーマ4: 目に優しいモード（濃いピンク統一） */
+[data-theme="gentle"] {
+  --background: #ffffff;
+  --foreground: #3C3D37;
+  --card: #FFF8F0;
+  --card-foreground: #3C3D37;
+  --primary: #D67BA2;
+  --primary-foreground: #ffffff;
+  --secondary: #E8A5A5;
+  --accent: #F5C6C6;
+  --muted: #FFF8F0;
+  --muted-foreground: #8B7B7B;
+  --border: #F5C6C6;
+  --input: #ffffff;
+  --ring: #D67BA2;
+  
+  --popover: #ffffff;
+  --popover-foreground: #3C3D37;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  
+  --sidebar-bg: #D67BA2;
+  --sidebar-hover: rgba(214, 123, 162, 0.3);
+  --submenu-bg: #D67BA2;
+  
+  --header-bg: #ffffff;
+  --header-border: #F5C6C6;
+  --logo-gradient: linear-gradient(135deg, #D67BA2 0%, #E8A5A5 100%);
+}
+
+/* テーマ5: ダークモード */
+.dark {
+  --background: #0f172a;
+  --foreground: #e2e8f0;
+  --card: #1e293b;
+  --card-foreground: #e2e8f0;
+  --primary: #3b82f6;  /* ダークモードでは青色を使用 */
+  --primary-foreground: #ffffff;
+  --secondary: #475569;
+  --accent: #334155;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --border: #334155;
+  --input: #0f172a;  /* ダークモードの入力フィールド背景 */
+  --ring: #3b82f6;
+  
+  /* ダークモード用ポップオーバー */
+  --popover: #1e293b;
+  --popover-foreground: #e2e8f0;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  
+  --sidebar-bg: #1e293b;
+  --sidebar-hover: rgba(100, 116, 139, 0.3);
+  --submenu-bg: #0f172a;
+  
+  --header-bg: #0f172a;
+  --header-border: #334155;
+  --logo-gradient: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}

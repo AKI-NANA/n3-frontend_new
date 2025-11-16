@@ -1,123 +1,210 @@
 /**
- * 商品カードコンポーネント
+ * 承認システム - 商品カード
+ * NAGANO-3 v2.0
  */
 
 'use client'
 
+import { ApprovalProduct, CompletenessCheck } from '@/types/approval'
 import Image from 'next/image'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
-import type { Product } from '@/types/approval'
-import {
-  getAIScoreBadgeVariant,
-  getStatusBadgeVariant,
-  getStatusLabel,
-  formatPrice,
-  formatDate,
-  getImageUrl,
-  truncateTitle
-} from '@/lib/approval/utils'
 
 interface ProductCardProps {
-  product: Product
+  product: ApprovalProduct
   selected: boolean
-  onSelect: (id: number) => void
+  onToggleSelect: (id: number) => void
+  onApprove: (id: number) => void
+  onReject: (id: number) => void
+  completeness: CompletenessCheck | null
 }
 
-export function ProductCard({ product, selected, onSelect }: ProductCardProps) {
-  const aiVariant = getAIScoreBadgeVariant(product.ai_confidence_score)
-  const statusVariant = getStatusBadgeVariant(product.approval_status)
+export function ProductCard({
+  product,
+  selected,
+  onToggleSelect,
+  onApprove,
+  onReject,
+  completeness,
+}: ProductCardProps) {
+  const imageUrl = product.thumbnail || product.images?.[0] || '/placeholder-product.png'
+
+  const statusColors = {
+    pending: 'bg-amber-100 text-amber-800 border-amber-300',
+    approved: 'bg-green-100 text-green-800 border-green-300',
+    rejected: 'bg-red-100 text-red-800 border-red-300',
+  }
+
+  const statusLabels = {
+    pending: '⏳ 保留中',
+    approved: '✅ 承認済み',
+    rejected: '❌ 否認済み',
+  }
 
   return (
-    <Card
-      className={`transition-all hover:shadow-lg cursor-pointer ${
-        selected ? 'ring-2 ring-primary bg-primary/5' : ''
+    <div
+      className={`bg-white rounded-xl border-2 overflow-hidden transition-all hover:shadow-xl ${
+        selected ? 'ring-4 ring-blue-400 border-blue-500' : 'border-gray-200 hover:border-blue-300'
       }`}
-      onClick={() => onSelect(product.id)}
     >
-      <CardContent className="p-3">
-        {/* ヘッダー: チェックボックス + バッジ */}
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <Checkbox
-            checked={selected}
-            onCheckedChange={() => onSelect(product.id)}
-            onClick={(e) => e.stopPropagation()}
-          />
-          <div className="flex gap-1">
-            <Badge variant={aiVariant} className="text-xs">
-              AI {product.ai_confidence_score}%
-            </Badge>
-            <Badge variant={statusVariant} className="text-xs">
-              {getStatusLabel(product.approval_status)}
-            </Badge>
-          </div>
-        </div>
+      {/* 選択チェックボックス */}
+      <div className="absolute top-3 left-3 z-10">
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={() => onToggleSelect(product.id)}
+          className="w-6 h-6 cursor-pointer accent-blue-600"
+        />
+      </div>
 
-        {/* 商品画像 */}
-        <div className="relative aspect-square mb-2 bg-muted rounded-md overflow-hidden">
-          <Image
-            src={getImageUrl(product.image_url)}
-            alt={product.title}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          />
-        </div>
-
-        {/* 商品情報 */}
-        <h3
-          className="text-sm font-semibold line-clamp-2 min-h-[2.5rem] mb-2"
-          title={product.title}
+      {/* ステータスバッジ */}
+      <div className="absolute top-3 right-3 z-10">
+        <span
+          className={`px-3 py-1 rounded-full text-xs font-bold border-2 ${
+            statusColors[product.approval_status]
+          }`}
         >
-          {truncateTitle(product.title, 80)}
+          {statusLabels[product.approval_status]}
+        </span>
+      </div>
+
+      {/* 画像 */}
+      <div className="relative h-48 bg-gray-100">
+        <Image
+          src={imageUrl}
+          alt={product.title}
+          fill
+          className="object-cover"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement
+            target.src = '/placeholder-product.png'
+          }}
+        />
+      </div>
+
+      {/* 情報エリア */}
+      <div className="p-4 space-y-3">
+        {/* タイトル */}
+        <h3 className="font-bold text-gray-900 line-clamp-2 min-h-[3rem]" title={product.title}>
+          {product.title}
         </h3>
 
-        {/* 価格とカテゴリー */}
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-lg font-bold text-primary">
-            {formatPrice(product.current_price)}
-          </span>
-          {product.category && (
-            <span className="text-xs text-muted-foreground truncate max-w-[100px]">
-              {product.category}
-            </span>
+        {/* SKU */}
+        <div className="flex items-center gap-2 text-sm">
+          <span className="font-semibold text-gray-600">SKU:</span>
+          <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">{product.sku}</code>
+        </div>
+
+        {/* スコアと価格 */}
+        <div className="grid grid-cols-2 gap-2">
+          {/* スコア */}
+          {product.final_score !== undefined && (
+            <div className="bg-purple-50 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-purple-600">
+                {Math.round(product.final_score)}
+              </div>
+              <div className="text-xs text-gray-600 font-medium">スコア</div>
+            </div>
+          )}
+
+          {/* 推奨価格 */}
+          {product.recommended_price !== undefined && (
+            <div className="bg-blue-50 rounded-lg p-3 text-center">
+              <div className="text-lg font-bold text-blue-600">
+                ¥{Math.round(product.recommended_price).toLocaleString()}
+              </div>
+              <div className="text-xs text-gray-600 font-medium">推奨価格</div>
+            </div>
           )}
         </div>
 
-        {/* 入札数と終了日時 */}
-        <div className="flex justify-between items-center text-xs text-muted-foreground mb-2">
-          <span>入札: {product.bid_count}件</span>
-          <span>{formatDate(product.end_date)}</span>
+        {/* 利益情報 */}
+        <div className="grid grid-cols-2 gap-2">
+          {product.profit_jpy !== undefined && (
+            <div className="text-center">
+              <div className="text-lg font-bold text-green-600">
+                ¥{Math.round(product.profit_jpy).toLocaleString()}
+              </div>
+              <div className="text-xs text-gray-600">純利益</div>
+            </div>
+          )}
+
+          {product.profit_rate !== undefined && (
+            <div className="text-center">
+              <div className="text-lg font-bold text-green-600">
+                {product.profit_rate.toFixed(1)}%
+              </div>
+              <div className="text-xs text-gray-600">利益率</div>
+            </div>
+          )}
         </div>
 
-        {/* AI推奨理由 */}
-        {product.ai_recommendation && (
-          <div className="mt-2 p-2 bg-muted rounded text-xs">
-            <p className="text-muted-foreground line-clamp-2">
-              💡 {product.ai_recommendation}
-            </p>
-          </div>
-        )}
-
-        {/* 承認/否認情報 */}
-        {product.approved_at && (
-          <div className="mt-2 pt-2 border-t text-xs text-muted-foreground">
-            <div className="flex justify-between">
-              <span>
-                {product.approval_status === 'approved' ? '承認' : '否認'}:
+        {/* データ完全性 */}
+        {completeness && (
+          <div className={`rounded-lg p-3 ${
+            completeness.isComplete ? 'bg-green-50 border-2 border-green-300' : 'bg-amber-50 border-2 border-amber-300'
+          }`}>
+            <div className="flex items-center justify-between mb-2">
+              <span className={`text-sm font-bold ${
+                completeness.isComplete ? 'text-green-700' : 'text-amber-700'
+              }`}>
+                {completeness.isComplete ? '✓ データ完全' : '⚠️ データ不足'}
               </span>
-              <span>{product.approved_by}</span>
+              <span className={`text-xs font-medium ${
+                completeness.isComplete ? 'text-green-600' : 'text-amber-600'
+              }`}>
+                {completeness.completionRate}%
+              </span>
             </div>
-            <div className="text-right">{formatDate(product.approved_at)}</div>
-            {product.rejection_reason && (
-              <div className="mt-1 text-destructive">
-                理由: {product.rejection_reason}
+
+            {!completeness.isComplete && completeness.missingFields.length > 0 && (
+              <div className="text-xs text-amber-700">
+                不足: {completeness.missingFields.slice(0, 3).join(', ')}
+                {completeness.missingFields.length > 3 && ` 他${completeness.missingFields.length - 3}件`}
               </div>
             )}
           </div>
         )}
-      </CardContent>
-    </Card>
+
+        {/* HTSと原産国 */}
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          {product.hts_code && (
+            <div>
+              <span className="text-gray-600">HTS:</span>
+              <span className="ml-1 font-mono font-semibold">{product.hts_code}</span>
+            </div>
+          )}
+          {product.origin_country && (
+            <div>
+              <span className="text-gray-600">原産国:</span>
+              <span className="ml-1 font-semibold">{product.origin_country}</span>
+            </div>
+          )}
+        </div>
+
+        {/* アクションボタン */}
+        {product.approval_status === 'pending' && (
+          <div className="flex gap-2 pt-2">
+            <button
+              onClick={() => onApprove(product.id)}
+              disabled={!completeness?.isComplete}
+              className={`flex-1 py-2 rounded-lg font-bold transition-all ${
+                completeness?.isComplete
+                  ? 'bg-green-500 hover:bg-green-600 text-white'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              }`}
+              title={completeness?.isComplete ? '承認' : 'データが不完全のため承認できません'}
+            >
+              ✓ 承認
+            </button>
+
+            <button
+              onClick={() => onReject(product.id)}
+              className="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold transition-all"
+            >
+              ✗ 否認
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
   )
 }

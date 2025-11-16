@@ -234,6 +234,71 @@ export function TabTools({ product, onSave }: TabToolsProps) {
         統合ツール実行
       </h3>
       
+      {/* 🔥 実行結果サマリー */}
+      {(toolResults.category || toolResults.profit || toolResults.filter || toolResults.sellermirror) && (
+        <div style={{
+          padding: '1rem',
+          background: 'linear-gradient(135deg, #e3f2fd, #f3e5f5)',
+          borderRadius: '8px',
+          marginBottom: '1.5rem',
+          border: '2px solid #1976d2'
+        }}>
+          <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '1rem', color: '#1976d2' }}>
+            <i className="fas fa-check-circle"></i> 実行結果サマリー
+          </h4>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem' }}>
+            <div style={{
+              padding: '0.75rem',
+              background: toolResults.category ? '#d4edda' : 'white',
+              borderRadius: '6px',
+              textAlign: 'center',
+              border: `2px solid ${toolResults.category ? '#28a745' : '#e0e0e0'}`
+            }}>
+              <div style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.25rem' }}>カテゴリ</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 700, color: toolResults.category ? '#28a745' : '#999' }}>
+                {toolResults.category ? '✓' : '-'}
+              </div>
+            </div>
+            <div style={{
+              padding: '0.75rem',
+              background: toolResults.profit ? '#d4edda' : 'white',
+              borderRadius: '6px',
+              textAlign: 'center',
+              border: `2px solid ${toolResults.profit ? '#28a745' : '#e0e0e0'}`
+            }}>
+              <div style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.25rem' }}>利益</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 700, color: toolResults.profit ? '#28a745' : '#999' }}>
+                {toolResults.profit ? '✓' : '-'}
+              </div>
+            </div>
+            <div style={{
+              padding: '0.75rem',
+              background: toolResults.filter ? '#d4edda' : 'white',
+              borderRadius: '6px',
+              textAlign: 'center',
+              border: `2px solid ${toolResults.filter ? '#28a745' : '#e0e0e0'}`
+            }}>
+              <div style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.25rem' }}>フィルター</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 700, color: toolResults.filter ? '#28a745' : '#999' }}>
+                {toolResults.filter ? '✓' : '-'}
+              </div>
+            </div>
+            <div style={{
+              padding: '0.75rem',
+              background: toolResults.sellermirror ? '#d4edda' : 'white',
+              borderRadius: '6px',
+              textAlign: 'center',
+              border: `2px solid ${toolResults.sellermirror ? '#28a745' : '#e0e0e0'}`
+            }}>
+              <div style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.25rem' }}>競合調査</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 700, color: toolResults.sellermirror ? '#28a745' : '#999' }}>
+                {toolResults.sellermirror ? '✓' : '-'}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {errorDetails && (
         <div style={{
           background: '#fee',

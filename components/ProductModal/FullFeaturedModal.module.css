@@ -319,7 +319,14 @@
 /* フォーム要素 */
 .formGrid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+/* データグリッド（4カラム） */
+.dataGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
 }
 
@@ -611,12 +618,23 @@
    ======================================== */
 @media (max-width: 1400px) {
     .formGrid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .dataGrid {
+        grid-template-columns: repeat(2, 1fr);
     }
     
     .htmlEditorContainer {
         grid-template-columns: 1fr;
         height: auto;
+    }
+}
+
+@media (max-width: 900px) {
+    .formGrid,
+    .dataGrid {
+        grid-template-columns: 1fr;
     }
 }
 

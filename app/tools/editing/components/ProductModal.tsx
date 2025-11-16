@@ -28,17 +28,41 @@ export function ProductModal({ product, onClose, onSave }: ProductModalProps) {
 
   // 画像データを取得（useMemoでメモ化して無限ループを防止）
   const images = useMemo(() => {
-    // 全画像は scraped_data から取得
-    const imageUrls = product.scraped_data?.image_urls || []
-    return Array.isArray(imageUrls)
-      ? imageUrls.map((url, index) => ({
-          id: `img${index + 1}`,
-          url: url,
-          isMain: index === 0,
-          order: index + 1
-        }))
-      : []
-  }, [product.scraped_data?.image_urls])
+    console.log('🖼️ 画像データ確認:', {
+      gallery_images: product.gallery_images,
+      scraped_data_images: product.scraped_data?.images,
+      images_array: product.images,
+      image_urls: product.image_urls
+    });
+    
+    // 🔥 優先順位: gallery_images > scraped_data.images > images > image_urls
+    let imageData = 
+      product.gallery_images || 
+      product.scraped_data?.images || 
+      product.images || 
+      product.image_urls || 
+      []
+    
+    // 既に配列の場合はそのまま、文字列URLの場合は変換
+    if (!Array.isArray(imageData)) {
+      imageData = []
+    }
+    
+    const processedImages = imageData.map((item, index) => {
+      // 画像データがオブジェクトの場合と文字列の場合の両方に対応
+      const url = typeof item === 'string' ? item : item.url || item.original || item.imageUrl || ''
+      return {
+        id: `img${index + 1}`,
+        url: url,
+        isMain: index === 0,
+        order: index + 1
+      }
+    }).filter(img => img.url) // URLが空のものは除外
+    
+    console.log('✅ 処理後の画像数:', processedImages.length);
+    
+    return processedImages
+  }, [product.gallery_images, product.scraped_data?.images, product.images, product.image_urls])
 
   // 選択された画像は listing_data から復元
   const selectedImages = useMemo(() => {
@@ -55,98 +79,125 @@ export function ProductModal({ product, onClose, onSave }: ProductModalProps) {
 
   // EditingProduct を ModalProduct に変換（useMemoでメモ化）
   const modalProduct: ModalProduct = useMemo(() => ({
-    id: String(product.id), // 文字列に変換
-    asin: product.source_item_id || '',
+    id: String(product.id),
+    asin: product.source_item_id || product.source_id || '',
     sku: product.sku || '',
     master_key: product.master_key,
-    title: product.title,
-    english_title: product.english_title, // 英語タイトル追加
-    description: product.listing_data?.html_description || '',
-    price: product.listing_data?.ddp_price_usd || product.price_usd || 0,
-    price_jpy: product.price_jpy, // JPY価格追加
-    price_usd: product.price_usd, // USD価格追加
-    cost: product.price_jpy || 0,
-    profit: product.profit_amount_usd || 0,
+    title: product.title || '',  // 🔥 日本語タイトルをそのまま使用
+    english_title: product.english_title || product.title_en,
+    description: product.description || '',  // 🔥 日本語説明をそのまま使用
+    english_description: product.english_description || product.description_en,
+    
+    // 💰 価格情報（複数ソース対応）
+    price: product.listing_data?.ddp_price_usd || product.price_usd || product.listing_price || product.current_price || 0,
+    price_jpy: product.price_jpy || product.purchase_price_jpy || product.current_price,
+    price_usd: product.price_usd || product.recommended_price_usd,
+    cost: product.price_jpy || product.purchase_price_jpy || product.cost_price || 0,
+    profit: product.profit_amount_usd || product.profit_amount || 0,
+    
     images,
     selectedImages,
+    
+    // 📋 カテゴリ情報（複数ソース対応）
     category: {
-      id: product.ebay_api_data?.category_id || '',
-      name: product.ebay_api_data?.category_name || '',
-      path: product.ebay_api_data?.category_name ? [product.ebay_api_data.category_name] : [],
-      confidence: 1
+      id: product.ebay_api_data?.category_id || product.ebay_category_id || product.category_id || '',
+      name: product.ebay_api_data?.category_name || product.category_name || product.category || '',
+      path: product.ebay_category_path ? [product.ebay_category_path] : 
+            (product.category_name ? [product.category_name] : []),
+      confidence: product.category_confidence || 1
     },
+    
+    // 📦 在庫情報
     stock: {
-      available: product.current_stock || 0,
+      available: product.current_stock || product.inventory_quantity || 0,
       reserved: 0,
-      location: ''
+      location: product.inventory_location || ''
     },
+    
+    // 🏪 マーケットプレイス情報
     marketplace: {
       id: 'ebay',
       name: 'eBay',
-      status: product.status === 'ready' ? 'ready' : 'draft'
+      status: product.status === 'ready' || product.workflow_status === 'ready_to_list' ? 'ready' : 'draft'
     },
-    listing_data: {
-      ...product.listing_data,
-      // EU責任者情報を明示的に含める
-      eu_responsible_company_name: product.eu_responsible_company_name,
-      eu_responsible_address_line1: product.eu_responsible_address_line1,
-      eu_responsible_address_line2: product.eu_responsible_address_line2,
-      eu_responsible_city: product.eu_responsible_city,
-      eu_responsible_state_or_province: product.eu_responsible_state_or_province,
-      eu_responsible_postal_code: product.eu_responsible_postal_code,
-      eu_responsible_country: product.eu_responsible_country,
-      eu_responsible_email: product.eu_responsible_email,
-      eu_responsible_phone: product.eu_responsible_phone,
-      eu_responsible_contact_url: product.eu_responsible_contact_url,
-    },
-    ebay_api_data: product.ebay_api_data, // ebay_api_dataをそのまま渡す
-    scraped_data: product.scraped_data, // scraped_dataをそのまま渡す
-    sm_lowest_price: product.sm_lowest_price, // SellerMirror最低価格
-    sm_average_price: product.sm_average_price, // SellerMirror平均価格
-    sm_competitor_count: product.sm_competitor_count, // SellerMirror競合数
-    sm_profit_margin: product.sm_profit_margin, // SellerMirror利益率
-    sm_profit_amount_usd: product.sm_profit_amount_usd, // SellerMirror利益額
-    profit_margin: product.profit_margin, // 利益率
-    profit_amount_usd: product.profit_amount_usd, // 利益額
-    source_item_id: product.source_item_id, // source_item_id
+    
+    // 📝 出品データ
+    listing_data: product.listing_data,
+    
+    // 📦 各種API/データ
+    ebay_api_data: product.ebay_api_data,
+    scraped_data: product.scraped_data,
+    
+    // 📊 SellerMirror分析結果
+    sm_lowest_price: product.sm_lowest_price || product.competitors_lowest_price,
+    sm_average_price: product.sm_average_price || product.competitors_average_price,
+    sm_competitor_count: product.sm_competitor_count || product.competitors_count,
+    sm_profit_margin: product.sm_profit_margin,
+    sm_profit_amount_usd: product.sm_profit_amount_usd,
+    
+    // 📈 利益情報
+    profit_margin: product.profit_margin || product.profit_margin_percent,
+    profit_amount_usd: product.profit_amount_usd || product.profit_amount,
+    profit_margin_percent: product.profit_margin_percent, // 🔥 追加
+    
+    // 🧾 関税情報
+    hts_code: product.hts_code,
+    origin_country: product.origin_country,
+    material: product.material,
+    tariff_rate: product.tariff_rate || product.hts_duty_rate,
+    total_tariff_rate: product.total_tariff_rate,
+    origin_country_duty_rate: product.origin_country_duty_rate,
+    material_duty_rate: product.material_duty_rate,
+    section232_rate: product.section232_rate,
+    section301_rate: product.section301_rate,
+    customs_value_usd: product.listing_data?.customs_value_usd,
+    hts_description: product.hts_description,
+    
+    // 📦 状態情報
+    condition: product.listing_data?.condition || product.condition || product.condition_name,
+    condition_id: product.listing_data?.condition_id,
+    condition_en: product.listing_data?.condition_en || product.english_condition,
+    
+    // 🔗 その他
+    source_item_id: product.source_item_id || product.source_id,
     createdAt: product.created_at || new Date().toISOString(),
     updatedAt: product.updated_at || new Date().toISOString()
   } as any), [
     product.id,
     product.source_item_id,
+    product.source_id,
     product.sku,
     product.master_key,
     product.title,
     product.english_title,
+    product.title_en,
     product.listing_data,
     product.price_usd,
     product.price_jpy,
+    product.current_price,
+    product.listing_price,
     product.profit_amount_usd,
+    product.profit_amount,
     product.ebay_api_data,
     product.scraped_data,
+    product.category,
+    product.category_name,
     product.sm_lowest_price,
     product.sm_average_price,
     product.sm_competitor_count,
     product.sm_profit_margin,
     product.sm_profit_amount_usd,
     product.profit_margin,
+    product.profit_margin_percent,
     product.status,
+    product.workflow_status,
     product.current_stock,
+    product.inventory_quantity,
     product.created_at,
     product.updated_at,
-    product.eu_responsible_company_name,
-    product.eu_responsible_address_line1,
-    product.eu_responsible_address_line2,
-    product.eu_responsible_city,
-    product.eu_responsible_state_or_province,
-    product.eu_responsible_postal_code,
-    product.eu_responsible_country,
-    product.eu_responsible_email,
-    product.eu_responsible_phone,
-    product.eu_responsible_contact_url,
     images,
     selectedImages
-  ]) // 型エラー回避のためas any
+  ])
 
   return (
     <FullFeaturedModal

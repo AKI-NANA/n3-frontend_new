@@ -25,10 +25,11 @@ import {
   Search,
   Plus,
   Trash2,
-  PlayCircle
+  PlayCircle,
+  XCircle
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { SmartScheduleGenerator, saveSchedulesToDatabase, type ScheduleSettings, type MarketplaceSettings } from '@/lib/smart-scheduler'
+import { SmartScheduleGeneratorV2, saveSchedulesToDatabaseV2, type ScheduleSettings, type MarketplaceSettings } from '@/lib/smart-scheduler-v2'
 
 const ITEMS_PER_PAGE = 100
 
@@ -96,7 +97,6 @@ const DEFAULT_MARKETPLACE_SETTINGS: MarketplaceSettings[] = [
 ]
 
 export default function ListingManagementPage() {
-  const [readyProducts, setReadyProducts] = useState<any[]>([])
   const [schedules, setSchedules] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
@@ -113,6 +113,8 @@ export default function ListingManagementPage() {
     maxPrice: 100000,
     priority: 'all',
     marketplace: 'all',
+    account: 'all',
+    status: 'all',
     search: '',
     scheduledDateFrom: '',
     scheduledDateTo: ''
@@ -126,7 +128,13 @@ export default function ListingManagementPage() {
       weeklyMax: 200,
       monthlyMax: 500
     },
-    marketplaceAccounts: DEFAULT_MARKETPLACE_SETTINGS
+    marketplaceAccounts: DEFAULT_MARKETPLACE_SETTINGS,
+    categoryDistribution: {
+      enabled: true,
+      lookbackDays: 7,
+      minCategoriesPerDay: 1,
+      categoryBalanceWeight: 0.3
+    }
   })
 
   const supabase = createClient()
@@ -140,122 +148,176 @@ export default function ListingManagementPage() {
       setLoading(true)
       setError(null)
       
+      // listing_scheduleテーブルから出品スケジュールを取得
       let query = supabase
-        .from('yahoo_scraped_products')
-        .select('*', { count: 'exact' })
-        .eq('status', 'ready_to_list')
+        .from('listing_schedule')
+        .select(`
+          *,
+          products_master (
+            id,
+            sku,
+            title,
+            title_en,
+            current_price,
+            listing_price,
+            ai_confidence_score,
+            listing_priority,
+            category_name,
+            primary_image_url
+          )
+        `, { count: 'exact' })
 
-      if (filters.minScore > 0) query = query.gte('ai_confidence_score', filters.minScore)
-      if (filters.maxScore < 100) query = query.lte('ai_confidence_score', filters.maxScore)
-      if (filters.minPrice > 0) query = query.gte('price_jpy', filters.minPrice)
-      if (filters.maxPrice < 100000) query = query.lte('price_jpy', filters.maxPrice)
-      if (filters.priority !== 'all') query = query.eq('listing_priority', filters.priority)
-      if (filters.search) query = query.ilike('title', `%${filters.search}%`)
-      if (filters.scheduledDateFrom) query = query.gte('scheduled_listing_date', filters.scheduledDateFrom)
-      if (filters.scheduledDateTo) query = query.lte('scheduled_listing_date', filters.scheduledDateTo)
+      // フィルター適用
+      if (filters.marketplace !== 'all') {
+        query = query.eq('marketplace', filters.marketplace)
+      }
+      
+      if (filters.account !== 'all') {
+        query = query.eq('account_id', filters.account)
+      }
+      
+      if (filters.status !== 'all') {
+        query = query.eq('status', filters.status)
+      }
+      
+      if (filters.scheduledDateFrom) {
+        query = query.gte('scheduled_at', filters.scheduledDateFrom)
+      }
+      
+      if (filters.scheduledDateTo) {
+        const endDate = new Date(filters.scheduledDateTo)
+        endDate.setHours(23, 59, 59, 999)
+        query = query.lte('scheduled_at', endDate.toISOString())
+      }
       
       const from = (currentPage - 1) * ITEMS_PER_PAGE
       const to = from + ITEMS_PER_PAGE - 1
       
-      const { data: products, error: productsError, count } = await query
-        .order('scheduled_listing_date', { ascending: true, nullsFirst: false })
-        .order('ai_confidence_score', { ascending: false, nullsFirst: false })
+      const { data: schedulesData, error: schedulesError, count } = await query
+        .order('scheduled_at', { ascending: true })
         .range(from, to)
 
-      if (productsError) {
-        setError(`商品取得エラー: ${productsError.message}`)
-      } else {
-        setReadyProducts(products || [])
-        setTotalCount(count || 0)
-      }
-      
-      const { data: schedulesData, error: schedulesError } = await supabase
-        .from('listing_schedules')
-        .select('*')
-        .gte('date', new Date().toISOString().split('T')[0])
-        .order('scheduled_time', { ascending: true })
-
       if (schedulesError) {
-        console.error('スケジュール取得エラー:', schedulesError)
+        setError(`スケジュール取得エラー: ${schedulesError.message}`)
+        console.error('Supabase error:', schedulesError)
       } else {
         setSchedules(schedulesData || [])
+        setTotalCount(count || 0)
       }
       
     } catch (error: any) {
       setError(`データ取得エラー: ${error.message}`)
+      console.error('Load data error:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  async function generateSchedule() {
-    if (totalCount === 0) {
-      alert('出品待ち商品がありません')
+  // 即時実行機能
+  async function executeImmediately(scheduleIds: string[]) {
+    if (scheduleIds.length === 0) {
+      alert('スケジュールを選択してください')
       return
     }
     
-    if (!confirm(`${totalCount}件の商品でスケジュールを生成しますか?\n既存のスケジュールは削除されます。`)) {
+    if (!confirm(`${scheduleIds.length}件のスケジュールを今すぐ実行しますか？`)) {
       return
     }
     
     try {
-      setGenerating(true)
-      setError(null)
-      
-      const { data: allProducts } = await supabase
-        .from('yahoo_scraped_products')
-        .select('*')
-        .eq('status', 'ready_to_list')
-        .order('ai_confidence_score', { ascending: false, nullsFirst: false })
-      
-      if (!allProducts || allProducts.length === 0) {
-        alert('商品が見つかりません')
+      const { error } = await supabase
+        .from('listing_schedule')
+        .update({
+          scheduled_at: new Date().toISOString(),
+          status: 'PENDING',
+          priority: 999,
+          updated_at: new Date().toISOString()
+        })
+        .in('id', scheduleIds)
+
+      if (error) {
+        alert(`エラー: ${error.message}`)
         return
       }
-      
-      const generator = new SmartScheduleGenerator(settings)
-      const startDate = new Date()
-      const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 2, 0)
-      
-      const sessions = generator.generateMonthlySchedule(allProducts, startDate, endDate)
-      
-      await saveSchedulesToDatabase(sessions, supabase)
-      
-      alert(`✅ スケジュールを生成しました！\n・セッション数: ${sessions.length}\n・商品数: ${allProducts.length}`)
-      
+
+      alert(`✅ ${scheduleIds.length}件のスケジュールを即時実行に設定しました`)
       await loadData()
       
     } catch (error: any) {
-      setError(`スケジュール生成エラー: ${error.message}`)
-      alert(`スケジュール生成に失敗しました: ${error.message}`)
-    } finally {
-      setGenerating(false)
+      alert(`エラー: ${error.message}`)
     }
   }
 
-  async function listNow(date: string, marketplace: string, account: string) {
-    if (!confirm(`${date}の${marketplace} (${account})の商品を今すぐ出品しますか？`)) {
+  // スケジュールキャンセル
+  async function cancelSchedules(scheduleIds: string[]) {
+    if (scheduleIds.length === 0) {
+      alert('スケジュールを選択してください')
+      return
+    }
+    
+    if (!confirm(`${scheduleIds.length}件のスケジュールをキャンセルしますか？`)) {
       return
     }
     
     try {
-      const response = await fetch('/api/listing/now', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date, marketplace, account })
-      })
-      
-      const result = await response.json()
-      
-      if (response.ok) {
-        alert(`✅ 出品完了\n成功: ${result.success}件\n失敗: ${result.failed}件`)
-        await loadData()
-      } else {
-        alert(`❌ 出品失敗: ${result.error}`)
+      const { error } = await supabase
+        .from('listing_schedule')
+        .update({
+          status: 'CANCELLED',
+          updated_at: new Date().toISOString()
+        })
+        .in('id', scheduleIds)
+
+      if (error) {
+        alert(`エラー: ${error.message}`)
+        return
       }
+
+      alert(`✅ ${scheduleIds.length}件のスケジュールをキャンセルしました`)
+      await loadData()
+      
     } catch (error: any) {
-      alert(`❌ エラー: ${error.message}`)
+      alert(`エラー: ${error.message}`)
     }
+  }
+
+  // スケジュール削除
+  async function deleteSchedules(scheduleIds: string[]) {
+    if (scheduleIds.length === 0) {
+      alert('スケジュールを選択してください')
+      return
+    }
+    
+    if (!confirm(`${scheduleIds.length}件のスケジュールを完全に削除しますか？この操作は取り消せません。`)) {
+      return
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('listing_schedule')
+        .delete()
+        .in('id', scheduleIds)
+
+      if (error) {
+        alert(`エラー: ${error.message}`)
+        return
+      }
+
+      alert(`✅ ${scheduleIds.length}件のスケジュールを削除しました`)
+      await loadData()
+      
+    } catch (error: any) {
+      alert(`エラー: ${error.message}`)
+    }
+  }
+
+  async function generateSchedule() {
+    if (totalCount === 0) {
+      alert('出品スケジュールがありません。\n承認ページで商品を承認してください。')
+      return
+    }
+    
+    alert('この機能は承認ページの出品戦略コントロールに統合されました。\n承認ページで商品を承認する際にスケジュールが自動的に作成されます。')
   }
 
   const addMarketplace = () => {
@@ -291,22 +353,26 @@ export default function ListingManagementPage() {
   }
 
   const stats = {
-    ready: totalCount,
-    avgScore: readyProducts.length > 0 
-      ? Math.round(readyProducts.reduce((sum, p) => sum + (p.ai_confidence_score || 0), 0) / readyProducts.length)
+    total: totalCount,
+    pending: schedules.filter(s => s.status === 'PENDING' || s.status === 'SCHEDULED').length,
+    completed: schedules.filter(s => s.status === 'COMPLETED').length,
+    error: schedules.filter(s => s.status === 'ERROR').length,
+    cancelled: schedules.filter(s => s.status === 'CANCELLED').length,
+    avgScore: schedules.length > 0 
+      ? Math.round(schedules.reduce((sum, s) => sum + (s.products_master?.ai_confidence_score || 0), 0) / schedules.length)
       : 0,
-    highScore: readyProducts.filter(p => (p.ai_confidence_score || 0) >= 80).length,
-    mediumScore: readyProducts.filter(p => (p.ai_confidence_score || 0) >= 50 && (p.ai_confidence_score || 0) < 80).length,
-    lowScore: readyProducts.filter(p => (p.ai_confidence_score || 0) < 50).length,
-    scheduledSessions: schedules.length,
-    scheduledProducts: schedules.reduce((sum, s) => sum + (s.planned_count || 0), 0)
   }
+
+  // マーケットプレイス・アカウントの一覧を取得
+  const uniqueMarketplaces = [...new Set(schedules.map(s => s.marketplace))].filter(Boolean)
+  const uniqueAccounts = [...new Set(schedules.map(s => s.account_id))].filter(Boolean)
 
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE)
   const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))
   const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))
   const monthName = currentMonth.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' })
 
+  // カレンダー生成（スケジュールデータを使用）
   const generateCalendarGrid = () => {
     const year = currentMonth.getFullYear()
     const month = currentMonth.getMonth()
@@ -321,7 +387,7 @@ export default function ListingManagementPage() {
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, month, day)
       const dateStr = date.toISOString().split('T')[0]
-      const daySessions = schedules.filter(s => s.date === dateStr)
+      const daySessions = schedules.filter(s => s.scheduled_at?.startsWith(dateStr))
       calendarDays.push({ date, sessions: daySessions })
     }
     return calendarDays
@@ -329,16 +395,36 @@ export default function ListingManagementPage() {
 
   const calendarDays = generateCalendarGrid()
   const weekDays = ['日', '月', '火', '水', '木', '金', '土']
-  const upcomingSchedule = schedules.filter(s => new Date(s.scheduled_time) >= new Date())
+  const upcomingSchedule = schedules.filter(s => new Date(s.scheduled_at) >= new Date() && (s.status === 'PENDING' || s.status === 'SCHEDULED'))
 
   const marketplaceStats = settings.marketplaceAccounts.filter(ma => ma.enabled).map(ma => {
-    const sessions = schedules.filter(s => s.marketplace === ma.marketplace && s.account === ma.account)
+    const sessions = schedules.filter(s => s.marketplace === ma.marketplace && s.account_id === ma.account)
     return {
       ...ma,
       sessions: sessions.length,
-      products: sessions.reduce((sum, s) => sum + (s.planned_count || 0), 0)
+      products: sessions.length
     }
   })
+
+  // ステータス表示用のバッジ
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'PENDING':
+        return <Badge className="bg-yellow-500">待機中</Badge>
+      case 'SCHEDULED':
+        return <Badge className="bg-blue-500">予約済み</Badge>
+      case 'RUNNING':
+        return <Badge className="bg-orange-500">実行中</Badge>
+      case 'COMPLETED':
+        return <Badge className="bg-green-500">完了</Badge>
+      case 'ERROR':
+        return <Badge className="bg-red-500">エラー</Badge>
+      case 'CANCELLED':
+        return <Badge className="bg-gray-500">キャンセル</Badge>
+      default:
+        return <Badge variant="outline">{status}</Badge>
+    }
+  }
 
   if (loading && currentPage === 1) {
     return <div className="flex items-center justify-center min-h-screen"><Loader2 className="w-8 h-8 animate-spin" /></div>
@@ -353,7 +439,7 @@ export default function ListingManagementPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={loadData} disabled={loading}><Clock className="mr-2 h-4 w-4" />更新</Button>
-          <Button onClick={generateSchedule} disabled={generating || totalCount === 0} className="bg-purple-600 hover:bg-purple-700">
+          <Button onClick={generateSchedule} disabled={generating} className="bg-purple-600 hover:bg-purple-700">
             {generating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />生成中...</> : <><RefreshCw className="mr-2 h-4 w-4" />スケジュール生成</>}
           </Button>
         </div>
@@ -377,15 +463,15 @@ export default function ListingManagementPage() {
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">出品待ち商品</CardTitle></CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-blue-600">{stats.ready.toLocaleString()}</div>
+            <div className="text-3xl font-bold text-blue-600">{stats.pending.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground mt-1">全{totalCount.toLocaleString()}件中</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">スケジュール済み</CardTitle></CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-600">{stats.scheduledProducts.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground mt-1">{stats.scheduledSessions}セッション</p>
+            <div className="text-3xl font-bold text-green-600">{stats.total.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground mt-1">{stats.completed}件完了</p>
           </CardContent>
         </Card>
         <Card>
@@ -400,13 +486,10 @@ export default function ListingManagementPage() {
           <CardContent>
             <div className="space-y-1">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-green-600">高 (80+)</span><span className="font-bold">{stats.highScore}</span>
+                <span className="text-green-600">エラー</span><span className="font-bold">{stats.error}</span>
               </div>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-yellow-600">中 (50-79)</span><span className="font-bold">{stats.mediumScore}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-red-600">低 (0-49)</span><span className="font-bold">{stats.lowScore}</span>
+                <span className="text-yellow-600">キャンセル</span><span className="font-bold">{stats.cancelled}</span>
               </div>
             </div>
           </CardContent>
@@ -417,10 +500,10 @@ export default function ListingManagementPage() {
             {upcomingSchedule.length > 0 ? (
               <>
                 <div className="text-2xl font-bold text-orange-600">
-                  {new Date(upcomingSchedule[0].scheduled_time).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })}
+                  {new Date(upcomingSchedule[0].scheduled_at).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {new Date(upcomingSchedule[0].scheduled_time).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })} - {upcomingSchedule[0].planned_count}件
+                  {new Date(upcomingSchedule[0].scheduled_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })} - {upcomingSchedule[0].marketplace}
                 </p>
               </>
             ) : (
@@ -435,6 +518,7 @@ export default function ListingManagementPage() {
           <TabsTrigger value="calendar"><CalendarIcon className="mr-2 h-4 w-4" />カレンダー</TabsTrigger>
           <TabsTrigger value="products"><Filter className="mr-2 h-4 w-4" />商品一覧 ({totalCount.toLocaleString()})</TabsTrigger>
           <TabsTrigger value="settings"><Settings className="mr-2 h-4 w-4" />モール別設定</TabsTrigger>
+          <TabsTrigger value="category"><Zap className="mr-2 h-4 w-4" />カテゴリ分散</TabsTrigger>
         </TabsList>
 
         <TabsContent value="calendar" className="space-y-4">
@@ -475,44 +559,30 @@ export default function ListingManagementPage() {
                   if (!day) return <div key={`empty-${idx}`} className="aspect-square" />
                   const { date, sessions } = day
                   const isToday = date.toDateString() === new Date().toDateString()
-                  const totalItems = sessions.reduce((sum, s) => sum + (s.planned_count || 0), 0)
-                  const avgScore = sessions.length > 0 ? Math.round(sessions.reduce((sum, s) => sum + (s.avg_ai_score || 0), 0) / sessions.length) : 0
-                  const status = sessions[0]?.status
-                  const dateStr = date.toISOString().split('T')[0]
+                  const totalItems = sessions.length
+                  const avgScore = sessions.length > 0 ? Math.round(sessions.reduce((sum, s) => sum + (s.products_master?.ai_confidence_score || 0), 0) / sessions.length) : 0
+                  const hasCompleted = sessions.some(s => s.status === 'COMPLETED')
+                  const hasPending = sessions.some(s => s.status === 'PENDING' || s.status === 'SCHEDULED')
                   
                   return (
                     <Card key={date.toISOString()} className={`aspect-square p-2 ${isToday ? 'ring-2 ring-primary' : ''} ${totalItems === 0 ? 'opacity-50' : ''}`}>
                       <div className="h-full flex flex-col">
                         <div className="flex items-center justify-between mb-1">
                           <span className={`text-sm font-bold ${isToday ? 'text-primary' : ''}`}>{date.getDate()}</span>
-                          {status === 'completed' && <CheckCircle2 className="w-3 h-3 text-green-500" />}
-                          {status === 'in_progress' && <Clock className="w-3 h-3 text-orange-500" />}
+                          {hasCompleted && <CheckCircle2 className="w-3 h-3 text-green-500" />}
+                          {hasPending && <Clock className="w-3 h-3 text-orange-500" />}
                         </div>
                         {totalItems > 0 && (
                           <div className="space-y-1 text-xs flex-1">
                             <div className="font-semibold text-blue-600">{totalItems}件</div>
                             {avgScore > 0 && <div className={`text-[10px] ${avgScore >= 80 ? 'text-green-600' : avgScore >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>スコア: {avgScore}</div>}
-                            {sessions.slice(0, 1).map((session, i) => (
+                            {sessions.slice(0, 2).map((session, i) => (
                               <div key={i} className="text-[10px] text-muted-foreground truncate">
-                                {new Date(session.scheduled_time).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })} {session.marketplace}
+                                {new Date(session.scheduled_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })} {session.marketplace}
                               </div>
                             ))}
-                            {sessions.length > 1 && <div className="text-[10px] text-muted-foreground">+{sessions.length - 1}件</div>}
+                            {sessions.length > 2 && <div className="text-[10px] text-muted-foreground">+{sessions.length - 2}件</div>}
                           </div>
-                        )}
-                        {totalItems > 0 && status === 'pending' && (
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="h-6 text-[10px] mt-auto"
-                            onClick={() => {
-                              const session = sessions[0]
-                              listNow(dateStr, session.marketplace, session.account)
-                            }}
-                          >
-                            <PlayCircle className="w-3 h-3 mr-1" />
-                            今すぐ出品
-                          </Button>
                         )}
                       </div>
                     </Card>
@@ -527,32 +597,50 @@ export default function ListingManagementPage() {
           <Card>
             <CardHeader><CardTitle className="flex items-center gap-2"><Filter className="h-5 w-5" />フィルター</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-5 gap-4">
+              <div className="grid grid-cols-6 gap-4">
                 <div className="space-y-2">
                   <Label>検索</Label>
                   <div className="relative">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="商品名" className="pl-8" value={filters.search} onChange={(e) => setFilters({...filters, search: e.target.value})} />
+                    <Input placeholder="商品名・SKU" className="pl-8" value={filters.search} onChange={(e) => setFilters({...filters, search: e.target.value})} />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>優先度</Label>
-                  <Select value={filters.priority} onValueChange={(v) => setFilters({...filters, priority: v})}>
+                  <Label>マーケットプレイス</Label>
+                  <Select value={filters.marketplace} onValueChange={(v) => setFilters({...filters, marketplace: v})}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">すべて</SelectItem>
-                      <SelectItem value="high">高</SelectItem>
-                      <SelectItem value="medium">中</SelectItem>
-                      <SelectItem value="low">低</SelectItem>
+                      {uniqueMarketplaces.map(mp => (
+                        <SelectItem key={mp} value={mp}>{mp}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>AIスコア</Label>
-                  <div className="flex gap-2">
-                    <Input type="number" placeholder="最小" value={filters.minScore} onChange={(e) => setFilters({...filters, minScore: parseInt(e.target.value) || 0})} />
-                    <Input type="number" placeholder="最大" value={filters.maxScore} onChange={(e) => setFilters({...filters, maxScore: parseInt(e.target.value) || 100})} />
-                  </div>
+                  <Label>アカウント</Label>
+                  <Select value={filters.account} onValueChange={(v) => setFilters({...filters, account: v})}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">すべて</SelectItem>
+                      {uniqueAccounts.map(acc => (
+                        <SelectItem key={acc} value={acc}>{acc}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>ステータス</Label>
+                  <Select value={filters.status} onValueChange={(v) => setFilters({...filters, status: v})}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">すべて</SelectItem>
+                      <SelectItem value="PENDING">待機中</SelectItem>
+                      <SelectItem value="SCHEDULED">予約済み</SelectItem>
+                      <SelectItem value="COMPLETED">完了</SelectItem>
+                      <SelectItem value="ERROR">エラー</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>出品予定日（開始）</Label>
@@ -564,7 +652,7 @@ export default function ListingManagementPage() {
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setFilters({ minScore: 0, maxScore: 100, minPrice: 0, maxPrice: 100000, priority: 'all', marketplace: 'all', search: '', scheduledDateFrom: '', scheduledDateTo: '' })}>リセット</Button>
+                <Button variant="outline" size="sm" onClick={() => setFilters({ minScore: 0, maxScore: 100, minPrice: 0, maxPrice: 100000, priority: 'all', marketplace: 'all', account: 'all', status: 'all', search: '', scheduledDateFrom: '', scheduledDateTo: '' })}>リセット</Button>
                 <Button size="sm" onClick={() => { setCurrentPage(1); loadData(); }}>適用</Button>
               </div>
             </CardContent>
@@ -583,129 +671,137 @@ export default function ListingManagementPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {readyProducts.map(product => (
-                  <div key={product.id} className="flex items-center gap-4 p-3 border rounded-lg hover:bg-accent">
-                    <div className="flex-1">
-                      <h4 className="font-medium line-clamp-1">{product.title}</h4>
-                      <p className="text-sm text-muted-foreground">SKU: {product.sku}</p>
-                    </div>
-                    {product.scheduled_listing_date && (
+                {schedules.map(schedule => {
+                  const product = schedule.products_master
+                  
+                  return (
+                    <div key={schedule.id} className="flex items-center gap-4 p-3 border rounded-lg hover:bg-accent">
+                      <div className="flex-1">
+                        <h4 className="font-medium line-clamp-1">{product?.title_en || product?.title || 'タイトルなし'}</h4>
+                        <p className="text-sm text-muted-foreground">SKU: {product?.sku || 'N/A'}</p>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <Badge variant="outline">{schedule.marketplace}</Badge>
+                        <Badge variant="secondary" className="text-xs">{schedule.account_id}</Badge>
+                      </div>
                       <div className="text-sm">
                         <div className="font-medium text-orange-600">
-                          {new Date(product.scheduled_listing_date).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })}
+                          {new Date(schedule.scheduled_at).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {new Date(product.scheduled_listing_date).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(schedule.scheduled_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>
-                    )}
-                    <Badge className={`${(product.ai_confidence_score || 0) >= 80 ? 'bg-green-500' : (product.ai_confidence_score || 0) >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}>
-                      {product.ai_confidence_score || 0}
-                    </Badge>
-                    <Badge variant="outline">{product.listing_priority || 'medium'}</Badge>
-                    <div className="text-right">
-                      <div className="text-sm font-medium">¥{product.price_jpy?.toLocaleString() || '---'}</div>
-                      <div className="text-xs text-muted-foreground">${product.price_usd?.toFixed(2) || '---'}</div>
+                      {getStatusBadge(schedule.status)}
+                      {product?.ai_confidence_score !== undefined && (
+                        <Badge className={`${product.ai_confidence_score >= 80 ? 'bg-green-500' : product.ai_confidence_score >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}>
+                          {product.ai_confidence_score}
+                        </Badge>
+                      )}
+                      <div className="flex gap-2">
+                        {(schedule.status === 'PENDING' || schedule.status === 'SCHEDULED') && (
+                          <Button size="sm" variant="default" onClick={() => executeImmediately([schedule.id])}>
+                            <PlayCircle className="w-4 h-4 mr-1" />即時実行
+                          </Button>
+                        )}
+                        {schedule.status !== 'COMPLETED' && schedule.status !== 'CANCELLED' && (
+                          <Button size="sm" variant="outline" onClick={() => cancelSchedules([schedule.id])}>
+                            <XCircle className="w-4 h-4 mr-1" />キャンセル
+                          </Button>
+                        )}
+                        {(schedule.status === 'CANCELLED' || schedule.status === 'ERROR') && (
+                          <Button size="sm" variant="destructive" onClick={() => deleteSchedules([schedule.id])}>
+                            <Trash2 className="w-4 h-4 mr-1" />削除
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
+              
+              {schedules.length === 0 && !loading && (
+                <div className="text-center py-12 text-muted-foreground">
+                  <p>スケジュールがありません</p>
+                  <p className="text-sm mt-2">承認ページで商品を承認してスケジュールを作成してください</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
+          <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <CardTitle>モール・アカウント設定</CardTitle>
-                  <CardDescription>各モールごとにランダム化設定を個別に管理</CardDescription>
+                  <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">出品戦略は承認ページで設定</h4>
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                    マーケットプレイス・アカウント設定は承認ページの「承認・出品予約」ボタンから行います。
+                    商品ごとに異なる出品戦略を設定できます。
+                  </p>
                 </div>
-                <Button onClick={addMarketplace} size="sm"><Plus className="mr-2 h-4 w-4" />追加</Button>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {settings.marketplaceAccounts.map((ma, idx) => (
-                <Card key={idx} className="p-4">
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-5 gap-4">
-                      <div className="space-y-1">
-                        <Label className="text-xs">モール</Label>
-                        <Input placeholder="ebay" value={ma.marketplace} onChange={(e) => updateMarketplace(idx, { marketplace: e.target.value })} />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">アカウント</Label>
-                        <Input placeholder="account1" value={ma.account} onChange={(e) => updateMarketplace(idx, { account: e.target.value })} />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">1日上限</Label>
-                        <Input type="number" value={ma.dailyLimit} onChange={(e) => updateMarketplace(idx, { dailyLimit: parseInt(e.target.value) || 0 })} />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">ランダム化</Label>
-                        <div className="flex items-center h-10">
-                          <Switch checked={ma.randomization.enabled} onCheckedChange={(checked) => updateMarketplace(idx, { randomization: { ...ma.randomization, enabled: checked } })} />
-                          <span className="ml-2 text-xs">{ma.randomization.enabled ? 'ON' : 'OFF'}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-end gap-2">
-                        <Switch checked={ma.enabled} onCheckedChange={(checked) => updateMarketplace(idx, { enabled: checked })} />
-                        <Button variant="destructive" size="sm" onClick={() => removeMarketplace(idx)}><Trash2 className="h-4 w-4" /></Button>
-                      </div>
-                    </div>
-                    
-                    {ma.randomization.enabled && (
-                      <div className="grid grid-cols-3 gap-4 pl-4 border-l-2">
-                        <div className="space-y-2">
-                          <Label className="text-xs">セッション回数/日</Label>
-                          <div className="flex gap-2">
-                            <Input type="number" placeholder="最小" value={ma.randomization.sessionsPerDay.min} onChange={(e) => updateMarketplace(idx, { randomization: { ...ma.randomization, sessionsPerDay: { ...ma.randomization.sessionsPerDay, min: parseInt(e.target.value) || 1 } } })} />
-                            <Input type="number" placeholder="最大" value={ma.randomization.sessionsPerDay.max} onChange={(e) => updateMarketplace(idx, { randomization: { ...ma.randomization, sessionsPerDay: { ...ma.randomization.sessionsPerDay, max: parseInt(e.target.value) || 1 } } })} />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-xs">時刻ランダム幅（分）</Label>
-                          <Input type="number" value={ma.randomization.timeRandomization.range} onChange={(e) => updateMarketplace(idx, { randomization: { ...ma.randomization, timeRandomization: { ...ma.randomization.timeRandomization, range: parseInt(e.target.value) || 0 } } })} />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-xs">商品間間隔（秒）</Label>
-                          <div className="flex gap-2">
-                            <Input type="number" placeholder="最小" value={ma.randomization.itemInterval.min} onChange={(e) => updateMarketplace(idx, { randomization: { ...ma.randomization, itemInterval: { ...ma.randomization.itemInterval, min: parseInt(e.target.value) || 1 } } })} />
-                            <Input type="number" placeholder="最大" value={ma.randomization.itemInterval.max} onChange={(e) => updateMarketplace(idx, { randomization: { ...ma.randomization, itemInterval: { ...ma.randomization.itemInterval, max: parseInt(e.target.value) || 1 } } })} />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </Card>
-              ))}
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>全体上限設定</CardTitle>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>モール・アカウント設定（参考表示）</CardTitle>
+                  <CardDescription>実際の設定は承認ページで行います</CardDescription>
+                </div>
+                <Button onClick={addMarketplace} size="sm" disabled><Plus className="mr-2 h-4 w-4" />追加</Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>1日の最小/最大</Label>
-                  <div className="flex gap-2">
-                    <Input type="number" value={settings.limits.dailyMin} onChange={(e) => setSettings({...settings, limits: {...settings.limits, dailyMin: parseInt(e.target.value) || 0}})} />
-                    <Input type="number" value={settings.limits.dailyMax} onChange={(e) => setSettings({...settings, limits: {...settings.limits, dailyMax: parseInt(e.target.value) || 0}})} />
+              {settings.marketplaceAccounts.map((ma, idx) => (
+                <Card key={idx} className="p-4 opacity-60">
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-5 gap-4">
+                      <div className="space-y-1">
+                        <Label className="text-xs">モール</Label>
+                        <Input placeholder="ebay" value={ma.marketplace} disabled />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">アカウント</Label>
+                        <Input placeholder="account1" value={ma.account} disabled />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">1日上限</Label>
+                        <Input type="number" value={ma.dailyLimit} disabled />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">ランダム化</Label>
+                        <div className="flex items-center h-10">
+                          <Switch checked={ma.randomization.enabled} disabled />
+                          <span className="ml-2 text-xs">{ma.randomization.enabled ? 'ON' : 'OFF'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-end gap-2">
+                        <Switch checked={ma.enabled} disabled />
+                        <Button variant="destructive" size="sm" disabled><Trash2 className="h-4 w-4" /></Button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>1週間の最小/最大</Label>
-                  <div className="flex gap-2">
-                    <Input type="number" value={settings.limits.weeklyMin} onChange={(e) => setSettings({...settings, limits: {...settings.limits, weeklyMin: parseInt(e.target.value) || 0}})} />
-                    <Input type="number" value={settings.limits.weeklyMax} onChange={(e) => setSettings({...settings, limits: {...settings.limits, weeklyMax: parseInt(e.target.value) || 0}})} />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>1ヶ月の上限</Label>
-                  <Input type="number" value={settings.limits.monthlyMax} onChange={(e) => setSettings({...settings, limits: {...settings.limits, monthlyMax: parseInt(e.target.value) || 0}})} />
+                </Card>
+              ))}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="category" className="space-y-4">
+          <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">カテゴリ分散設定について</h4>
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                    この機能は将来実装予定です。現在は承認ページの出品戦略コントロールでスケジュール設定を行ってください。
+                  </p>
                 </div>
               </div>
             </CardContent>

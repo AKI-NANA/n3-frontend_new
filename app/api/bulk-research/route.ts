@@ -1,321 +1,207 @@
 // app/api/bulk-research/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 
+/**
+ * 一括リサーチAPI
+ * 選択された商品に対して、カテゴリ、送料、リサーチ、SM分析を一括実行
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { productIds, includeFields } = body
 
-    if (!productIds || !Array.isArray(productIds)) {
+    if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
       return NextResponse.json(
-        { success: false, error: 'productIds配列が必要です' },
+        { success: false, error: '商品IDが必要です' },
         { status: 400 }
       )
     }
-
-    if (productIds.length > 50) {
-      return NextResponse.json(
-        { success: false, error: '一度に処理できる商品は最大50件です' },
-        { status: 400 }
-      )
-    }
-
-    const supabase = await createClient()
-    const results = []
 
     console.log(`🔍 一括リサーチ開始: ${productIds.length}件`)
+    console.log('  productIds:', productIds)
+    console.log('  includeFields:', includeFields)
 
-    // 各商品を処理
-    for (const productId of productIds) {
+    // IDを文字列に統一
+    const validIds = productIds
+      .filter((id: any) => {
+        if (id === null || id === undefined) return false
+        if (typeof id === 'number') return !isNaN(id) && id > 0
+        if (typeof id === 'string') return id.trim().length > 0 && id !== 'null' && id !== 'undefined'
+        return false
+      })
+      .map((id: any) => String(id))
+
+    if (validIds.length === 0) {
+      return NextResponse.json(
+        { success: false, error: '有効な商品IDがありません' },
+        { status: 400 }
+      )
+    }
+
+    console.log('  validIds:', validIds)
+
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const results = []
+
+    // ===== ステップ1: カテゴリ分析（全商品一括） =====
+    if (includeFields?.category) {
+      console.log('\n📂 ステップ1: カテゴリ分析')
       try {
-        console.log(`\n━━━ 商品ID ${productId} 処理開始 ━━━`)
-        
-        const result: any = {
-          productId,
-          success: true,
-          data: {}
-        }
-
-        // 商品データ取得
-        const { data: product, error: fetchError } = await supabase
-          .from('yahoo_scraped_products')
-          .select('*')
-          .eq('id', productId)
-          .single()
-
-        if (fetchError || !product) {
-          console.error(`❌ 商品ID ${productId}: 商品が見つかりません`)
-          result.success = false
-          result.error = '商品が見つかりません'
-          results.push(result)
-          continue
-        }
-
-        console.log(`✅ 商品取得成功: ${product.active_title || product.scraped_title}`)
-
-        // 英語タイトルを取得
-        const englishTitle = product.english_title || product.active_title
-        if (!englishTitle) {
-          console.warn(`⚠️ 商品ID ${productId}: 英語タイトルがありません`)
-        }
-
-        // カテゴリ判定
-        if (includeFields?.category && englishTitle) {
-          console.log(`📋 カテゴリ判定開始...`)
-          result.data.category = await callCategoryDetectAPI(product)
-        }
-
-        // SellerMirror分析（競合分析 + 現在の最安値）
-        if ((includeFields?.competitors || includeFields?.sellerMirror) && englishTitle) {
-          console.log(`🔍 SellerMirror分析開始...`)
-          const smResult = await callSellerMirrorAPI(product)
-          
-          if (smResult) {
-            // 競合分析データ（現在の最安値）
-            result.data.competitors = {
-              lowest_price: smResult.lowestPrice,
-              average_price: smResult.averagePrice,
-              count: smResult.competitorCount,
-              data: {
-                search_keyword: englishTitle,
-                condition: 'New',
-                marketplace: 'eBay US',
-                last_updated: new Date().toISOString()
-              }
-            }
-
-            // SellerMirror分析データも同時に取得
-            result.data.sellerMirror = {
-              lowest_price: smResult.lowestPrice,
-              sold_count_90days: smResult.competitorCount,
-              confidence: 85,
-              data: {
-                search_keyword: englishTitle,
-                similar_items: smResult.competitorCount
-              }
-            }
-          }
-        }
-
-        // 送料計算（簡易版 - 実際の送料APIと連携する場合は修正）
-        if (includeFields?.shipping) {
-          console.log(`📦 送料計算...`)
-          result.data.shipping = calculateShipping(product)
-        }
-
-        // 利益計算
-        if (includeFields?.profit) {
-          console.log(`💰 利益計算...`)
-          result.data.profit = calculateProfit(product, result.data.competitors)
-        }
-
-        // データベース保存
-        console.log(`💾 データ保存中...`)
-        await saveResearchData(supabase, productId, result.data)
-        console.log(`✅ 商品ID ${productId}: 完了`)
-
-        results.push(result)
-
-      } catch (error: any) {
-        console.error(`❌ 商品ID ${productId}: エラー - ${error.message}`)
-        results.push({
-          productId,
-          success: false,
-          error: error.message || '処理エラー'
+        const categoryResponse = await fetch(`${baseUrl}/api/tools/category-analyze`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productIds: validIds })
         })
+
+        if (categoryResponse.ok) {
+          const categoryResult = await categoryResponse.json()
+          console.log(`  ✅ カテゴリ分析完了: ${categoryResult.updated}件`)
+        } else {
+          console.log('  ❌ カテゴリ分析失敗')
+        }
+      } catch (error) {
+        console.error('  ❌ カテゴリ分析エラー:', error)
+      }
+    }
+
+    // ===== ステップ2: 送料計算（全商品一括） =====
+    if (includeFields?.shipping) {
+      console.log('\n📦 ステップ2: 送料計算')
+      try {
+        const shippingResponse = await fetch(`${baseUrl}/api/tools/shipping-calculate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productIds: validIds })
+        })
+
+        if (shippingResponse.ok) {
+          const shippingResult = await shippingResponse.json()
+          console.log(`  ✅ 送料計算完了: ${shippingResult.updated}件`)
+        } else {
+          console.log('  ❌ 送料計算失敗')
+        }
+      } catch (error) {
+        console.error('  ❌ 送料計算エラー:', error)
+      }
+    }
+
+    // ===== ステップ3: リサーチ（販売実績 + 最安値での利益計算）=====
+    if (includeFields?.research) {
+      console.log('\n🔍 ステップ3: リサーチ（販売実績 + 最安値利益計算）')
+      try {
+        const researchResponse = await fetch(`${baseUrl}/api/research`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productIds: validIds })
+        })
+
+        if (researchResponse.ok) {
+          const researchResult = await researchResponse.json()
+          console.log(`  ✅ リサーチ完了: ${researchResult.updated}件`)
+          
+          // 結果を保存
+          researchResult.results?.forEach((r: any) => {
+            results.push({
+              productId: r.id,
+              success: r.success,
+              lowestPrice: r.lowestPrice,
+              profitAmount: r.profitAmount,
+              profitMargin: r.profitMargin,
+              soldCount: r.soldCount
+            })
+          })
+        } else {
+          console.log('  ❌ リサーチ失敗')
+        }
+      } catch (error) {
+        console.error('  ❌ リサーチエラー:', error)
+      }
+    }
+
+    // ===== ステップ4: Browse API分析（各商品ごとに実行）=====
+    if (includeFields?.sellerMirror) {
+      console.log('\n🏷️ ステップ4: Browse API分析（競合価格取得）')
+      
+      // Supabaseクライアントを作成
+      const { createClient } = await import('@supabase/supabase-js')
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      )
+      
+      for (const id of validIds) {
+        try {
+          // 商品データを取得
+          const { data: product } = await supabase
+            .from('products_master')
+            .select('*')
+            .eq('id', id)
+            .single()
+
+          if (!product) {
+            console.log(`  ⚠️ 商品 ${id}: データが見つかりません`)
+            continue
+          }
+
+          // 🔍 デバッグ: タイトルの優先順位を確認
+          console.log(`  🔍 デバッグ (${id}):`, {
+            english_title: product.english_title,
+            title: product.title,
+            sm_title: product.ebay_api_data?.listing_reference?.referenceItems?.[0]?.title
+          })
+
+          // 🔥 重要: SellerMirrorで選択された参照商品のデータを使用
+          const referenceItem = product.ebay_api_data?.listing_reference?.referenceItems?.[0]
+          const searchTitle = referenceItem?.title || product.english_title || product.title
+          const itemSpecifics = referenceItem?.itemSpecifics // 🔥 Item Specificsを取得
+          
+          console.log(`  🔍 検索タイトル: "${searchTitle}"`)
+          console.log(`  📋 Item Specifics:`, itemSpecifics)
+          console.log(`  📝 ソース: ${referenceItem?.title ? 'SM参照商品' : (product.english_title ? 'english_title' : 'title')}`)
+
+          const smResponse = await fetch(`${baseUrl}/api/ebay/browse/search`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              productId: id,
+              ebayTitle: searchTitle, // 🔥 SM参照商品のタイトルを使用
+              itemSpecifics: itemSpecifics, // 🔥 Item Specificsを渡す
+              ebayCategoryId: product.ebay_category_id,
+              weightG: product.listing_data?.weight_g || product.weight_g || 500,
+              actualCostJPY: product.price_jpy || product.cost_price || 0
+            })
+          })
+
+          if (smResponse.ok) {
+            const smResult = await smResponse.json()
+            console.log(`  ✅ 商品 ${id}: Browse API完了 (最安値: ${smResult.lowestPrice})`)
+          } else {
+            console.log(`  ❌ 商品 ${id}: Browse API失敗 (${smResponse.status})`)
+          }
+        } catch (error: any) {
+          console.error(`  ❌ 商品 ${id}: エラー:`, error.message)
+        }
       }
     }
 
     const successCount = results.filter(r => r.success).length
-    console.log(`\n🎉 一括リサーチ完了: 成功 ${successCount}/${results.length}`)
+    console.log(`\n✅ 一括リサーチ完了: 成功${successCount}/${validIds.length}件`)
 
     return NextResponse.json({
       success: true,
       results,
-      processed: results.length,
-      successCount,
-      timestamp: new Date().toISOString()
+      summary: {
+        total: validIds.length,
+        successful: successCount,
+        failed: validIds.length - successCount
+      }
     })
 
   } catch (error: any) {
-    console.error('❌ Bulk research API error:', error)
+    console.error('❌ 一括リサーチエラー:', error)
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: error.message || '一括リサーチに失敗しました' },
       { status: 500 }
     )
-  }
-}
-
-// カテゴリ判定API呼び出し
-async function callCategoryDetectAPI(product: any) {
-  try {
-    const title = product.english_title || product.active_title || product.scraped_title
-    
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/category/detect`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title,
-        price_jpy: product.active_price || product.scraped_price,
-        description: product.active_description || product.scraped_description
-      })
-    })
-
-    if (!response.ok) {
-      throw new Error(`Category API error: ${response.status}`)
-    }
-
-    const data = await response.json()
-    
-    if (data.success && data.category) {
-      console.log(`  ✅ カテゴリ: ${data.category.category_name} (信頼度: ${data.category.confidence}%)`)
-      return {
-        name: data.category.category_name,
-        id: data.category.category_id,
-        ebay_category_id: data.category.category_id,
-        confidence: data.category.confidence / 100
-      }
-    }
-
-    return null
-  } catch (error: any) {
-    console.error(`  ❌ カテゴリ判定エラー:`, error.message)
-    return null
-  }
-}
-
-// SellerMirror API呼び出し（競合分析 + 現在の最安値を含む）
-// findCompletedItemsのレート制限を回避するため、findItemsAdvancedを使用
-async function callSellerMirrorAPI(product: any) {
-  try {
-    const englishTitle = product.english_title || product.active_title
-    const weightG = product.weight_g || 500
-    const actualCostJPY = product.active_price || product.scraped_price || 0
-
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/ebay/finding-advanced`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        productId: String(product.id),
-        ebayTitle: englishTitle,
-        ebayCategoryId: product.ebay_category_id,
-        weightG,
-        actualCostJPY
-      })
-    })
-
-    if (!response.ok) {
-      throw new Error(`SellerMirror API error: ${response.status}`)
-    }
-
-    const data = await response.json()
-    
-    if (data.success) {
-      console.log(`  ✅ 現在の最安値: ${data.lowestPrice}`)
-      console.log(`  ✅ 平均価格: ${data.averagePrice}`)
-      console.log(`  ✅ 出品数: ${data.competitorCount}件`)
-      
-      return {
-        lowestPrice: data.lowestPrice,
-        averagePrice: data.averagePrice,
-        competitorCount: data.competitorCount,
-        profitMargin: data.profitMargin,
-        profitAmount: data.profitAmount
-      }
-    }
-
-    return null
-  } catch (error: any) {
-    console.error(`  ❌ SellerMirror分析エラー:`, error.message)
-    return null
-  }
-}
-
-// 送料計算（簡易版）
-function calculateShipping(product: any) {
-  const weightG = product.weight_g || 500
-  
-  // 重量に応じた送料（簡易計算）
-  let costUSD = 12.99
-  if (weightG > 1000) costUSD = 18.99
-  if (weightG > 2000) costUSD = 24.99
-
-  return {
-    cost_usd: costUSD,
-    policy: 'Economy Shipping from Japan',
-    service: 'ePacket'
-  }
-}
-
-// 利益計算
-function calculateProfit(product: any, competitorsData: any) {
-  const purchasePrice = parseFloat(product.active_price || product.scraped_price || 0)
-  const shippingCost = 12.99
-  const ebayFee = purchasePrice * 0.15 // 15%手数料
-  
-  // 推奨価格は競合の最安値を基準
-  const targetPrice = competitorsData?.lowest_price || (purchasePrice * 1.5)
-  const recommendedPrice = targetPrice * 1.05 // 最安値の5%上
-
-  const profit = recommendedPrice - (purchasePrice + shippingCost + ebayFee)
-  const margin = (profit / recommendedPrice) * 100
-
-  return {
-    margin: Math.round(margin * 100) / 100,
-    amount_usd: Math.round(profit * 100) / 100,
-    recommended_price_usd: Math.round(recommendedPrice * 100) / 100,
-    break_even_price_usd: Math.round((purchasePrice + shippingCost + ebayFee) * 100) / 100
-  }
-}
-
-// リサーチデータ保存
-async function saveResearchData(supabase: any, productId: number, data: any) {
-  const updates: any = {
-    research_data: data,
-    research_completed: true,
-    research_updated_at: new Date().toISOString()
-  }
-
-  if (data.category) {
-    updates.category_name = data.category.name
-    updates.category_number = data.category.id
-    updates.ebay_category_id = data.category.ebay_category_id
-    updates.category_confidence = data.category.confidence
-  }
-
-  if (data.competitors) {
-    updates.competitors_lowest_price = data.competitors.lowest_price
-    updates.competitors_average_price = data.competitors.average_price
-    updates.competitors_count = data.competitors.count
-    updates.competitors_data = data.competitors.data
-  }
-
-  if (data.shipping) {
-    updates.shipping_cost_usd = data.shipping.cost_usd
-    updates.shipping_policy = data.shipping.policy
-    updates.shipping_service = data.shipping.service
-  }
-
-  if (data.profit) {
-    updates.profit_margin = data.profit.margin
-    updates.profit_amount_usd = data.profit.amount_usd
-    updates.recommended_price_usd = data.profit.recommended_price_usd
-    updates.break_even_price_usd = data.profit.break_even_price_usd
-  }
-
-  if (data.sellerMirror) {
-    updates.sm_data = data.sellerMirror
-    updates.sm_lowest_price = data.sellerMirror.lowest_price
-    updates.sm_fetched_at = new Date().toISOString()
-  }
-
-  const { error } = await supabase
-    .from('yahoo_scraped_products')
-    .update(updates)
-    .eq('id', productId)
-
-  if (error) {
-    throw new Error(`データ保存エラー: ${error.message}`)
   }
 }

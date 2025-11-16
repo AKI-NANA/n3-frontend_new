@@ -474,43 +474,28 @@ export async function calculateUsaPriceV3(
     })
 
     // 配送会社情報をebay_shipping_masterから取得
-    // 商品価格に応じて配送タイプをフィルタリング
-    const isHighValue = finalProductPrice >= 100 // $100以上は高額商品
+    // 商品価格と重量に応じて最適な配送サービスを選択
+    console.log(`🚚 配送会社情報取得: 重量=${weight_kg}kg, 商品価格=${finalProductPrice.toFixed(2)}`)
     
-    // Economy配送を除外するサービス名パターン（$100以上の場合）
-    const economyPatterns = [
-      'SpeedPAK',
-      '小型包装物',
-      '書状',
-      '国際小包'
-    ]
-    
-    let carrierQuery = supabase
+    const { data: carrierInfo, error: carrierError } = await supabase
       .from('ebay_shipping_master')
       .select('carrier_name, service_name, service_code')
       .eq('country_code', 'US')
       .lte('weight_from_kg', weight_kg)
       .gte('weight_to_kg', weight_kg)
-    
-    // 高額商品の場合、Economy配送を除外
-    if (isHighValue) {
-      // EMS、FedEx、DHL、UPSのみに限定
-      carrierQuery = carrierQuery.or(
-        'service_name.ilike.%EMS%,' +
-        'service_name.ilike.%FedEx%,' +
-        'service_name.ilike.%DHL%,' +
-        'service_name.ilike.%UPS%'
-      )
-    }
-    
-    const { data: carrierInfo } = await carrierQuery
       .order('shipping_cost_with_margin_usd', { ascending: true })
       .limit(1)
-      .single()
+      .maybeSingle()
+
+    if (carrierError) {
+      console.warn('⚠️ ebay_shipping_master取得エラー:', carrierError.message)
+    }
 
     const carrierName = carrierInfo?.carrier_name || 'RT Express'
     const serviceName = carrierInfo?.service_name || 'RT Express DDP Service'
     const carrierCode = carrierInfo?.service_code || 'RT'
+    
+    console.log(`✅ 配送会社: ${carrierName} - ${serviceName}`)
 
     const breakdown: DetailedBreakdown = {
       costJPY,

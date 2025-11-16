@@ -95,11 +95,16 @@ export function HTMLPublishModal({
       // プレースホルダーを置換
       let html = selectedTemplate.html_content
       
-      html = html.replace(/\{\{TITLE\}\}/g, product.title || '')
+      // 🔥 英語データを優先使用
+      const englishTitle = (product as any)?.english_title || (product as any)?.title_en || product.title
+      const englishDescription = (product as any)?.english_description || (product as any)?.description_en || product.description
+      const englishCondition = (product as any)?.english_condition || product.condition
+      
+      html = html.replace(/\{\{TITLE\}\}/g, englishTitle || '')
       html = html.replace(/\{\{PRICE\}\}/g, product.price || '')
-      html = html.replace(/\{\{CONDITION\}\}/g, product.condition || '')
+      html = html.replace(/\{\{CONDITION\}\}/g, englishCondition || '')
       html = html.replace(/\{\{BRAND\}\}/g, product.brand || '')
-      html = html.replace(/\{\{DESCRIPTION\}\}/g, product.description || '')
+      html = html.replace(/\{\{DESCRIPTION\}\}/g, englishDescription || '')
       html = html.replace(/\{\{SHIPPING_INFO\}\}/g, product.shipping_info || '')
       
       setPreview(html)

@@ -22,6 +22,17 @@ export function TabImages({ product, maxImages, marketplace, onSave }: TabImages
   const availableImages = product?.images || [];
   const isFirstRender = useRef(true); // 初回レンダリングを追跡
   
+  // 🔍 デバッグ: 画像データを確認
+  useEffect(() => {
+    console.log('🖼️ TabImages: 画像データ確認', {
+      productId: product?.id,
+      availableImagesCount: availableImages.length,
+      availableImages: availableImages,
+      rawProductImages: product?.images,
+      selectedImagesCount: selectedImages.length
+    });
+  }, [product, availableImages, selectedImages]);
+  
   // 画像の選択が変更されたらDBに保存（初回はスキップ）
   useEffect(() => {
     if (isFirstRender.current) {
@@ -232,6 +243,40 @@ export function TabImages({ product, maxImages, marketplace, onSave }: TabImages
               />
               <span style={{ fontSize: '0.85rem' }}>ウォーターマーク追加</span>
             </label>
+            
+            {/* 🔥 Watermarkプレビュー */}
+            {imageSettings.watermark && selectedImages.length > 0 && (
+              <div style={{ marginTop: '1rem', padding: '1rem', background: 'white', borderRadius: '8px', border: '1px solid #dee2e6' }}>
+                <h6 style={{ margin: '0 0 0.75rem 0', fontSize: '0.85rem', color: '#495057' }}>
+                  <i className="fas fa-eye"></i> ウォーターマークプレビュー
+                </h6>
+                <div style={{ position: 'relative', maxWidth: '200px', margin: '0 auto' }}>
+                  <img 
+                    src={availableImages.find(img => img.id === selectedImages[0])?.url || ''} 
+                    alt="プレビュー" 
+                    style={{ width: '100%', height: 'auto', borderRadius: '6px' }}
+                  />
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '10px',
+                    right: '10px',
+                    background: 'rgba(255, 255, 255, 0.8)',
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: '4px',
+                    fontSize: '0.7rem',
+                    fontWeight: 600,
+                    color: '#495057',
+                    border: '1px solid rgba(0,0,0,0.1)',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }}>
+                    © N3 Store
+                  </div>
+                </div>
+                <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#6c757d', textAlign: 'center' }}>
+                  ウォーターマークは右下に自動追加されます
+                </div>
+              </div>
+            )}
             
             <div style={{ marginTop: '1rem', padding: '0.75rem', background: '#e3f2fd', borderRadius: '6px', fontSize: '0.8rem', color: '#1976d2' }}>
               <i className="fas fa-info-circle"></i> 

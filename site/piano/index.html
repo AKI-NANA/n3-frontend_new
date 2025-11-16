@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>山内ピアノ教室 | 大阪府八尾市 JR八尾駅徒歩5分</title>
+  <meta name="description" content="大阪府八尾市のピアノ教室。3歳から大人まで、基礎から高度な表現力まで幅広く指導。JR八尾駅徒歩5分。無料体験レッスン受付中。">
+  
+  <!-- ファビコン設定 -->
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" href="favicon.png">
+  
+  <!-- 外部CSSファイル -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style-fixes.css">
+</head>
+<body>
+  <!-- 音楽モーダル -->
+  <div class="music-modal" id="musicModal">
+    <div class="music-modal-content">
+      <h3>Welcome</h3>
+      <p>BGMと共に山内ピアノ教室をご覧になりますか?</p>
+      <div class="music-modal-buttons">
+        <button class="modal-btn" onclick="declineMusic()">OFF</button>
+        <button class="modal-btn primary" onclick="acceptMusic()">ON</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BGMプレーヤー -->
+  <audio id="bgmPlayer" loop>
+    <source src="mp3/nocturne-op9-2.mp3" type="audio/mpeg">
+  </audio>
+
+  <!-- 音楽コントロール(全音楽停止機能付き) -->
+  <div class="music-control paused" id="musicControl"></div>
+
+  <!-- ヘッダー -->
+  <header class="header" id="header">
+    <nav class="nav-container">
+      <div class="logo-section">
+        <img src="favicon.png" alt="山内ピアノ教室ロゴ" class="logo-image">
+        <div class="logo-text-section">
+          <a href="#home" class="logo">Yamauchi Piano Studio</a>
+          <span class="school-name-ja">山内ピアノ教室</span>
+        </div>
+      </div>
+      <ul class="nav-menu">
+        <li><a href="#home">HOME</a></li>
+        <li><a href="#welcome">ABOUT</a></li>
+        <li><a href="#atmosphere">雰囲気</a></li>
+        <li><a href="#recital">発表会</a></li>
+        <li><a href="#calendar">レッスン日程</a></li>
+        <li><a href="#profile">PROFILE</a></li>
+        <li><a href="#gallery">GALLERY</a></li>
+        <li><a href="#access">ACCESS</a></li>
+        <li><a href="#contact">CONTACT</a></li>
+      </ul>
+      <div class="hamburger" id="hamburger">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ヒーロー -->
+  <section id="home" class="hero">
+    <div class="hero-bg">
+      <div class="hero-slide active">
+        <img src="jpg/1440.jpg" alt="Piano">
+      </div>
+      <div class="hero-slide">
+        <img src="jpg/1441.jpg" alt="Piano">
+      </div>
+      <div class="hero-slide">
+        <img src="jpg/1442.jpg" alt="Piano">
+      </div>
+    </div>
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <h1 class="hero-title">Yamauchi Piano Studio</h1>
+      <p class="hero-info">3歳から大人まで ― 心に響く音楽を、あなたの手で</p>
+      <p class="hero-description">
+        基礎から高度な表現力を磨きたい方まで幅広くレッスン致します。<br>
+        一人一人に合わせたレッスンスタイルで音楽を演奏する楽しさと喜びをお伝えします。<br>
+        クラシックやポップスなど、お好きな曲を自由に演奏できることを目指して個性を伸ばし、<br>
+        自由なスタイルで感性・創造性を育てます。
+      </p>
+      <div class="hero-cta">
+        <a href="#contact" class="cta-button">無料体験レッスン受付中</a>
+      </div>
+    </div>
+    <div class="scroll-indicator">
+      <div class="scroll-line"></div>
+    </div>
+  </section>
+
+  <!-- Welcome -->
+  <section id="welcome" class="welcome">
+    <div class="section-container">
+      <p class="section-label">WELCOME</p>
+      <h2 class="section-title">ピアノを楽しむために</h2>
+      <div class="welcome-content">
+        <div class="welcome-text">
+          <h3>続けることが大切です</h3>
+          <p>ピアノは誰でも必ず弾けるようになります。ピアノを通して、「自分は頑張る事ができる」「頑張れば嬉しい事がある」と少しでも多くの子供達に知って頂けたら幸いです。</p>
+          <p>一つの曲が弾けるようになれば、次はまたレベルを上げて新しい曲に挑戦し、物事に対する諦めない姿勢と気持ちが育ちます。</p>
+          <p>子育てと真剣に向き合っているお母様にご協力できれば幸いです。ピアノを通してお子様の才能を一緒に育てていきましょう。</p>
+        </div>
+        <div class="nostalgic-img">
+          <img src="jpg/1443.jpg" alt="Piano Lesson">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 教室の雰囲気 -->
+  <section id="atmosphere" class="atmosphere parallax-section">
+    <div class="parallax-overlay">
+    <div class="section-container">
+      <p class="section-label">ATMOSPHERE</p>
+      <h2 class="section-title">教室の雰囲気</h2>
+      <div class="atmosphere-content">
+        <div class="atmosphere-text">
+          <p>のびのびとピアノを楽しむ生徒さんが多い教室です。</p>
+          <p>学校の伴奏のオーディションを受けたいからと楽譜を持ってくる子も多く、チャレンジ精神旺盛です。</p>
+          <p>発表会の選曲もこだわって妥協しません。</p>
+          <p>上手く弾けた時、大喜びする子もいれば、控えめな性格の子も口元がにんまりしています。</p>
+        </div>
+
+        <div class="atmosphere-image nostalgic-img">
+          <img src="jpg/1444_2.jpeg" alt="教室の様子">
+        </div>
+
+        <div class="atmosphere-features">
+          <div class="feature-item">
+            <div class="feature-icon">👶</div>
+            <h3>幼少期から<br>たくさんの経験を</h3>
+            <p>3歳から始められます</p>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">🎓</div>
+            <h3>中学生・高校生も<br>受験期・部活動の両立をサポート</h3>
+            <p>柔軟なスケジュール対応</p>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">🎭</div>
+            <h3>いくつになっても<br>舞台に挑戦</h3>
+            <p>大人の方も歓迎</p>
+          </div>
+        </div>
+
+        <div class="atmosphere-text">
+          <p style="font-weight: 500; font-size: 1.1rem; color: var(--primary);">
+            譜読み、指の強さなど基礎力を磨きつつ、<br>
+            発表会は好きな曲をセレクト
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 発表会 -->
+  <section id="recital" class="recital">
+    <div class="section-container">
+      <p class="section-label">RECITAL</p>
+      <h2 class="section-title">発表会</h2>
+      <div class="recital-content">
+        <div class="recital-intro">
+          <h3>発表会は毎年夏に開催</h3>
+        </div>
+
+        <div class="recital-video">
+          <div class="video-container">
+            <video controls poster="jpg/1445.jpg">
+              <source src="mp4/発表会　素材.mp4" type="video/mp4">
+              お使いのブラウザは動画タグをサポートしていません。
+            </video>
+          </div>
+        </div>
+
+        <div class="repertoire-section">
+          <h3 style="text-align: center; font-size: 1.8rem; margin-bottom: 3rem;">発表会で演奏された人気曲紹介</h3>
+          
+          <div class="repertoire-tabs">
+            <button class="tab-button active" onclick="showRepertoire('classic')">クラシック</button>
+            <button class="tab-button" onclick="showRepertoire('popular')">ポピュラー</button>
+          </div>
+
+          <!-- クラシック曲リスト -->
+          <div class="repertoire-list active" id="classic-list">
+            <div class="repertoire-item has-audio" data-piece="erize">
+              <span class="piece-title">エリーゼのために</span>
+              <span class="piece-composer">ベートーヴェン</span>
+            </div>
+            <div class="repertoire-item has-audio" data-piece="trukish">
+              <span class="piece-title">トルコ行進曲</span>
+              <span class="piece-composer">モーツァルト</span>
+            </div>
+            <div class="repertoire-item has-audio" data-piece="koinu">
+              <span class="piece-title">子犬のワルツ</span>
+              <span class="piece-composer">ショパン</span>
+            </div>
+            <div class="repertoire-item has-audio" data-piece="fantaisie">
+              <span class="piece-title">幻想即興曲</span>
+              <span class="piece-composer">ショパン</span>
+            </div>
+            <div class="repertoire-item has-audio" data-piece="nocturne">
+              <span class="piece-title">ノクターン2番</span>
+              <span class="piece-composer">ショパン</span>
+            </div>
+            <div class="repertoire-item has-audio" data-piece="lovedream">
+              <span class="piece-title">愛の夢</span>
+              <span class="piece-composer">リスト</span>
+            </div>
+            <div class="repertoire-item has-audio" data-piece="lacampanella">
+              <span class="piece-title">ラ・カンパネラ</span>
+              <span class="piece-composer">リスト</span>
+            </div>
+            <div class="repertoire-item" data-piece="moonlight">
+              <span class="piece-title">月光ソナタ</span>
+              <span class="piece-composer">ベートーヴェン</span>
+            </div>
+            <div class="repertoire-item" data-piece="revolution">
+              <span class="piece-title">革命のエチュード</span>
+              <span class="piece-composer">ショパン</span>
+            </div>
+            <div class="repertoire-item" data-piece="dacan">
+              <span class="piece-title">かっこう</span>
+              <span class="piece-composer">ダカン</span>
+            </div>
+            <div class="repertoire-item" data-piece="maiden">
+              <span class="piece-title">乙女の祈り</span>
+              <span class="piece-composer">バダジェフスカ</span>
+            </div>
+            <div class="repertoire-item" data-piece="canon">
+              <span class="piece-title">カノン</span>
+              <span class="piece-composer">パッヘルベル</span>
+            </div>
+            <div class="repertoire-item" data-piece="gymnopedies">
+              <span class="piece-title">ジムノペディ第1番</span>
+              <span class="piece-composer">サティ</span>
+            </div>
+            <div class="repertoire-item" data-piece="waltz-etude">
+              <span class="piece-title">ワルツ・エチュード</span>
+              <span class="piece-composer">ギロック</span>
+            </div>
+            <div class="repertoire-item" data-piece="menuet">
+              <span class="piece-title">メヌエット ト長調</span>
+              <span class="piece-composer">バッハ</span>
+            </div>
+            <div class="repertoire-item" data-piece="sonatine">
+              <span class="piece-title">ソナチネ</span>
+              <span class="piece-composer">クレメンティ</span>
+            </div>
+            <div class="repertoire-item" data-piece="impromptu">
+              <span class="piece-title">即興曲 変ホ長調</span>
+              <span class="piece-composer">シューベルト</span>
+            </div>
+            <div class="repertoire-item" data-piece="twinkle">
+              <span class="piece-title">きらきら星変奏曲</span>
+              <span class="piece-composer">モーツァルト</span>
+            </div>
+            <div class="repertoire-item" data-piece="flower-waltz">
+              <span class="piece-title">花のワルツ</span>
+              <span class="piece-composer">チャイコフスキー</span>
+            </div>
+            <div class="repertoire-item" data-piece="clair-de-lune">
+              <span class="piece-title">月の光</span>
+              <span class="piece-composer">ドビュッシー</span>
+            </div>
+          </div>
+
+          <!-- ポピュラー曲リスト -->
+          <div class="repertoire-list" id="popular-list">
+            <div class="repertoire-item" data-piece="whole-new-world">
+              <span class="piece-title">ホールニューワールド</span>
+              <span class="piece-composer">アラジン</span>
+            </div>
+            <div class="repertoire-item" data-piece="tangled">
+              <span class="piece-title">輝く未来</span>
+              <span class="piece-composer">塔の上のラプンツェル</span>
+            </div>
+            <div class="repertoire-item" data-piece="beauty-beast">
+              <span class="piece-title">美女と野獣</span>
+              <span class="piece-composer">美女と野獣</span>
+            </div>
+            <div class="repertoire-item" data-piece="idol">
+              <span class="piece-title">アイドル</span>
+              <span class="piece-composer">YOASOBI</span>
+            </div>
+            <div class="repertoire-item" data-piece="yusha">
+              <span class="piece-title">勇者</span>
+              <span class="piece-composer">YOASOBI</span>
+            </div>
+            <div class="repertoire-item" data-piece="sparkle">
+              <span class="piece-title">スパークル</span>
+              <span class="piece-composer">君の名は</span>
+            </div>
+            <div class="repertoire-item" data-piece="bansanka">
+              <span class="piece-title">晩餐歌</span>
+              <span class="piece-composer">Tuki.</span>
+            </div>
+            <div class="repertoire-item" data-piece="itsumo">
+              <span class="piece-title">いつも何度でも</span>
+              <span class="piece-composer">千と千尋の神隠し</span>
+            </div>
+            <div class="repertoire-item" data-piece="totoro">
+              <span class="piece-title">となりのトトロ</span>
+              <span class="piece-composer">となりのトトロ</span>
+            </div>
+            <div class="repertoire-item" data-piece="rouge">
+              <span class="piece-title">ルージュの伝言</span>
+              <span class="piece-composer">魔女の宅急便</span>
+            </div>
+            <div class="repertoire-item" data-piece="summer">
+              <span class="piece-title">Summer</span>
+              <span class="piece-composer">久石譲</span>
+            </div>
+            <div class="repertoire-item" data-piece="howl">
+              <span class="piece-title">ハウルの動く城</span>
+              <span class="piece-composer">久石譲</span>
+            </div>
+            <div class="repertoire-item" data-piece="ballade">
+              <span class="piece-title">渚のアデリーヌ</span>
+              <span class="piece-composer">リチャード・クレイダーマン</span>
+            </div>
+            <div class="repertoire-item" data-piece="cruel-angel">
+              <span class="piece-title">残酷な天使のテーゼ</span>
+              <span class="piece-composer">佐藤英敏</span>
+            </div>
+            <div class="repertoire-item" data-piece="정열">
+              <span class="piece-title">情熱大陸</span>
+              <span class="piece-composer">葉加瀬太郎</span>
+            </div>
+            <div class="repertoire-item" data-piece="senbonzakura">
+              <span class="piece-title">千本桜</span>
+              <span class="piece-composer">初音ミク</span>
+            </div>
+            <div class="repertoire-item" data-piece="native">
+              <span class="piece-title">ナイティブフェイス</span>
+              <span class="piece-composer">Zun</span>
+            </div>
+            <div class="repertoire-item" data-piece="bohemian">
+              <span class="piece-title">ボヘミアンラプソディ</span>
+              <span class="piece-composer">クイーン</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- レッスンカレンダー -->
+  <section id="calendar" class="lesson-calendar">
+    <div class="section-container">
+      <p class="section-label">LESSON SCHEDULE</p>
+      <h2 class="section-title">レッスン日程</h2>
+      <div class="calendar-container">
+        <iframe 
+          src="https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=Asia%2FTokyo&bgcolor=%23ffffff&color=%23B39DDB&mode=MONTH&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=0&showCalendars=0&showTz=0" 
+          frameborder="0" 
+          scrolling="no">
+        </iframe>
+        <p style="text-align: center; margin-top: 2rem; color: #666; font-size: 0.9rem;">
+          ※ レッスン可能日時はカレンダーをご確認ください。<br>
+          体験レッスンのご予約はお問い合わせフォームからお願いします。<br>
+          <strong style="color: var(--secondary);">カレンダーIDの設定が必要です</strong> - HTMLファイル内のコメントを参照してください
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Profile -->
+  <section id="profile" class="profile">
+    <div class="section-container">
+      <p class="section-label">PROFILE</p>
+      <h2 class="section-title">講師紹介</h2>
+      <div class="profile-content">
+        <div class="profile-image-box">
+          <div class="nostalgic-img">
+            <img src="jpg/1436.jpg" alt="山内紋子" class="profile-image">
+          </div>
+          <p class="profile-name">山内 紋子</p>
+          <p class="profile-kana">YAMAUCHI AYAKO</p>
+          <p class="profile-education">
+            相愛高等学校音楽科<br>
+            相愛大学音楽学部ピアノ専攻卒業<br>
+            同高校・大学各卒業演奏会出演
+          </p>
+        </div>
+        <div class="profile-text">
+          <h3>ご挨拶</h3>
+          <p>５歳よりピアノを始め、小学生のころからピアノの先生になることが夢でした。</p>
+          <p>ピアノは誰でも必ず弾けるようになります。ピアノを通して「自分は頑張る事ができる」「頑張れば嬉しい事がある」と少しでも多くの子ども達に知って貰えたらと思います。</p>
+          <p>誰かに認めてもらうことも大切ですが、自分のために頑張り、自分のことを認めることが出来れば、心が強くなり、誰かや何かに振り回されることなく安定した人格へと育ちます。</p>
+          <p>また、ピアノを自由に演奏し、音楽が日常にある豊かな生活を楽しみ、良質な気分転換が出来るようになることが山内ピアノ教室の一番の目標です。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Gallery -->
+  <section id="gallery" class="gallery">
+    <div class="section-container">
+      <p class="section-label">GALLERY</p>
+      <h2 class="section-title">教室の様子</h2>
+      <div class="gallery-grid">
+        <div class="gallery-item nostalgic-img">
+          <img src="jpg/1447.jpg" alt="Gallery 1">
+        </div>
+        <div class="gallery-item nostalgic-img">
+          <img src="jpg/1448.jpg" alt="Gallery 2">
+        </div>
+        <div class="gallery-item nostalgic-img">
+          <img src="jpg/1450.jpg" alt="Gallery 3">
+        </div>
+        <div class="gallery-item nostalgic-img">
+          <img src="jpg/1452.jpg" alt="Gallery 4">
+        </div>
+        <div class="gallery-item nostalgic-img">
+          <img src="jpg/1445.jpg" alt="Gallery 5">
+        </div>
+        <div class="gallery-item nostalgic-img">
+          <img src="jpg/1446.jpg" alt="Gallery 6">
+        </div>
+        <div class="gallery-item nostalgic-img">
+          <img src="jpg/1449.jpg" alt="Gallery 7">
+        </div>
+        <div class="gallery-item nostalgic-img">
+          <img src="jpg/1435.jpg" alt="Gallery 8">
+        </div>
+        <div class="gallery-item nostalgic-img">
+          <img src="jpg/1439.jpg" alt="Gallery 9">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Access -->
+  <section id="access" class="access">
+    <div class="section-container">
+      <p class="section-label">ACCESS</p>
+      <h2 class="section-title">アクセス</h2>
+      <div class="access-content">
+        <div class="access-info">
+          <h3>教室所在地</h3>
+          <address>
+            〒581-0084<br>
+            大阪府八尾市植松町4丁目<br>
+            <a href="tel:07056570373">Tel: 070-5657-0373</a><br>
+            <a href="mailto:ayako.piano.1023@gmail.com">Email: ayako.piano.1023@gmail.com</a>
+          </address>
+
+          <h3>アクセス方法</h3>
+          <p>
+            JR八尾駅から徒歩5分以内です。<br>
+            お子様だけでも通いやすい場所にあります。
+          </p>
+
+          <h3>最寄り小学校</h3>
+          <p>
+            永畑小学校・龍華小学校・亀井小学校<br>
+            各小学校区からアクセス良好です。
+          </p>
+        </div>
+
+        <div class="map-container">
+          <iframe 
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3283.478933726919!2d135.59242526553066!3d34.617335445185596!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6000d8ac43a578d7%3A0x4613f6c5c2bd34d0!2z44CSNTgxLTAwODQg5aSn6Ziq5bqc5YWr5bC-5biC5qSN5p2-55S677yU5LiB55uu!5e0!3m2!1sja!2sjp!4v1579674828241!5m2!1sja!2sjp" 
+            allowfullscreen="" 
+            loading="lazy">
+          </iframe>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section id="contact" class="contact">
+    <div class="section-container">
+      <p class="section-label">CONTACT</p>
+      <h2 class="section-title">お問い合わせ</h2>
+      <p class="contact-text">
+        ピアノ教室に関するご質問、体験レッスンのお申込みなど<br>
+        お気軽にお問い合わせください
+      </p>
+
+      <!-- お問い合わせ方法選択カード -->
+      <div class="contact-methods">
+        <a href="tel:07056570373" class="contact-method-card phone-card">
+          <h3>お電話でのお問い合わせ</h3>
+          <p class="phone-number">070-5657-0373</p>
+          <p class="contact-note">受付時間: 10:00〜20:00</p>
+        </a>
+      </div>
+
+      <!-- お問い合わせフォーム -->
+      <form class="contact-form" id="contactForm">
+        <div class="form-group">
+          <label for="inquiryType">お問い合わせ種類<span class="required">*</span></label>
+          <select id="inquiryType" name="inquiryType" required>
+            <option value="">選択してください</option>
+            <option value="trial">無料体験レッスンの申し込み</option>
+            <option value="question">質問(返信には日程を頂戴することがあります)</option>
+            <option value="other">その他のお問い合わせ</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="name">お名前<span class="required">*</span></label>
+          <input type="text" id="name" name="name" required placeholder="山田 太郎">
+        </div>
+        
+        <div class="form-group">
+          <label for="email">メールアドレス<span class="required">*</span></label>
+          <input type="email" id="email" name="email" required placeholder="example@email.com">
+        </div>
+        
+        <div class="form-group">
+          <label for="phone">電話番号</label>
+          <input type="tel" id="phone" name="phone" placeholder="090-1234-5678">
+        </div>
+        
+        <div class="form-group">
+          <label for="message">お問い合わせ内容<span class="required">*</span></label>
+          <textarea id="message" name="message" required placeholder="体験レッスンのご希望日時、ご質問などをご記入ください&#10;&#10;例:&#10;・体験レッスンを希望します&#10;・希望日時: ○月○日 14:00〜&#10;・お子様の年齢: 5歳&#10;・その他ご質問があればご記入ください"></textarea>
+        </div>
+        
+        <div class="form-submit">
+          <button type="submit" class="submit-btn" id="submitBtn">送信する</button>
+        </div>
+
+        <div class="form-message" id="formMessage"></div>
+      </form>
+
+      <!-- 電話番号（控えめ） -->
+      <div class="phone-contact-simple">
+        <p class="phone-label">お電話でのお問い合わせ</p>
+        <a href="tel:07056570373" class="phone-link">070-5657-0373</a>
+        <p class="phone-hours">受付時間: 10:00 - 20:00</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-content">
+      <div class="footer-section">
+        <h4>Yamauchi Piano Studio</h4>
+        <p>
+          山内ピアノ教室<br>
+          〒581-0084<br>
+          大阪府八尾市植松町4丁目<br>
+          Tel: 070-5657-0373<br>
+          Email: ayako.piano.1023@gmail.com
+        </p>
+      </div>
+      <div class="footer-section">
+        <h4>Menu</h4>
+        <ul class="footer-links">
+          <li><a href="#home">HOME</a></li>
+          <li><a href="#welcome">ABOUT</a></li>
+          <li><a href="#atmosphere">教室の雰囲気</a></li>
+          <li><a href="#recital">発表会</a></li>
+          <li><a href="#calendar">レッスン日程</a></li>
+          <li><a href="#profile">PROFILE</a></li>
+          <li><a href="#gallery">GALLERY</a></li>
+          <li><a href="#access">ACCESS</a></li>
+          <li><a href="#contact">CONTACT</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Access</h4>
+        <p>
+          JR八尾駅より徒歩5分<br>
+          お子様だけでも通いやすい<br>
+          場所にあります
+        </p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2025 Yamauchi Piano Studio. All Rights Reserved.</p>
+    </div>
+  </footer>
+
+  <!-- TOPに戻る -->
+  <div class="back-to-top" id="backToTop"></div>
+
+  <!-- 曲の詳細モーダル -->
+  <div class="piece-modal" id="pieceModal">
+    <div class="piece-modal-content">
+      <button class="piece-modal-close" onclick="closePieceModal()">×</button>
+      <div id="modalContent"></div>
+      <button class="piece-play-btn" id="modalPlayBtn" style="display:none;" onclick="toggleModalPlay()">▶ 再生</button>
+    </div>
+  </div>
+
+  <!-- EmailJS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  
+  <!-- 外部JavaScriptファイル -->
+  <script src="js/main.js"></script>
+  <script src="js/music-notes.js"></script>
+  <script src="js/hamburger.js"></script>
+</body>
+</html>

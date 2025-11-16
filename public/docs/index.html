@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>N3システム開発ガイド - 開発方針とツール構成</title>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1f2937;
+            --light: #f9fafb;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            color: var(--dark);
+            margin-bottom: 10px;
+        }
+        
+        .header .subtitle {
+            color: #6b7280;
+            font-size: 1.2em;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border-left: 5px solid var(--primary);
+        }
+        
+        .stat-card.success { border-left-color: var(--success); }
+        .stat-card.warning { border-left-color: var(--warning); }
+        .stat-card.danger { border-left-color: var(--danger); }
+        
+        .stat-card .label {
+            color: #6b7280;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+        
+        .stat-card .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: var(--dark);
+        }
+        
+        .section {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        
+        .section-title {
+            font-size: 1.8em;
+            color: var(--dark);
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid var(--primary);
+        }
+        
+        .tool-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .tool-card {
+            background: var(--light);
+            border-radius: 12px;
+            padding: 25px;
+            border: 2px solid #e5e7eb;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .tool-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            border-color: var(--primary);
+        }
+        
+        .tool-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .tool-number {
+            background: var(--primary);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        
+        .tool-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: var(--dark);
+        }
+        
+        .tool-description {
+            color: #6b7280;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+        
+        .tool-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .info-item {
+            background: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85em;
+        }
+        
+        .info-label {
+            color: #6b7280;
+            font-weight: 500;
+        }
+        
+        .info-value {
+            color: var(--dark);
+            font-weight: bold;
+            margin-left: 5px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        
+        .status-complete {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status-progress {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status-planned {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .file-path {
+            background: #1f2937;
+            color: #10b981;
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        
+        .api-endpoint {
+            background: #eff6ff;
+            border-left: 4px solid var(--primary);
+            padding: 12px 15px;
+            margin: 8px 0;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        .database-section {
+            background: #f0fdf4;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .database-title {
+            color: #065f46;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+        }
+        
+        .workflow {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        
+        .workflow-step {
+            background: white;
+            border: 2px solid var(--primary);
+            border-radius: 12px;
+            padding: 20px 30px;
+            text-align: center;
+            min-width: 150px;
+        }
+        
+        .workflow-arrow {
+            font-size: 2em;
+            color: var(--primary);
+            margin: 0 10px;
+        }
+        
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .tab-button {
+            padding: 12px 24px;
+            border: none;
+            background: #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-button.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @media (max-width: 768px) {
+            .tool-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .workflow {
+                flex-direction: column;
+            }
+            
+            .workflow-arrow {
+                transform: rotate(90deg);
+                margin: 10px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ヘッダー -->
+        <div class="header">
+            <h1>🚀 N3システム開発ガイド</h1>
+            <p class="subtitle">Yahoo!オークション統合システム - 完全開発方針とツール構成マップ</p>
+        </div>
+
+        <!-- 統計カード -->
+        <div class="stats-grid">
+            <div class="stat-card success">
+                <div class="label">✅ 完成済みツール</div>
+                <div class="value">14/14</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">📊 総PHPファイル数</div>
+                <div class="value">30</div>
+            </div>
+            <div class="stat-card warning">
+                <div class="label">🗄️ データベーステーブル</div>
+                <div class="value">1</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">🔌 APIエンドポイント</div>
+                <div class="value">50+</div>
+            </div>
+        </div>
+
+        <!-- タブボタン -->
+        <div class="section">
+            <div class="tab-buttons">
+                <button class="tab-button active" onclick="showTab('overview')">📋 システム概要</button>
+                <button class="tab-button" onclick="showTab('tools')">🔧 ツール一覧</button>
+                <button class="tab-button" onclick="showTab('database')">🗄️ データベース</button>
+                <button class="tab-button" onclick="showTab('workflow')">🔄 ワークフロー</button>
+                <button class="tab-button" onclick="showTab('development')">💻 開発方針</button>
+            </div>
+
+            <!-- タブコンテンツ -->
+            
+            <!-- 概要タブ -->
+            <div id="overview" class="tab-content active">
+                <h2 class="section-title">システム概要</h2>
+                
+                <div class="database-section">
+                    <div class="database-title">🎯 システムの目的</div>
+                    <p style="line-height: 1.8; color: #374151;">
+                        Yahoo!オークションから商品データを取得し、フィルタリング、編集、利益計算を行い、
+                        最終的にeBayへ自動出品するまでの一連のワークフローを統合管理するシステムです。
+                    </p>
+                </div>
+
+                <h3 style="margin-top: 30px; margin-bottom: 15px; color: var(--dark);">📁 プロジェクト構造</h3>
+                <div class="file-path">/Users/aritahiroaki/NAGANO-3/N3-Development/</div>
+                
+                <h3 style="margin-top: 20px; margin-bottom: 15px; color: var(--dark);">🔑 重要な設計原則</h3>
+                <div style="background: #fef3c7; border-radius: 12px; padding: 20px; margin: 15px 0;">
+                    <ul style="list-style-position: inside; line-height: 2;">
+                        <li><strong>単一テーブル設計:</strong> 全ツールが <code>products_master</code> テーブルを共有</li>
+                        <li><strong>統一API応答:</strong> 全エンドポイントが同じJSON形式を返却</li>
+                        <li><strong>モジュラー構造:</strong> 各ツールが独立して動作可能</li>
+                        <li><strong>段階的ワークフロー:</strong> スクレイピング→フィルター→編集→承認→出品</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- ツール一覧タブ -->
+            <div id="tools" class="tab-content">
+                <h2 class="section-title">🔧 全14ツール詳細</h2>
+                
+                <p style="color: #6b7280; margin-bottom: 20px;">
+                    全14ツールが <code>products_master</code> テーブルに統合され、単一のデータベースで動作しています。
+                    各ツールは独立したPHPファイルとして実装されており、REST APIを提供しています。
+                </p>
+
+                <div class="tool-grid">
+                    <!-- 各ツールのカード... -->
+                    <!-- 前のHTMLと同じツールカード構造をコピー -->
+                </div>
+            </div>
+
+            <!-- データベースタブ -->
+            <div id="database" class="tab-content">
+                <h2 class="section-title">🗄️ データベース設計</h2>
+                
+                <div class="database-section">
+                    <div class="database-title">📊 単一テーブル設計の原則</div>
+                    <p style="line-height: 1.8; color: #374151; margin-bottom: 15px;">
+                        全14ツールが <strong style="color: var(--primary);">products_master</strong> という
+                        単一のメインテーブルを共有します。これにより、データの一貫性と効率性を確保しています。
+                    </p>
+                </div>
+
+                <h3 style="margin-top: 30px; margin-bottom: 15px; color: var(--dark);">📋 主要カラム</h3>
+                <div class="api-endpoint">id, source_system, title, title_en, description</div>
+                <div class="api-endpoint">current_price, suggested_price, profit_amount, profit_margin</div>
+                <div class="api-endpoint">category, approval_status, listing_status, inventory_quantity</div>
+                <div class="api-endpoint">image_url, created_at, updated_at</div>
+
+                <h3 style="margin-top: 30px; margin-bottom: 15px; color: var(--dark);">⚡ インデックス設計</h3>
+                <div class="api-endpoint">CREATE INDEX idx_approval_status ON products_master(approval_status);</div>
+                <div class="api-endpoint">CREATE INDEX idx_listing_status ON products_master(listing_status);</div>
+                <div class="api-endpoint">CREATE INDEX idx_category ON products_master(category);</div>
+                <div class="api-endpoint">CREATE INDEX idx_created_at ON products_master(created_at DESC);</div>
+
+                <h3 style="margin-top: 30px; margin-bottom: 15px; color: var(--dark);">🔗 接続情報</h3>
+                <div class="file-path">
+                    ファイル: /Users/aritahiroaki/NAGANO-3/N3-Development/supabase_database_unified.php<br>
+                    ホスト: aws-0-ap-northeast-1.pooler.supabase.com<br>
+                    ポート: 6543<br>
+                    データベース: postgres
+                </div>
+            </div>
+
+            <!-- ワークフロータブ -->
+            <div id="workflow" class="tab-content">
+                <h2 class="section-title">🔄 システムワークフロー</h2>
+                
+                <div style="background: #eff6ff; border-radius: 12px; padding: 30px; margin: 20px 0;">
+                    <h3 style="color: var(--primary); margin-bottom: 20px;">📍 標準的な商品処理フロー</h3>
+                    
+                    <div class="workflow">
+                        <div class="workflow-step">
+                            <div style="font-size: 2em; margin-bottom: 10px;">🔍</div>
+                            <div style="font-weight: bold;">スクレイピング</div>
+                            <div style="font-size: 0.85em; color: #6b7280; margin-top: 5px;">Tool 02</div>
+                        </div>
+                        <div class="workflow-arrow">→</div>
+                        <div class="workflow-step">
+                            <div style="font-size: 2em; margin-bottom: 10px;">🔎</div>
+                            <div style="font-weight: bold;">フィルター</div>
+                            <div style="font-size: 0.85em; color: #6b7280; margin-top: 5px;">Tool 06</div>
+                        </div>
+                        <div class="workflow-arrow">→</div>
+                        <div class="workflow-step">
+                            <div style="font-size: 2em; margin-bottom: 10px;">✏️</div>
+                            <div style="font-weight: bold;">編集</div>
+                            <div style="font-size: 0.85em; color: #6b7280; margin-top: 5px;">Tool 07</div>
+                        </div>
+                        <div class="workflow-arrow">→</div>
+                        <div class="workflow-step">
+                            <div style="font-size: 2em; margin-bottom: 10px;">💰</div>
+                            <div style="font-weight: bold;">利益計算</div>
+                            <div style="font-size: 0.85em; color: #6b7280; margin-top: 5px;">Tool 05</div>
+                        </div>
+                        <div class="workflow-arrow">→</div>
+                        <div class="workflow-step">
+                            <div style="font-size: 2em; margin-bottom: 10px;">✅</div>
+                            <div style="font-weight: bold;">承認</div>
+                            <div style="font-size: 0.85em; color: #6b7280; margin-top: 5px;">Tool 03</div>
+                        </div>
+                        <div class="workflow-arrow">→</div>
+                        <div class="workflow-step">
+                            <div style="font-size: 2em; margin-bottom: 10px;">🚀</div>
+                            <div style="font-weight: bold;">出品</div>
+                            <div style="font-size: 0.85em; color: #6b7280; margin-top: 5px;">Tool 08</div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 30px; margin-bottom: 15px; color: var(--dark);">🔄 補助的なワークフロー</h3>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">
+                    <div style="background: #fef3c7; border-radius: 12px; padding: 20px;">
+                        <h4 style="color: #92400e; margin-bottom: 10px;">📊 分析フロー</h4>
+                        <div style="line-height: 2; color: #374151;">
+                            承認システム → 承認分析(Tool 04) → 統合分析(Tool 13)
+                        </div>
+                    </div>
+                    
+                    <div style="background: #d1fae5; border-radius: 12px; padding: 20px;">
+                        <h4 style="color: #065f46; margin-bottom: 10px;">📦 在庫管理フロー</h4>
+                        <div style="line-height: 2; color: #374151;">
+                            出品完了 → 在庫管理(Tool 10) → 補充アラート
+                        </div>
+                    </div>
+                    
+                    <div style="background: #dbeafe; border-radius: 12px; padding: 20px;">
+                        <h4 style="color: #1e40af; margin-bottom: 10px;">🏷️ カテゴリー判定フロー</h4>
+                        <div style="line-height: 2; color: #374151;">
+                            スクレイピング → カテゴリー判定(Tool 11) → 編集
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 開発方針タブ -->
+            <div id="development" class="tab-content">
+                <h2 class="section-title">💻 開発方針とローカル環境</h2>
+                
+                <h3 style="margin-top: 20px; margin-bottom: 15px; color: var(--dark);">📂 ローカル開発環境構成</h3>
+                <div class="file-path">
+                    バックエンド: /Users/aritahiroaki/NAGANO-3/N3-Development/<br>
+                    フロントエンド: /Users/aritahiroaki/n3-frontend_new/
+                </div>
+
+                <h3 style="margin-top: 30px; margin-bottom: 15px; color: var(--dark);">🔧 ツールの修正方法</h3>
+                <div style="background: #f9fafb; border-radius: 12px; padding: 20px; margin: 15px 0; border-left: 4px solid var(--primary);">
+                    <h4 style="color: var(--dark); margin-bottom: 15px;">手順1: 該当ツールのPHPファイルを開く</h4>
+                    <div class="file-path" style="margin-bottom: 15px;">
+                        例: 承認システムを修正する場合<br>
+                        /Users/aritahiroaki/NAGANO-3/N3-Development/03_approval_unified.php
+                    </div>
+                    
+                    <h4 style="color: var(--dark); margin-bottom: 15px; margin-top: 20px;">手順2: MCPエディターで編集</h4>
+                    <ul style="list-style-position: inside; line-height: 2; color: #374151;">
+                        <li>VS Code または任意のエディターで開く</li>
+                        <li>修正箇所を編集</li>
+                        <li>保存（Ctrl+S / Cmd+S）</li>
+                    </ul>
+                    
+                    <h4 style="color: var(--dark); margin-bottom: 15px; margin-top: 20px;">手順3: Gitでバージョン管理</h4>
+                    <div class="api-endpoint" style="background: #1f2937; color: #10b981;">
+                        git add 03_approval_unified.php<br>
+                        git commit -m "承認システム: XXX機能を追加"<br>
+                        git push origin main
+                    </div>
+                    
+                    <h4 style="color: var(--dark); margin-bottom: 15px; margin-top: 20px;">手順4: 動作確認</h4>
+                    <div class="api-endpoint">
+                        curl -X GET "http://localhost:8080/03_approval_unified.php?action=get_queue"
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 30px; margin-bottom: 15px; color: var(--dark);">🎯 開発時の重要な原則</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">
+                    <div style="background: #fee2e2; border-radius: 12px; padding: 20px; border-left: 4px solid var(--danger);">
+                        <h4 style="color: #991b1b; margin-bottom: 10px;">⚠️ 絶対に守るべきこと</h4>
+                        <ul style="list-style-position: inside; line-height: 2; color: #374151;">
+                            <li>products_master テーブル構造を変更しない</li>
+                            <li>統一API形式を維持する</li>
+                            <li>他ツールとの互換性を保つ</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="background: #d1fae5; border-radius: 12px; padding: 20px; border-left: 4px solid var(--success);">
+                        <h4 style="color: #065f46; margin-bottom: 10px;">✅ 推奨される開発方法</h4>
+                        <ul style="list-style-position: inside; line-height: 2; color: #374151;">
+                            <li>段階的に機能を追加</li>
+                            <li>テストを十分に実施</li>
+                            <li>コメントを詳細に記述</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="background: #fef3c7; border-radius: 12px; padding: 20px; border-left: 4px solid var(--warning);">
+                        <h4 style="color: #92400e; margin-bottom: 10px;">💡 デバッグのコツ</h4>
+                        <ul style="list-style-position: inside; line-height: 2; color: #374151;">
+                            <li>エラーログを確認 (error_log関数)</li>
+                            <li>APIレスポンスを検証</li>
+                            <li>データベースを直接確認</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 30px; margin-bottom: 15px; color: var(--dark);">🚀 新規ツール追加方法</h3>
+                <div style="background: #eff6ff; border-radius: 12px; padding: 20px; margin: 15px 0;">
+                    <ol style="list-style-position: inside; line-height: 2.5; color: #374151;">
+                        <li><strong>既存ツールをコピー:</strong> 似た機能のツールPHPファイルをコピー</li>
+                        <li><strong>番号を変更:</strong> 15_xxx_unified.php のように採番</li>
+                        <li><strong>API設計:</strong> action パラメータで機能を分岐</li>
+                        <li><strong>データベース接続:</strong> getSupabaseDatabaseConnection() を使用</li>
+                        <li><strong>統一応答:</strong> sendSuccessResponse() / sendErrorResponse() を使用</li>
+                        <li><strong>このUIに追加:</strong> 新ツールをこのドキュメントに記載</li>
+                    </ol>
+                </div>
+
+                <h3 style="margin-top: 30px; margin-bottom: 15px; color: var(--dark);">📚 参考ドキュメント</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 20px;">
+                    <div class="api-endpoint" style="cursor: pointer;">
+                        📄 PHP修正計画書
+                    </div>
+                    <div class="api-endpoint" style="cursor: pointer;">
+                        📊 最終ステータスレポート
+                    </div>
+                    <div class="api-endpoint" style="cursor: pointer;">
+                        ✅ 完全チェックリスト
+                    </div>
+                    <div class="api-endpoint" style="cursor: pointer;">
+                        🗄️ データベーススキーマ
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- フッター -->
+        <div style="background: white; border-radius: 16px; padding: 30px; text-align: center; margin-top: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+            <h3 style="color: var(--dark); margin-bottom: 15px;">🎉 システム完成度: 100%</h3>
+            <p style="color: #6b7280; line-height: 1.8;">
+                全14ツールが完全に統合され、単一のデータベースで動作しています。<br>
+                このUIドキュメントを参照して、効率的に開発を進めてください。
+            </p>
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                <span style="color: #9ca3af; font-size: 0.9em;">
+                    最終更新: 2025年10月30日 | N3システム開発チーム
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showTab(tabName) {
+            // すべてのタブを非表示
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // すべてのボタンを非アクティブ
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // 選択されたタブを表示
+            document.getElementById(tabName).classList.add('active');
+            
+            // 選択されたボタンをアクティブ化
+            event.target.classList.add('active');
+        }
+        
+        // ページ読み込み時のアニメーション
+        window.addEventListener('load', function() {
+            document.querySelectorAll('.tool-card').forEach((card, index) => {
+                setTimeout(() => {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(20px)';
+                    card.style.transition = 'all 0.5s ease';
+                    
+                    setTimeout(() => {
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                    }, 50);
+                }, index * 50);
+            });
+        });
+    </script>
+</body>
+</html>

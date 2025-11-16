@@ -1,5 +1,7 @@
 'use client';
 
+// 🚨🚨🚨 TEST HMR - 23:15 - もしこのコメントがブラウザのソースに表示されればHMRは動いている 🚨🚨🚨
+
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { useState, useEffect } from 'react';
@@ -18,10 +20,14 @@ import { TabData } from './components/Tabs/TabData';
 import { TabImages } from './components/Tabs/TabImages';
 import { TabTools } from './components/Tabs/TabTools';
 import { TabMirror } from './components/Tabs/TabMirror';
+import { TabCompetitors } from './components/Tabs/TabCompetitors';
+
 import { TabListing } from './components/Tabs/TabListing';
 import { TabShipping } from './components/Tabs/TabShipping';
+import { TabTaxCompliance } from './components/Tabs/TabTaxCompliance'; // ✅ 追加
 import { TabHTML } from './components/Tabs/TabHTML';
 import { TabFinal } from './components/Tabs/TabFinal';
+import { TabPricingStrategy } from './components/Tabs/TabPricingStrategy';
 
 export interface FullFeaturedModalProps {
   product: Product | null;
@@ -70,7 +76,7 @@ export function FullFeaturedModal({
   onOpenChange,
   onSave
 }: FullFeaturedModalProps) {
-  const [currentTab, setCurrentTab] = useState('overview');
+  const [currentTab, setCurrentTab] = useState('data'); // 🔥 テスト用に'data'に変更
   const [currentMarketplace, setCurrentMarketplace] = useState('ebay');
   
   // マーケットプレイス切り替え時の処理
@@ -174,6 +180,17 @@ export function FullFeaturedModal({
                 <div className={`${styles.tabPane} ${currentTab === 'mirror' ? styles.active : ''}`}>
                   <TabMirror product={product} />
                 </div>
+                <div className={`${styles.tabPane} ${currentTab === 'competitors' ? styles.active : ''}`}>
+                  <TabCompetitors product={product} />
+                </div>
+                <div className={`${styles.tabPane} ${currentTab === 'pricing' ? styles.active : ''}`}>
+                  <TabPricingStrategy 
+                    product={product} 
+                    marketplace={currentMarketplace}
+                    marketplaceName={currentMPConfig?.name || 'Unknown'}
+                  />
+                </div>
+
                 <div className={`${styles.tabPane} ${currentTab === 'listing' ? styles.active : ''}`}>
                   <TabListing 
                     product={product} 
@@ -183,6 +200,13 @@ export function FullFeaturedModal({
                 </div>
                 <div className={`${styles.tabPane} ${currentTab === 'shipping' ? styles.active : ''}`}>
                   <TabShipping 
+                    product={product} 
+                    marketplace={currentMarketplace}
+                    marketplaceName={currentMPConfig?.name || 'Unknown'}
+                  />
+                </div>
+                <div className={`${styles.tabPane} ${currentTab === 'tax' ? styles.active : ''}`}>
+                  <TabTaxCompliance 
                     product={product} 
                     marketplace={currentMarketplace}
                     marketplaceName={currentMPConfig?.name || 'Unknown'}

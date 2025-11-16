@@ -8,9 +8,10 @@ interface StatusBarProps {
   incomplete: number
   selected: number
   euResponsibleCount?: number
+  filterPassedCount?: number
 }
 
-export function StatusBar({ total, unsaved, ready, incomplete, selected, euResponsibleCount = 0 }: StatusBarProps) {
+export function StatusBar({ total, unsaved, ready, incomplete, selected, euResponsibleCount = 0, filterPassedCount = 0 }: StatusBarProps) {
   return (
     <div className="bg-card border border-border rounded-lg mb-3 p-2.5 shadow-sm">
       <div className="flex items-center justify-between text-xs">
@@ -30,6 +31,9 @@ export function StatusBar({ total, unsaved, ready, incomplete, selected, euRespo
           </span>
           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
             EU責任者: {euResponsibleCount}
+          </span>
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">
+            フィルター通過: {filterPassedCount}
           </span>
         </div>
 

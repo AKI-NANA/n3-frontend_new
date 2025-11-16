@@ -1,7 +1,0 @@
-# 在庫管理システム 自動実行設定
-# 2時間ごとに在庫・価格チェック + 自動利益計算
-
-0 */2 * * * php /Users/aritahiroaki/NAGANO-3/N3-Development/modules/yahoo_auction_complete/new_structure/02_scraping/inventory_management/cron/check_inventory.php >> /var/log/inventory_check.log 2>&1
-
-# 実行時刻例:
-# 00:00, 02:00, 04:00, 06:00, 08:00, 10:00, 12:00, 14:00, 16:00, 18:00, 20:00, 22:00

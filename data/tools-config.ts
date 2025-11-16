@@ -42,6 +42,16 @@ export const toolsConfig = [
     reactPath: '/shipping-calculator',
     icon: 'Truck',
     description: '国際送料計算・複数配送業者対応・保険/サイン料金込み'
+  },
+  {
+    id: 'wisdom-core',
+    slug: 'wisdom-core',
+    name: '開発ナレッジ事典',
+    category: 'development',
+    isReact: true,
+    reactPath: '/tools/wisdom-core',
+    icon: 'BookOpen',
+    description: 'AI協調型コードベース理解システム - プロジェクトのコードを分析・理解'
   }
 ] as const
 

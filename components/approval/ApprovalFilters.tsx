@@ -1,150 +1,83 @@
-// components/approval/ApprovalFilters.tsx
-'use client'
-
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Search, X } from 'lucide-react'
-import type { FilterState, ApprovalStats } from '@/types/approval'
-
 interface ApprovalFiltersProps {
-  filters: FilterState
-  onFilterChange: (filters: Partial<FilterState>) => void
-  stats?: ApprovalStats
+  filters: any
+  onFilterChange: (filters: any) => void
 }
 
-export function ApprovalFilters({ filters, onFilterChange, stats }: ApprovalFiltersProps) {
-  const hasActiveFilters = 
-    filters.status !== 'pending' ||
-    filters.aiFilter !== 'all' ||
-    filters.minPrice > 0 ||
-    filters.maxPrice > 0 ||
-    filters.search !== ''
-
-  const clearFilters = () => {
-    onFilterChange({
-      status: 'pending',
-      aiFilter: 'all',
-      minPrice: 0,
-      maxPrice: 0,
-      search: ''
-    })
-  }
-
+export function ApprovalFilters({ filters, onFilterChange }: ApprovalFiltersProps) {
   return (
-    <div className="space-y-4">
-      {/* 検索バー */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="商品タイトルで検索..."
-            value={filters.search}
-            onChange={(e) => onFilterChange({ search: e.target.value })}
-            className="pl-10"
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6 shadow-sm">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+          <i className="fas fa-filter text-blue-600"></i>
+          フィルター
+        </h3>
+        <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+          <i className="fas fa-redo mr-1"></i>
+          リセット
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* ステータスフィルター */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            承認ステータス
+          </label>
+          <select
+            value={filters.status}
+            onChange={(e) => onFilterChange({ ...filters, status: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          >
+            <option value="all">すべて</option>
+            <option value="pending">承認待ち</option>
+            <option value="approved">承認済み</option>
+            <option value="rejected">否認済み</option>
+          </select>
+        </div>
+
+        {/* データ完全性フィルター */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            データ完全性
+          </label>
+          <select
+            value={filters.dataCompleteness}
+            onChange={(e) => onFilterChange({ ...filters, dataCompleteness: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          >
+            <option value="all">すべて</option>
+            <option value="complete">完全 (100%)</option>
+            <option value="incomplete">不完全 (&lt;100%)</option>
+          </select>
+        </div>
+
+        {/* スコア範囲 */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            最低スコア
+          </label>
+          <input
+            type="number"
+            value={filters.minScore}
+            onChange={(e) => onFilterChange({ ...filters, minScore: e.target.value })}
+            placeholder="0"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           />
         </div>
-        {hasActiveFilters && (
-          <Button variant="outline" onClick={clearFilters}>
-            <X className="w-4 h-4 mr-2" />
-            フィルタークリア
-          </Button>
-        )}
-      </div>
 
-      {/* ステータスフィルター */}
-      <div className="flex flex-wrap gap-2">
-        <span className="text-sm font-semibold text-muted-foreground self-center">ステータス:</span>
-        <Button
-          variant={filters.status === 'pending' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => onFilterChange({ status: 'pending' })}
-        >
-          承認待ち
-          {stats && <Badge variant="secondary" className="ml-2">{stats.totalPending}</Badge>}
-        </Button>
-        <Button
-          variant={filters.status === 'approved' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => onFilterChange({ status: 'approved' })}
-        >
-          承認済み
-          {stats && <Badge variant="secondary" className="ml-2">{stats.totalApproved}</Badge>}
-        </Button>
-        <Button
-          variant={filters.status === 'rejected' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => onFilterChange({ status: 'rejected' })}
-        >
-          否認済み
-          {stats && <Badge variant="secondary" className="ml-2">{stats.totalRejected}</Badge>}
-        </Button>
-        <Button
-          variant={filters.status === 'all' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => onFilterChange({ status: 'all' })}
-        >
-          すべて
-        </Button>
-      </div>
-
-      {/* AI判定フィルター */}
-      <div className="flex flex-wrap gap-2">
-        <span className="text-sm font-semibold text-muted-foreground self-center">AI判定:</span>
-        <Button
-          variant={filters.aiFilter === 'ai-approved' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => onFilterChange({ aiFilter: 'ai-approved' })}
-          className={filters.aiFilter === 'ai-approved' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}
-        >
-          AI推奨
-          {stats && <Badge variant="secondary" className="ml-2">{stats.aiApproved}</Badge>}
-        </Button>
-        <Button
-          variant={filters.aiFilter === 'ai-pending' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => onFilterChange({ aiFilter: 'ai-pending' })}
-          className={filters.aiFilter === 'ai-pending' ? 'bg-yellow-600 hover:bg-yellow-700 text-white' : ''}
-        >
-          AI保留
-          {stats && <Badge variant="secondary" className="ml-2">{stats.aiPending}</Badge>}
-        </Button>
-        <Button
-          variant={filters.aiFilter === 'ai-rejected' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => onFilterChange({ aiFilter: 'ai-rejected' })}
-          className={filters.aiFilter === 'ai-rejected' ? 'bg-red-600 hover:bg-red-700 text-white' : ''}
-        >
-          AI非推奨
-          {stats && <Badge variant="secondary" className="ml-2">{stats.aiRejected}</Badge>}
-        </Button>
-        <Button
-          variant={filters.aiFilter === 'all' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => onFilterChange({ aiFilter: 'all' })}
-        >
-          すべて
-        </Button>
-      </div>
-
-      {/* 価格フィルター */}
-      <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-sm font-semibold text-muted-foreground">価格帯:</span>
-        <Input
-          type="number"
-          placeholder="最低価格"
-          value={filters.minPrice || ''}
-          onChange={(e) => onFilterChange({ minPrice: Number(e.target.value) || 0 })}
-          className="w-32"
-        />
-        <span className="text-muted-foreground">〜</span>
-        <Input
-          type="number"
-          placeholder="最高価格"
-          value={filters.maxPrice || ''}
-          onChange={(e) => onFilterChange({ maxPrice: Number(e.target.value) || 0 })}
-          className="w-32"
-        />
+        {/* 検索 */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            商品検索
+          </label>
+          <input
+            type="text"
+            value={filters.search}
+            onChange={(e) => onFilterChange({ ...filters, search: e.target.value })}
+            placeholder="商品名、SKU..."
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          />
+        </div>
       </div>
     </div>
   )

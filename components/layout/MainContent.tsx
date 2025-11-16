@@ -5,6 +5,7 @@ import { useEffect, useState } from "react"
 export default function MainContent({ children }: { children: React.ReactNode }) {
   const [topPadding, setTopPadding] = useState(16)
   const [leftMargin, setLeftMargin] = useState(0)
+  const [rightMargin, setRightMargin] = useState(0)
 
   useEffect(() => {
     const updateLayout = () => {
@@ -17,7 +18,7 @@ export default function MainContent({ children }: { children: React.ReactNode })
         setTopPadding(16)
       }
 
-      // サイドバー幅の確認
+      // 左サイドバー幅の確認
       const sidebarState = document.body.getAttribute('data-sidebar-state') || 'expanded'
       
       switch (sidebarState) {
@@ -33,15 +34,30 @@ export default function MainContent({ children }: { children: React.ReactNode })
         default:
           setLeftMargin(0)
       }
+
+      // 右サイドバー幅の確認
+      const rightSidebarState = document.body.getAttribute('data-right-sidebar-state') || 'hidden'
+      
+      switch (rightSidebarState) {
+        case 'pinned':
+          setRightMargin(60) // ピン留め時はアイコンのみ
+          break
+        case 'expanded':
+          setRightMargin(0) // ホバー展開時はオーバーレイなので0
+          break
+        case 'hidden':
+        default:
+          setRightMargin(0)
+      }
     }
 
     updateLayout()
 
-    // サイドバー状態の変化を監視
+    // サイドバー状態の変化を監視（左右両方）
     const observer = new MutationObserver(updateLayout)
     observer.observe(document.body, { 
       attributes: true, 
-      attributeFilter: ['data-header-visible', 'data-sidebar-state'] 
+      attributeFilter: ['data-header-visible', 'data-sidebar-state', 'data-right-sidebar-state'] 
     })
 
     return () => observer.disconnect()
@@ -52,7 +68,8 @@ export default function MainContent({ children }: { children: React.ReactNode })
       className="pb-14 px-6 min-h-screen transition-all duration-300"
       style={{ 
         paddingTop: `${topPadding}px`,
-        marginLeft: `${leftMargin}px`
+        marginLeft: `${leftMargin}px`,
+        marginRight: `${rightMargin}px`
       }}
     >
       {children}

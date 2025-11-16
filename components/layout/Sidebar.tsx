@@ -8,11 +8,12 @@ import {
   FileText, DollarSign, Users, Shield, Globe,
   Pin, ChevronRight, Upload, Cog, CheckCircle, Edit, Calendar, Code, LogOut, GitBranch
 } from "lucide-react"
+import { getSortedNavigationItems } from "./SidebarConfig"
 
 type SidebarState = "hidden" | "expanded" | "icon-only"
 
 const iconMap: any = {
-  home: Home, cube: Package, warehouse: Warehouse, "shopping-cart": ShoppingCart,
+  home: Home, cube: Package, package: Package, warehouse: Warehouse, "shopping-cart": ShoppingCart,
   robot: Bot, calculator: Calculator, settings: Settings, link: Link,
   list: List, plus: Plus, tags: Tags,
   "bar-chart": BarChart3, "trending-up": TrendingUp, archive: Archive,
@@ -20,7 +21,7 @@ const iconMap: any = {
   database: Database, "file-text": FileText, "dollar-sign": DollarSign,
   users: Users, shield: Shield, globe: Globe, upload: Upload,
   cog: Cog, "check-circle": CheckCircle, edit: Edit, calendar: Calendar,
-  code: Code, logout: LogOut, "git-branch": GitBranch
+  code: Code, logout: LogOut, "git-branch": GitBranch, tool: Cog
 }
 
 const statusLabels = {
@@ -29,6 +30,7 @@ const statusLabels = {
   pending: "準備中"
 }
 
+<<<<<<< HEAD
 const navigationItems = [
   { id: "dashboard", label: "ダッシュボード", icon: "home", link: "/" },
   {
@@ -153,6 +155,8 @@ const navigationItems = [
   },
 ]
 
+=======
+>>>>>>> 3dbe5f3 (feat: ローカルとリモートの変更をマージ)
 export default function Sidebar() {
   const [mounted, setMounted] = useState(false)
   const [sidebarState, setSidebarState] = useState<SidebarState>("icon-only")
@@ -160,6 +164,9 @@ export default function Sidebar() {
   const sidebarRef = useRef<HTMLDivElement>(null)
   const submenuRef = useRef<HTMLDivElement>(null)
   const submenuTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // ソート済みメニューを取得
+  const navigationItems = getSortedNavigationItems()
 
   useEffect(() => {
     setMounted(true)
@@ -284,8 +291,9 @@ export default function Sidebar() {
       <div style={{ marginTop: '64px' }}>
         {sidebarState !== "hidden" && (
           <div
-            className="h-[54px] px-3 flex items-center text-white/70 hover:text-white 
+            className="px-3 flex items-center text-white/70 hover:text-white 
                      border-b border-white/10 transition-colors cursor-pointer"
+            style={{ height: '42px' }}
             onClick={handleToggle}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--sidebar-hover, rgba(52, 152, 219, 0.3))'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -308,13 +316,14 @@ export default function Sidebar() {
           >
             <a
               href={item.link || "#"}
-              className="h-[54px] px-3 flex items-center text-white/70 hover:text-white 
+              className="px-3 flex items-center text-white/70 hover:text-white 
                        border-b border-white/10 transition-colors cursor-pointer group"
+              style={{ height: '42px' }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--sidebar-hover, rgba(52, 152, 219, 0.3))'}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
               <div className="w-5 flex-shrink-0">
-                {renderIcon(item.icon)}
+                {renderIcon(item.icon, 20)}
               </div>
               {sidebarState === "expanded" && (
                 <>
@@ -324,6 +333,7 @@ export default function Sidebar() {
               )}
             </a>
 
+            {/* サブメニュー（第二階層）- 元の高さを維持 */}
             {item.submenu && (sidebarState === "expanded" || sidebarState === "icon-only") && (
               <div
                 ref={submenuRef}
@@ -332,8 +342,8 @@ export default function Sidebar() {
                           ${activeSubmenu === item.id ? "opacity-100 visible" : 
                             "opacity-0 invisible pointer-events-none"}`}
                 style={{ 
-                  top: `${64 + 54 + index * 54}px`,
-                  bottom: '40px',
+                  top: '64px',
+                  bottom: '0px',
                   left: getSubmenuLeft(),
                   backgroundColor: 'var(--submenu-bg, #34495e)'
                 }}

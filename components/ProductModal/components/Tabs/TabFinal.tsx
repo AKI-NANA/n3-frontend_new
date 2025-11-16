@@ -21,11 +21,14 @@ export function TabFinal({ product, marketplace, marketplaceName }: TabFinalProp
   const setComponents = scrapedData.set_components || [];
 
   // 検証ロジック
+  const profitAmountUsd = (product as any)?.profit_amount_usd || (product as any)?.profit || 0
+  const profitMargin = (product as any)?.profit_margin || (product as any)?.profit_margin_percent || 0
+  
   const validation = {
     hasTitle: englishTitle.length > 0,
     hasSKU: sku.length > 0,
     hasPrice: (listingData.ddp_price_usd || 0) > 0,
-    hasProfit: ((product as any)?.profit_amount_usd || 0) > 0,
+    hasProfit: profitAmountUsd > 0,
     hasCategory: !!(product as any)?.ebay_api_data?.category_id,
     hasShipping: !!listingData.shipping_service,
     hasHTML: !!listingData.html_description,
@@ -34,8 +37,16 @@ export function TabFinal({ product, marketplace, marketplaceName }: TabFinalProp
   };
 
   const allValid = Object.values(validation).every(v => v);
-  const profitAmount = (product as any)?.profit_amount_usd || 0;
-  const isProfitable = profitAmount > 0;
+  const isProfitable = profitAmountUsd > 0;
+  
+  console.log('💰 TabFinal - 利益データ:', {
+    profitAmountUsd,
+    profitMargin,
+    isProfitable,
+    product_profit: (product as any)?.profit,
+    product_profit_amount_usd: (product as any)?.profit_amount_usd,
+    product_profit_margin: (product as any)?.profit_margin
+  })
   
   const handlePublish = () => {
     if (!allValid) {
@@ -119,14 +130,14 @@ export function TabFinal({ product, marketplace, marketplaceName }: TabFinalProp
             </div>
             <div>
               <strong>利益率:</strong><br/>
-              <span style={{ color: ((product as any)?.profit_margin || 0) > 0 ? '#28a745' : '#dc3545', fontWeight: 700 }}>
-                {(product as any)?.profit_margin || 0}%
+              <span style={{ color: profitMargin > 0 ? '#28a745' : '#dc3545', fontWeight: 700 }}>
+                {profitMargin.toFixed(1)}%
               </span>
             </div>
             <div>
               <strong>利益額:</strong><br/>
-              <span style={{ color: profitAmount > 0 ? '#28a745' : '#dc3545', fontWeight: 700, fontSize: '1.1rem' }}>
-                ${profitAmount.toFixed(2)}
+              <span style={{ color: profitAmountUsd > 0 ? '#28a745' : '#dc3545', fontWeight: 700, fontSize: '1.1rem' }}>
+                ${profitAmountUsd.toFixed(2)}
               </span>
             </div>
           </div>

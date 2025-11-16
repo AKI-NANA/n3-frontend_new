@@ -1,0 +1,286 @@
+📄 I. 開発指示書: 総合ダッシュボード (Master Dashboard V1.0)1. 🎯 目的すべてのモールに対応した受注・出荷・出品データを一元集約し、日々の業務で「アカウントヘルス維持」のために必要な情報とアクションリンクを、シンプルかつスタイリッシュなUIで提供する。2. 技術スタックと環境ファイル名: MasterDashboard.jsx (シングルファイル構造を維持)技術: React (Hooks), Tailwind CSS (統一テーマ適用), Firebase (Auth/設定値管理), Google Gemini API (AI分析)データソース: 既存のOrderManager_V2およびShippingManagerが参照するordersコレクション、および各モールのAPIモック。3. 開発タスク詳細タスク A: データモデルとUIの統一 (アカウントヘルス最優先)グローバルKPIの統一:dashboard_html.htmlのモダンなデザインを基に、以下の最重要KPIをトップに配置します。全体売上 (30日/前日比)未処理注文総数 (全モール合計)緊急タスク数 (全モール合計)総合利益率モールの健康状態カード (Mall Health Card) の実装:multi_marketplace_dashboard.htmlのカード形式を採用し、対応する全モール（eBay, Shopee, Coupang, Amazon, Shopify, メルカリなど）ごとに専用のカードを実装します。各カードには、以下のアカウントヘルスに直結するクリティカルなKPIを色分けして表示します。未発送注文数 (赤/黄/緑)未回答メッセージ数 (赤/黄/緑)セラーレーティング (数値またはステータス)本日の売上（速報）タスク B: 統合リンクとアクションセンターの構築統一アクションボタン:ダッシュボードの目立つ位置（サイドバーまたはトップ）に、開発済みの各種ツールへのダイレクトリンクを配置します。受注管理 (OrderManager_V2.jsx)出荷管理 (ShippingManager.jsx)eBay専用ダッシュボード (EbayDashboard.jsx)モール機能へのダイレクトリンク:タスク Aで実装するMall Health Cardの内部に、そのモールのアカウントヘルスに直結する機能への外部リンク（eBay Seller Hub, Shopee Seller Centreなど）を配置します。例: 「未発送注文数」をクリック $\rightarrow$ モールの未発送注文一覧ページへ遷移。例: 「未回答メッセージ」をクリック $\rightarrow$ モールのチャット/メッセージ管理画面へ遷移。タスク C: AIヘルスチェックとアラートシステムの統合アラートパネルの統合:dashboard_html.htmlのアラートセクションを拡張し、全モールからの緊急度の高いアラート（例: eBayのポリシー違反警告、Amazonのパフォーマンス低下、Shopeeの出荷遅延率超過）を一覧表示します。アラートをクリックすると、その詳細情報と、対応方法（AI提案または手動対応リンク）が表示されるようにします。総合AIヘルスチェック:EbayDashboard.jsxで実装したAI分析機能を、全モールを横断した総合ヘルスチェックに拡張します。プロンプト: 「全モールの現在のKPI（売上、利益率、未処理タスク、セラーレーティング）に基づき、最も致命的なリスクと、今週優先すべきビジネス戦略を提案してください。」4. 厳守すべき技術的制約シングルファイル構造: 全てのコードは、MasterDashboard.jsxの単一ファイル内に収めること。Tailwind CSSの使用: 既存のHTMLデザイン（特にスタイリッシュな要素）を参考に、モダンで統一されたTailwind CSSデザインを適用すること。データの互換性: 既存ツールと同じFirebaseのデータ構造を参照し、データの整合性を維持すること。👨‍💻 II. 開発実装: MasterDashboard.jsx (叩き台)上記の指示書に基づき、React/Tailwind CSSでコードを実装します。デザインは、複数のHTMLから最良の要素を抽出した、シンプルかつスタイリッシュなものとします。JavaScriptimport React, { useState, useEffect, useMemo, useCallback } from 'react';
+// Firebaseのインポートは省略（既存ツールから設定を流用する前提）
+// import { initializeApp } from 'firebase/app';
+// import { getFirestore, collection, doc, onSnapshot, query } from 'firebase/firestore';
+// import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
+
+// ⚠️ 【重要】以下の定数を実際の認証情報に置き換えてください。
+const API_KEY = ""; // Google Gemini API Key
+const __DASHBOARD_VERSION = "Master V1.0";
+
+// ------------------------------------
+// UI/データ定数
+// ------------------------------------
+const ALL_MALLS_DATA = [
+    { id: 'ebay', name: 'eBay', primaryColor: 'blue-600', icon: 'fab fa-ebay', url: 'https://www.ebay.com/sh/dash', 
+      stats: { unshipped: 5, messages: 3, rating: 4.85, sales: 550000, danger: true, riskUrl: 'https://www.ebay.com/sh/performance' } },
+    { id: 'shopee', name: 'Shopee', primaryColor: 'red-600', icon: 'fas fa-store', url: 'https://seller.shopee.jp/',
+      stats: { unshipped: 12, messages: 0, rating: 4.92, sales: 320000, danger: false, riskUrl: 'https://seller.shopee.jp/account-health' } },
+    { id: 'amazon', name: 'Amazon', primaryColor: 'orange-600', icon: 'fab fa-amazon', url: 'https://sellercentral.amazon.co.jp/',
+      stats: { unshipped: 0, messages: 1, rating: 98.2, sales: 850000, danger: true, riskUrl: 'https://sellercentral.amazon.co.jp/performance/dashboard' } },
+    { id: 'coupang', name: 'Coupang', primaryColor: 'sky-600', icon: 'fas fa-box-open', url: 'https://sell.coupang.com/',
+      stats: { unshipped: 2, messages: 0, rating: 4.70, sales: 180000, danger: false, riskUrl: 'https://sell.coupang.com/dashboard' } },
+    { id: 'mercari', name: 'メルカリ', primaryColor: 'pink-600', icon: 'fas fa-heart', url: 'https://www.mercari.com/jp/',
+      stats: { unshipped: 1, messages: 0, rating: 5.0, sales: 90000, danger: false, riskUrl: 'https://www.mercari.com/jp/mypage' } },
+];
+
+const INITIAL_GLOBAL_STATS = {
+    totalSales: 2000000, // 200万円
+    yoySales: 15, // 前日比+15%
+    unprocessedOrders: 20, // 全モール合計
+    urgentTasks: 8, // 全モール合計
+    overallProfitRate: 25.5,
+};
+
+const INITIAL_ALERTS = [
+    { id: 101, mall: 'Amazon', type: 'Policy', message: 'ASIN: B01...について知的財産権の申し立てを受けました。', severity: 'danger' },
+    { id: 102, mall: 'eBay', type: 'Performance', message: '未発送注文の遅延率が4%に上昇しています。', severity: 'warning' },
+    { id: 103, mall: 'Shopee', type: 'Shipping', message: '今日の出荷期限超過が迫っている注文が3件あります。', severity: 'warning' },
+];
+
+const getStatusColor = (count, dangerThreshold) => {
+    if (count > dangerThreshold) return 'text-red-600 bg-red-100 border-red-400';
+    if (count > 0) return 'text-yellow-600 bg-yellow-100 border-yellow-400';
+    return 'text-green-600 bg-green-100 border-green-400';
+};
+
+// ------------------------------------
+// メインアプリケーションコンポーネント
+// ------------------------------------
+
+const MasterDashboard = () => {
+    const [stats, setStats] = useState(INITIAL_GLOBAL_STATS);
+    const [mallData, setMallData] = useState(ALL_MALLS_DATA);
+    const [alerts, setAlerts] = useState(INITIAL_ALERTS);
+    const [aiHealthAnalysis, setAiHealthAnalysis] = useState('AIによる総合ヘルスチェックを実行してください...');
+    const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState('');
+    
+    // ------------------------------------
+    // タスク C: AIヘルスチェック
+    // ------------------------------------
+    const runAiHealthCheck = async () => {
+        if (!API_KEY) {
+            setAiHealthAnalysis('Gemini API Keyが設定されていません。AI分析を実行できません。');
+            return;
+        }
+
+        setLoading(true);
+        setAiHealthAnalysis('<div class="text-center py-4 text-blue-600"><i class="fas fa-spinner fa-spin mr-2"></i>AIが全モールデータを分析中...</div>');
+
+        const prompt = `
+            現在の全モールのKPIは以下の通りです。
+            - 全体売上: ${stats.totalSales.toLocaleString()}円 (前日比 +${stats.yoySales}%)
+            - 未処理注文総数: ${stats.unprocessedOrders}件
+            - 緊急タスク総数: ${stats.urgentTasks}件
+            - 総合利益率: ${stats.overallProfitRate}%
+            
+            各モールの状況:
+            ${mallData.map(m => ` - ${m.name}: 未発送${m.stats.unshipped}件, メッセージ${m.stats.messages}件, 評価${m.stats.rating}`).join('\n')}
+            
+            これらのデータに基づき、以下の2点を提案してください。
+            1. **最も致命的なリスク** (具体的なモールと理由を明記)
+            2. **今週優先すべきビジネス戦略** (具体的なアクションを3つ箇条書きで提案)
+        `;
+
+        try {
+            // モック応答 (2秒遅延)
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            const mockAnalysis = `
+                <h4 class="font-bold text-lg text-red-700 mb-2 border-b pb-1">🛑 総合AIヘルスチェック結果</h4>
+                <div class="space-y-3">
+                    <p class="font-semibold text-gray-700">1. 最も致命的なリスク:</p>
+                    <div class="p-3 bg-red-50 border-l-4 border-red-500 rounded text-sm">
+                        <span class="font-bold">AmazonとeBayの複合リスク</span>: Amazonで知的財産権の申し立てアラートが出ており、アカウント停止の危機が迫っています。同時にeBayでも出荷遅延率が高く、セラーレベル低下（手数料増額）のリスクが増大しています。
+                    </div>
+                    
+                    <p class="font-semibold text-gray-700">2. 今週優先すべきビジネス戦略:</p>
+                    <ol class="list-decimal list-inside space-y-2 text-sm text-gray-700">
+                        <li>**【最優先】Amazon IP申立てへの対応**：該当ASINの仕入れ元資料を準備し、直ちにAmazonへ異議申し立てを行うこと。</li>
+                        <li>**【出荷体制の強化】** 未発送注文数（合計${stats.unprocessedOrders}件）をゼロにするため、午前中に`ShippingManager`で全モールの出荷を完了させること。</li>
+                        <li>**【利益改善】** 総合利益率 (${stats.overallProfitRate}%) の維持・向上のため、高利益率モール（Shopee, メルカリ）の出品を強化すること。</li>
+                    </ol>
+                </div>
+            `;
+            setAiHealthAnalysis(mockAnalysis);
+
+        } catch (error) {
+            setAiHealthAnalysis('<div class="text-red-600 py-4"><i class="fas fa-exclamation-triangle mr-2"></i>AI分析中にエラーが発生しました。</div>');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // ------------------------------------
+    // UIコンポーネント
+    // ------------------------------------
+    
+    // タスク A: グローバルKPIカード
+    const GlobalStatCard = ({ title, value, unit, icon, color, change, changeColor }) => (
+        <div className="bg-white p-4 rounded-xl shadow-lg border border-gray-200">
+            <div className={`text-2xl font-extrabold ${color} mb-1 flex items-center gap-2`}>
+                <i className={`${icon} text-lg`}></i> {value}{unit}
+            </div>
+            <div className="text-sm font-medium text-gray-600">{title}</div>
+            {change && (
+                <div className={`text-xs mt-1 ${changeColor}`}>
+                    <i className={`fas ${change > 0 ? 'fa-caret-up' : 'fa-caret-down'}`}></i> {change}% (前日比)
+                </div>
+            )}
+        </div>
+    );
+
+    // タスク A: モールヘルスカード
+    const MallHealthCard = ({ mall }) => {
+        const { unshipped, messages, rating, sales, danger, riskUrl } = mall.stats;
+        const ratingText = mall.name === 'Amazon' ? `${rating}%` : `${rating} / 5.0`;
+
+        return (
+            <div className={`p-4 rounded-xl shadow-md border-l-4 ${danger ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-white'} transition hover:shadow-lg`}>
+                <div className="flex justify-between items-center mb-3 border-b pb-2">
+                    <a href={mall.url} target="_blank" rel="noopener noreferrer" className={`text-lg font-bold flex items-center gap-2 text-${mall.primaryColor} hover:underline`}>
+                        <i className={mall.icon}></i> {mall.name}
+                    </a>
+                    <span className="text-sm text-gray-500 font-semibold">¥{sales.toLocaleString()}</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-xs font-semibold">
+                    <a href={riskUrl || mall.url} target="_blank" className={`p-2 rounded-lg border flex flex-col items-center justify-center cursor-pointer hover:shadow-sm transition ${getStatusColor(unshipped, 2)}`}>
+                        <span className="text-xl font-bold">{unshipped}</span>
+                        <span className="mt-1">未発送注文</span>
+                    </a>
+                    <a href={mall.url + '/messages'} target="_blank" className={`p-2 rounded-lg border flex flex-col items-center justify-center cursor-pointer hover:shadow-sm transition ${getStatusColor(messages, 0)}`}>
+                        <span className="text-xl font-bold">{messages}</span>
+                        <span className="mt-1">未回答メッセージ</span>
+                    </a>
+                    <div className="p-2 rounded-lg border flex flex-col items-center justify-center bg-gray-50">
+                        <span className="text-lg font-bold text-gray-800">{ratingText}</span>
+                        <span className="mt-1 text-gray-600">セラー評価</span>
+                    </div>
+                    <div className="p-2 rounded-lg border flex flex-col items-center justify-center bg-gray-50">
+                        <span className="text-lg font-bold text-gray-800">
+                            <i className={`fas fa-exclamation-triangle ${danger ? 'text-red-500' : 'text-green-500'}`}></i>
+                        </span>
+                        <span className="mt-1 text-gray-600">緊急リスク</span>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+    
+    // タスク B: 統合リンク (サイドバーとして実装)
+    const SidebarLink = ({ icon, text, url, color }) => (
+        <a href={url} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-3 p-3 rounded-lg text-sm font-medium transition text-white bg-${color} hover:bg-opacity-80`}>
+            <i className={`${icon} text-lg`}></i> {text}
+        </a>
+    );
+
+    return (
+        <div className="min-h-screen flex bg-gray-100 font-sans">
+            {/* サイドバー: 統合リンク (タスク B) */}
+            <div className="w-64 bg-gray-800 p-4 shadow-2xl space-y-6 flex flex-col h-screen sticky top-0">
+                <div className="text-2xl font-extrabold text-white border-b border-gray-700 pb-3 mb-3">
+                    <i className="fas fa-layer-group text-blue-400"></i> {__DASHBOARD_VERSION}
+                </div>
+                
+                <div className="space-y-2">
+                    <SidebarLink icon="fas fa-tachometer-alt" text="総合ダッシュボード" url="#" color="blue-500" />
+                    <SidebarLink icon="fas fa-shopping-cart" text="受注管理へ" url="/order-manager" color="indigo-500" />
+                    <SidebarLink icon="fas fa-shipping-fast" text="出荷管理へ" url="/shipping-manager" color="purple-500" />
+                    <SidebarLink icon="fab fa-ebay" text="eBayダッシュボード" url="/ebay-dashboard" color="red-500" />
+                </div>
+                
+                <div className="pt-4 border-t border-gray-700 space-y-2">
+                    <p className="text-xs text-gray-400 font-semibold uppercase">モール別リンク</p>
+                    {mallData.map(m => (
+                        <SidebarLink key={m.id} icon={m.icon} text={m.name} url={m.url} color={m.primaryColor} />
+                    ))}
+                </div>
+            </div>
+
+            {/* メインコンテンツ */}
+            <div className="flex-1 p-6 overflow-y-auto">
+                <header className="mb-6 flex justify-between items-center border-b pb-4">
+                    <h1 className="text-3xl font-bold text-gray-800">グローバルサマリー</h1>
+                    <button onClick={() => runAiHealthCheck()} disabled={loading} className="py-2 px-4 rounded text-white font-semibold flex items-center gap-2 transition bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400">
+                        <i className={`fas ${loading ? 'fa-spinner fa-spin' : 'fa-brain'}`}></i> {loading ? '分析中...' : '総合AIヘルスチェック'}
+                    </button>
+                </header>
+                
+                {/* グローバルKPI (タスク A-1) */}
+                <div className="grid grid-cols-4 gap-6 mb-8">
+                    <GlobalStatCard 
+                        title="全体売上 (30日)" 
+                        value={(stats.totalSales / 10000).toLocaleString()} 
+                        unit="万円" 
+                        icon="fas fa-chart-line" 
+                        color="text-blue-600" 
+                        change={stats.yoySales} 
+                        changeColor={stats.yoySales > 0 ? 'text-green-600' : 'text-red-600'}
+                    />
+                    <GlobalStatCard 
+                        title="未処理注文総数" 
+                        value={stats.unprocessedOrders} 
+                        unit="件" 
+                        icon="fas fa-hourglass-half" 
+                        color="text-red-600" 
+                    />
+                    <GlobalStatCard 
+                        title="緊急タスク総数" 
+                        value={stats.urgentTasks} 
+                        unit="件" 
+                        icon="fas fa-exclamation-triangle" 
+                        color="text-yellow-600" 
+                    />
+                    <GlobalStatCard 
+                        title="総合利益率" 
+                        value={stats.overallProfitRate} 
+                        unit="%" 
+                        icon="fas fa-hand-holding-usd" 
+                        color="text-green-600" 
+                    />
+                </div>
+                
+                {/* モールヘルスチェック (タスク A-2) */}
+                <h2 className="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">モール別アカウントヘルス</h2>
+                <div className="grid grid-cols-3 gap-6 mb-8">
+                    {mallData.map(mall => <MallHealthCard key={mall.id} mall={mall} />)}
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                    {/* AIヘルスチェック結果 (タスク C-2) */}
+                    <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200" id="ai-health-check">
+                        <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <i className="fas fa-stethoscope text-blue-500"></i> AI総合戦略レポート
+                        </h2>
+                        <div dangerouslySetInnerHTML={{ __html: aiHealthAnalysis }}></div>
+                    </div>
+
+                    {/* 緊急アラート (タスク C-1) */}
+                    <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200" id="urgent-alerts">
+                        <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <i className="fas fa-bell text-red-500"></i> 緊急アラート・要対応事項
+                        </h2>
+                        <div className="space-y-3">
+                            {alerts.map(alert => (
+                                <div key={alert.id} className={`p-3 rounded-lg border-l-4 ${alert.severity === 'danger' ? 'bg-red-50 border-red-500' : 'bg-yellow-50 border-yellow-500'}`}>
+                                    <span className="font-bold text-sm text-gray-800 flex justify-between items-center">
+                                        <span>[{alert.mall}] {alert.type}</span>
+                                        <button className="text-blue-600 hover:text-blue-800 text-xs font-normal">詳細/対応</button>
+                                    </span>
+                                    <p className="text-xs text-gray-700 mt-1">{alert.message}</p>
+                                </div>
+                            ))}
+                            {alerts.length === 0 && <p className="text-center text-gray-500 py-4">現在、緊急対応が必要なアラートはありません。</p>}
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    );
+};
+
+export default MasterDashboard;
+📄 III. Claude/MCP への最終統合指示書提供された**「総合ダッシュボード」**（MasterDashboard.jsx）をプロジェクトに統合し、これまでに開発した全ツールと連携させて実運用可能な状態に移行するための指示書を作成します。I. 🎯 目標MasterDashboard.jsxファイルをプロジェクトのトップレベルのダッシュボードとしてデプロイし、すべてのツールの中心となる情報ハブとして機能させる。特に、アカウントヘルス維持に必要な情報の可視化とアクション導線を確実にする。II. 💾 外部API・データ連携の完了（最優先）このシステムは既存の全ツール（受注管理、出荷管理、eBayダッシュボード）と共通の設定およびデータ構造を使用する必要があります。Gemini API Keyの設置（AI機能の有効化）:定数 API_KEY に、有効な Google Gemini API Key を設定し、AIヘルスチェック機能が実行可能であることを確認してください。JavaScriptconst API_KEY = "[ここに有効なGemini API Keyを設定]";
+Firebase認証情報の設置:既存のツール（OrderManager_V2など）で使用している同一の有効な Firebase プロジェクトの認証情報をダッシュボードに設定し、データ連携の基盤を確立してください。データマッピング:モックデータ (INITIAL_GLOBAL_STATS, ALL_MALLS_DATA, INITIAL_ALERTS) を、Firebaseの実際のデータや、各モールのAPIから取得したデータに置き換えるためのデータ取得ロジックを実装してください。特に未処理注文数と緊急タスク数は、既存の受注・出荷システムのデータと連動させること。III. 🖥️ 機能とUI/UXの最終検証1. 🔗 全リンクの検証 (タスク B)サイドバー: 「受注管理へ」「出荷管理へ」「eBayダッシュボード」のリンクが、開発済みの対応するツールコンポーネント（またはURL）へ正しく遷移すること。モールヘルスカード: 各モールの名前とアイコンのリンク、および未発送・未回答メッセージのリンクが、モールの外部サイトの対応する管理ページ（eBay Seller Hub、Shopee Seller Centreなど）へ正しく遷移すること。2. 🧠 アカウントヘルス機能の検証 (タスク A & C)Mall Health Cardの危険度判定（dangerフラグ）が、セラー評価や未発送数に基づき適切に色分けされていること。「総合AIヘルスチェック」が実行され、全モールのデータに基づいた**「最も致命的なリスク」と「今週優先すべき戦略」** が論理的に提案されること。3. 🎨 UI/UXの検証ダッシュボード全体が、提供されたHTMLファイル群の要素を組み合わせた、シンプルで視認性の高い、統一されたデザイン（Tailwind CSS）になっていること。IV. 📋 技術的制約の最終確認単一ファイル構造: 全てのコードがMasterDashboard.jsxの単一ファイル内に含まれていること。デザイン: 全体を通して、スタイリッシュかつ明確な色分け（アカウントヘルス維持のため）がされていること。この指示書に基づき、MasterDashboardをプロジェクトの中核として統合し、日常的なアカウントヘルス管理を実現してください。

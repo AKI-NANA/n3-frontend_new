@@ -1,6 +1,8 @@
 // app/api/tools/shipping-calculate/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
+
+const supabase = createClient()
 import { calculateUsaPriceV3 } from '@/lib/ebay-pricing/usa-price-calculator-v3'
 
 export async function POST(request: NextRequest) {
@@ -18,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     // 商品データを取得
     const { data: products, error: fetchError } = await supabase
-      .from('products')
+      .from('products_master') // 🔥 products → products_master
       .select('*')
       .in('id', productIds)
 
@@ -79,13 +81,14 @@ export async function POST(request: NextRequest) {
           ...listingData,
           // ポリシー情報
           usa_shipping_policy_name: breakdown.selectedPolicyName,
-          shipping_service: 'USA DDP (RT Express)',
+          shipping_service: `${breakdown.carrierName} - ${breakdown.serviceName}`, // ✅ 配送会社 - サービス名
           // 価格情報
           ddp_price_usd: breakdown.finalTotal,              // DDP価格（総売上）
           ddu_price_usd: breakdown.finalProductPrice,        // DDU価格（商品価格のみ）
           product_price_usd: breakdown.finalProductPrice,    // 商品価格のみ
           // 送料情報
-          shipping_cost_usd: breakdown.finalShipping,       // DDP送料
+          base_shipping_usd: breakdown.selectedBaseShipping,  // ✅ 実送料（配送会社に支払う実際の送料）
+          shipping_cost_usd: breakdown.finalShipping,       // DDP送料（顾客が支払う送料）
           // 利益情報
           profit_margin: breakdown.profitMargin,             // 利益率（還付前）
           profit_amount_usd: breakdown.profit,               // 利益額（還付前）
@@ -94,7 +97,7 @@ export async function POST(request: NextRequest) {
         }
 
         const { error: updateError } = await supabase
-          .from('products')
+          .from('products_master') // 🔥 products → products_master
           .update({
             listing_data: updatedListingData,
             // トップレベルにも保存（検索・ソート用）
@@ -102,7 +105,7 @@ export async function POST(request: NextRequest) {
             ddp_price_usd: breakdown.finalTotal,
             shipping_cost_usd: breakdown.finalShipping,
             shipping_policy: breakdown.selectedPolicyName,
-            sm_profit_margin: breakdown.profitMargin,
+            profit_margin: breakdown.profitMargin,  // ✅ 修正: sm_profit_margin → profit_margin
             profit_amount_usd: breakdown.profit,
             updated_at: new Date().toISOString()
           })

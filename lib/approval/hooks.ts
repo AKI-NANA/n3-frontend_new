@@ -1,56 +1,73 @@
 /**
- * 承認システムカスタムHooks
+ * 承認システム - カスタムHooks
+ * NAGANO-3 v2.0
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { toast } from 'sonner'
+import type {
+  ApprovalProduct,
+  FilterState,
+  ApprovalStats,
+  UseApprovalDataReturn,
+  UseSelectionReturn,
+  UseApprovalActionsReturn,
+  CompletenessCheck,
+  RequiredField,
+} from '@/types/approval'
 import {
-  getApprovalQueue,
-  getApprovalStats,
+  fetchApprovalProducts,
   approveProducts,
   rejectProducts,
-  resetApprovalStatus
+  fetchFilterOptions,
 } from './api'
-import type { Product, ApprovalStats, FilterState } from '@/types/approval'
 
-// デフォルトフィルター
+// ====================================================================
+// データフェッチ用Hook
+// ====================================================================
+
 const DEFAULT_FILTERS: FilterState = {
-  status: 'pending',
-  aiFilter: 'all',
-  minPrice: 0,
-  maxPrice: 0,
-  search: '',
   page: 1,
-  limit: 50
+  limit: 24,
+  status: 'all',
+  dataCompleteness: 'all',
+  aiFilter: 'all',
+  sortBy: 'created_at',
+  sortOrder: 'desc',
 }
 
-/**
- * 承認データ管理Hook
- */
-export function useApprovalData() {
-  const [products, setProducts] = useState<Product[]>([])
-  const [stats, setStats] = useState<ApprovalStats | null>(null)
+export function useApprovalData(): UseApprovalDataReturn {
+  const [products, setProducts] = useState<ApprovalProduct[]>([])
+  const [stats, setStats] = useState<ApprovalStats>({
+    total: 0,
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+    avgScore: 0,
+    avgPrice: 0,
+    totalProfit: 0,
+  })
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
 
-  // データ読み込み
   const loadData = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    
     try {
-      const [queueResult, statsResult] = await Promise.all([
-        getApprovalQueue(filters),
-        getApprovalStats()
-      ])
+      setLoading(true)
+      setError(null)
 
-      setProducts(queueResult.products)
-      setStats(statsResult)
-      setTotalPages(queueResult.totalPages)
+      const response = await fetchApprovalProducts(filters)
+
+      setProducts(response.products)
+      setStats(response.stats)
+      setTotal(response.total)
+      setTotalPages(response.totalPages)
     } catch (err) {
-      const message = err instanceof Error ? err.message : '不明なエラー'
+      const message = err instanceof Error ? err.message : '商品データの読み込みに失敗しました'
       setError(message)
+      toast.error(message)
     } finally {
       setLoading(false)
     }
@@ -60,14 +77,20 @@ export function useApprovalData() {
     loadData()
   }, [loadData])
 
-  // フィルター変更
-  const updateFilters = useCallback((newFilters: Partial<FilterState>) => {
-    setFilters(prev => ({ ...prev, ...newFilters, page: 1 }))
+  const updateFilters = useCallback((updates: Partial<FilterState>) => {
+    setFilters((prev) => ({
+      ...prev,
+      ...updates,
+      page: updates.page !== undefined ? updates.page : 1, // フィルター変更時はページをリセット
+    }))
   }, [])
 
-  // ページ変更
-  const setPage = useCallback((page: number) => {
-    setFilters(prev => ({ ...prev, page }))
+  const resetFilters = useCallback(() => {
+    setFilters(DEFAULT_FILTERS)
+  }, [])
+
+  const changePage = useCallback((page: number) => {
+    setFilters((prev) => ({ ...prev, page }))
   }, [])
 
   return {
@@ -75,23 +98,25 @@ export function useApprovalData() {
     stats,
     filters,
     updateFilters,
-    setPage,
-    totalPages,
+    resetFilters,
+    changePage,
     loading,
     error,
-    refetch: loadData
+    refetch: loadData,
+    total,
+    totalPages,
   }
 }
 
-/**
- * 選択状態管理Hook
- */
-export function useSelection() {
+// ====================================================================
+// 選択管理用Hook
+// ====================================================================
+
+export function useSelection(products: ApprovalProduct[]): UseSelectionReturn {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
 
-  // 選択切り替え
   const toggleSelect = useCallback((id: number) => {
-    setSelectedIds(prev => {
+    setSelectedIds((prev) => {
       const newSet = new Set(prev)
       if (newSet.has(id)) {
         newSet.delete(id)
@@ -102,163 +127,198 @@ export function useSelection() {
     })
   }, [])
 
-  // 全選択
-  const selectAll = useCallback((ids: number[]) => {
-    setSelectedIds(new Set(ids))
-  }, [])
+  const selectAll = useCallback(() => {
+    setSelectedIds(new Set(products.map((p) => p.id)))
+  }, [products])
 
-  // 全解除
   const deselectAll = useCallback(() => {
     setSelectedIds(new Set())
   }, [])
 
-  // 選択確認
-  const isSelected = useCallback((id: number) => {
-    return selectedIds.has(id)
-  }, [selectedIds])
+  const isSelected = useCallback(
+    (id: number) => {
+      return selectedIds.has(id)
+    },
+    [selectedIds]
+  )
 
   return {
     selectedIds,
-    selectedCount: selectedIds.size,
+    selectedIdArray: Array.from(selectedIds),
     toggleSelect,
     selectAll,
     deselectAll,
-    isSelected
+    selectedCount: selectedIds.size,
+    isSelected,
   }
 }
 
-/**
- * 承認/否認操作Hook
- */
-export function useApprovalActions(refetch: () => void, deselectAll: () => void) {
+// ====================================================================
+// 承認・否認アクション用Hook
+// ====================================================================
+
+export function useApprovalActions(
+  onSuccess: () => void,
+  onClear: () => void
+): UseApprovalActionsReturn {
   const [processing, setProcessing] = useState(false)
 
-  // 承認処理
-  const handleApprove = useCallback(async (productIds: number[]) => {
-    if (productIds.length === 0) {
-      throw new Error('商品を選択してください')
+  const handleApprove = useCallback(
+    async (ids: number[]) => {
+      if (ids.length === 0) {
+        toast.warning('商品が選択されていません')
+        return
+      }
+
+      try {
+        setProcessing(true)
+
+        const response = await approveProducts(ids)
+
+        if (response.success) {
+          toast.success(response.message)
+          onSuccess()
+          onClear()
+        } else {
+          toast.error('承認処理に失敗しました')
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : '承認処理に失敗しました'
+        toast.error(message)
+      } finally {
+        setProcessing(false)
+      }
+    },
+    [onSuccess, onClear]
+  )
+
+  const handleReject = useCallback(
+    async (ids: number[], reason: string) => {
+      if (ids.length === 0) {
+        toast.warning('商品が選択されていません')
+        return
+      }
+
+      if (!reason || !reason.trim()) {
+        toast.warning('否認理由を入力してください')
+        return
+      }
+
+      try {
+        setProcessing(true)
+
+        const response = await rejectProducts(ids, reason)
+
+        if (response.success) {
+          toast.success(response.message)
+          onSuccess()
+          onClear()
+        } else {
+          toast.error('否認処理に失敗しました')
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : '否認処理に失敗しました'
+        toast.error(message)
+      } finally {
+        setProcessing(false)
+      }
+    },
+    [onSuccess, onClear]
+  )
+
+  return {
+    handleApprove,
+    handleReject,
+    processing,
+  }
+}
+
+// ====================================================================
+// データ完全性チェック用Hook
+// ====================================================================
+
+const REQUIRED_FIELDS: RequiredField[] = [
+  { field: 'title', label: '商品タイトル', category: 'basic' },
+  { field: 'sku', label: 'SKU', category: 'basic' },
+  { field: 'yahoo_price', label: '仕入れ価格', category: 'pricing' },
+  { field: 'recommended_price', label: '推奨価格', category: 'pricing' },
+  { field: 'profit_jpy', label: '純利益額', category: 'pricing' },
+  { field: 'profit_rate', label: '純利益率', category: 'pricing' },
+  { field: 'final_score', label: '最終スコア', category: 'pricing' },
+  { field: 'hts_code', label: 'HTSコード', category: 'metadata' },
+  { field: 'origin_country', label: '原産国', category: 'metadata' },
+  { field: 'images', label: '画像', category: 'basic' },
+]
+
+export function useDataCompleteness(products: ApprovalProduct[]) {
+  const checkCompleteness = useCallback((product: ApprovalProduct): CompletenessCheck => {
+    const missingFields: string[] = []
+
+    for (const field of REQUIRED_FIELDS) {
+      const value = product[field.field as keyof ApprovalProduct]
+
+      if (value === undefined || value === null || value === '') {
+        missingFields.push(field.label)
+      } else if (Array.isArray(value) && value.length === 0) {
+        missingFields.push(field.label)
+      }
     }
 
-    setProcessing(true)
-    try {
-      const result = await approveProducts(productIds)
-      
-      if (!result.success) {
-        throw new Error('承認処理に失敗しました')
-      }
-      
-      if (result.errors.length > 0) {
-        console.error('承認エラー:', result.errors)
-      }
-      
-      return result
-    } finally {
-      setProcessing(false)
+    const completionRate = ((REQUIRED_FIELDS.length - missingFields.length) / REQUIRED_FIELDS.length) * 100
+
+    return {
+      isComplete: missingFields.length === 0,
+      missingFields,
+      completionRate: Math.round(completionRate),
     }
   }, [])
 
-  // 否認処理
-  const handleReject = useCallback(async (productIds: number[], reason: string) => {
-    if (productIds.length === 0) {
-      throw new Error('商品を選択してください')
+  const getCompleteness = useCallback(
+    (productId: number): CompletenessCheck | null => {
+      const product = products.find((p) => p.id === productId)
+      if (!product) return null
+      return checkCompleteness(product)
+    },
+    [products, checkCompleteness]
+  )
+
+  const completeProducts = useMemo(() => {
+    return products.filter((p) => checkCompleteness(p).isComplete)
+  }, [products, checkCompleteness])
+
+  const incompleteProducts = useMemo(() => {
+    return products.filter((p) => !checkCompleteness(p).isComplete)
+  }, [products, checkCompleteness])
+
+  return {
+    checkCompleteness,
+    getCompleteness,
+    completeProducts,
+    incompleteProducts,
+    requiredFields: REQUIRED_FIELDS,
+  }
+}
+
+// ====================================================================
+// フィルターオプション用Hook
+// ====================================================================
+
+export function useFilterOptions() {
+  const [categories, setCategories] = useState<string[]>([])
+  const [originCountries, setOriginCountries] = useState<string[]>([])
+
+  useEffect(() => {
+    const loadOptions = async () => {
+      const options = await fetchFilterOptions()
+      setCategories(options.categories)
+      setOriginCountries(options.originCountries)
     }
 
-    if (!reason || reason.trim() === '') {
-      throw new Error('否認理由を入力してください')
-    }
-
-    setProcessing(true)
-    try {
-      const result = await rejectProducts(productIds, reason)
-      
-      if (!result.success) {
-        throw new Error('否認処理に失敗しました')
-      }
-      
-      if (result.errors.length > 0) {
-        console.error('否認エラー:', result.errors)
-      }
-      
-      return result
-    } finally {
-      setProcessing(false)
-    }
-  }, [])
-
-  // ステータスリセット
-  const handleReset = useCallback(async (productIds: number[]) => {
-    if (productIds.length === 0) {
-      throw new Error('商品を選択してください')
-    }
-
-    setProcessing(true)
-    try {
-      const result = await resetApprovalStatus(productIds)
-      
-      if (!result.success) {
-        throw new Error('リセット処理に失敗しました')
-      }
-      
-      if (result.errors.length > 0) {
-        console.error('リセットエラー:', result.errors)
-      }
-      
-      return result
-    } finally {
-      setProcessing(false)
-    }
+    loadOptions()
   }, [])
 
   return {
-    processing,
-    handleApprove,
-    handleReject,
-    handleReset
+    categories,
+    originCountries,
   }
-}
-
-/**
- * キーボードショートカットHook
- */
-export function useKeyboardShortcuts(
-  onSelectAll: () => void,
-  onDeselectAll: () => void,
-  onApprove: () => void,
-  onReject: () => void
-) {
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Ctrl+A: 全選択
-      if (event.ctrlKey && event.key === 'a') {
-        event.preventDefault()
-        onSelectAll()
-      }
-      
-      // Ctrl+D: 全解除
-      if (event.ctrlKey && event.key === 'd') {
-        event.preventDefault()
-        onDeselectAll()
-      }
-      
-      // Enter: 承認
-      if (event.key === 'Enter' && !event.ctrlKey && !event.shiftKey) {
-        event.preventDefault()
-        onApprove()
-      }
-      
-      // R: 否認
-      if (event.key === 'r' && !event.ctrlKey && !event.shiftKey) {
-        event.preventDefault()
-        onReject()
-      }
-      
-      // Escape: 選択解除
-      if (event.key === 'Escape') {
-        onDeselectAll()
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onSelectAll, onDeselectAll, onApprove, onReject])
 }

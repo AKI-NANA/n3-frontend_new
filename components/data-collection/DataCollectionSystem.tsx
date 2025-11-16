@@ -1,12 +1,13 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { 
   Search, Package, ShoppingCart, Globe, 
   Zap, Trophy, Gamepad2, Activity, 
   Check, X, Loader2, ExternalLink,
   ChevronRight, ChevronDown, Upload, Download,
-  RefreshCw, Settings
+  RefreshCw, Settings, ArrowRight
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,6 +21,8 @@ interface DataCollectionSystemProps {
 }
 
 export function DataCollectionSystem({ className }: DataCollectionSystemProps) {
+  const router = useRouter()
+  
   // UI状態
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
     auction: true,
@@ -34,6 +37,7 @@ export function DataCollectionSystem({ className }: DataCollectionSystemProps) {
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
   const [urlInput, setUrlInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isSyncing, setIsSyncing] = useState(false)
   const [results, setResults] = useState<any[]>([])
   const [stats, setStats] = useState({
     total: 0,
@@ -93,18 +97,45 @@ export function DataCollectionSystem({ className }: DataCollectionSystemProps) {
 
       const data = await response.json()
 
-      // 結果を追加
-      const newResults = [...data.results, ...results]
-      setResults(newResults)
+      console.log('🔍 スクレイピングAPI応答:', data)
+      console.log('📊 results配列:', data.results)
+      
+      if (data.results && data.results.length > 0) {
+        console.log('📦 最初の結果:', {
+          title: data.results[0].title,
+          price: data.results[0].price,
+          images: data.results[0].images?.length || 0,
+          status: data.results[0].status
+        })
+      }
 
-      // 統計を更新（累積）
-      if (data.stats) {
-        setStats(prev => ({
-          total: prev.total + data.stats.total,
-          success: prev.success + data.stats.success,
-          failed: prev.failed + data.stats.failed,
-          inProgress: 0
-        }))
+      if (data.success) {
+        // 結果を追加
+        const newResults = [...data.results, ...results]
+        setResults(newResults)
+
+        // 統計を更新（累積）
+        if (data.stats) {
+          setStats(prev => ({
+            total: prev.total + data.stats.total,
+            success: prev.success + data.stats.success,
+            failed: prev.failed + data.stats.failed,
+            inProgress: 0
+          }))
+        }
+
+        // スクレイピング成功時の処理
+        if (data.stats && data.stats.success > 0) {
+          // 成功メッセージ表示
+          const message = `✅ ${data.stats.success}件のデータを取得しました！\n\n次のステップ:\n1. products_masterに同期（自動）\n2. 編集ツールで確認・編集`
+          
+          if (confirm(message + '\n\n今すぐ編集ツールを開きますか？')) {
+            // 編集ツールに遷移
+            router.push('/tools/editing')
+          }
+        }
+      } else {
+        alert(`エラー: ${data.message || '不明なエラー'}`)
       }
     } catch (error) {
       console.error('データ取得エラー:', error)
@@ -112,6 +143,27 @@ export function DataCollectionSystem({ className }: DataCollectionSystemProps) {
     } finally {
       setIsLoading(false)
       setUrlInput('')
+    }
+  }
+
+  // products_masterへの同期（手動実行用）
+  const syncToMaster = async () => {
+    setIsSyncing(true)
+    try {
+      const response = await fetch('/api/sync-latest-scraped')
+      const data = await response.json()
+
+      if (data.success) {
+        alert(`✅ ${data.synced || 0}件をproducts_masterに同期しました`)
+        router.push('/tools/editing')
+      } else {
+        alert(`❌ 同期エラー: ${data.error || '不明なエラー'}`)
+      }
+    } catch (error) {
+      console.error('同期エラー:', error)
+      alert('同期に失敗しました')
+    } finally {
+      setIsSyncing(false)
     }
   }
 
@@ -370,12 +422,14 @@ export function DataCollectionSystem({ className }: DataCollectionSystemProps) {
                   <div className="flex gap-3 mt-4">
                     <Button 
                       onClick={executeDataCollection}
-                      disabled={isLoading}
+                      disabled={isLoading || isSyncing}
+                      size="lg"
+                      className="flex-1"
                     >
                       {isLoading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          処理中...
+                          スクレイピング中...
                         </>
                       ) : (
                         <>
@@ -384,13 +438,29 @@ export function DataCollectionSystem({ className }: DataCollectionSystemProps) {
                         </>
                       )}
                     </Button>
-                    <Button variant="outline">
-                      <Upload className="mr-2 h-4 w-4" />
-                      CSVインポート
+                    <Button 
+                      variant="outline"
+                      onClick={syncToMaster}
+                      disabled={isLoading || isSyncing}
+                    >
+                      {isSyncing ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          同期中
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                          手動同期
+                        </>
+                      )}
                     </Button>
-                    <Button variant="outline">
-                      <Download className="mr-2 h-4 w-4" />
-                      テンプレート
+                    <Button 
+                      variant="outline"
+                      onClick={() => router.push('/tools/editing')}
+                    >
+                      <ArrowRight className="mr-2 h-4 w-4" />
+                      編集ツールへ
                     </Button>
                   </div>
                 </CardContent>

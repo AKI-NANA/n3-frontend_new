@@ -222,20 +222,23 @@ export default function RightSidebar() {
           )}
 
           {isPinned && (
-            <div className="space-y-3">
+            <div className="flex flex-col items-center space-y-2">
               {shortcuts.map((shortcut) => (
                 <a
                   key={shortcut.id}
                   href={shortcut.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center p-2 rounded-lg transition-colors"
+                  className="w-10 h-10 flex items-center justify-center rounded-lg transition-all hover:scale-110"
+                  style={{
+                    backgroundColor: 'var(--muted)',
+                  }}
                   title={shortcut.name}
                 >
                   <img 
                     src={getFavicon(shortcut.url)} 
                     alt={shortcut.name} 
-                    className="w-6 h-6"
+                    className="w-5 h-5 object-contain"
                   />
                 </a>
               ))}

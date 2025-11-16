@@ -14,6 +14,7 @@ import {
   Database,
   Layers,
   Table,
+  RefreshCw,
 } from 'lucide-react'
 import {
   useHSCodes,
@@ -25,7 +26,6 @@ import {
 } from '@/hooks/use-ebay-pricing'
 import { CalculatorTabComplete } from '@/components/ebay-pricing/calculator-tab-complete'
 import { CalculatorTabCompleteV2 } from '@/components/ebay-pricing/calculator-tab-complete-v2'
-// import { analyzeDatabase, generateShippingPolicies, runFullAnalysisAndGeneration } from '@/scripts/analyze-database-and-generate-policies'
 import { MarginSettingsEdit } from '@/components/ebay-pricing/margin-settings-edit'
 import { ShippingPoliciesTab } from '@/components/ebay-pricing/shipping-policies-tab'
 import { ShippingPoliciesV2Tab } from '@/components/ebay-pricing/shipping-policies-v2-tab'
@@ -43,6 +43,7 @@ import { DatabaseViewTab } from '@/components/ebay-pricing/database-view-tab'
 import { DatabaseStructureMap } from '@/components/database-map/database-structure-map'
 import { HTSCodeSearchTab } from '@/components/ebay-pricing/hts-code-search-tab'
 import { BulkPatternCalculator } from '@/components/ebay-pricing/bulk-pattern-calculator'
+import { PriceAutomationTab } from '@/components/pricing-automation/PriceAutomationTab'
 import { TabButton } from '@/components/ebay-pricing/tab-button'
 import { PriceCalculationEngine, STORE_FEES } from '@/lib/ebay-pricing/price-calculation-engine'
 import { UsaShippingCalculatorTest } from '@/components/ebay-pricing/usa-shipping-calculator-test'
@@ -66,7 +67,6 @@ export default function EbayPricingPage() {
   const { exchangeRate, loading: rateLoading } = useExchangeRate()
   const { countries, loading: countriesLoading } = useOriginCountries()
 
-  // categoryFeesをオブジェクトから配列に変換
   const categoryFees = Object.values(categoryFeesObj)
 
   const [formData, setFormData] = useState({
@@ -77,7 +77,7 @@ export default function EbayPricingPage() {
     height: 20,
     destCountry: 'US',
     originCountry: 'JP',
-    hsCode: '9620.00.20.00', // ⚠️ デフォルトを正しいHTSコードに変更
+    hsCode: '9620.00.20.00',
     fvfRate: 0.1315,
     storeType: 'none' as keyof typeof STORE_FEES,
     refundableFeesJPY: 0,
@@ -109,7 +109,6 @@ export default function EbayPricingPage() {
       return
     }
 
-    // 🆕 調整パラメータの適用
     const actualCostJPY = adjustments?.adjustedCostJPY || formData.costJPY
     const targetMargin = (adjustments?.targetProfitMargin || 15) / 100
 
@@ -120,9 +119,6 @@ export default function EbayPricingPage() {
       formData.height
     )
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // DDP計算（USA向け）- 🆕 新しい計算ロジックを使用
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     console.log('📦 DDP計算開始 (新ロジック) - 重量:', effectiveWeight, 'kg')
     try {
       const resultDDP = await calculateUsaPriceV2({
@@ -139,7 +135,6 @@ export default function EbayPricingPage() {
       
       console.log('📦 DDP計算結果:', resultDDP)
       
-      // 🔧 新しい結果を既存UIフォーマットに変換
       if (resultDDP && resultDDP.success) {
         const adaptedResult = {
           success: true,
@@ -211,7 +206,6 @@ export default function EbayPricingPage() {
         
         console.log('✅ DDP計算完了:', adaptedResult)
         
-        // 🔧 デバッグ用に公開
         if (typeof window !== 'undefined') {
           (window as any).calculationResultDDP = adaptedResult
         }
@@ -232,26 +226,15 @@ export default function EbayPricingPage() {
       })
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // DDU計算（その他の国向け）- 配送ポリシーなしで簡易計算
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     console.log('🌍 DDU計算スキップ - 配送ポリシーAPIは使用しません')
     
-    // DDU計算は一旦スキップ（配送ポリシーAPIが404エラー）
     setCalculationResultDDU({
       success: false,
       error: '適切な配送ポリシーが見つかりませんでした。',
     })
   }
 
-  useEffect(() => {
-    // スクリプトをグローバルに公開
-    // if (typeof window !== 'undefined') {
-    //   (window as any).analyzeDatabase = analyzeDatabase
-    //   (window as any).generateShippingPolicies = generateShippingPolicies
-    //   (window as any).runFullAnalysisAndGeneration = runFullAnalysisAndGeneration
-    // }
-  }, [])
+  useEffect(() => {}, [])
 
   const handleInputChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -299,6 +282,13 @@ export default function EbayPricingPage() {
               label="価格計算（標準）"
               active={activeTab === 'calculator'}
               onClick={() => setActiveTab('calculator')}
+            />
+            <TabButton
+              icon={RefreshCw}
+              label="🔄 価格自動更新"
+              active={activeTab === 'price-automation'}
+              onClick={() => setActiveTab('price-automation')}
+              badge="NEW"
             />
             <TabButton
               icon={Layers}
@@ -436,6 +426,7 @@ export default function EbayPricingPage() {
               categoryFees={categoryFees}
             />
           )}
+          {activeTab === 'price-automation' && <PriceAutomationTab />}
           {activeTab === 'policies-v2' && <ShippingPoliciesV2Tab />}
           {activeTab === 'matrix' && <ShippingPoliciesMatrixTab />}
           {activeTab === 'zones' && <ZoneManagementTab />}

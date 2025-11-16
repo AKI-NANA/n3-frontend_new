@@ -195,7 +195,7 @@ export default function FilterManagementPage() {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="w-full px-2 py-6 space-y-6 max-w-none">
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
         <div>

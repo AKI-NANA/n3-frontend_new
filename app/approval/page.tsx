@@ -1,552 +1,898 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Label } from '@/components/ui/label'
-import { 
-  CheckCircle2, 
-  XCircle, 
-  AlertTriangle,
-  Loader2,
-  Info,
-  TrendingUp,
-  DollarSign
-} from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import Image from 'next/image'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter
-} from "@/components/ui/dialog"
+import { ApprovalProductModal } from '@/components/approval/ApprovalProductModal'
+import { ListingStrategyControl, ListingStrategy } from '@/components/approval/ListingStrategyControl'
+import { AlertCircle, CheckCircle2, AlertTriangle } from 'lucide-react'
 
 interface Product {
   id: number
-  source_item_id: string
-  sku: string | null
+  sku: string
   title: string
-  english_title: string | null
-  price_jpy: number | null
-  price_usd: number | null
-  scraped_data: any
-  ebay_api_data: any
-  listing_data: any
-  status: string | null
-  approval_status?: string | null
-  ai_confidence_score?: number | null
-  profit_margin?: number | null
-  profit_amount_usd?: number | null
-  export_filter_status?: boolean | null
-  patent_filter_status?: boolean | null
-  mall_filter_status?: boolean | null
-  final_judgment?: string | null
-  sm_lowest_price?: number | null
-  sm_average_price?: number | null
-  sm_competitor_count?: number | null
-  current_stock?: number | null
-  target_marketplaces?: string[]
+  title_en: string
+  images: string[]
+  scraped_data?: { images?: string[]; seller?: string; store_name?: string }
+  condition: string
+  source: string
+  source_table: string
+  store_name?: string
+  store_id?: string
+  store_url?: string
+  category_name: string
+  profit_margin_percent: number
+  ai_confidence_score: number
+  approval_status: string
+  hts_code?: string
+  hts_duty_rate?: number
+  origin_country?: string
+  inventory_quantity?: number
+  stock_quantity?: number
+  primary_image_url?: string
+  gallery_images?: string[]
   listing_priority?: string
-  created_at: string
-  updated_at: string
+  profit_amount?: number
+  current_price?: number
+  listing_price?: number
+  ebay_api_data?: any
+  filter_passed?: boolean  // 🔥 修正: filter_status → filter_passed
+  filter_checked_at?: string
+  filter_reasons?: string[] | string
 }
 
-interface MarketplaceOption {
-  id: string
-  label: string
-  marketplace: string
-  account: string
+// 不完全なフィールドを検出する関数
+// ✅ エクセルの全項目をチェック（出品可否と出品ステータス以外）
+function getIncompleteFields(product: Product): string[] {
+  const incomplete: string[] = []
+  
+  // 📋 基本情報
+  if (!product.sku) incomplete.push('SKU')
+  if (!product.title && !product.title_en && !product.english_title) incomplete.push('商品タイトル')
+  if (!product.description && !product.description_en) incomplete.push('商品説明')
+  
+  // 📦 商品詳細
+  if (!product.condition && !product.condition_name) incomplete.push('コンディション')
+  if (!product.category_name && !product.category) incomplete.push('カテゴリー')
+  if (!product.ebay_category_id) incomplete.push('eBayカテゴリーID')
+  
+  // 🖼️ 画像
+  const hasImages = (product.images && product.images.length > 0) || 
+                    (product.gallery_images && product.gallery_images.length > 0) ||
+                    product.primary_image_url
+  if (!hasImages) incomplete.push('商品画像')
+  
+  // 💰 価格・利益
+  const hasPrice = product.price_jpy || product.current_price || product.listing_price
+  if (!hasPrice) incomplete.push('価格（円）')
+  
+  if (!product.ddp_price_usd && product.ddp_price_usd !== 0) incomplete.push('DDP価格(USD)')
+  if (!product.profit_margin_percent && product.profit_margin_percent !== 0) incomplete.push('利益率(%)')
+  if (!product.profit_amount_usd && product.profit_amount_usd !== 0) incomplete.push('利益額(USD)')
+  
+  // 📏 サイズ・重量 (listing_data内)
+  if (!product.listing_data?.weight_g) incomplete.push('重量(g)')
+  if (!product.listing_data?.width_cm) incomplete.push('幅(cm)')
+  if (!product.listing_data?.length_cm) incomplete.push('奥行き(cm)')
+  if (!product.listing_data?.height_cm) incomplete.push('高さ(cm)')
+  
+  // 🌍 関税情報
+  if (!product.origin_country) incomplete.push('原産国')
+  if (!product.hts_code) incomplete.push('HTSコード')
+  
+  // 🚢 配送情報
+  if (!product.shipping_cost_usd && product.shipping_cost_usd !== 0) incomplete.push('配送料(USD)')
+  if (!product.shipping_policy) incomplete.push('配送ポリシー')
+  
+  // 📊 SellerMirror分析
+  if (product.sm_analyzed_at) {
+    // SellerMirror分析済みの場合のみチェック
+    if (product.sm_competitor_count === null || product.sm_competitor_count === undefined) incomplete.push('競合数')
+    if (!product.sm_lowest_price && product.sm_lowest_price !== 0) incomplete.push('最低価格')
+    if (!product.sm_average_price && product.sm_average_price !== 0) incomplete.push('平均価格')
+  }
+  
+  // 🤖 AI・スコア
+  if (!product.ai_confidence_score || product.ai_confidence_score === 0) incomplete.push('AIスコア')
+  if (!product.listing_score) incomplete.push('出品スコア')
+  
+  // ✅ フィルターチェック（最重要）
+  if (product.filter_passed === null || product.filter_passed === undefined) {
+    incomplete.push('フィルターチェック未実行')
+  }
+  
+  return incomplete
+}
+
+// 必須フィールドのチェック関数
+function isDataComplete(product: Product): boolean {
+  return getIncompleteFields(product).length === 0
+}
+
+// 確認モーダルコンポーネント
+function ConfirmApprovalModal({ 
+  incompleteProducts, 
+  onConfirm, 
+  onCancel 
+}: { 
+  incompleteProducts: Array<{ product: Product; missing: string[] }>, 
+  onConfirm: () => void, 
+  onCancel: () => void 
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-card rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+        <div className="p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <AlertTriangle className="w-8 h-8 text-orange-500" />
+            <h2 className="text-xl font-bold text-foreground">データ不完全な商品の承認確認</h2>
+          </div>
+          
+          <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded p-4 mb-4">
+            <p className="text-sm text-orange-800 dark:text-orange-300 mb-3">
+              以下の商品はデータが不完全ですが、承認して出品スケジュールに追加しますか?
+            </p>
+            <p className="text-xs text-orange-700 dark:text-orange-400">
+              ※ 不完全な状態で出品すると、リスティングエラーや販売機会の損失につながる可能性があります。
+            </p>
+          </div>
+
+          <div className="space-y-3 mb-6 max-h-[400px] overflow-y-auto">
+            {incompleteProducts.map(({ product, missing }) => (
+              <div key={product.id} className="bg-muted/50 rounded p-3 border border-border">
+                <div className="font-semibold text-sm mb-2 text-foreground">
+                  {product.sku} - {product.title_en || product.title || '(タイトルなし)'}
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {missing.map((field) => (
+                    <span 
+                      key={field} 
+                      className="px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-xs rounded"
+                    >
+                      {field}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={onCancel}
+              className="flex-1 px-4 py-2 border border-border rounded hover:bg-muted transition-colors text-foreground"
+            >
+              キャンセル
+            </button>
+            <button
+              onClick={onConfirm}
+              className="flex-1 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors font-semibold"
+            >
+              不完全なまま承認する
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function ApprovalPage() {
   const [products, setProducts] = useState<Product[]>([])
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
-  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
-  const [showApprovalDialog, setShowApprovalDialog] = useState(false)
-  const [selectedMarketplaces, setSelectedMarketplaces] = useState<Set<string>>(new Set())
-  const [priority, setPriority] = useState<'high' | 'medium' | 'low'>('medium')
+  const [showFilters, setShowFilters] = useState(false)
+  const [activeStatus, setActiveStatus] = useState<string>('all')
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [incompleteProductsToApprove, setIncompleteProductsToApprove] = useState<Array<{ product: Product; missing: string[] }>>([])
+  
+  // 🔥 出品戦略コントロールの表示状態
+  const [showListingStrategyControl, setShowListingStrategyControl] = useState(false)
+  
+  const [filters, setFilters] = useState({
+    source: 'all',
+    condition: 'all',
+    category: 'all',
+    minScore: '',
+    maxScore: '',
+    minProfit: '',
+    maxProfit: '',
+    minPrice: '',
+    maxPrice: '',
+    priority: 'all',
+    search: '',
+    dataCompleteness: 'all',
+    listingReadiness: 'all',
+  })
 
   const supabase = createClient()
-
-  const marketplaceOptions: MarketplaceOption[] = [
-    { id: 'ebay_main', label: 'eBay (Main)', marketplace: 'ebay', account: 'main' },
-    { id: 'ebay_sub1', label: 'eBay (Sub1)', marketplace: 'ebay', account: 'sub1' },
-    { id: 'yahoo_main', label: 'Yahoo (Main)', marketplace: 'yahoo', account: 'main' },
-    { id: 'mercari_main', label: 'Mercari (Main)', marketplace: 'mercari', account: 'main' }
-  ]
 
   useEffect(() => {
     loadProducts()
   }, [])
 
-  async function loadProducts() {
+  useEffect(() => {
+    applyFilters()
+  }, [products, filters, activeStatus])
+
+  const loadProducts = async () => {
     try {
       setLoading(true)
       const { data, error } = await supabase
-        .from('yahoo_scraped_products')
+        .from('products_master')
         .select('*')
-        .order('updated_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(200)
 
       if (error) throw error
       setProducts(data || [])
     } catch (error) {
-      console.error('データ取得エラー:', error)
+      console.error('商品取得エラー:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const isDataComplete = (product: Product) => {
-    return !!(
-      product.title &&
-      product.price_jpy &&
-      product.sku &&
-      product.export_filter_status !== null &&
-      product.patent_filter_status !== null &&
-      product.mall_filter_status !== null
-    )
-  }
+  const applyFilters = () => {
+    let filtered = [...products]
 
-  const filteredProducts = products.filter(product => {
-    if (filterStatus === 'pending') return !product.approval_status || product.approval_status === 'pending'
-    if (filterStatus === 'approved') return product.approval_status === 'approved'
-    if (filterStatus === 'rejected') return product.approval_status === 'rejected'
-    return true
-  })
+    if (activeStatus !== 'all') {
+      filtered = filtered.filter(p => p.approval_status === activeStatus)
+    }
 
-  const stats = {
-    total: products.length,
-    pending: products.filter(p => !p.approval_status || p.approval_status === 'pending').length,
-    approved: products.filter(p => p.approval_status === 'approved').length,
-    rejected: products.filter(p => p.approval_status === 'rejected').length,
-    complete: products.filter(p => isDataComplete(p)).length,
-    incomplete: products.filter(p => !isDataComplete(p)).length
+    if (filters.dataCompleteness === 'complete') {
+      filtered = filtered.filter(p => isDataComplete(p))
+    } else if (filters.dataCompleteness === 'incomplete') {
+      filtered = filtered.filter(p => !isDataComplete(p))
+    }
+    
+    if (filters.listingReadiness === 'ready') {
+      filtered = filtered.filter(p => {
+        const isComplete = isDataComplete(p)
+        const isApproved = p.approval_status === 'approved'
+        const hasStock = (p.inventory_quantity || p.stock_quantity || 0) > 0
+        return isComplete && isApproved && hasStock
+      })
+    } else if (filters.listingReadiness === 'not_ready') {
+      filtered = filtered.filter(p => {
+        const isComplete = isDataComplete(p)
+        const isApproved = p.approval_status === 'approved'
+        const hasStock = (p.inventory_quantity || p.stock_quantity || 0) > 0
+        return !(isComplete && isApproved && hasStock)
+      })
+    }
+
+    if (filters.source !== 'all') {
+      filtered = filtered.filter(p => p.source === filters.source)
+    }
+    if (filters.condition !== 'all') {
+      filtered = filtered.filter(p => p.condition === filters.condition)
+    }
+    if (filters.category !== 'all') {
+      filtered = filtered.filter(p => p.category_name === filters.category)
+    }
+    if (filters.priority !== 'all') {
+      filtered = filtered.filter(p => p.listing_priority === filters.priority)
+    }
+    if (filters.minScore) {
+      filtered = filtered.filter(p => (p.ai_confidence_score || 0) >= parseFloat(filters.minScore))
+    }
+    if (filters.maxScore) {
+      filtered = filtered.filter(p => (p.ai_confidence_score || 0) <= parseFloat(filters.maxScore))
+    }
+    if (filters.minProfit) {
+      filtered = filtered.filter(p => (p.profit_amount || 0) >= parseFloat(filters.minProfit))
+    }
+    if (filters.maxProfit) {
+      filtered = filtered.filter(p => (p.profit_amount || 0) <= parseFloat(filters.maxProfit))
+    }
+    if (filters.minPrice) {
+      filtered = filtered.filter(p => (p.current_price || 0) >= parseFloat(filters.minPrice))
+    }
+    if (filters.maxPrice) {
+      filtered = filtered.filter(p => (p.current_price || 0) <= parseFloat(filters.maxPrice))
+    }
+    if (filters.search) {
+      const search = filters.search.toLowerCase()
+      filtered = filtered.filter(p => 
+        p.title?.toLowerCase().includes(search) ||
+        p.title_en?.toLowerCase().includes(search) ||
+        p.sku?.toLowerCase().includes(search)
+      )
+    }
+
+    setFilteredProducts(filtered)
   }
 
   const getImageUrl = (product: Product) => {
+    if (product.primary_image_url) return product.primary_image_url
+    if (product.gallery_images?.[0]) return product.gallery_images[0]
+    if (product.images?.[0]) return product.images[0]
     if (product.scraped_data?.images?.[0]) return product.scraped_data.images[0]
-    if (product.ebay_api_data?.images?.[0]) return product.ebay_api_data.images[0]
-    if (product.listing_data?.images?.[0]) return product.listing_data.images[0]
-    return `https://placehold.co/400x400/1a1a1a/white?text=${encodeURIComponent(product.title.substring(0, 15))}`
-  }
-
-  const getCondition = (product: Product) => {
-    return product.scraped_data?.condition || product.listing_data?.condition || '不明'
-  }
-
-  const getCategory = (product: Product) => {
-    return product.scraped_data?.category || product.ebay_api_data?.category || '未分類'
+    return 'https://via.placeholder.com/300x300/e2e8f0/64748b?text=No+Image'
   }
 
   const toggleSelect = (id: number) => {
     const newSelected = new Set(selectedIds)
-    newSelected.has(id) ? newSelected.delete(id) : newSelected.add(id)
+    if (newSelected.has(id)) {
+      newSelected.delete(id)
+    } else {
+      newSelected.add(id)
+    }
     setSelectedIds(newSelected)
   }
 
-  const toggleMarketplace = (marketplaceId: string) => {
-    const newSelected = new Set(selectedMarketplaces)
-    newSelected.has(marketplaceId) ? newSelected.delete(marketplaceId) : newSelected.add(marketplaceId)
-    setSelectedMarketplaces(newSelected)
-  }
-
-  const selectAllMarketplaces = () => {
-    setSelectedMarketplaces(new Set(marketplaceOptions.map(m => m.id)))
-  }
-
-  const openApprovalDialog = () => {
+  // 🔥 承認ボタン - 出品戦略コントロールを表示
+  const handleApprove = async () => {
     if (selectedIds.size === 0) {
       alert('商品を選択してください')
       return
     }
-    setSelectedMarketplaces(new Set(['ebay_main'])) // デフォルト
-    setPriority('medium')
-    setShowApprovalDialog(true)
-  }
 
-  const bulkApprove = async () => {
-    if (selectedMarketplaces.size === 0) {
-      alert('出品先を選択してください')
+    // データ完全性チェック
+    const selectedProducts = products.filter(p => selectedIds.has(p.id))
+    const incompleteProducts = selectedProducts
+      .map(product => ({
+        product,
+        missing: getIncompleteFields(product)
+      }))
+      .filter(item => item.missing.length > 0)
+    
+    // 不完全な商品がある場合は確認モーダルを表示
+    if (incompleteProducts.length > 0) {
+      setIncompleteProductsToApprove(incompleteProducts)
+      setShowConfirmModal(true)
       return
     }
 
+    // 全て完全な場合は出品戦略コントロールを表示
+    setShowListingStrategyControl(true)
+  }
+
+  // 🔥 出品戦略確定時の処理
+  const handleStrategyConfirm = async (strategy: ListingStrategy) => {
     try {
-      const targetMarketplaces = Array.from(selectedMarketplaces)
+      const response = await fetch('/api/approval/create-schedule', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          productIds: Array.from(selectedIds),
+          strategy
+        })
+      })
+
+      const result = await response.json()
       
-      await Promise.all(Array.from(selectedIds).map(id => 
-        supabase.from('yahoo_scraped_products').update({ 
-          approval_status: 'approved', 
-          approved_at: new Date().toISOString(),
-          status: 'ready_to_list',
-          target_marketplaces: targetMarketplaces,
-          listing_priority: priority
-        }).eq('id', id)
-      ))
+      console.log('[DEBUG] API Response:', { response, result })
+
+      if (!response.ok) {
+        console.error('[ERROR] API Error Details:', result)
+        throw new Error(result.error || '承認処理に失敗しました')
+      }
+
+      alert(`✅ ${result.message}\n\n出品スケジュール管理ページで確認できます。`)
+      setSelectedIds(new Set())
+      setShowListingStrategyControl(false)
+      setShowConfirmModal(false)
+      setIncompleteProductsToApprove([])
+      await loadProducts()
+
+    } catch (error: any) {
+      console.error('承認・スケジュール作成エラー:', error)
+      alert(`承認に失敗しました: ${error.message || '不明なエラー'}`)
+    }
+  }
+
+  // 確認モーダルからの続行（不完全なまま承認）
+  const handleConfirmApproval = () => {
+    setShowConfirmModal(false)
+    setShowListingStrategyControl(true)
+  }
+
+  const handleUnapprove = async () => {
+    if (selectedIds.size === 0) return
+    if (!confirm(`${selectedIds.size}件の承認を取り消しますか？（スケジュールからも削除されます）`)) return
+
+    try {
+      const { error } = await supabase
+        .from('products_master')
+        .update({ 
+          approval_status: 'pending', 
+          approved_at: null,
+          workflow_status: 'ready_to_list'
+        })
+        .in('id', Array.from(selectedIds))
       
-      alert(`${selectedIds.size}件を承認しました。\n出品先: ${targetMarketplaces.join(', ')}\n優先度: ${priority}`)
+      if (error) throw error
+      alert(`↩️ ${selectedIds.size}件の承認を取り消しました。`)
       setSelectedIds(new Set())
-      setShowApprovalDialog(false)
-      loadProducts()
-    } catch (error) {
-      console.error('承認エラー:', error)
-      alert('承認に失敗しました')
+      await loadProducts()
+    } catch (error: any) {
+      console.error('承認取消エラー:', error)
+      alert(`承認取消に失敗しました: ${error.message || '不明なエラー'}`)
     }
   }
 
-  const bulkReject = async () => {
-    if (selectedIds.size === 0 || !confirm(`${selectedIds.size}件を否認しますか?`)) return
+  const handleReject = async () => {
+    if (selectedIds.size === 0) return
+    const reason = prompt('否認理由を入力してください:')
+    if (!reason) return
+
     try {
-      await Promise.all(Array.from(selectedIds).map(id => 
-        supabase.from('yahoo_scraped_products').update({ 
-          approval_status: 'rejected',
-          status: 'rejected'
-        }).eq('id', id)
-      ))
-      alert(`${selectedIds.size}件を否認しました`)
+      const { error } = await supabase
+        .from('products_master')
+        .update({ 
+          approval_status: 'rejected', 
+          rejection_reason: reason,
+          rejected_at: new Date().toISOString()
+        })
+        .in('id', Array.from(selectedIds))
+      
+      if (error) throw error
+      alert(`❌ ${selectedIds.size}件否認しました。`)
       setSelectedIds(new Set())
-      loadProducts()
-    } catch (error) {
-      alert('否認に失敗しました')
+      await loadProducts()
+    } catch (error: any) {
+      console.error('否認エラー:', error)
+      alert(`否認に失敗しました: ${error.message || '不明なエラー'}`)
     }
   }
 
-  const bulkUnapprove = async () => {
-    if (selectedIds.size === 0 || !confirm(`${selectedIds.size}件の承認を取り消しますか?\nスケジュールからも削除されます。`)) return
-    try {
-      await Promise.all(Array.from(selectedIds).map(id => 
-        supabase.from('yahoo_scraped_products').update({ 
-          approval_status: 'pending',
-          status: 'pending'
-        }).eq('id', id)
-      ))
-      alert(`${selectedIds.size}件の承認を取り消しました`)
-      setSelectedIds(new Set())
-      loadProducts()
-    } catch (error) {
-      alert('承認取り消しに失敗しました')
-    }
+  const stats = {
+    total: products.length,
+    pending: products.filter(p => p.approval_status === 'pending' || !p.approval_status).length,
+    approved: products.filter(p => p.approval_status === 'approved').length,
+    rejected: products.filter(p => p.approval_status === 'rejected').length,
+    complete: products.filter(p => isDataComplete(p)).length,
+    incomplete: products.filter(p => !isDataComplete(p)).length,
   }
 
-  if (loading) {
-    return <div className="flex items-center justify-center min-h-screen"><Loader2 className="w-8 h-8 animate-spin" /></div>
+  const uniqueSources = [...new Set(products.map(p => p.source).filter(Boolean))]
+  const uniqueConditions = [...new Set(products.map(p => p.condition).filter(Boolean))]
+  const uniqueCategories = [...new Set(products.map(p => p.category_name).filter(Boolean))]
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="p-3">
+        {/* ヘッダー */}
+        <div className="mb-3">
+          <h1 className="text-xl font-bold mb-1 text-foreground">商品承認システム</h1>
+          <p className="text-xs text-muted-foreground">出品前の最終確認 - データ完全性とリスク評価</p>
+        </div>
+
+        {/* データ完全性サマリー */}
+        <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded p-2 mb-3">
+          <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-green-600" />
+              <span className="text-green-700 dark:text-green-400 font-medium">完全: {stats.complete}件</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-orange-600" />
+              <span className="text-orange-700 dark:text-orange-400 font-medium">不完全: {stats.incomplete}件</span>
+            </div>
+            <div className="text-xs text-muted-foreground ml-auto">
+              ※不完全なデータも確認後に承認可能です
+            </div>
+          </div>
+        </div>
+
+        {/* ステータスタブ */}
+        <div className="flex items-center gap-2 mb-3 text-sm">
+          <button
+            onClick={() => setActiveStatus('all')}
+            className={`px-3 py-1 rounded transition-colors ${
+              activeStatus === 'all'
+                ? 'bg-primary text-primary-foreground font-medium'
+                : 'bg-card text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            全て: {stats.total}
+          </button>
+          <button
+            onClick={() => setActiveStatus('pending')}
+            className={`px-3 py-1 rounded transition-colors ${
+              activeStatus === 'pending'
+                ? 'bg-yellow-500 text-white font-medium'
+                : 'bg-card text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            承認待ち: {stats.pending}
+          </button>
+          <button
+            onClick={() => setActiveStatus('approved')}
+            className={`px-3 py-1 rounded transition-colors ${
+              activeStatus === 'approved'
+                ? 'bg-green-600 text-white font-medium'
+                : 'bg-card text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            承認済み: {stats.approved}
+          </button>
+          <button
+            onClick={() => setActiveStatus('rejected')}
+            className={`px-3 py-1 rounded transition-colors ${
+              activeStatus === 'rejected'
+                ? 'bg-red-600 text-white font-medium'
+                : 'bg-card text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            否認済み: {stats.rejected}
+          </button>
+          <div className="ml-auto text-xs text-muted-foreground">
+            選択: <span className="font-semibold text-primary">{selectedIds.size}</span> 件
+          </div>
+        </div>
+
+        {/* コントロールバー */}
+        <div className="bg-card border border-border rounded p-2 mb-3 flex items-center gap-2 flex-wrap text-sm">
+          <button
+            onClick={() => setSelectedIds(selectedIds.size === filteredProducts.length ? new Set() : new Set(filteredProducts.map(p => p.id)))}
+            className="px-3 py-1 border border-border rounded hover:bg-muted transition-colors"
+          >
+            {selectedIds.size === filteredProducts.length ? '全解除' : '全選択'}
+          </button>
+          
+          <button
+            onClick={handleApprove}
+            disabled={selectedIds.size === 0}
+            className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            承認・出品予約
+          </button>
+          
+          <button
+            onClick={handleReject}
+            disabled={selectedIds.size === 0}
+            className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            一括否認
+          </button>
+          
+          <button
+            onClick={handleUnapprove}
+            disabled={selectedIds.size === 0}
+            className="px-3 py-1 bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            承認取消
+          </button>
+          
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="px-3 py-1 border border-orange-400 text-orange-600 rounded hover:bg-orange-50 transition-colors ml-auto"
+          >
+            {showFilters ? '▼' : '▶'} フィルター
+          </button>
+        </div>
+
+        {/* フィルター */}
+        {showFilters && (
+          <div className="bg-card border border-border rounded p-3 mb-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 text-sm">
+              <FilterSelect
+                label="データ完全性"
+                value={filters.dataCompleteness}
+                onChange={(v) => setFilters({ ...filters, dataCompleteness: v })}
+                options={[
+                  { value: 'all', label: 'すべて' },
+                  { value: 'complete', label: '完全' },
+                  { value: 'incomplete', label: '不完全' },
+                ]}
+              />
+              <FilterSelect
+                label="出品可否"
+                value={filters.listingReadiness}
+                onChange={(v) => setFilters({ ...filters, listingReadiness: v })}
+                options={[
+                  { value: 'all', label: 'すべて' },
+                  { value: 'ready', label: '出品可' },
+                  { value: 'not_ready', label: '出品不可' },
+                ]}
+              />
+              <FilterSelect
+                label="仕入れ元"
+                value={filters.source}
+                onChange={(v) => setFilters({ ...filters, source: v })}
+                options={[
+                  { value: 'all', label: 'すべて' },
+                  ...uniqueSources.map(s => ({ value: s, label: s }))
+                ]}
+              />
+              <FilterSelect
+                label="コンディション"
+                value={filters.condition}
+                onChange={(v) => setFilters({ ...filters, condition: v })}
+                options={[
+                  { value: 'all', label: 'すべて' },
+                  ...uniqueConditions.map(c => ({ value: c, label: c }))
+                ]}
+              />
+              <FilterSelect
+                label="カテゴリー"
+                value={filters.category}
+                onChange={(v) => setFilters({ ...filters, category: v })}
+                options={[
+                  { value: 'all', label: 'すべて' },
+                  ...uniqueCategories.map(c => ({ value: c, label: c }))
+                ]}
+              />
+              <FilterSelect
+                label="優先度"
+                value={filters.priority}
+                onChange={(v) => setFilters({ ...filters, priority: v })}
+                options={[
+                  { value: 'all', label: 'すべて' },
+                  { value: 'high', label: '高' },
+                  { value: 'medium', label: '中' },
+                  { value: 'low', label: '低' },
+                ]}
+              />
+              <FilterInput
+                label="最低スコア"
+                value={filters.minScore}
+                onChange={(v) => setFilters({ ...filters, minScore: v })}
+                placeholder="0-100"
+              />
+              <FilterInput
+                label="最高スコア"
+                value={filters.maxScore}
+                onChange={(v) => setFilters({ ...filters, maxScore: v })}
+                placeholder="0-100"
+              />
+              <FilterInput
+                label="最低利益"
+                value={filters.minProfit}
+                onChange={(v) => setFilters({ ...filters, minProfit: v })}
+                placeholder="円"
+              />
+              <FilterInput
+                label="最高利益"
+                value={filters.maxProfit}
+                onChange={(v) => setFilters({ ...filters, maxProfit: v })}
+                placeholder="円"
+              />
+              <FilterInput
+                label="最低価格"
+                value={filters.minPrice}
+                onChange={(v) => setFilters({ ...filters, minPrice: v })}
+                placeholder="円"
+              />
+              <FilterInput
+                label="最高価格"
+                value={filters.maxPrice}
+                onChange={(v) => setFilters({ ...filters, maxPrice: v })}
+                placeholder="円"
+              />
+              <FilterInput
+                label="検索"
+                value={filters.search}
+                onChange={(v) => setFilters({ ...filters, search: v })}
+                placeholder="商品名、SKU..."
+              />
+              <button
+                onClick={() => setFilters({
+                  source: 'all',
+                  condition: 'all',
+                  category: 'all',
+                  minScore: '',
+                  maxScore: '',
+                  minProfit: '',
+                  maxProfit: '',
+                  minPrice: '',
+                  maxPrice: '',
+                  priority: 'all',
+                  search: '',
+                  dataCompleteness: 'all',
+                  listingReadiness: 'all',
+                })}
+                className="px-2 py-1 text-xs bg-muted text-foreground rounded hover:bg-muted/80 transition-colors"
+              >
+                リセット
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 商品グリッド */}
+        {loading ? (
+          <div className="text-center py-20">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p className="mt-2 text-sm text-muted-foreground">読み込み中...</p>
+          </div>
+        ) : (
+          <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
+            {filteredProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                isSelected={selectedIds.has(product.id)}
+                onToggleSelect={() => toggleSelect(product.id)}
+                onOpenModal={() => setSelectedProduct(product)}
+                getImageUrl={getImageUrl}
+                isComplete={isDataComplete(product)}
+              />
+            ))}
+          </div>
+        )}
+
+        {filteredProducts.length === 0 && !loading && (
+          <div className="text-center py-20 text-muted-foreground">
+            <p>該当する商品がありません</p>
+          </div>
+        )}
+      </div>
+
+      {/* 確認モーダル（不完全データ） */}
+      {showConfirmModal && (
+        <ConfirmApprovalModal
+          incompleteProducts={incompleteProductsToApprove}
+          onConfirm={handleConfirmApproval}
+          onCancel={() => {
+            setShowConfirmModal(false)
+            setIncompleteProductsToApprove([])
+          }}
+        />
+      )}
+
+      {/* 🔥 出品戦略コントロールモーダル */}
+      {showListingStrategyControl && (
+        <ListingStrategyControl
+          selectedProductCount={selectedIds.size}
+          onConfirm={handleStrategyConfirm}
+          onCancel={() => {
+            setShowListingStrategyControl(false)
+            setIncompleteProductsToApprove([])
+          }}
+        />
+      )}
+
+      {/* 商品詳細モーダル */}
+      {selectedProduct && (
+        <ApprovalProductModal
+          product={selectedProduct}
+          onClose={() => setSelectedProduct(null)}
+        />
+      )}
+    </div>
+  )
+}
+
+function FilterSelect({ label, value, onChange, options }: any) {
+  return (
+    <div>
+      <label className="block text-xs text-muted-foreground mb-0.5">{label}</label>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full text-xs px-2 py-1 border border-border rounded bg-input text-foreground"
+      >
+        {options.map((opt: any) => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
+      </select>
+    </div>
+  )
+}
+
+function FilterInput({ label, value, onChange, placeholder }: any) {
+  return (
+    <div>
+      <label className="block text-xs text-muted-foreground mb-0.5">{label}</label>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full text-xs px-2 py-1 border border-border rounded bg-input text-foreground"
+      />
+    </div>
+  )
+}
+
+function ProductCard({ product, isSelected, onToggleSelect, onOpenModal, getImageUrl, isComplete }: any) {
+  const stockType = (product.inventory_quantity || product.stock_quantity || 0) > 0 ? '有' : '無'
+  const score = product.ai_confidence_score || 0
+  const storeName = product.store_name || product.scraped_data?.store_name || product.scraped_data?.seller || '不明'
+  
+  // 🔥 利益率を正しく取得
+  const profitMargin = product.profit_margin_percent || product.profit_margin || 0
+  
+  console.log(`ProductCard [${product.sku}] - 利益率:`, {
+    profit_margin_percent: product.profit_margin_percent,
+    profit_margin: product.profit_margin,
+    profitMargin,
+    profit_amount_usd: product.profit_amount_usd
+  })
+
+  const getScoreColor = (score: number) => {
+    if (score >= 85) return 'bg-emerald-500/70'
+    if (score >= 70) return 'bg-teal-500/70'
+    if (score >= 55) return 'bg-amber-400/70'
+    if (score >= 40) return 'bg-orange-400/70'
+    return 'bg-rose-400/70'
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-4">
-      {/* ヘッダー */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">商品承認システム</h1>
-          <p className="text-sm text-muted-foreground">フィルター確認・AI判定・モール選択・承認ワークフロー</p>
+    <div
+      className={`relative aspect-square rounded overflow-hidden cursor-pointer transition-all group ${
+        isSelected ? 'ring-2 ring-primary' : 'hover:ring-1 hover:ring-border'
+      } ${!isComplete ? 'opacity-60' : ''}`}
+      onClick={onToggleSelect}
+    >
+      {!isComplete && (
+        <div className="absolute top-1.5 left-1.5 px-2 py-0.5 bg-orange-600 text-white text-[10px] font-bold rounded z-10 shadow-lg">
+          不完全
         </div>
-        <Button onClick={loadProducts} variant="outline" size="sm">
-          <Loader2 className="w-4 h-4 mr-2" />更新
-        </Button>
-      </div>
-
-      {/* 統計バー */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        {[
-          { label: '全商品', value: stats.total, color: 'bg-gray-100 text-gray-900' },
-          { label: '承認待ち', value: stats.pending, color: 'bg-yellow-100 text-yellow-900' },
-          { label: '承認済み', value: stats.approved, color: 'bg-green-100 text-green-900' },
-          { label: '否認済み', value: stats.rejected, color: 'bg-red-100 text-red-900' },
-          { label: 'データ完全', value: stats.complete, color: 'bg-blue-100 text-blue-900' },
-          { label: 'データ不足', value: stats.incomplete, color: 'bg-orange-100 text-orange-900' }
-        ].map((stat, i) => (
-          <div key={i} className={`px-4 py-2 rounded-lg ${stat.color} whitespace-nowrap cursor-pointer hover:opacity-80`}
-            onClick={() => {
-              if (stat.label === '承認待ち') setFilterStatus('pending')
-              else if (stat.label === '承認済み') setFilterStatus('approved')
-              else if (stat.label === '否認済み') setFilterStatus('rejected')
-              else setFilterStatus('all')
-            }}
-          >
-            <div className="text-xs font-medium">{stat.label}</div>
-            <div className="text-xl font-bold">{stat.value}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* コントロールバー */}
-      <div className="flex flex-wrap gap-2 items-center justify-between bg-card p-4 rounded-lg border">
-        <div className="flex gap-2">
-          {(['all', 'pending', 'approved', 'rejected'] as const).map(f => (
-            <Button key={f} variant={filterStatus === f ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus(f)}>
-              {f === 'all' ? 'すべて' : f === 'pending' ? '承認待ち' : f === 'approved' ? '承認済み' : '否認済み'}
-            </Button>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setSelectedIds(new Set(filteredProducts.map(p => p.id)))}>全選択</Button>
-          <Button variant="outline" size="sm" onClick={() => setSelectedIds(new Set())}>解除 ({selectedIds.size})</Button>
-          <Button variant="default" size="sm" onClick={openApprovalDialog} disabled={selectedIds.size === 0} className="bg-green-600 hover:bg-green-700">
-            <CheckCircle2 className="w-4 h-4 mr-1" />承認 ({selectedIds.size})
-          </Button>
-          <Button variant="destructive" size="sm" onClick={bulkReject} disabled={selectedIds.size === 0}>
-            <XCircle className="w-4 h-4 mr-1" />否認
-          </Button>
-          <Button variant="outline" size="sm" onClick={bulkUnapprove} disabled={selectedIds.size === 0} className="border-orange-500 text-orange-600 hover:bg-orange-50">
-            <AlertTriangle className="w-4 h-4 mr-1" />承認取消
-          </Button>
-        </div>
-      </div>
-
-      {/* 商品グリッド */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
-        {filteredProducts.map(product => {
-          const dataComplete = isDataComplete(product)
-          const aiScore = product.ai_confidence_score || 0
-          const condition = getCondition(product)
-          const isNew = condition === '新品' || condition === 'new' || condition === 'New'
-          
-          return (
-            <Card 
-              key={product.id}
-              className={`group hover:shadow-xl transition-all cursor-pointer ${
-                selectedIds.has(product.id) ? 'ring-2 ring-primary' : ''
-              }`}
-              onClick={() => toggleSelect(product.id)}
-            >
-              <div className="relative">
-                <div className="relative aspect-square bg-gray-50 overflow-hidden">
-                  <Image src={getImageUrl(product)} alt={product.title} fill className="object-contain p-2 group-hover:scale-105 transition-transform" unoptimized />
-                  
-                  <div className="absolute top-2 left-2 z-10" onClick={(e) => e.stopPropagation()}>
-                    <Checkbox checked={selectedIds.has(product.id)} onCheckedChange={() => toggleSelect(product.id)} className="bg-white border-2 shadow-sm" />
-                  </div>
-                  
-                  {aiScore > 0 && (
-                    <div className="absolute top-2 right-2">
-                      <Badge className={`${aiScore >= 80 ? 'bg-green-500' : aiScore >= 50 ? 'bg-yellow-500' : 'bg-red-500'} text-white font-bold shadow-lg text-xs px-1.5 py-0.5`}>
-                        {aiScore}
-                      </Badge>
-                    </div>
-                  )}
-                  
-                  <div className="absolute bottom-2 left-2">
-                    <Badge className={`${isNew ? 'bg-blue-500' : 'bg-orange-500'} text-white text-xs px-1.5 py-0.5`}>
-                      {isNew ? '新品' : '中古'}
-                    </Badge>
-                  </div>
-
-                  {!dataComplete && (
-                    <div className="absolute bottom-2 right-2">
-                      <Badge variant="destructive" className="bg-orange-500 px-1 py-0"><AlertTriangle className="w-3 h-3" /></Badge>
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-2 space-y-1">
-                  <p className="text-[9px] text-muted-foreground truncate">{product.sku || product.source_item_id}</p>
-                  <h3 className="text-[10px] font-medium line-clamp-2 leading-tight min-h-[28px]">{product.title}</h3>
-                  <p className="text-[9px] text-muted-foreground truncate">{getCategory(product)}</p>
-
-                  <div className="space-y-0.5 pt-1 border-t">
-                    <div className="flex items-baseline justify-between">
-                      <span className="text-[9px] text-muted-foreground">仕入</span>
-                      <span className="text-xs font-bold">¥{product.price_jpy?.toLocaleString() || '---'}</span>
-                    </div>
-                    {product.price_usd && (
-                      <div className="flex items-baseline justify-between">
-                        <span className="text-[9px] text-muted-foreground">販売</span>
-                        <span className="text-xs font-bold text-blue-600">${product.price_usd.toFixed(2)}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {product.profit_amount_usd && product.profit_amount_usd > 0 && (
-                    <div className="bg-green-50 rounded p-1.5 space-y-0.5">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-0.5">
-                          <DollarSign className="w-2.5 h-2.5 text-green-600" />
-                          <span className="text-[9px] font-medium text-green-900">純利益</span>
-                        </div>
-                        <span className="text-xs font-bold text-green-700">${product.profit_amount_usd.toFixed(2)}</span>
-                      </div>
-                      {product.profit_margin && (
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-0.5">
-                            <TrendingUp className="w-2.5 h-2.5 text-green-600" />
-                            <span className="text-[9px] font-medium text-green-900">利益率</span>
-                          </div>
-                          <span className="text-[10px] font-bold text-green-700">{product.profit_margin.toFixed(1)}%</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {product.sm_lowest_price && (
-                    <div className="text-[9px] space-y-0.5 pt-1 border-t">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">SM最安</span>
-                        <span className="font-semibold">${product.sm_lowest_price.toFixed(2)}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex gap-0.5 pt-1" title="輸出/特許/モール">
-                    <div className={`flex-1 h-1 rounded ${product.export_filter_status ? 'bg-green-500' : 'bg-red-500'}`} />
-                    <div className={`flex-1 h-1 rounded ${product.patent_filter_status ? 'bg-green-500' : 'bg-red-500'}`} />
-                    <div className={`flex-1 h-1 rounded ${product.mall_filter_status ? 'bg-green-500' : 'bg-red-500'}`} />
-                  </div>
-
-                  <div className="flex gap-1 pt-1">
-                    {product.approval_status === 'approved' && <Badge className="flex-1 justify-center bg-green-500 text-[9px] py-0">承認済</Badge>}
-                    {product.approval_status === 'rejected' && <Badge className="flex-1 justify-center bg-red-500 text-[9px] py-0">否認済</Badge>}
-                    {(!product.approval_status || product.approval_status === 'pending') && <Badge variant="outline" className="flex-1 justify-center text-[9px] py-0">承認待ち</Badge>}
-                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={(e) => { e.stopPropagation(); setSelectedProduct(product); }}>
-                      <Info className="w-3 h-3" />
-                    </Button>
-                  </div>
-
-                  {/* 出品先表示 */}
-                  {product.target_marketplaces && product.target_marketplaces.length > 0 && (
-                    <div className="text-[8px] text-muted-foreground truncate pt-1 border-t">
-                      {product.target_marketplaces.join(', ')}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </Card>
-          )
-        })}
-      </div>
-
-      {filteredProducts.length === 0 && (
-        <div className="text-center py-12 bg-card rounded-lg border">
-          <p className="text-muted-foreground">該当する商品がありません</p>
+      )}
+      
+      {product.filter_passed === false && product.filter_reasons && (
+        <div className="absolute top-1.5 right-1.5 px-2 py-0.5 bg-red-600 text-white text-[10px] font-bold rounded z-10 shadow-lg"
+             title={Array.isArray(product.filter_reasons) ? product.filter_reasons.join(', ') : product.filter_reasons}>
+          フィルター停止
         </div>
       )}
 
-      {/* 承認ダイアログ */}
-      <Dialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>出品先とモール選択</DialogTitle>
-            <DialogDescription>
-              {selectedIds.size}件の商品を承認します。出品先を選択してください。
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            {/* モール選択 */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-semibold">出品先モール</Label>
-                <Button variant="link" size="sm" onClick={selectAllMarketplaces}>全選択</Button>
-              </div>
-              <div className="space-y-2 border rounded-lg p-3">
-                {marketplaceOptions.map(option => (
-                  <div key={option.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={option.id}
-                      checked={selectedMarketplaces.has(option.id)}
-                      onCheckedChange={() => toggleMarketplace(option.id)}
-                    />
-                    <label htmlFor={option.id} className="text-sm cursor-pointer flex-1">
-                      {option.label}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
+      <img
+        src={getImageUrl(product)}
+        alt={product.title_en || product.title}
+        className="w-full h-full object-cover transition-all duration-300 group-hover:blur-sm"
+      />
 
-            {/* 優先度選択 */}
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold">出品優先度</Label>
-              <div className="flex gap-2">
-                {['high', 'medium', 'low'].map(p => (
-                  <Button
-                    key={p}
-                    variant={priority === p ? 'default' : 'outline'}
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => setPriority(p as any)}
-                  >
-                    {p === 'high' ? '高' : p === 'medium' ? '中' : '低'}
-                  </Button>
-                ))}
-              </div>
-            </div>
+      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
 
-            {/* 選択サマリー */}
-            <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg space-y-1 text-sm">
-              <p><strong>商品数:</strong> {selectedIds.size}件</p>
-              <p><strong>出品先:</strong> {selectedMarketplaces.size}モール</p>
-              <p><strong>優先度:</strong> {priority === 'high' ? '高' : priority === 'medium' ? '中' : '低'}</p>
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          onOpenModal()
+        }}
+        className="absolute bottom-1.5 right-1.5 px-2 py-1 bg-primary text-primary-foreground text-[10px] font-semibold rounded hover:bg-primary/90 transition-all z-10 shadow-lg"
+        title="詳細を表示"
+      >
+        詳細
+      </button>
+
+      <div className="absolute inset-0 p-2 flex flex-col justify-between text-white transition-opacity duration-300 group-hover:opacity-50" 
+           style={{ textShadow: '0 2px 4px rgba(0,0,0,1), 0 0 15px rgba(0,0,0,0.9), 0 0 30px rgba(0,0,0,0.7)' }}>
+        <div className="flex items-start gap-1">
+          <div className={`px-1.5 py-0.5 rounded text-[11px] font-bold shadow-lg ${getScoreColor(score)}`}>
+            {score}
+          </div>
+          <div className="text-[9px] font-mono opacity-90">
+            {product.sku}
+          </div>
+        </div>
+
+        <div>
+          <div className="font-bold line-clamp-1 mb-1 text-[11px] leading-tight">
+            {product.title_en || product.title}
+          </div>
+
+          <div className="grid grid-cols-2 gap-0.5 text-[9px] mb-0.5">
+            <div className="truncate" title={product.condition}>
+              {product.condition || '不明'}
+            </div>
+            <div className="text-right">
+              {stockType}在庫
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowApprovalDialog(false)}>
-              キャンセル
-            </Button>
-            <Button onClick={bulkApprove} className="bg-green-600 hover:bg-green-700">
-              <CheckCircle2 className="w-4 h-4 mr-2" />
-              承認して出品待ちリストへ
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <div className="mb-0.5 truncate text-[9px]" title={product.category_name}>
+            📁 {product.category_name || 'カテゴリ不明'}
+          </div>
 
-      {/* 詳細モーダル */}
-      <Dialog open={!!selectedProduct} onOpenChange={() => setSelectedProduct(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>商品詳細情報</DialogTitle></DialogHeader>
-          {selectedProduct && (
-            <div className="space-y-4 text-sm">
-              <div className="grid grid-cols-2 gap-4">
-                <div><p className="font-semibold mb-2">基本情報</p>
-                  <div className="space-y-1 text-xs">
-                    <p><span className="text-muted-foreground">SKU:</span> {selectedProduct.sku || '未設定'}</p>
-                    <p><span className="text-muted-foreground">状態:</span> {getCondition(selectedProduct)}</p>
-                    <p><span className="text-muted-foreground">カテゴリー:</span> {getCategory(selectedProduct)}</p>
-                    <p><span className="text-muted-foreground">在庫:</span> {selectedProduct.current_stock || 0}</p>
-                  </div>
-                </div>
-                <div><p className="font-semibold mb-2">価格・利益</p>
-                  <div className="space-y-1 text-xs">
-                    <p><span className="text-muted-foreground">仕入:</span> ¥{selectedProduct.price_jpy?.toLocaleString() || '---'}</p>
-                    <p><span className="text-muted-foreground">販売:</span> ${selectedProduct.price_usd?.toFixed(2) || '---'}</p>
-                    <p><span className="text-muted-foreground">純利益:</span> ${selectedProduct.profit_amount_usd?.toFixed(2) || '---'}</p>
-                    <p><span className="text-muted-foreground">利益率:</span> {selectedProduct.profit_margin?.toFixed(1) || '---'}%</p>
-                  </div>
-                </div>
-                <div><p className="font-semibold mb-2">フィルター</p>
-                  <div className="space-y-1 text-xs">
-                    <p><span className="text-muted-foreground">輸出:</span> {selectedProduct.export_filter_status ? '✓ OK' : '✗ NG'}</p>
-                    <p><span className="text-muted-foreground">特許:</span> {selectedProduct.patent_filter_status ? '✓ OK' : '✗ NG'}</p>
-                    <p><span className="text-muted-foreground">モール:</span> {selectedProduct.mall_filter_status ? '✓ OK' : '✗ NG'}</p>
-                    <p><span className="text-muted-foreground">最終判定:</span> {selectedProduct.final_judgment || '---'}</p>
-                  </div>
-                </div>
-                <div><p className="font-semibold mb-2">競合分析 (SM)</p>
-                  <div className="space-y-1 text-xs">
-                    <p><span className="text-muted-foreground">最安値:</span> ${selectedProduct.sm_lowest_price?.toFixed(2) || '---'}</p>
-                    <p><span className="text-muted-foreground">平均:</span> ${selectedProduct.sm_average_price?.toFixed(2) || '---'}</p>
-                    <p><span className="text-muted-foreground">競合数:</span> {selectedProduct.sm_competitor_count || '---'}</p>
-                    <p><span className="text-muted-foreground">AIスコア:</span> {selectedProduct.ai_confidence_score || '---'}点</p>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <p className="font-semibold mb-1">タイトル</p>
-                <p className="text-xs">{selectedProduct.title}</p>
-                {selectedProduct.english_title && <p className="text-xs text-muted-foreground mt-1">{selectedProduct.english_title}</p>}
-              </div>
+          <div className="flex items-center gap-1 text-[10px] font-bold">
+            <div className="flex-1 text-center" style={{ color: profitMargin >= 10 ? '#4ade80' : profitMargin > 0 ? '#fbbf24' : '#ef4444' }}>
+              {profitMargin.toFixed(1)}%
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+            <div className="flex-1 text-center">
+              {product.origin_country || 'N/A'}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

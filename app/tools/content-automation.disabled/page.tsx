@@ -1,0 +1,642 @@
+'use client'
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全自動システム統合ダッシュボード V3</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .card { border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        /* タブボタンのスタイルを修正 */
+        .tab-button { 
+            transition: background-color 0.2s, border-bottom 0.2s; 
+            border-bottom: 3px solid transparent; /* 初期は透明 */
+        }
+        .tab-button.active { 
+            border-bottom: 3px solid #4f46e5; 
+            font-weight: 700; 
+            color: #1e3a8a; 
+            background-color: #eef2ff; /* アクティブ時の背景色を追加 */
+        }
+        .topic-list-item { border-left: 5px solid #4f46e5; }
+        .platform-list-item { border-left: 5px solid #059669; }
+        .history-list-item { border-left: 5px solid #f97316; }
+        .loading-ring { border: 4px solid #f3f3f3; border-top: 4px solid #4f46e5; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+    <script type="module">
+        // Firebase Import
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, query, orderBy, addDoc, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // --- 必須グローバル変数とFirebase初期化 ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        setLogLevel('Debug');
+
+        let app;
+        let db;
+        let auth;
+        let userId = 'anon';
+        let isAuthReady = false;
+
+        let topicsRef;
+        let platformsRef;
+        let historyRef; 
+        let platformConfigs = []; 
+
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const topicsList = document.getElementById('topicsList');
+        const platformsList = document.getElementById('platformsList');
+        const historyList = document.getElementById('historyList');
+        const platformSelect = document.getElementById('platformConfigId'); 
+
+        // Firestoreのパス設定
+        function getCollectionRef(name) {
+            // プライベートデータパス: /artifacts/{appId}/users/{userId}/{collectionName}
+            return collection(db, 'artifacts', appId, 'users', userId, name);
+        }
+
+        // --- Firebase 初期設定と認証 ---
+        async function setupFirebase() {
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                onAuthStateChanged(auth, async (user) => {
+                    if (!user) {
+                        if (initialAuthToken) {
+                            await signInWithCustomToken(auth, initialAuthToken);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                        user = auth.currentUser;
+                    }
+                    userId = user.uid;
+                    isAuthReady = true;
+                    loadingIndicator.classList.add('hidden');
+                    
+                    topicsRef = getCollectionRef('automation_topics');
+                    platformsRef = getCollectionRef('automation_platform_configs');
+                    historyRef = getCollectionRef('content_history'); 
+                    
+                    startListeningToPlatforms(); 
+                    startListeningToHistory(); 
+                });
+
+            } catch (error) {
+                console.error("Firebase初期化エラー:", error);
+            }
+        }
+        
+        // --- プラットフォーム設定リスナー ---
+        function startListeningToPlatforms() {
+            if (!isAuthReady || !platformsRef) return;
+            const q = query(platformsRef, orderBy('createdAt', 'desc'));
+
+            onSnapshot(q, (snapshot) => {
+                platformsList.innerHTML = '';
+                platformSelect.innerHTML = '<option value="" disabled selected>--- 投稿設定を選択 ---</option>';
+                platformConfigs = []; 
+                
+                if (snapshot.empty) {
+                    platformsList.innerHTML = '<p class="text-gray-500 p-4 text-center">まだ投稿プラットフォーム設定がありません。</p>';
+                }
+                
+                snapshot.docs.forEach(doc => {
+                    const config = doc.data();
+                    const configId = doc.id;
+                    platformConfigs.push({ id: configId, ...config });
+                    renderPlatformConfig(configId, config);
+                    
+                    const option = document.createElement('option');
+                    option.value = configId;
+                    option.textContent = config.configName;
+                    platformSelect.appendChild(option);
+                });
+                
+                startListeningToTopics();
+            }, (error) => {
+                console.error("プラットフォーム設定リスニングエラー:", error);
+            });
+        }
+        
+        // --- テーマリスナー ---
+        function startListeningToTopics() {
+            if (!isAuthReady || !topicsRef) return;
+            const q = query(topicsRef, orderBy('createdAt', 'desc'));
+
+            onSnapshot(q, (snapshot) => {
+                topicsList.innerHTML = '';
+                if (snapshot.empty) {
+                    topicsList.innerHTML = '<p class="text-gray-500 p-4 text-center">まだ自動化テーマが設定されていません。</p>';
+                    return;
+                }
+                
+                snapshot.docs.forEach(doc => {
+                    const topic = doc.data();
+                    const topicId = doc.id;
+                    renderTopic(topicId, topic);
+                });
+            }, (error) => {
+                console.error("テーマリスニングエラー:", error);
+            });
+        }
+
+        // --- 履歴リスナー ---
+        function startListeningToHistory() {
+            if (!isAuthReady || !historyRef) return;
+            const q = query(historyRef, orderBy('createdAt', 'desc'));
+
+            onSnapshot(q, (snapshot) => {
+                historyList.innerHTML = '';
+                if (snapshot.empty) {
+                    historyList.innerHTML = '<p class="text-gray-500 p-4 text-center">まだ生成履歴がありません。テーマから実行してください。</p>';
+                    return;
+                }
+                
+                snapshot.docs.forEach(doc => {
+                    const historyItem = doc.data();
+                    const historyId = doc.id;
+                    renderHistoryItem(historyId, historyItem);
+                });
+            }, (error) => {
+                console.error("履歴リスニングエラー:", error);
+            });
+        }
+        
+        // --- 履歴アイテムのレンダリング ---
+        function renderHistoryItem(id, item) {
+            const listItem = document.createElement('div');
+            const topic = item.topicName || '不明なテーマ';
+            const config = platformConfigs.find(c => c.id === item.platformConfigId);
+            const configName = config ? config.configName : '設定不明';
+            const date = item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleString('ja-JP') : 'ロード中...';
+            
+            let statusColor = 'bg-gray-400';
+            let statusText = '生成中';
+            if (item.status === 'generated') {
+                statusColor = 'bg-orange-500';
+                statusText = '生成完了 (未投稿)';
+            } else if (item.status === 'posted') {
+                statusColor = 'bg-green-500';
+                statusText = '投稿完了';
+            } else if (item.status === 'failed') {
+                statusColor = 'bg-red-500';
+                statusText = '投稿失敗';
+            }
+            
+            listItem.className = 'history-list-item p-4 mb-3 bg-white card flex items-start justify-between';
+            listItem.innerHTML = `
+                <div class="flex-grow">
+                    <div class="flex items-center mb-2">
+                        <span class="px-3 py-1 text-xs font-bold text-white rounded-full ${statusColor} mr-3">${statusText}</span>
+                        <h3 class="text-lg font-bold text-gray-800">${item.contentTitle}</h3>
+                    </div>
+                    <p class="text-sm text-gray-600">テーマ: <span class="font-semibold text-indigo-600">${topic}</span></p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        投稿設定: ${configName} | 
+                        生成日時: ${date}
+                    </p>
+                    <p class="text-xs text-gray-400 mt-2 truncate">${item.generatedText.substring(0, 150)}...</p>
+                </div>
+                <div class="flex space-x-2 ml-4 mt-1">
+                    <button onclick="viewContent('${id}')" 
+                        class="bg-blue-500 text-white p-2 rounded-lg text-sm hover:bg-blue-600 btn-action">
+                        <i class="fas fa-eye"></i> 詳細
+                    </button>
+                </div>
+            `;
+            historyList.appendChild(listItem);
+        }
+
+        function viewContent(id) {
+            alertModal(`ID: ${id} のコンテンツ詳細表示をシミュレートします。\n\nこのデータはデータベースに保存されており、詳細なコンテンツ（ブログ本文、スクリプトなど）を確認・編集できます。`, "info");
+        }
+
+        
+        // --- シミュレーション関数 ---
+        async function simulateGeneration(topicId, topicName, platformConfigId) {
+            if (!isAuthReady || !historyRef) return;
+            alertModal(`AIがテーマ「${topicName}」に基づいてコンテンツ生成を開始しました... (数秒後に履歴に反映されます)`, "info");
+
+            const mockTitle = `AI生成記事: ${topicName} - ${new Date().toLocaleTimeString('ja-JP')}`;
+            const mockContent = `AIによって生成されたコンテンツデータ（ブログ本文、YouTubeスクリプト、SNSキャプションなど）がJSON形式でここに保存されます。このデータは、ローカルではなく、クラウド上のFirestoreデータベースに即座に書き込まれます。\n\nこれが、自動投稿システムが次に進むための「データ取得元」となります。\n\nプラットフォーム設定ID: ${platformConfigId}`;
+
+            try {
+                // データベースに新しい履歴アイテムを追加 (AI生成直後の動作をシミュレート)
+                await addDoc(historyRef, {
+                    topicId: topicId,
+                    platformConfigId: platformConfigId,
+                    topicName: topicName,
+                    contentTitle: mockTitle,
+                    generatedText: mockContent,
+                    status: 'generated', // 初期状態: 生成済み
+                    createdAt: serverTimestamp()
+                });
+                
+            } catch (error) {
+                console.error("履歴追加エラー:", error);
+                alertModal("生成履歴の保存に失敗しました。", "error");
+            }
+        }
+        
+        // --- テーマ/プラットフォーム CRUD (前バージョンと同じロジック) ---
+        async function addTopic(event) {
+             event.preventDefault();
+            if (!isAuthReady || !topicsRef) return;
+
+            const form = event.target;
+            const topic = {
+                topicName: form.topicName.value.trim(),
+                platformConfigId: form.platformConfigId.value.trim(),
+                persona: form.persona.value.trim(),
+                affiliateLink: form.affiliateLink.value.trim(),
+                schedule: form.schedule.value,
+                isActive: true,
+                createdAt: serverTimestamp()
+            };
+
+            if (!topic.topicName || !topic.platformConfigId) {
+                alertModal("テーマ名と投稿設定を選択してください。", "warning");
+                return;
+            }
+            
+            form.reset();
+            try {
+                await addDoc(topicsRef, topic);
+                alertModal("新しい自動化テーマが登録されました。", "success");
+            } catch (error) {
+                console.error("テーマ登録エラー:", error);
+                alertModal("テーマの登録に失敗しました。", "error");
+            }
+        }
+        
+        async function deleteTopic(topicId) {
+             if (!isAuthReady || !topicsRef) return;
+            try {
+                await deleteDoc(doc(topicsRef, topicId));
+                alertModal("テーマを削除しました。", "success");
+            } catch (error) {
+                console.error("テーマ削除エラー:", error);
+                alertModal("テーマの削除に失敗しました。", "error");
+            }
+        }
+        
+        async function addPlatformConfig(event) {
+            event.preventDefault();
+            if (!isAuthReady || !platformsRef) return;
+
+            const form = event.target;
+            
+            const authDetails = JSON.stringify({
+                blogUrl: form.blogUrl.value.trim(),
+                youtubeChannelId: form.youtubeChannelId.value.trim(),
+                snsAccountName: form.snsAccountName.value.trim(),
+                noteUrl: form.noteUrl.value.trim(), 
+                podcastHost: form.podcastHost.value.trim(), 
+            });
+
+            const config = {
+                configName: form.configName.value.trim(),
+                type: form.configType ? form.configType.value : 'multi', // typeフィールドは不要になったが互換性のため
+                description: form.configDescription.value.trim(),
+                authDetails: authDetails, 
+                createdAt: serverTimestamp()
+            };
+
+            if (!config.configName || !config.description) {
+                alertModal("設定名と説明を入力してください。", "warning");
+                return;
+            }
+            
+            form.reset();
+            try {
+                await addDoc(platformsRef, config);
+                alertModal("新しい投稿プラットフォーム設定が登録されました。", "success");
+            } catch (error) {
+                console.error("プラットフォーム設定登録エラー:", error);
+                alertModal("設定の登録に失敗しました。", "error");
+            }
+        }
+        
+        async function deletePlatformConfig(configId) {
+            if (!isAuthReady || !platformsRef) return;
+            try {
+                await deleteDoc(doc(platformsRef, configId));
+                alertModal("投稿設定を削除しました。", "success");
+            } catch (error) {
+                console.error("投稿設定削除エラー:", error);
+                alertModal("投稿設定の削除に失敗しました。", "error");
+            }
+        }
+        
+        function renderTopic(topicId, topic) {
+            const listItem = document.createElement('div');
+            const config = platformConfigs.find(c => c.id === topic.platformConfigId);
+            const configName = config ? config.configName : '設定が見つかりません';
+
+            listItem.className = 'topic-list-item p-4 mb-3 bg-white card flex items-center justify-between';
+            listItem.innerHTML = `
+                <div class="flex-grow">
+                    <h3 class="text-xl font-bold text-gray-800">${topic.topicName}</h3>
+                    <p class="text-sm text-gray-600">
+                        <span class="font-semibold text-indigo-600">${topic.persona}</span> ペルソナ / 
+                        ${getScheduleLabel(topic.schedule)} に投稿
+                    </p>
+                    <p class="text-xs text-green-600 font-medium">投稿設定: ${configName}</p>
+                    <p class="text-xs text-gray-500 truncate">マネタイズリンク: ${topic.affiliateLink || 'なし'}</p>
+                </div>
+                <div class="flex space-x-2 ml-4">
+                    <button onclick="simulateGeneration('${topicId}', '${topic.topicName}', '${topic.platformConfigId}')" 
+                        class="bg-green-500 text-white p-2 rounded-lg text-sm hover:bg-green-600 btn-action flex items-center">
+                        <i class="fas fa-play mr-1"></i> 今すぐ実行
+                    </button>
+                    <button onclick="deleteTopic('${topicId}')" 
+                        class="bg-red-500 text-white p-2 rounded-lg text-sm hover:bg-red-600 btn-action">
+                        <i class="fas fa-trash"></i> 削除
+                    </button>
+                </div>
+            `;
+            topicsList.appendChild(listItem);
+        }
+        
+        function renderPlatformConfig(configId, config) {
+            const listItem = document.createElement('div');
+            const auth = JSON.parse(config.authDetails);
+
+            listItem.className = 'platform-list-item p-4 mb-3 bg-white card flex items-center justify-between';
+            listItem.innerHTML = `
+                <div class="flex-grow">
+                    <h3 class="text-xl font-bold text-gray-800">${config.configName}</h3>
+                    <p class="text-sm text-gray-600 mb-1">${config.description}</p>
+                    <div class="text-xs text-gray-500 space-y-1">
+                        <p class="flex items-center"><i class="fas fa-globe mr-2 text-indigo-500"></i>ブログURL: ${auth.blogUrl || '未設定'}</p>
+                        <p class="flex items-center"><i class="fab fa-medium-m mr-2 text-gray-700"></i>Note/Medium URL: ${auth.noteUrl || '未設定'}</p>
+                        <p class="flex items-center"><i class="fab fa-youtube mr-2 text-red-500"></i>YouTube ID: ${auth.youtubeChannelId || '未設定'}</p>
+                        <p class="flex items-center"><i class="fas fa-microphone mr-2 text-pink-500"></i>Podcastホスト: ${auth.podcastHost || '未設定'}</p>
+                        <p class="flex items-center"><i class="fas fa-users mr-2 text-blue-500"></i>SNSアカウント: ${auth.snsAccountName || '未設定'}</p>
+                    </div>
+                </div>
+                <div class="flex space-x-2 ml-4">
+                    <button onclick="deletePlatformConfig('${configId}')" 
+                        class="bg-red-500 text-white p-2 rounded-lg text-sm hover:bg-red-600 btn-action">
+                        <i class="fas fa-trash"></i> 削除
+                    </button>
+                </div>
+            `;
+            platformsList.appendChild(listItem);
+        }
+
+        // --- 補助関数とイベントハンドラ ---
+        function switchTab(tabId) {
+            // タブコンテンツをすべて非表示
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            // 選択されたタブコンテンツを表示
+            document.getElementById(tabId).classList.remove('hidden');
+
+            // タブボタンのスタイルをリセット
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active', 'bg-indigo-100'));
+            // 選択されたタブボタンをアクティブに
+            document.querySelector(`button[onclick="switchTab('${tabId}')"]`).classList.add('active');
+        }
+
+        function getScheduleLabel(schedule) {
+            const map = {
+                'daily_10am': '毎日 10時',
+                'hourly': '毎時',
+                'weekly_mon': '毎週月曜'
+            };
+            return map[schedule] || schedule;
+        }
+
+        function alertModal(message, type) {
+            const modal = document.getElementById('customAlertModal');
+            const msgElement = document.getElementById('alertMessage');
+            const iconElement = document.getElementById('alertIcon');
+            const header = document.getElementById('alertHeader');
+            
+            msgElement.textContent = message;
+            
+            // モーダルを表示状態にする
+            modal.classList.remove('hidden', 'opacity-0');
+            modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-50 transition-opacity duration-300';
+            iconElement.innerHTML = '';
+            
+            let color = 'bg-blue-500';
+            let iconClass = 'fas fa-info-circle';
+
+            if (type === 'success') {
+                color = 'bg-green-500';
+                iconClass = 'fas fa-check-circle';
+            } else if (type === 'error') {
+                color = 'bg-red-500';
+                iconClass = 'fas fa-exclamation-triangle';
+            } else if (type === 'warning') {
+                color = 'bg-yellow-500';
+                iconClass = 'fas fa-exclamation-circle';
+            }
+            
+            header.className = `p-3 text-white rounded-t-lg ${color}`;
+            iconElement.innerHTML = `<i class="${iconClass} text-2xl"></i>`;
+            
+            // 3秒後に非表示にする
+            setTimeout(() => {
+                modal.classList.add('opacity-0');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            }, 3000);
+        }
+
+
+        // グローバルに公開
+        window.deleteTopic = deleteTopic;
+        window.simulateGeneration = simulateGeneration;
+        window.addTopic = addTopic;
+        window.addPlatformConfig = addPlatformConfig;
+        window.deletePlatformConfig = deletePlatformConfig;
+        window.switchTab = switchTab;
+        window.viewContent = viewContent;
+        
+        // アプリケーション開始
+        document.addEventListener('DOMContentLoaded', () => {
+            setupFirebase();
+            switchTab('topicManagement');
+        });
+
+    </script>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-4xl font-extrabold text-gray-900 mb-2">全自動システム統合ダッシュボード V3</h1>
+        <p class="text-gray-600 mb-8">複数のアカウントと自動化テーマを一元管理し、コンテンツ生成・投稿を制御します。</p>
+
+        <!-- 認証とロードのインジケータ -->
+        <div id="loadingIndicator" class="flex items-center justify-center p-8 bg-white card mb-6">
+            <div class="loading-ring mr-3"></div>
+            <span class="text-indigo-600 font-semibold">システム認証とデータ読み込み中...</span>
+        </div>
+        
+        <!-- タブナビゲーション -->
+        <div class="flex border-b border-gray-200 mb-6">
+            <button class="tab-button p-4 text-gray-600 flex items-center mr-4" onclick="switchTab('topicManagement')">
+                <i class="fas fa-feather-alt mr-2"></i> 自動化テーマの管理
+            </button>
+            <button class="tab-button p-4 text-gray-600 flex items-center mr-4" onclick="switchTab('platformConfiguration')">
+                <i class="fas fa-cogs mr-2"></i> 投稿先プラットフォーム設定
+            </button>
+            <button class="tab-button p-4 text-gray-600 flex items-center" onclick="switchTab('contentHistory')">
+                <i class="fas fa-history mr-2"></i> コンテンツ生成履歴 (データベース)
+            </button>
+        </div>
+
+        <!-- --- タブコンテンツ: テーマ管理 --- -->
+        <div id="topicManagement" class="tab-content">
+            <div class="bg-indigo-50 p-6 card mb-8">
+                <h2 class="text-2xl font-bold text-indigo-800 mb-4 flex items-center">
+                    <i class="fas fa-plus-circle mr-2"></i> 新しい自動化テーマの追加
+                </h2>
+                <form id="addTopicForm" onsubmit="addTopic(event)">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label for="topicName" class="block text-sm font-medium text-gray-700">テーマ・トピック名</label>
+                            <input type="text" id="topicName" name="topicName" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label for="platformConfigId" class="block text-sm font-medium text-gray-700">投稿プラットフォーム設定</label>
+                            <select id="platformConfigId" name="platformConfigId" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                                <!-- JSでオプションが挿入されます -->
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">投稿設定（API情報）を紐づけます。</p>
+                        </div>
+                        <div>
+                            <label for="persona" class="block text-sm font-medium text-gray-700">AIペルソナ (例: 熱狂的なアナリスト)</label>
+                            <input type="text" id="persona" name="persona" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="affiliateLink" class="block text-sm font-medium text-gray-700">アフィリエイト/CTAリンク</label>
+                            <input type="url" id="affiliateLink" name="affiliateLink" placeholder="https://affiliate.example.com/product" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label for="schedule" class="block text-sm font-medium text-gray-700">実行スケジュール</label>
+                            <select id="schedule" name="schedule" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="daily_10am">毎日 10:00 JST</option>
+                                <option value="hourly">毎時</option>
+                                <option value="weekly_mon">毎週月曜日</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="mt-6 w-full bg-indigo-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-indigo-700 btn-action flex items-center justify-center">
+                        <i class="fas fa-magic mr-2"></i> テーマを設定し、自動化を開始
+                    </button>
+                </form>
+            </div>
+            
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-list-ul mr-2"></i> 登録済み自動化テーマ
+            </h2>
+            <div id="topicsList" class="space-y-4">
+                <!-- テーマがリアルタイムで表示されます -->
+            </div>
+        </div>
+
+
+        <!-- --- タブコンテンツ: プラットフォーム設定 --- -->
+        <div id="platformConfiguration" class="tab-content hidden">
+            <div class="bg-green-50 p-6 card mb-8">
+                <h2 class="text-2xl font-bold text-green-800 mb-4 flex items-center">
+                    <i class="fas fa-network-wired mr-2"></i> 新しい投稿設定の追加 (Blog, Note, SNS, YouTube, Podcast)
+                </h2>
+                <form id="addPlatformConfigForm" onsubmit="addPlatformConfig(event)">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="configName" class="block text-sm font-medium text-gray-700">設定名</label>
+                            <input type="text" id="configName" name="configName" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <div>
+                            <label for="configDescription" class="block text-sm font-medium text-gray-700">投稿設定の説明</label>
+                            <input type="text" id="configDescription" name="configDescription" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <!-- ブログURL -->
+                        <div>
+                            <label for="blogUrl" class="block text-sm font-medium text-gray-700">ブログ (WordPress) URL</label>
+                            <input type="url" id="blogUrl" name="blogUrl" placeholder="https://yourblog.com (APIベースURL)" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <!-- Note URL -->
+                        <div>
+                            <label for="noteUrl" class="block text-sm font-medium text-gray-700">Note/Medium URL (API連携用)</label>
+                            <input type="url" id="noteUrl" name="noteUrl" placeholder="https://note.com/your_account" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <!-- YouTube ID -->
+                        <div>
+                            <label for="youtubeChannelId" class="block text-sm font-medium text-gray-700">YouTubeチャンネル ID</label>
+                            <input type="text" id="youtubeChannelId" name="youtubeChannelId" placeholder="UC... (YouTube Data API連携)" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <!-- Podcast Host -->
+                        <div>
+                            <label for="podcastHost" class="block text-sm font-medium text-gray-700">Podcastホスト名 (例: Anchor/Buzzsprout)</label>
+                            <input type="text" id="podcastHost" name="podcastHost" placeholder="Podcast配信サービスAPI連携" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <!-- SNSアカウント名 -->
+                        <div class="md:col-span-2">
+                            <label for="snsAccountName" class="block text-sm font-medium text-gray-700">SNS (X/Instagram/TikTokなど) 代表アカウント名</label>
+                            <input type="text" id="snsAccountName" name="snsAccountName" placeholder="@account_name (各SNS API連携)</label>" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500">
+                            <p class="text-xs text-gray-500 mt-1">※ 実際のAPIキーや認証情報はシステムが安全に管理します。</p>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="mt-6 w-full bg-green-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-green-700 btn-action flex items-center justify-center">
+                        <i class="fas fa-save mr-2"></i> 投稿設定を保存
+                    </button>
+                </form>
+            </div>
+
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-sliders-h mr-2"></i> 登録済み投稿設定
+            </h2>
+            <div id="platformsList" class="space-y-4">
+                <!-- プラットフォーム設定がリアルタイムで表示されます -->
+            </div>
+        </div>
+
+        <!-- --- タブコンテンツ: コンテンツ生成履歴 --- -->
+        <div id="contentHistory" class="tab-content hidden">
+            <h2 class="text-2xl font-bold text-orange-700 mb-4 flex items-center">
+                <i class="fas fa-database mr-2"></i> コンテンツ生成履歴 (データベース保存データ)
+            </h2>
+            <p class="text-gray-600 mb-6">
+                AIが生成した記事、スクリプト、音声データへのリンクなどは、ここにリアルタイムで保存されています。自動投稿は、このデータベースのデータを利用して行われます。
+            </p>
+            <div id="historyList" class="space-y-4">
+                <!-- 生成履歴がリアルタイムで表示されます -->
+            </div>
+        </div>
+        
+        <!-- カスタムアラートモーダル (FIXED: 初期表示で非表示になるように修正) -->
+        <div id="customAlertModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-50 transition-opacity duration-300 opacity-0">
+            <div class="bg-white rounded-xl shadow-2xl overflow-hidden w-80">
+                <div id="alertHeader" class="p-3 text-white">
+                    <div class="flex items-center justify-between">
+                        <div id="alertIcon"></div>
+                        <button onclick="document.getElementById('customAlertModal').classList.add('hidden')" class="text-white hover:text-gray-200">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-5">
+                    <p id="alertMessage" class="text-gray-700 font-medium text-center"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

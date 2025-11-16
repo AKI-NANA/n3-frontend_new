@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>繊細な音符コレクション - 山内ピアノ教室</title>
+  <style>
+    body {
+      background: linear-gradient(135deg, #F5F0E8 0%, #E8DCC8 100%);
+      padding: 3rem;
+      font-family: sans-serif;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      padding: 3rem;
+      border-radius: 16px;
+      box-shadow: 0 10px 50px rgba(0,0,0,0.1);
+    }
+    
+    h1 {
+      text-align: center;
+      color: #3D2E1F;
+      margin-bottom: 3rem;
+      font-size: 2.5rem;
+    }
+    
+    .notes-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 3rem;
+      margin-bottom: 3rem;
+    }
+    
+    .note-item {
+      text-align: center;
+      padding: 2rem;
+      background: #F5F0E8;
+      border-radius: 12px;
+      transition: transform 0.3s ease;
+    }
+    
+    .note-item:hover {
+      transform: translateY(-10px);
+    }
+    
+    .note-item svg {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 1rem;
+    }
+    
+    .note-name {
+      font-size: 0.9rem;
+      color: #8B6F47;
+      font-weight: 600;
+    }
+    
+    .code-section {
+      margin-top: 3rem;
+      padding: 2rem;
+      background: #f5f5f5;
+      border-radius: 12px;
+    }
+    
+    pre {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎹 繊細な音符コレクション</h1>
+    
+    <div class="notes-grid">
+      <!-- 音符1: 八分音符 (シンプル) -->
+      <div class="note-item">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50">
+          <defs>
+            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#C9A961;stop-opacity:1" />
+              <stop offset="100%" style="stop-color:#8B6F47;stop-opacity:1" />
+            </linearGradient>
+          </defs>
+          <ellipse cx="15" cy="38" rx="7" ry="5" fill="url(#grad1)" opacity="0.85"/>
+          <rect x="21" y="12" width="2.5" height="27" rx="1" fill="url(#grad1)" opacity="0.85"/>
+          <path d="M 23.5 12 Q 32 10 32 18" stroke="url(#grad1)" stroke-width="2.5" fill="none" opacity="0.85" stroke-linecap="round"/>
+        </svg>
+        <div class="note-name">八分音符</div>
+      </div>
+
+      <!-- 音符2: 連桁付き八分音符 -->
+      <div class="note-item">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50">
+          <defs>
+            <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#6B2E3E;stop-opacity:0.8" />
+              <stop offset="100%" style="stop-color:#8B6F47;stop-opacity:0.8" />
+            </linearGradient>
+          </defs>
+          <ellipse cx="12" cy="38" rx="6" ry="4.5" fill="url(#grad2)"/>
+          <rect x="17" y="14" width="2" height="25" rx="1" fill="url(#grad2)"/>
+          <ellipse cx="32" cy="34" rx="6" ry="4.5" fill="url(#grad2)"/>
+          <rect x="37" y="10" width="2" height="25" rx="1" fill="url(#grad2)"/>
+          <rect x="19" y="14" width="20" height="2.5" rx="1" fill="url(#grad2)"/>
+        </svg>
+        <div class="note-name">連桁八分音符</div>
+      </div>
+
+      <!-- 音符3: 全音符 (繊細) -->
+      <div class="note-item">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50">
+          <defs>
+            <linearGradient id="grad3" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#C9A961;stop-opacity:0.7" />
+              <stop offset="100%" style="stop-color:#B8956A;stop-opacity:0.7" />
+            </linearGradient>
+          </defs>
+          <ellipse cx="25" cy="25" rx="10" ry="7" fill="none" stroke="url(#grad3)" stroke-width="2.5"/>
+          <ellipse cx="25" cy="25" rx="6" ry="4" fill="white" opacity="0.8"/>
+        </svg>
+        <div class="note-name">全音符</div>
+      </div>
+
+      <!-- 音符4: ト音記号 (エレガント) -->
+      <div class="note-item">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50">
+          <defs>
+            <linearGradient id="grad4" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" style="stop-color:#8B6F47;stop-opacity:0.9" />
+              <stop offset="100%" style="stop-color:#C9A961;stop-opacity:0.9" />
+            </linearGradient>
+          </defs>
+          <path d="M 30 8 Q 36 12 34 22 Q 32 30 24 34 Q 18 36 14 30 Q 12 26 15 23 Q 18 20 22 23 Q 24 25 23 28 Q 22 30 20 30 M 24 34 L 26 42 Q 27 46 23 46 Q 19 46 18 43" 
+                fill="none" stroke="url(#grad4)" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="26" cy="26" r="2" fill="url(#grad4)" opacity="0.8"/>
+        </svg>
+        <div class="note-name">ト音記号</div>
+      </div>
+
+      <!-- 音符5: 四分音符 (上向き) -->
+      <div class="note-item">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50">
+          <defs>
+            <linearGradient id="grad5" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#736B4A;stop-opacity:0.85" />
+              <stop offset="100%" style="stop-color:#8B6F47;stop-opacity:0.85" />
+            </linearGradient>
+          </defs>
+          <ellipse cx="18" cy="36" rx="7" ry="5" fill="url(#grad5)"/>
+          <rect x="24" y="10" width="2.5" height="27" rx="1" fill="url(#grad5)"/>
+        </svg>
+        <div class="note-name">四分音符</div>
+      </div>
+
+      <!-- 音符6: 十六分音符 -->
+      <div class="note-item">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50">
+          <defs>
+            <linearGradient id="grad6" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#C9A961;stop-opacity:0.8" />
+              <stop offset="100%" style="stop-color:#6B2E3E;stop-opacity:0.8" />
+            </linearGradient>
+          </defs>
+          <ellipse cx="15" cy="38" rx="6" ry="4.5" fill="url(#grad6)"/>
+          <rect x="20" y="12" width="2" height="27" rx="1" fill="url(#grad6)"/>
+          <path d="M 22 12 Q 30 10 30 18" stroke="url(#grad6)" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M 22 17 Q 28 15 28 22" stroke="url(#grad6)" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+        <div class="note-name">十六分音符</div>
+      </div>
+
+      <!-- 音符7: 二分音符 -->
+      <div class="note-item">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50">
+          <defs>
+            <linearGradient id="grad7" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#B8956A;stop-opacity:0.75" />
+              <stop offset="100%" style="stop-color:#8B6F47;stop-opacity:0.75" />
+            </linearGradient>
+          </defs>
+          <ellipse cx="18" cy="36" rx="7" ry="5" fill="none" stroke="url(#grad7)" stroke-width="2.5"/>
+          <ellipse cx="18" cy="36" rx="4" ry="2.5" fill="white" opacity="0.8"/>
+          <rect x="24" y="10" width="2.5" height="27" rx="1" fill="url(#grad7)"/>
+        </svg>
+        <div class="note-name">二分音符</div>
+      </div>
+
+      <!-- 音符8: 付点四分音符 -->
+      <div class="note-item">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50">
+          <defs>
+            <linearGradient id="grad8" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#C9A961;stop-opacity:0.85" />
+              <stop offset="100%" style="stop-color:#736B4A;stop-opacity:0.85" />
+            </linearGradient>
+          </defs>
+          <ellipse cx="16" cy="36" rx="7" ry="5" fill="url(#grad8)"/>
+          <rect x="22" y="10" width="2.5" height="27" rx="1" fill="url(#grad8)"/>
+          <circle cx="32" cy="36" r="2.5" fill="url(#grad8)"/>
+        </svg>
+        <div class="note-name">付点四分音符</div>
+      </div>
+
+      <!-- 音符9: シャープ記号 -->
+      <div class="note-item">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50">
+          <defs>
+            <linearGradient id="grad9" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" style="stop-color:#8B6F47;stop-opacity:0.8" />
+              <stop offset="100%" style="stop-color:#6B2E3E;stop-opacity:0.8" />
+            </linearGradient>
+          </defs>
+          <rect x="16" y="10" width="2" height="30" rx="1" fill="url(#grad9)"/>
+          <rect x="28" y="10" width="2" height="30" rx="1" fill="url(#grad9)"/>
+          <rect x="12" y="20" width="24" height="2.5" rx="1" fill="url(#grad9)" transform="rotate(-10 24 21)"/>
+          <rect x="12" y="27" width="24" height="2.5" rx="1" fill="url(#grad9)" transform="rotate(-10 24 28)"/>
+        </svg>
+        <div class="note-name">シャープ</div>
+      </div>
+
+      <!-- 音符10: フラット記号 -->
+      <div class="note-item">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50">
+          <defs>
+            <linearGradient id="grad10" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" style="stop-color:#C9A961;stop-opacity:0.8" />
+              <stop offset="100%" style="stop-color:#8B6F47;stop-opacity:0.8" />
+            </linearGradient>
+          </defs>
+          <rect x="20" y="8" width="2.5" height="36" rx="1" fill="url(#grad10)"/>
+          <path d="M 22.5 28 Q 32 24 32 32 Q 32 40 22.5 36" fill="url(#grad10)" opacity="0.9"/>
+        </svg>
+        <div class="note-name">フラット</div>
+      </div>
+    </div>
+
+    <div class="code-section">
+      <h2>使用方法</h2>
+      <p>これらの音符SVGはヨーロピアンカラーのグラデーションを使用しています:</p>
+      <ul>
+        <li><strong>ゴールド系</strong>: #C9A961</li>
+        <li><strong>ブラウン系</strong>: #8B6F47</li>
+        <li><strong>バーガンディ系</strong>: #6B2E3E</li>
+        <li><strong>オリーブ系</strong>: #736B4A</li>
+      </ul>
+      <p>各音符は透明度0.7-0.9で繊細な印象を与えています。</p>
+    </div>
+  </div>
+</body>
+</html>

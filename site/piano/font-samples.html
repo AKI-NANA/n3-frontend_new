@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>フォントサンプル - 山内ピアノ教室</title>
+  <style>
+    /* Google Fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Playfair+Display:wght@400;600;700&family=Cormorant+Garamond:wght@300;400;600&family=Libre+Baskerville:wght@400;700&family=Lora:wght@400;600;700&family=Merriweather:wght@300;400;700&family=EB+Garamond:wght@400;600;700&family=Crimson+Text:wght@400;600;700&family=Spectral:wght@300;400;600&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background: #2c2416;
+      color: #fff;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 3rem;
+      color: #d4a574;
+    }
+
+    .font-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 2rem;
+    }
+
+    .font-sample {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 2rem;
+      transition: all 0.3s ease;
+    }
+
+    .font-sample:hover {
+      background: rgba(255,255,255,0.08);
+      transform: translateY(-5px);
+    }
+
+    .font-name {
+      font-size: 0.9rem;
+      color: #d4a574;
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .sample-title {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .sample-subtitle {
+      font-size: 1.2rem;
+      text-align: center;
+      opacity: 0.8;
+      margin-bottom: 1rem;
+    }
+
+    .sample-body {
+      font-size: 0.95rem;
+      line-height: 1.8;
+      opacity: 0.7;
+      text-align: center;
+    }
+
+    /* フォント1: Cinzel */
+    .font-1 .sample-title {
+      font-family: 'Cinzel', serif;
+      letter-spacing: 0.15em;
+    }
+
+    /* フォント2: Playfair Display */
+    .font-2 .sample-title {
+      font-family: 'Playfair Display', serif;
+      letter-spacing: 0.08em;
+    }
+
+    /* フォント3: Cormorant Garamond */
+    .font-3 .sample-title {
+      font-family: 'Cormorant Garamond', serif;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+
+    /* フォント4: Libre Baskerville */
+    .font-4 .sample-title {
+      font-family: 'Libre Baskerville', serif;
+      letter-spacing: 0.08em;
+    }
+
+    /* フォント5: Lora */
+    .font-5 .sample-title {
+      font-family: 'Lora', serif;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+    }
+
+    /* フォント6: Merriweather */
+    .font-6 .sample-title {
+      font-family: 'Merriweather', serif;
+      letter-spacing: 0.05em;
+    }
+
+    /* フォント7: EB Garamond */
+    .font-7 .sample-title {
+      font-family: 'EB Garamond', serif;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+    }
+
+    /* フォント8: Crimson Text */
+    .font-8 .sample-title {
+      font-family: 'Crimson Text', serif;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+    }
+
+    /* フォント9: Spectral */
+    .font-9 .sample-title {
+      font-family: 'Spectral', serif;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+      .font-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .sample-title {
+        font-size: 1.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎹 フォントサンプル - 山内ピアノ教室</h1>
+
+    <div class="font-grid">
+      <!-- フォント1: Cinzel -->
+      <div class="font-sample font-1">
+        <div class="font-name">Font 1: Cinzel (現在使用中)</div>
+        <div class="sample-title">Yamauchi Piano Studio</div>
+        <div class="sample-subtitle">山内ピアノ教室</div>
+        <div class="sample-body">
+          エレガントで高級感のあるローマン体。<br>
+          クラシカルで格式高い印象。
+        </div>
+      </div>
+
+      <!-- フォント2: Playfair Display -->
+      <div class="font-sample font-2">
+        <div class="font-name">Font 2: Playfair Display</div>
+        <div class="sample-title">Yamauchi Piano Studio</div>
+        <div class="sample-subtitle">山内ピアノ教室</div>
+        <div class="sample-body">
+          優雅でドラマティック。<br>
+          ハイコントラストで美しいセリフ体。
+        </div>
+      </div>
+
+      <!-- フォント3: Cormorant Garamond -->
+      <div class="font-sample font-3">
+        <div class="font-name">Font 3: Cormorant Garamond</div>
+        <div class="sample-title">Yamauchi Piano Studio</div>
+        <div class="sample-subtitle">山内ピアノ教室</div>
+        <div class="sample-body">
+          洗練された細身のセリフ体。<br>
+          上品で読みやすい。
+        </div>
+      </div>
+
+      <!-- フォント4: Libre Baskerville -->
+      <div class="font-sample font-4">
+        <div class="font-name">Font 4: Libre Baskerville</div>
+        <div class="sample-title">Yamauchi Piano Studio</div>
+        <div class="sample-subtitle">山内ピアノ教室</div>
+        <div class="sample-body">
+          トラディショナルで堅実。<br>
+          信頼感のある印象。
+        </div>
+      </div>
+
+      <!-- フォント5: Lora -->
+      <div class="font-sample font-5">
+        <div class="font-name">Font 5: Lora</div>
+        <div class="sample-title">Yamauchi Piano Studio</div>
+        <div class="sample-subtitle">山内ピアノ教室</div>
+        <div class="sample-body">
+          モダンで洗練されたセリフ体。<br>
+          バランスの取れた美しさ。
+        </div>
+      </div>
+
+      <!-- フォント6: Merriweather -->
+      <div class="font-sample font-6">
+        <div class="font-name">Font 6: Merriweather</div>
+        <div class="sample-title">Yamauchi Piano Studio</div>
+        <div class="sample-subtitle">山内ピアノ教室</div>
+        <div class="sample-body">
+          柔らかく親しみやすい。<br>
+          読みやすさを重視。
+        </div>
+      </div>
+
+      <!-- フォント7: EB Garamond -->
+      <div class="font-sample font-7">
+        <div class="font-name">Font 7: EB Garamond</div>
+        <div class="sample-title">Yamauchi Piano Studio</div>
+        <div class="sample-subtitle">山内ピアノ教室</div>
+        <div class="sample-body">
+          古典的な優雅さ。<br>
+          文学的で知的な印象。
+        </div>
+      </div>
+
+      <!-- フォント8: Crimson Text -->
+      <div class="font-sample font-8">
+        <div class="font-name">Font 8: Crimson Text</div>
+        <div class="sample-title">Yamauchi Piano Studio</div>
+        <div class="sample-subtitle">山内ピアノ教室</div>
+        <div class="sample-body">
+          クラシックで落ち着いた印象。<br>
+          品格のあるデザイン。
+        </div>
+      </div>
+
+      <!-- フォント9: Spectral -->
+      <div class="font-sample font-9">
+        <div class="font-name">Font 9: Spectral</div>
+        <div class="sample-title">Yamauchi Piano Studio</div>
+        <div class="sample-subtitle">山内ピアノ教室</div>
+        <div class="sample-body">
+          現代的でシャープ。<br>
+          エレガントなデザイン。
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

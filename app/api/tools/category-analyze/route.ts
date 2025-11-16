@@ -1,6 +1,8 @@
 // app/api/tools/category-analyze/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
+
+const supabase = createClient()
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,7 +19,7 @@ export async function POST(request: NextRequest) {
 
     // 商品データを取得
     const { data: products, error: fetchError } = await supabase
-      .from('products')
+      .from('products_master')
       .select('*')
       .in('id', productIds)
 
@@ -50,7 +52,7 @@ export async function POST(request: NextRequest) {
         const category = await fetchCategoryFromEbayAPI(product)
 
         const { error: updateError } = await supabase
-          .from('products')
+          .from('products_master')
           .update({
             category_name: category.name,
             category_number: category.number,
@@ -87,41 +89,77 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// eBay APIからカテゴリ取得（仮実装）
+// カテゴリ取得: YahooカテゴリからeBayカテゴリへマッピング
 async function fetchCategoryFromEbayAPI(product: any): Promise<{ name: string; number: string }> {
-  // TODO: 実際のeBay API呼び出し
-  // const response = await fetch(`https://api.ebay.com/...`, { ... })
+  // 1. Yahooカテゴリを取得
+  const yahooCategory = product.scraped_data?.category || 
+                        product.scraped_data?.category_name ||
+                        product.category_name
   
-  // category_managementのDBから取得する方法もある
-  // 今は簡単なキーワードマッチングで仮実装
+  console.log(`🔍 Yahooカテゴリ: ${yahooCategory}`)
   
-  const title = product.title?.toLowerCase() || ''
+  if (!yahooCategory) {
+    console.log(`⚠️  Yahooカテゴリがありません`)
+    return { name: '不明 (Unknown)', number: '99999' }
+  }
   
-  // より詳細なカテゴリマッピング
-  const categoryMappings = [
-    { keywords: ['camera', 'lens', 'canon', 'nikon', 'sony', 'カメラ', 'レンズ'], name: 'Cameras & Photo', number: '625' },
-    { keywords: ['watch', 'clock', 'rolex', 'seiko', '時計', '腕時計'], name: 'Jewelry & Watches', number: '281' },
-    { keywords: ['toy', 'doll', 'figure', 'lego', 'おもちゃ', 'フィギュア'], name: 'Toys & Hobbies', number: '220' },
-    { keywords: ['book', 'magazine', 'novel', '本', '雑誌'], name: 'Books', number: '267' },
-    { keywords: ['game', 'playstation', 'nintendo', 'xbox', 'ゲーム'], name: 'Video Games & Consoles', number: '139973' },
-    { keywords: ['dvd', 'blu-ray', 'movie', 'film', '映画'], name: 'DVDs & Movies', number: '11232' },
-    { keywords: ['cd', 'vinyl', 'record', 'music', '音楽', 'レコード'], name: 'Music', number: '11233' },
-    { keywords: ['phone', 'iphone', 'android', 'smartphone', 'スマホ'], name: 'Cell Phones & Accessories', number: '15032' },
-    { keywords: ['computer', 'laptop', 'tablet', 'ipad', 'pc', 'パソコン'], name: 'Computers/Tablets & Networking', number: '58058' },
-    { keywords: ['clothing', 'shirt', 'dress', 'pants', '服', 'ファッション'], name: 'Clothing, Shoes & Accessories', number: '11450' },
-    { keywords: ['bag', 'backpack', 'wallet', 'purse', 'バッグ', '財布'], name: 'Clothing, Shoes & Accessories', number: '11450' },
-    { keywords: ['sport', 'fitness', 'golf', 'baseball', 'スポーツ'], name: 'Sporting Goods', number: '888' },
-    { keywords: ['antique', 'vintage', 'art', 'アンティーク', 'ヴィンテージ'], name: 'Antiques', number: '20081' },
-    { keywords: ['coin', 'stamp', 'card', 'memorabilia', 'コイン', '切手'], name: 'Collectibles', number: '1' },
-  ]
+  // 2. Yahoo → eBay カテゴリマッピング
+  const categoryMappings: Record<string, { name: string; number: string }> = {
+    // ホビー、カルチャー
+    'トレーディングカード': { name: 'Trading Cards', number: '183454' },
+    'トレカ': { name: 'Trading Cards', number: '183454' },
+    'ポケモンカードゲーム': { name: 'Trading Cards', number: '183454' },
+    '遊戯王': { name: 'Trading Cards', number: '183454' },
+    'デュエルマスターズ': { name: 'Trading Cards', number: '183454' },
+    'フィギュア': { name: 'Toys & Hobbies', number: '220' },
+    'プラモデル': { name: 'Toys & Hobbies', number: '220' },
+    'おもちゃ': { name: 'Toys & Hobbies', number: '220' },
+    'コレクション': { name: 'Collectibles', number: '1' },
+    'アンティーク': { name: 'Antiques', number: '20081' },
+    
+    // 家電、AV、カメラ
+    'カメラ': { name: 'Cameras & Photo', number: '625' },
+    'デジタルカメラ': { name: 'Cameras & Photo', number: '625' },
+    'レンズ': { name: 'Cameras & Photo', number: '625' },
+    'パソコン': { name: 'Computers/Tablets & Networking', number: '58058' },
+    'タブレット': { name: 'Computers/Tablets & Networking', number: '58058' },
+    'スマートフォン': { name: 'Cell Phones & Accessories', number: '15032' },
+    'iPhone': { name: 'Cell Phones & Accessories', number: '15032' },
+    
+    // ファッション
+    '腕時計': { name: 'Jewelry & Watches', number: '281' },
+    '時計': { name: 'Jewelry & Watches', number: '281' },
+    'バッグ': { name: 'Clothing, Shoes & Accessories', number: '11450' },
+    '財布': { name: 'Clothing, Shoes & Accessories', number: '11450' },
+    'ファッション': { name: 'Clothing, Shoes & Accessories', number: '11450' },
+    
+    // エンタメ
+    '本': { name: 'Books', number: '267' },
+    '雑誌': { name: 'Books', number: '267' },
+    'CD': { name: 'Music', number: '11233' },
+    'DVD': { name: 'DVDs & Movies', number: '11232' },
+    'ブルーレイ': { name: 'DVDs & Movies', number: '11232' },
+    'ゲーム': { name: 'Video Games & Consoles', number: '139973' },
+    'PlayStation': { name: 'Video Games & Consoles', number: '139973' },
+    'Nintendo': { name: 'Video Games & Consoles', number: '139973' },
+    
+    // スポーツ
+    'スポーツ': { name: 'Sporting Goods', number: '888' },
+    'ゴルフ': { name: 'Sporting Goods', number: '888' },
+    '釣り': { name: 'Sporting Goods', number: '888' },
+  }
   
-  // タイトルにマッチするカテゴリを探す
-  for (const mapping of categoryMappings) {
-    if (mapping.keywords.some(keyword => title.includes(keyword))) {
-      return { name: mapping.name, number: mapping.number }
+  // 3. 部分一致検索
+  const yahooCategoryLower = yahooCategory.toLowerCase()
+  
+  for (const [keyword, ebayCategory] of Object.entries(categoryMappings)) {
+    if (yahooCategoryLower.includes(keyword.toLowerCase())) {
+      console.log(`✅ マッピング成功: ${keyword} → ${ebayCategory.name} (${ebayCategory.number})`)
+      return ebayCategory
     }
   }
   
-  // マッチしない場合はCollectibles
-  return { name: 'Collectibles', number: '1' }
+  // 4. 見つからない場合は「不明」
+  console.log(`⚠️  マッピングが見つかりません: ${yahooCategory}`)
+  return { name: '不明 (Unknown)', number: '99999' }
 }

@@ -30,6 +30,7 @@ const navigationItems = [
       { text: "メルカリ", link: "/mercari", icon: ShoppingCart, status: "ready" as const },
       { text: "eBay", link: "/ebay", icon: Globe, status: "ready" as const },
       { text: "一括出品", link: "/bulk-listing", icon: List, status: "ready" as const },
+      { text: "開発ナレッジ", link: "/tools/wisdom-core", icon: FileText, status: "new" as const },
     ],
   },
   {

@@ -146,7 +146,7 @@ export async function POST(request: Request) {
       ];
 
       const { data, error } = await supabase
-        .from('products')
+        .from('products_master')
         .upsert(samples, { onConflict: 'sku' })
         .select();
 

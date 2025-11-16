@@ -6,6 +6,7 @@ import RightSidebar from "@/components/layout/RightSidebar"
 import MainContent from "@/components/layout/MainContent"
 import { AuthProvider } from "@/contexts/AuthContext"
 import LayoutWrapper from "@/components/layout/LayoutWrapper"
+import { QueryProvider } from "./providers"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -31,11 +32,13 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <AuthProvider>
-          <LayoutWrapper>
-            {children}
-          </LayoutWrapper>
-        </AuthProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <LayoutWrapper>
+              {children}
+            </LayoutWrapper>
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   )

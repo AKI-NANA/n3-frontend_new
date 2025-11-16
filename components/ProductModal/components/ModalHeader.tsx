@@ -21,15 +21,17 @@ export function ModalHeader({ product, onClose }: ModalHeaderProps) {
         flexShrink: 0,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+        {/* 🔥 画像サイズを大きく */}
         <img 
           src={product?.images?.[0]?.url || '/placeholder.png'} 
           alt="商品" 
           style={{
-            width: '50px',
-            height: '50px',
-            borderRadius: '8px',
+            width: '80px',
+            height: '80px',
+            borderRadius: '12px',
             objectFit: 'cover',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
           }}
         />
         <div>
@@ -52,13 +54,14 @@ export function ModalHeader({ product, onClose }: ModalHeaderProps) {
           </small>
         </div>
       </div>
+      {/* 🔥 ×ボタンの色を暗めに変更 */}
       <button 
         onClick={onClose}
         aria-label="閉じる"
         style={{
-          background: 'none',
+          background: 'rgba(0, 0, 0, 0.2)',
           border: 'none',
-          color: 'white',
+          color: '#f3f4f6',
           fontSize: '1.8rem',
           cursor: 'pointer',
           width: '40px',
@@ -67,10 +70,16 @@ export function ModalHeader({ product, onClose }: ModalHeaderProps) {
           alignItems: 'center',
           justifyContent: 'center',
           borderRadius: '50%',
-          transition: 'background 0.3s ease',
+          transition: 'all 0.3s ease',
         }}
-        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
-        onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = 'rgba(0, 0, 0, 0.4)'
+          e.currentTarget.style.color = 'white'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = 'rgba(0, 0, 0, 0.2)'
+          e.currentTarget.style.color = '#f3f4f6'
+        }}
       >
         ×
       </button>

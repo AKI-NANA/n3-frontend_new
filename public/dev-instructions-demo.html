@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>開発指示書管理システム - NAGANO-3 v2.0</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    }
+    .line-clamp-3 {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="module">
+    const STORAGE_KEY = 'dev_instructions';
+
+    const instructionStorage = {
+      getAll() {
+        const data = localStorage.getItem(STORAGE_KEY);
+        return data ? JSON.parse(data) : [];
+      },
+      save(instructions) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(instructions));
+      },
+      add(instruction) {
+        const instructions = this.getAll();
+        const newInstruction = {
+          ...instruction,
+          id: Date.now().toString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        instructions.push(newInstruction);
+        this.save(instructions);
+        return newInstruction;
+      },
+      update(id, updates) {
+        const instructions = this.getAll();
+        const index = instructions.findIndex(inst => inst.id === id);
+        if (index !== -1) {
+          instructions[index] = {
+            ...instructions[index],
+            ...updates,
+            updatedAt: new Date().toISOString(),
+          };
+          this.save(instructions);
+        }
+      },
+      delete(id) {
+        const instructions = this.getAll();
+        const filtered = instructions.filter(inst => inst.id !== id);
+        this.save(filtered);
+      },
+    };
+
+    let state = {
+      instructions: instructionStorage.getAll(),
+      selectedId: null,
+      activeTab: 'instructions',
+      expandedIds: new Set(),
+      isEditing: false,
+      editData: null,
+    };
+
+    function getStatusColor(status) {
+      const colors = {
+        '未着手': 'bg-gray-100 text-gray-700',
+        '開発中': 'bg-blue-100 text-blue-700',
+        '使用済み': 'bg-green-100 text-green-700',
+        '完了': 'bg-purple-100 text-purple-700',
+        '保留': 'bg-yellow-100 text-yellow-700',
+      };
+      return colors[status] || colors['未着手'];
+    }
+
+    function groupByStatus(instructions) {
+      const groups = {
+        '未着手': [],
+        '開発中': [],
+        '使用済み': [],
+        '完了': [],
+        '保留': [],
+      };
+      instructions.forEach(inst => {
+        groups[inst.status].push(inst);
+      });
+      return groups;
+    }
+
+    function render() {
+      const root = document.getElementById('root');
+      const selectedInstruction = state.selectedId 
+        ? state.instructions.find(i => i.id === state.selectedId) 
+        : null;
+
+      root.innerHTML = `
+        <div class="flex h-screen bg-gray-50">
+          <!-- サイドバー -->
+          <div class="w-80 bg-white border-r border-gray-200 flex flex-col">
+            <!-- ヘッダー -->
+            <div class="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-blue-700">
+              <h2 class="text-lg font-bold text-white">開発指示書管理</h2>
+              <div class="flex gap-2 mt-3">
+                <button
+                  onclick="setActiveTab('instructions')"
+                  class="flex-1 px-3 py-2 text-sm font-medium rounded transition-colors ${
+                    state.activeTab === 'instructions'
+                      ? 'bg-white text-blue-700'
+                      : 'bg-blue-500 text-white hover:bg-blue-400'
+                  }"
+                >
+                  指示書一覧
+                </button>
+                <button
+                  onclick="setActiveTab('files')"
+                  class="flex-1 px-3 py-2 text-sm font-medium rounded transition-colors ${
+                    state.activeTab === 'files'
+                      ? 'bg-white text-blue-700'
+                      : 'bg-blue-500 text-white hover:bg-blue-400'
+                  }"
+                >
+                  ファイル管理
+                </button>
+              </div>
+            </div>
+
+            <!-- コンテンツエリア -->
+            <div class="flex-1 overflow-y-auto">
+              ${state.activeTab === 'instructions' ? renderInstructionsList() : renderFileExplorer()}
+            </div>
+          </div>
+
+          <!-- 詳細パネル -->
+          <div class="flex-1 overflow-y-auto bg-white">
+            ${selectedInstruction ? renderInstructionDetail(selectedInstruction) : `
+              <div class="flex items-center justify-center h-full text-gray-400">
+                <div class="text-center">
+                  <svg class="mx-auto mb-2 opacity-50" width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <p>指示書を選択してください</p>
+                </div>
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderInstructionsList() {
+      const grouped = groupByStatus(state.instructions);
+      
+      let html = `
+        <div class="p-3">
+          <button
+            onclick="handleAddNew()"
+            class="w-full mb-3 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 flex items-center justify-center gap-2 transition-colors"
+          >
+            <span>+</span> 新規指示書
+          </button>
+      `;
+
+      Object.entries(grouped).forEach(([status, items]) => {
+        if (items.length > 0) {
+          html += `
+            <div class="mb-4">
+              <div class="${getStatusColor(status)} px-2 py-1 text-xs font-semibold rounded mb-2">
+                ${status} (${items.length})
+              </div>
+          `;
+          
+          items.forEach(inst => {
+            const isExpanded = state.expandedIds.has(inst.id);
+            const isSelected = state.selectedId === inst.id;
+            
+            html += `
+              <div class="mb-2">
+                <div
+                  class="flex items-center gap-2 px-2 py-2 rounded cursor-pointer transition-colors ${
+                    isSelected 
+                      ? 'bg-blue-50 border-l-4 border-blue-500' 
+                      : 'hover:bg-gray-50'
+                  }"
+                  onclick="selectInstruction('${inst.id}')"
+                >
+                  <button
+                    onclick="event.stopPropagation(); toggleExpand('${inst.id}')"
+                    class="p-0.5 hover:bg-gray-200 rounded"
+                  >
+                    ${isExpanded ? '▼' : '▶'}
+                  </button>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium text-gray-900 truncate">
+                      ${inst.title}
+                    </div>
+                    <div class="text-xs text-gray-500">
+                      ${inst.category}
+                    </div>
+                  </div>
+                </div>
+                ${isExpanded ? `
+                  <div class="ml-6 mt-1 p-2 bg-gray-50 rounded text-xs border-l-2 border-gray-200">
+                    <div class="text-gray-600 line-clamp-3">
+                      ${inst.description || '説明なし'}
+                    </div>
+                    ${inst.images && inst.images.length > 0 ? `
+                      <div class="mt-1 text-gray-500">
+                        📷 ${inst.images.length}枚の画像
+                      </div>
+                    ` : ''}
+                  </div>
+                ` : ''}
+              </div>
+            `;
+          });
+          
+          html += '</div>';
+        }
+      });
+
+      if (state.instructions.length === 0) {
+        html += `
+          <div class="text-center py-8 text-gray-500 text-sm">
+            指示書がありません<br />新規作成してください
+          </div>
+        `;
+      }
+
+      html += '</div>';
+      return html;
+    }
+
+    function renderFileExplorer() {
+      return `
+        <div class="p-4">
+          <div class="flex items-center gap-2 mb-4">
+            <span>📁</span>
+            <h3 class="font-semibold text-gray-900">ローカルファイル</h3>
+          </div>
+          <div class="text-sm text-gray-600">
+            <p class="mb-2 font-mono text-xs bg-gray-100 p-2 rounded">/Users/aritahiroaki/n3-frontend_new/</p>
+            <div class="bg-gray-50 p-3 rounded border border-gray-200">
+              <p class="text-xs text-gray-500">ファイルツリー表示機能は次回実装予定</p>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderInstructionDetail(instruction) {
+      const displayData = state.isEditing && state.editData ? state.editData : instruction;
+      
+      return `
+        <div class="p-6">
+          <div class="flex justify-between items-start mb-6">
+            <div class="flex-1">
+              ${state.isEditing ? `
+                <input
+                  type="text"
+                  id="edit-title"
+                  value="${displayData.title}"
+                  class="text-2xl font-bold border-b-2 border-blue-500 focus:outline-none w-full"
+                  oninput="updateEditData('title', this.value)"
+                />
+              ` : `
+                <h1 class="text-2xl font-bold text-gray-900">${displayData.title}</h1>
+              `}
+            </div>
+            <div class="flex gap-2">
+              ${state.isEditing ? `
+                <button
+                  onclick="handleSave()"
+                  class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex items-center gap-2 transition-colors"
+                >
+                  💾 保存
+                </button>
+                <button
+                  onclick="handleCancelEdit()"
+                  class="px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300 flex items-center gap-2 transition-colors"
+                >
+                  ✕ キャンセル
+                </button>
+              ` : `
+                <button
+                  onclick="startEdit()"
+                  class="p-2 hover:bg-gray-100 rounded transition-colors"
+                  title="編集"
+                >
+                  ✏️
+                </button>
+                <button
+                  onclick="handleDelete('${instruction.id}')"
+                  class="p-2 hover:bg-red-50 text-red-600 rounded transition-colors"
+                  title="削除"
+                >
+                  🗑️
+                </button>
+              `}
+            </div>
+          </div>
+
+          <!-- ステータスとカテゴリ -->
+          <div class="grid grid-cols-2 gap-4 mb-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">ステータス</label>
+              <select
+                id="status-select"
+                onchange="handleStatusChange(this.value)"
+                class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 transition-colors"
+              >
+                <option value="未着手" ${displayData.status === '未着手' ? 'selected' : ''}>未着手</option>
+                <option value="開発中" ${displayData.status === '開発中' ? 'selected' : ''}>開発中</option>
+                <option value="使用済み" ${displayData.status === '使用済み' ? 'selected' : ''}>使用済み</option>
+                <option value="完了" ${displayData.status === '完了' ? 'selected' : ''}>完了</option>
+                <option value="保留" ${displayData.status === '保留' ? 'selected' : ''}>保留</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">カテゴリ</label>
+              <select
+                id="category-select"
+                ${!state.isEditing ? 'disabled' : ''}
+                onchange="updateEditData('category', this.value)"
+                class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 transition-colors"
+              >
+                <option value="在庫管理" ${displayData.category === '在庫管理' ? 'selected' : ''}>在庫管理</option>
+                <option value="価格計算" ${displayData.category === '価格計算' ? 'selected' : ''}>価格計算</option>
+                <option value="API統合" ${displayData.category === 'API統合' ? 'selected' : ''}>API統合</option>
+                <option value="UI/UX" ${displayData.category === 'UI/UX' ? 'selected' : ''}>UI/UX</option>
+                <option value="分析・レポート" ${displayData.category === '分析・レポート' ? 'selected' : ''}>分析・レポート</option>
+                <option value="データベース" ${displayData.category === 'データベース' ? 'selected' : ''}>データベース</option>
+                <option value="認証セキュリティ" ${displayData.category === '認証セキュリティ' ? 'selected' : ''}>認証・セキュリティ</option>
+                <option value="スクレイピング" ${displayData.category === 'スクレイピング' ? 'selected' : ''}>スクレイピング</option>
+                <option value="バッチ処理" ${displayData.category === 'バッチ処理' ? 'selected' : ''}>バッチ処理</option>
+                <option value="デバッグテスト" ${displayData.category === 'デバッグテスト' ? 'selected' : ''}>デバッグ・テスト</option>
+                <option value="その他" ${displayData.category === 'その他' ? 'selected' : ''}>その他</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 指示書内容 -->
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">指示書内容</label>
+            ${state.isEditing ? `
+              <textarea
+                id="edit-description"
+                class="w-full h-48 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                placeholder="開発指示書の内容を記入..."
+                oninput="updateEditData('description', this.value)"
+              >${displayData.description}</textarea>
+            ` : `
+              <div class="bg-gray-50 p-4 rounded border border-gray-200 whitespace-pre-wrap font-mono text-sm min-h-48">
+                ${displayData.description || '内容が記入されていません'}
+              </div>
+            `}
+          </div>
+
+          <!-- 進行状況メモ -->
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">進行状況メモ</label>
+            ${state.isEditing ? `
+              <textarea
+                id="memo-textarea"
+                oninput="updateEditData('memo', this.value)"
+                class="w-full h-32 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+                placeholder="進行状況や気づいたことをメモ..."
+              >${displayData.memo || ''}</textarea>
+            ` : `
+              <div class="bg-gray-50 p-4 rounded border border-gray-200 whitespace-pre-wrap text-sm min-h-32">
+                ${displayData.memo || 'メモがありません'}
+              </div>
+            `}
+          </div>
+
+          <!-- 画像管理 -->
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">画像・スクリーンショット</label>
+            <input
+              type="file"
+              id="image-upload"
+              accept="image/*"
+              onchange="handleImageUpload(event)"
+              class="mb-3 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors cursor-pointer"
+            />
+            <div class="grid grid-cols-2 gap-3">
+              ${displayData.images && displayData.images.length > 0 ? displayData.images.map(img => `
+                <div class="relative group border border-gray-200 rounded overflow-hidden">
+                  <img
+                    src="${img.base64Data}"
+                    alt="${img.filename}"
+                    class="w-full h-40 object-cover"
+                  />
+                  <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all flex items-center justify-center">
+                    <button
+                      onclick="handleDeleteImage('${img.id}')"
+                      class="opacity-0 group-hover:opacity-100 px-3 py-1.5 bg-red-600 text-white text-sm rounded transition-opacity"
+                    >
+                      削除
+                    </button>
+                  </div>
+                  <div class="p-2 bg-gray-50 text-xs text-gray-600 truncate">
+                    ${img.filename}
+                  </div>
+                </div>
+              `).join('') : ''}
+            </div>
+          </div>
+
+          <!-- タイムスタンプ -->
+          <div class="text-xs text-gray-500 pt-4 border-t border-gray-200">
+            <div class="flex justify-between">
+              <span>作成: ${new Date(instruction.createdAt).toLocaleString('ja-JP')}</span>
+              <span>更新: ${new Date(instruction.updatedAt).toLocaleString('ja-JP')}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // イベントハンドラー
+    window.setActiveTab = (tab) => {
+      state.activeTab = tab;
+      render();
+    };
+
+    window.selectInstruction = (id) => {
+      state.selectedId = id;
+      state.isEditing = false;
+      state.editData = null;
+      render();
+    };
+
+    window.toggleExpand = (id) => {
+      if (state.expandedIds.has(id)) {
+        state.expandedIds.delete(id);
+      } else {
+        state.expandedIds.add(id);
+      }
+      render();
+    };
+
+    window.handleAddNew = () => {
+      const newInstruction = instructionStorage.add({
+        title: '新規指示書',
+        category: 'その他',
+        status: '未着手',
+        description: '',
+        memo: '',
+        images: [],
+        relatedFiles: [],
+      });
+      state.instructions = instructionStorage.getAll();
+      state.selectedId = newInstruction.id;
+      state.expandedIds.add(newInstruction.id);
+      render();
+    };
+
+    window.handleDelete = (id) => {
+      if (confirm('この指示書を削除してもよろしいですか?')) {
+        instructionStorage.delete(id);
+        state.instructions = instructionStorage.getAll();
+        if (state.selectedId === id) {
+          state.selectedId = null;
+        }
+        render();
+      }
+    };
+
+    window.handleStatusChange = (status) => {
+      if (state.isEditing) {
+        state.editData.status = status;
+      } else if (state.selectedId) {
+        instructionStorage.update(state.selectedId, { status });
+        state.instructions = instructionStorage.getAll();
+      }
+      render();
+    };
+
+    // handleMemoChangeは削除（updateEditDataで統一）
+
+    window.startEdit = () => {
+      const instruction = state.instructions.find(i => i.id === state.selectedId);
+      if (instruction) {
+        state.editData = { ...instruction };
+        state.isEditing = true;
+        render();
+      }
+    };
+
+    window.updateEditData = (field, value) => {
+      if (state.editData) {
+        state.editData[field] = value;
+      }
+    };
+
+    window.handleSave = () => {
+      if (state.editData && state.selectedId) {
+        instructionStorage.update(state.selectedId, state.editData);
+        state.instructions = instructionStorage.getAll();
+        state.isEditing = false;
+        state.editData = null;
+        render();
+      }
+    };
+
+    window.handleCancelEdit = () => {
+      state.isEditing = false;
+      state.editData = null;
+      render();
+    };
+
+    window.handleImageUpload = (event) => {
+      const file = event.target.files[0];
+      if (!file || !state.selectedId) return;
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const instruction = state.instructions.find(i => i.id === state.selectedId);
+        const newImage = {
+          id: Date.now().toString(),
+          filename: file.name,
+          base64Data: reader.result,
+          description: '',
+          uploadedAt: new Date().toISOString(),
+        };
+        
+        const updatedImages = [...(instruction.images || []), newImage];
+        
+        if (state.isEditing && state.editData) {
+          state.editData.images = updatedImages;
+        } else {
+          instructionStorage.update(state.selectedId, { images: updatedImages });
+          state.instructions = instructionStorage.getAll();
+        }
+        
+        // ファイル入力をリセット
+        event.target.value = '';
+        render();
+      };
+      reader.readAsDataURL(file);
+    };
+
+    window.handleDeleteImage = (imageId) => {
+      if (!state.selectedId) return;
+      const instruction = state.instructions.find(i => i.id === state.selectedId);
+      const updatedImages = instruction.images.filter(img => img.id !== imageId);
+      
+      if (state.isEditing && state.editData) {
+        state.editData.images = updatedImages;
+      } else {
+        instructionStorage.update(state.selectedId, { images: updatedImages });
+        state.instructions = instructionStorage.getAll();
+      }
+      
+      render();
+    };
+
+    // 初回レンダリング
+    render();
+  </script>
+</body>
+</html>

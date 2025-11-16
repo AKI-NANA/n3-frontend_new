@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   try {
     // 監視対象商品数
     const { count: monitoringCount } = await supabase
-      .from('products')
+      .from('products_master')
       .select('*', { count: 'exact', head: true })
       .eq('monitoring_enabled', true)
 

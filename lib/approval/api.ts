@@ -1,28 +1,29 @@
 /**
- * 承認システムAPI関数
+ * 承認システム - API通信関数
+ * NAGANO-3 v2.0
  */
 
 import { createClient } from '@/lib/supabase/client'
 import type {
-  Product,
-  ApprovalStats,
-  FilterState,
-  ApprovalQueueResponse,
+  ApprovalProduct,
+  ApprovalListResponse,
   ApprovalActionResponse,
-  ApprovalHistoryEntry
+  FilterState,
+  ApprovalStats,
 } from '@/types/approval'
 
 const supabase = createClient()
 
 /**
- * 承認キューデータ取得
+ * 商品リストを取得
  */
-export async function getApprovalQueue(
+export async function fetchApprovalProducts(
   filters: FilterState
-): Promise<ApprovalQueueResponse> {
+): Promise<ApprovalListResponse> {
   try {
+    // クエリ構築
     let query = supabase
-      .from('yahoo_scraped_products')
+      .from('products_master')
       .select('*', { count: 'exact' })
 
     // ステータスフィルター
@@ -30,39 +31,72 @@ export async function getApprovalQueue(
       query = query.eq('approval_status', filters.status)
     }
 
-    // AI判定フィルター
+    // 検索
+    if (filters.search) {
+      query = query.or(
+        `title.ilike.%${filters.search}%,sku.ilike.%${filters.search}%,title_en.ilike.%${filters.search}%`
+      )
+    }
+
+    // カテゴリ
+    if (filters.category) {
+      query = query.eq('category', filters.category)
+    }
+
+    // 原産国
+    if (filters.originCountry) {
+      query = query.eq('origin_country', filters.originCountry)
+    }
+
+    // 価格範囲
+    if (filters.minPrice !== undefined) {
+      query = query.gte('yahoo_price', filters.minPrice)
+    }
+    if (filters.maxPrice !== undefined) {
+      query = query.lte('yahoo_price', filters.maxPrice)
+    }
+
+    // 利益範囲
+    if (filters.minProfit !== undefined) {
+      query = query.gte('profit_jpy', filters.minProfit)
+    }
+    if (filters.maxProfit !== undefined) {
+      query = query.lte('profit_jpy', filters.maxProfit)
+    }
+    if (filters.minProfitRate !== undefined) {
+      query = query.gte('profit_rate', filters.minProfitRate)
+    }
+    if (filters.maxProfitRate !== undefined) {
+      query = query.lte('profit_rate', filters.maxProfitRate)
+    }
+
+    // スコア範囲
+    if (filters.minScore !== undefined) {
+      query = query.gte('final_score', filters.minScore)
+    }
+    if (filters.maxScore !== undefined) {
+      query = query.lte('final_score', filters.maxScore)
+    }
+
+    // AIフィルター
     if (filters.aiFilter !== 'all') {
       switch (filters.aiFilter) {
-        case 'ai-approved':
-          query = query.gte('ai_confidence_score', 80)
+        case 'high':
+          query = query.gte('ai_confidence_score', 70)
           break
-        case 'ai-pending':
-          query = query.gte('ai_confidence_score', 40).lt('ai_confidence_score', 80)
+        case 'medium':
+          query = query.gte('ai_confidence_score', 40).lt('ai_confidence_score', 70)
           break
-        case 'ai-rejected':
+        case 'low':
           query = query.lt('ai_confidence_score', 40)
           break
       }
     }
 
-    // 価格フィルター
-    if (filters.minPrice > 0) {
-      query = query.gte('current_price', filters.minPrice)
-    }
-    if (filters.maxPrice > 0) {
-      query = query.lte('current_price', filters.maxPrice)
-    }
-
-    // 検索キーワード
-    if (filters.search) {
-      query = query.ilike('title', `%${filters.search}%`)
-    }
-
-    // ソート: 承認待ち優先 → AIスコア降順 → 作成日降順
-    query = query
-      .order('approval_status', { ascending: true })
-      .order('ai_confidence_score', { ascending: false })
-      .order('created_at', { ascending: false })
+    // ソート
+    const sortBy = filters.sortBy || 'created_at'
+    const sortOrder = filters.sortOrder || 'desc'
+    query = query.order(sortBy, { ascending: sortOrder === 'asc' })
 
     // ページネーション
     const from = (filters.page - 1) * filters.limit
@@ -71,343 +105,166 @@ export async function getApprovalQueue(
 
     const { data, error, count } = await query
 
-    if (error) throw error
+    if (error) {
+      console.error('商品リスト取得エラー:', error)
+      throw new Error(`商品リストの取得に失敗しました: ${error.message}`)
+    }
+
+    // 統計を取得
+    const stats = await fetchApprovalStats()
 
     return {
-      products: data || [],
-      totalCount: count || 0,
+      products: (data as ApprovalProduct[]) || [],
+      stats,
+      total: count || 0,
       page: filters.page,
       limit: filters.limit,
-      totalPages: Math.ceil((count || 0) / filters.limit)
+      totalPages: Math.ceil((count || 0) / filters.limit),
     }
   } catch (error) {
-    console.error('承認キュー取得エラー:', error)
+    console.error('商品リスト取得エラー:', error)
     throw error
   }
 }
 
 /**
- * 統計情報取得
+ * 統計データを取得
  */
-export async function getApprovalStats(): Promise<ApprovalStats> {
+export async function fetchApprovalStats(): Promise<ApprovalStats> {
   try {
-    // 全商品数
-    const { count: totalProducts } = await supabase
-      .from('yahoo_scraped_products')
-      .select('*', { count: 'exact', head: true })
+    const { data, error } = await supabase.rpc('get_approval_stats')
 
-    // 承認待ち
-    const { count: totalPending } = await supabase
-      .from('yahoo_scraped_products')
-      .select('*', { count: 'exact', head: true })
-      .eq('approval_status', 'pending')
-
-    // 承認済み
-    const { count: totalApproved } = await supabase
-      .from('yahoo_scraped_products')
-      .select('*', { count: 'exact', head: true })
-      .eq('approval_status', 'approved')
-
-    // 否認済み
-    const { count: totalRejected } = await supabase
-      .from('yahoo_scraped_products')
-      .select('*', { count: 'exact', head: true })
-      .eq('approval_status', 'rejected')
-
-    // AI推奨
-    const { count: aiApproved } = await supabase
-      .from('yahoo_scraped_products')
-      .select('*', { count: 'exact', head: true })
-      .gte('ai_confidence_score', 80)
-
-    // AI保留
-    const { count: aiPending } = await supabase
-      .from('yahoo_scraped_products')
-      .select('*', { count: 'exact', head: true })
-      .gte('ai_confidence_score', 40)
-      .lt('ai_confidence_score', 80)
-
-    // AI非推奨
-    const { count: aiRejected } = await supabase
-      .from('yahoo_scraped_products')
-      .select('*', { count: 'exact', head: true })
-      .lt('ai_confidence_score', 40)
-
-    // 平均価格
-    const { data: avgData } = await supabase
-      .from('yahoo_scraped_products')
-      .select('current_price')
-
-    const avgPrice = avgData && avgData.length > 0
-      ? Math.round(avgData.reduce((sum, p) => sum + (p.current_price || 0), 0) / avgData.length)
-      : 0
-
-    return {
-      totalProducts: totalProducts || 0,
-      totalPending: totalPending || 0,
-      totalApproved: totalApproved || 0,
-      totalRejected: totalRejected || 0,
-      aiApproved: aiApproved || 0,
-      aiPending: aiPending || 0,
-      aiRejected: aiRejected || 0,
-      avgPrice
-    }
-  } catch (error) {
-    console.error('統計情報取得エラー:', error)
-    throw error
-  }
-}
-
-/**
- * 商品承認
- */
-export async function approveProducts(
-  productIds: number[],
-  approvedBy: string = 'web_user'
-): Promise<ApprovalActionResponse> {
-  try {
-    const errors: string[] = []
-    let successCount = 0
-
-    for (const productId of productIds) {
-      try {
-        // 商品情報取得
-        const { data: product } = await supabase
-          .from('yahoo_scraped_products')
-          .select('approval_status, ai_confidence_score')
-          .eq('id', productId)
-          .single()
-
-        // 承認処理
-        const { error } = await supabase
-          .from('yahoo_scraped_products')
-          .update({
-            approval_status: 'approved',
-            approved_at: new Date().toISOString(),
-            approved_by: approvedBy
-          })
-          .eq('id', productId)
-
-        if (error) throw error
-
-        // 履歴記録
-        await recordApprovalHistory(
-          productId,
-          'approve',
-          product?.approval_status || 'pending',
-          'approved',
-          null,
-          approvedBy,
-          product?.ai_confidence_score || 0
-        )
-
-        successCount++
-      } catch (error) {
-        errors.push(`商品ID ${productId}: ${error}`)
+    if (error) {
+      console.error('統計取得エラー:', error)
+      // エラーの場合はデフォルト値を返す
+      return {
+        total: 0,
+        pending: 0,
+        approved: 0,
+        rejected: 0,
+        avgScore: 0,
+        avgPrice: 0,
+        totalProfit: 0,
       }
     }
 
+    return data || {
+      total: 0,
+      pending: 0,
+      approved: 0,
+      rejected: 0,
+      avgScore: 0,
+      avgPrice: 0,
+      totalProfit: 0,
+    }
+  } catch (error) {
+    console.error('統計取得エラー:', error)
     return {
-      success: successCount > 0,
-      successCount,
-      totalRequested: productIds.length,
-      errors
+      total: 0,
+      pending: 0,
+      approved: 0,
+      rejected: 0,
+      avgScore: 0,
+      avgPrice: 0,
+      totalProfit: 0,
     }
-  } catch (error) {
-    console.error('承認処理エラー:', error)
-    throw error
   }
 }
 
 /**
- * 商品否認
+ * 商品を承認
  */
-export async function rejectProducts(
-  productIds: number[],
-  reason: string,
-  rejectedBy: string = 'web_user'
-): Promise<ApprovalActionResponse> {
-  try {
-    const errors: string[] = []
-    let successCount = 0
-
-    for (const productId of productIds) {
-      try {
-        // 商品情報取得
-        const { data: product } = await supabase
-          .from('yahoo_scraped_products')
-          .select('approval_status, ai_confidence_score')
-          .eq('id', productId)
-          .single()
-
-        // 否認処理
-        const { error } = await supabase
-          .from('yahoo_scraped_products')
-          .update({
-            approval_status: 'rejected',
-            rejection_reason: reason,
-            approved_by: rejectedBy,
-            approved_at: new Date().toISOString()
-          })
-          .eq('id', productId)
-
-        if (error) throw error
-
-        // 履歴記録
-        await recordApprovalHistory(
-          productId,
-          'reject',
-          product?.approval_status || 'pending',
-          'rejected',
-          reason,
-          rejectedBy,
-          product?.ai_confidence_score || 0
-        )
-
-        successCount++
-      } catch (error) {
-        errors.push(`商品ID ${productId}: ${error}`)
-      }
-    }
-
-    return {
-      success: successCount > 0,
-      successCount,
-      totalRequested: productIds.length,
-      errors
-    }
-  } catch (error) {
-    console.error('否認処理エラー:', error)
-    throw error
-  }
-}
-
-/**
- * 承認履歴記録
- */
-async function recordApprovalHistory(
-  productId: number,
-  action: 'approve' | 'reject' | 'pending' | 'reset',
-  previousStatus: string,
-  newStatus: string,
-  reason: string | null,
-  processedBy: string,
-  aiScore: number
-): Promise<void> {
-  try {
-    await supabase
-      .from('approval_history')
-      .insert({
-        product_id: productId,
-        action,
-        previous_status: previousStatus,
-        new_status: newStatus,
-        reason,
-        processed_by: processedBy,
-        ai_score_at_time: aiScore,
-        processed_at: new Date().toISOString()
-      })
-  } catch (error) {
-    console.error('履歴記録エラー:', error)
-  }
-}
-
-/**
- * 承認履歴取得
- */
-export async function getApprovalHistory(
-  productId: number
-): Promise<ApprovalHistoryEntry[]> {
+export async function approveProducts(ids: number[]): Promise<ApprovalActionResponse> {
   try {
     const { data, error } = await supabase
-      .from('approval_history')
-      .select('*')
-      .eq('product_id', productId)
-      .order('processed_at', { ascending: false })
-
-    if (error) throw error
-
-    return data || []
-  } catch (error) {
-    console.error('履歴取得エラー:', error)
-    return []
-  }
-}
-
-/**
- * AIスコア更新
- */
-export async function updateAIScore(
-  productId: number,
-  score: number,
-  recommendation: string
-): Promise<boolean> {
-  try {
-    const { error } = await supabase
-      .from('yahoo_scraped_products')
+      .from('products_master')
       .update({
-        ai_confidence_score: score,
-        ai_recommendation: recommendation
+        approval_status: 'approved',
+        approved_at: new Date().toISOString(),
+        approved_by: 'system', // TODO: ユーザー名を取得
       })
-      .eq('id', productId)
+      .in('id', ids)
+      .select('id')
 
-    if (error) throw error
-
-    return true
-  } catch (error) {
-    console.error('AIスコア更新エラー:', error)
-    return false
-  }
-}
-
-/**
- * ステータスリセット
- */
-export async function resetApprovalStatus(
-  productIds: number[]
-): Promise<ApprovalActionResponse> {
-  try {
-    const errors: string[] = []
-    let successCount = 0
-
-    for (const productId of productIds) {
-      try {
-        const { error } = await supabase
-          .from('yahoo_scraped_products')
-          .update({
-            approval_status: 'pending',
-            approved_at: null,
-            approved_by: null,
-            rejection_reason: null
-          })
-          .eq('id', productId)
-
-        if (error) throw error
-
-        await recordApprovalHistory(
-          productId,
-          'reset',
-          'approved',
-          'pending',
-          'ステータスリセット',
-          'system',
-          0
-        )
-
-        successCount++
-      } catch (error) {
-        errors.push(`商品ID ${productId}: ${error}`)
-      }
+    if (error) {
+      console.error('承認エラー:', error)
+      throw new Error(`商品の承認に失敗しました: ${error.message}`)
     }
 
     return {
-      success: successCount > 0,
-      successCount,
-      totalRequested: productIds.length,
-      errors
+      success: true,
+      message: `${ids.length}件の商品を承認しました`,
+      updatedProducts: data?.map((p) => p.id) || [],
     }
   } catch (error) {
-    console.error('ステータスリセットエラー:', error)
+    console.error('承認エラー:', error)
     throw error
+  }
+}
+
+/**
+ * 商品を否認
+ */
+export async function rejectProducts(
+  ids: number[],
+  reason: string
+): Promise<ApprovalActionResponse> {
+  try {
+    const { data, error } = await supabase
+      .from('products_master')
+      .update({
+        approval_status: 'rejected',
+        rejection_reason: reason,
+        approved_at: new Date().toISOString(),
+        approved_by: 'system', // TODO: ユーザー名を取得
+      })
+      .in('id', ids)
+      .select('id')
+
+    if (error) {
+      console.error('否認エラー:', error)
+      throw new Error(`商品の否認に失敗しました: ${error.message}`)
+    }
+
+    return {
+      success: true,
+      message: `${ids.length}件の商品を否認しました`,
+      updatedProducts: data?.map((p) => p.id) || [],
+    }
+  } catch (error) {
+    console.error('否認エラー:', error)
+    throw error
+  }
+}
+
+/**
+ * フィルターオプションを取得
+ */
+export async function fetchFilterOptions() {
+  try {
+    // カテゴリ一覧
+    const { data: categories } = await supabase
+      .from('products_master')
+      .select('category')
+      .not('category', 'is', null)
+      .order('category')
+
+    // 原産国一覧
+    const { data: countries } = await supabase
+      .from('products_master')
+      .select('origin_country')
+      .not('origin_country', 'is', null)
+      .order('origin_country')
+
+    return {
+      categories: [...new Set(categories?.map((c) => c.category).filter(Boolean) || [])],
+      originCountries: [...new Set(countries?.map((c) => c.origin_country).filter(Boolean) || [])],
+    }
+  } catch (error) {
+    console.error('フィルターオプション取得エラー:', error)
+    return {
+      categories: [],
+      originCountries: [],
+    }
   }
 }

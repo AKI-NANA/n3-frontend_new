@@ -56,16 +56,15 @@ export async function GET(request: NextRequest) {
     const findingAck = findItemsResponse?.ack?.[0]
     const findingError = findItemsResponse?.errorMessage?.[0]
 
-    // テスト2: Browse APIでテスト（Refresh Token使用）
+    // テスト2: Browse APIでテスト（Client Credentials使用）
     const clientId = process.env.EBAY_CLIENT_ID
     const clientSecret = process.env.EBAY_CLIENT_SECRET
-    const refreshToken = process.env.EBAY_REFRESH_TOKEN?.replace(/"/g, '')
 
-    let browseTest: any = { skipped: true, reason: 'Refresh Token未設定' }
+    let browseTest: any = { skipped: true, reason: 'Client Credentials未設定' }
 
-    if (clientId && clientSecret && refreshToken) {
+    if (clientId && clientSecret) {
       try {
-        // Access Token取得
+        // Application Token取得（Client Credentials）
         const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
         const tokenResponse = await fetch('https://api.ebay.com/identity/v1/oauth2/token', {
           method: 'POST',
@@ -74,8 +73,8 @@ export async function GET(request: NextRequest) {
             Authorization: `Basic ${credentials}`
           },
           body: new URLSearchParams({
-            grant_type: 'refresh_token',
-            refresh_token: refreshToken
+            grant_type: 'client_credentials',
+            scope: 'https://api.ebay.com/oauth/api_scope'
           })
         })
 
@@ -125,6 +124,75 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // テスト3: Sell APIでテスト（Refresh Token使用）
+    const refreshToken = process.env.EBAY_REFRESH_TOKEN?.replace(/"/g, '')
+    let sellTest: any = { skipped: true, reason: 'Refresh Token未設定' }
+
+    if (clientId && clientSecret && refreshToken) {
+      try {
+        // User Access Token取得（Refresh Token）
+        const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
+        const tokenResponse = await fetch('https://api.ebay.com/identity/v1/oauth2/token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            Authorization: `Basic ${credentials}`
+          },
+          body: new URLSearchParams({
+            grant_type: 'refresh_token',
+            refresh_token: refreshToken
+          })
+        })
+
+        if (tokenResponse.ok) {
+          const tokenData = await tokenResponse.json()
+          const accessToken = tokenData.access_token
+
+          // Account APIテスト
+          const accountResponse = await fetch(
+            'https://api.ebay.com/sell/account/v1/fulfillment_policy?marketplace_id=EBAY_US',
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+                'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US'
+              }
+            }
+          )
+
+          const accountText = await accountResponse.text()
+          let accountParsed: any
+          try {
+            accountParsed = JSON.parse(accountText)
+          } catch {
+            accountParsed = { rawText: accountText }
+          }
+
+          sellTest = {
+            status: accountResponse.status,
+            success: accountResponse.ok,
+            tokenValid: true,
+            error: accountParsed.errors?.[0] || null,
+            policyCount: accountParsed.fulfillmentPolicies?.length || 0,
+            expiresIn: tokenData.expires_in
+          }
+        } else {
+          const errorText = await tokenResponse.text()
+          sellTest = {
+            status: tokenResponse.status,
+            success: false,
+            tokenValid: false,
+            error: 'Refresh Tokenが無効: ' + errorText
+          }
+        }
+      } catch (error: any) {
+        sellTest = {
+          success: false,
+          error: error.message
+        }
+      }
+    }
+
     return NextResponse.json({
       success: true,
       environment: envCheck,
@@ -143,7 +211,15 @@ export async function GET(request: NextRequest) {
         itemsFound: findItemsResponse?.searchResult?.[0]?.['@count'] || 0
       },
 
-      browseApiTest: browseTest
+      browseApiTest: browseTest,
+
+      sellApiTest: sellTest,
+
+      explanation: {
+        findingApi: 'Finding APIはAPP_IDだけで使える公開APIです。認証不要です。',
+        browseApi: 'Browse APIはClient Credentials（Application Token）で動作します。Refresh Tokenは不要です。',
+        sellApi: 'Sell APIはRefresh Token（User Token）で動作します。商品管理・出品に必要です。'
+      }
     })
 
   } catch (error: any) {

@@ -9,35 +9,40 @@ export interface TabOverviewProps {
   marketplace: string;
 }
 
-interface ProcessStep {
-  id: string;
-  name: string;
-  status: 'waiting' | 'processing' | 'complete' | 'error';
-}
-
 export function TabOverview({ product, marketplace }: TabOverviewProps) {
-  const [processSteps, setProcessSteps] = useState<ProcessStep[]>([
-    { id: 'step1', name: '1. データ取得', status: 'complete' },
-    { id: 'step2', name: '2. ツール実行', status: 'waiting' },
-    { id: 'step3', name: '3. データ統合', status: 'waiting' },
-    { id: 'step4', name: '4. 出品準備', status: 'waiting' },
-  ]);
-
   const [showSKUDetails, setShowSKUDetails] = useState(false);
 
+  if (!product) {
+    return <div style={{ padding: '1.5rem' }}>商品データがありません</div>;
+  }
+
+  // 🔍 デバッグ: 受け取った商品データを確認
+  console.log('🎯 TabOverview - product:', {
+    id: product.id,
+    sku: product.sku,
+    master_key: (product as any)?.master_key,
+    price_jpy: product.price_jpy,
+    price_usd: (product as any)?.price_usd,
+    listing_data: product.listing_data,
+    sm_analyzed_at: (product as any)?.sm_analyzed_at,
+    sm_sales_count: (product as any)?.sm_sales_count,
+    sm_competitor_count: (product as any)?.sm_competitor_count,
+    sm_lowest_price: (product as any)?.sm_lowest_price,
+    sm_profit_margin: (product as any)?.sm_profit_margin,
+    sm_profit_amount_usd: (product as any)?.sm_profit_amount_usd,
+  });
+
   // SKU解析
-  const sku = product?.sku || '';
+  const sku = product.sku || '';
   const masterKey = (product as any)?.master_key || '';
   
-  console.log('TabOverview - product:', product);
-  console.log('TabOverview - sku:', sku);
-  console.log('TabOverview - masterKey:', masterKey);
   const skuParts = {
     store: sku.substring(0, 1),
     year: sku.substring(1, 2),
     id: sku.substring(2, 4),
     checksum: sku.substring(4, 5)
   };
+
   const mkParts = masterKey.split('-');
   const masterKeyInfo = {
     stockType: mkParts[0] || '',
@@ -52,26 +57,61 @@ export function TabOverview({ product, marketplace }: TabOverviewProps) {
     price: mkParts[9] || ''
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'complete': return 'var(--ilm-complete)';
-      case 'processing': return 'var(--ilm-processing)';
-      case 'error': return 'var(--ilm-error)';
-      default: return 'var(--ilm-text-secondary)';
-    }
+  // 🎯 DBから取得した実データを使用（profit_marginフィールドを完全に無視）
+  const purchasePrice = product.price_jpy || (product as any)?.purchase_price_jpy || 0;
+  const sellingPriceUSD = (product as any)?.price_usd || product.listing_data?.ddp_price_usd || 0;
+  // 🔥 正しい利益データを使用（profit_margin_percent と profit_amount_usd のみ）
+  const profitMargin = parseFloat((product as any)?.profit_margin_percent) || parseFloat(product.listing_data?.profit_margin) || 0;
+  const profitAmount = parseFloat((product as any)?.profit_amount_usd) || parseFloat(product.listing_data?.profit_amount_usd) || 0;
+
+  // SM分析データ
+  const smData = {
+    analyzed: !!(product as any)?.sm_analyzed_at,
+    salesCount: (product as any)?.sm_sales_count || 0,
+    competitorCount: (product as any)?.sm_competitor_count || 0,
+    lowestPrice: (product as any)?.sm_lowest_price || 0,
+    profitMargin: (product as any)?.sm_profit_margin || 0,
+    profitAmount: (product as any)?.sm_profit_amount_usd || 0,
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'complete': return '✓ 完了';
-      case 'processing': return '⟳ 処理中';
-      case 'error': return '✗ エラー';
-      default: return '待機中';
-    }
+  // データ完全性スコア計算
+  const calculateCompleteness = () => {
+    let score = 0;
+    let total = 0;
+
+    // 基本情報 (30点)
+    total += 30;
+    if (product.title) score += 10;
+    if ((product as any)?.english_title) score += 10;
+    if (product.price_jpy) score += 10;
+
+    // 画像 (20点)
+    total += 20;
+    const imageCount = product.listing_data?.image_count || (product as any)?.images?.length || 0;
+    score += Math.min(imageCount * 2, 20);
+
+    // カテゴリ・サイズ (20点)
+    total += 20;
+    if (product.category_name || product.ebay_api_data?.category_name) score += 10;
+    if (product.listing_data?.weight_g) score += 5;
+    if (product.listing_data?.length_cm) score += 5;
+
+    // HTS・関税 (15点)
+    total += 15;
+    if ((product as any)?.hts_code && (product as any).hts_code !== '要確認') score += 10;
+    if ((product as any)?.origin_country) score += 5;
+
+    // SM分析 (15点)
+    total += 15;
+    if (smData.analyzed) score += 15;
+
+    return Math.round((score / total) * 100);
   };
+
+  const completeness = calculateCompleteness();
 
   return (
-    <div style={{ padding: '1.5rem' }}>
+    <div style={{ padding: '1.5rem', maxHeight: 'calc(100vh - 300px)', overflowY: 'auto' }}>
       {/* SKU情報セクション */}
       <div style={{
         border: '2px solid #e3e8ef',
@@ -173,11 +213,11 @@ export function TabOverview({ product, marketplace }: TabOverviewProps) {
             fontWeight: 600
           }}
         >
-          {showSKUDetails ? '▼ 詳細を隠す' : '▶ 詳細を表示（社外秘）'}
+          {showSKUDetails ? '▼ 詳細を隠す' : '▶ Master Key詳細（社外秘）'}
         </button>
 
-        {/* 詳細情報 */}
-        {showSKUDetails && (
+        {/* Master Key詳細情報 */}
+        {showSKUDetails && masterKey && (
           <div style={{
             marginTop: '1rem',
             padding: '1rem',
@@ -218,162 +258,248 @@ export function TabOverview({ product, marketplace }: TabOverviewProps) {
         )}
       </div>
 
-      <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', fontWeight: 600, color: 'var(--ilm-text-primary)' }}>
-        <i className="fas fa-dashboard"></i> 全ツール統合状況
-      </h3>
-      
-      {/* ツールステータスグリッド */}
-      <div className={styles.statusGrid}>
-        <div className={`${styles.statusCard} ${styles.complete}`}>
-          <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <i className="fas fa-check-circle"></i> 基本情報
-          </h4>
-          <p style={{ margin: 0, fontSize: '0.85rem', color: '#6c757d' }}>完了</p>
-          <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#28a745' }}>
-            ✓ タイトル ✓ 価格 ✓ 画像
-          </div>
-        </div>
-        
-        <div className={`${styles.statusCard} ${styles.partial}`}>
-          <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <i className="fas fa-images"></i> 画像
-          </h4>
-          <p style={{ margin: 0, fontSize: '0.85rem', color: '#6c757d' }}>
-            {product?.images?.length || 0}枚取得済み
-          </p>
-          <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#ffc107' }}>
-            選択: {product?.selectedImages?.length || 0}/12枚
-          </div>
-        </div>
-        
-        <div className={`${styles.statusCard} ${styles.processing}`}>
-          <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <i className="fas fa-tools"></i> ツール実行
-          </h4>
-          <p style={{ margin: 0, fontSize: '0.85rem', color: '#6c757d' }}>準備完了</p>
-          <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#17a2b8' }}>
-            5種類のツール利用可能
-          </div>
-        </div>
-        
-        <div className={`${styles.statusCard} ${styles.missing}`}>
-          <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <i className="fas fa-file-alt"></i> HTML
-          </h4>
-          <p style={{ margin: 0, fontSize: '0.85rem', color: '#6c757d' }}>未作成</p>
-          <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#dc3545' }}>
-            HTML編集タブで作成
-          </div>
-        </div>
-      </div>
-
-      {/* 処理フロー */}
-      <div className={styles.dataSection} style={{ marginTop: '1.5rem' }}>
-        <div className={styles.sectionHeader}>
-          <i className="fas fa-info-circle"></i> 処理フロー
-        </div>
-        <div style={{ padding: '1rem' }}>
-          {processSteps.map((step) => (
-            <div 
-              key={step.id}
-              style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                padding: '0.4rem 0', 
-                borderBottom: '1px solid #e9ecef' 
-              }}
-            >
-              <span style={{ fontWeight: 500, color: 'var(--ilm-text-secondary)' }}>
-                {step.name}
-              </span>
-              <span 
-                style={{ 
-                  fontWeight: 600, 
-                  color: getStatusColor(step.status)
-                }}
-              >
-                {getStatusText(step.status)}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* 商品情報プレビュー */}
-      <div className={styles.dataSection} style={{ marginTop: '1.5rem' }}>
+      {/* 💰 価格・利益情報 */}
+      <div className={styles.dataSection} style={{ marginBottom: '1.5rem' }}>
         <h4 className={styles.sectionHeader}>
-          <i className="fas fa-info-circle"></i> 商品情報サマリー
+          <i className="fas fa-dollar-sign"></i> 価格・利益情報
         </h4>
         <div style={{ padding: '1rem' }}>
-          <div className={styles.formGrid}>
-            <div>
-              <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '0.25rem', color: '#6c757d' }}>
-                タイトル
-              </label>
-              <div style={{ padding: '0.5rem', background: 'white', borderRadius: '4px', fontSize: '0.9rem', border: '1px solid #e9ecef' }}>
-                {product?.title || 'N/A'}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: '1rem'
+          }}>
+            {/* 仕入れ値（円） */}
+            <div style={{
+              padding: '0.75rem',
+              background: '#f8f9fa',
+              borderRadius: '6px',
+              border: '1px solid #dee2e6'
+            }}>
+              <div style={{ fontSize: '0.75rem', color: '#6c757d', marginBottom: '0.25rem' }}>
+                仕入れ値
+              </div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#dc3545' }}>
+                ¥{purchasePrice.toLocaleString()}
               </div>
             </div>
-            <div>
-              <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '0.25rem', color: '#6c757d' }}>
-                ASIN / ID
-              </label>
-              <div style={{ padding: '0.5rem', background: 'white', borderRadius: '4px', fontSize: '0.9rem', border: '1px solid #e9ecef' }}>
-                {product?.asin || product?.id || 'N/A'}
+
+            {/* 出品価格（USD） */}
+            <div style={{
+              padding: '0.75rem',
+              background: '#f8f9fa',
+              borderRadius: '6px',
+              border: '1px solid #dee2e6'
+            }}>
+              <div style={{ fontSize: '0.75rem', color: '#6c757d', marginBottom: '0.25rem' }}>
+                出品価格（DDP）
+              </div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#007bff' }}>
+                ${sellingPriceUSD.toFixed(2)}
               </div>
             </div>
-            <div>
-              <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '0.25rem', color: '#6c757d' }}>
-                価格
-              </label>
-              <div style={{ padding: '0.5rem', background: 'white', borderRadius: '4px', fontSize: '0.9rem', border: '1px solid #e9ecef' }}>
-                ¥{product?.price?.toLocaleString() || '0'}
+
+            {/* 利益率 */}
+            <div style={{
+              padding: '0.75rem',
+              background: profitMargin >= 30 ? '#d4edda' : profitMargin >= 15 ? '#fff3cd' : '#f8d7da',
+              borderRadius: '6px',
+              border: `1px solid ${profitMargin >= 30 ? '#c3e6cb' : profitMargin >= 15 ? '#ffeaa7' : '#f5c6cb'}`
+            }}>
+              <div style={{ fontSize: '0.75rem', color: '#6c757d', marginBottom: '0.25rem' }}>
+                利益率
+              </div>
+              <div style={{ 
+                fontSize: '1.5rem', 
+                fontWeight: 700, 
+                color: profitMargin >= 30 ? '#28a745' : profitMargin >= 15 ? '#ffc107' : '#dc3545'
+              }}>
+                {profitMargin.toFixed(1)}%
               </div>
             </div>
-            <div>
-              <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '0.25rem', color: '#6c757d' }}>
-                在庫
-              </label>
-              <div style={{ padding: '0.5rem', background: 'white', borderRadius: '4px', fontSize: '0.9rem', border: '1px solid #e9ecef' }}>
-                {product?.stock?.available || 0}個
+
+            {/* 利益額 */}
+            <div style={{
+              padding: '0.75rem',
+              background: profitAmount > 0 ? '#d4edda' : '#f8d7da',
+              borderRadius: '6px',
+              border: `1px solid ${profitAmount > 0 ? '#c3e6cb' : '#f5c6cb'}`
+            }}>
+              <div style={{ fontSize: '0.75rem', color: '#6c757d', marginBottom: '0.25rem' }}>
+                利益額
+              </div>
+              <div style={{ 
+                fontSize: '1.5rem', 
+                fontWeight: 700, 
+                color: profitAmount > 0 ? '#28a745' : '#dc3545'
+              }}>
+                ${profitAmount.toFixed(2)}
               </div>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* カテゴリ情報 */}
-          {product?.category && (
-            <div style={{ marginTop: '1rem', padding: '0.75rem', background: '#e3f2fd', borderRadius: '6px' }}>
-              <div style={{ fontWeight: 600, fontSize: '0.85rem', marginBottom: '0.5rem', color: '#1976d2' }}>
-                <i className="fas fa-tags"></i> カテゴリ
+      {/* 📊 市場調査結果（SellerMirror） */}
+      <div className={styles.dataSection} style={{ marginBottom: '1.5rem' }}>
+        <h4 className={styles.sectionHeader}>
+          <i className="fas fa-chart-line"></i> 市場調査結果（SellerMirror）
+        </h4>
+        <div style={{ padding: '1rem' }}>
+          {smData.analyzed ? (
+            <>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '1rem',
+                marginBottom: '1rem'
+              }}>
+                {/* 販売数 */}
+                <div style={{
+                  padding: '0.75rem',
+                  background: '#e3f2fd',
+                  borderRadius: '6px',
+                  border: '1px solid #90caf9'
+                }}>
+                  <div style={{ fontSize: '0.75rem', color: '#1976d2', marginBottom: '0.25rem' }}>
+                    <i className="fas fa-shopping-cart"></i> 販売数
+                  </div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#1565c0' }}>
+                    {smData.salesCount}個
+                  </div>
+                </div>
+
+                {/* 競合数 */}
+                <div style={{
+                  padding: '0.75rem',
+                  background: '#fff3e0',
+                  borderRadius: '6px',
+                  border: '1px solid #ffb74d'
+                }}>
+                  <div style={{ fontSize: '0.75rem', color: '#f57c00', marginBottom: '0.25rem' }}>
+                    <i className="fas fa-users"></i> 競合数
+                  </div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#ef6c00' }}>
+                    {smData.competitorCount}件
+                  </div>
+                </div>
+
+                {/* 最安値 */}
+                <div style={{
+                  padding: '0.75rem',
+                  background: '#fce4ec',
+                  borderRadius: '6px',
+                  border: '1px solid #f8bbd0'
+                }}>
+                  <div style={{ fontSize: '0.75rem', color: '#c2185b', marginBottom: '0.25rem' }}>
+                    <i className="fas fa-tag"></i> 最安値（送料込）
+                  </div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#ad1457' }}>
+                    ${smData.lowestPrice.toFixed(2)}
+                  </div>
+                </div>
               </div>
-              <div style={{ fontSize: '0.85rem', color: '#424242' }}>
-                {product.category.name}
-                {product.category.confidence && (
-                  <span style={{ marginLeft: '0.5rem', color: '#1976d2' }}>
-                    (信頼度: {(product.category.confidence * 100).toFixed(0)}%)
-                  </span>
-                )}
+
+              {/* 最安値での利益 */}
+              <div style={{
+                padding: '1rem',
+                background: smData.profitMargin > 0 ? '#e8f5e9' : '#ffebee',
+                borderRadius: '6px',
+                border: `1px solid ${smData.profitMargin > 0 ? '#a5d6a7' : '#ef9a9a'}`
+              }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem', color: '#424242' }}>
+                  📈 最安値で出品した場合の予測
+                </div>
+                <div style={{ display: 'flex', gap: '2rem', fontSize: '0.9rem' }}>
+                  <div>
+                    <span style={{ color: '#6c757d' }}>利益率: </span>
+                    <span style={{ 
+                      fontWeight: 700, 
+                      color: smData.profitMargin > 0 ? '#2e7d32' : '#c62828'
+                    }}>
+                      {smData.profitMargin.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div>
+                    <span style={{ color: '#6c757d' }}>利益額: </span>
+                    <span style={{ 
+                      fontWeight: 700, 
+                      color: smData.profitAmount > 0 ? '#2e7d32' : '#c62828'
+                    }}>
+                      ${smData.profitAmount.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
               </div>
+            </>
+          ) : (
+            <div style={{
+              padding: '2rem',
+              textAlign: 'center',
+              background: '#f8f9fa',
+              borderRadius: '6px',
+              color: '#6c757d'
+            }}>
+              <i className="fas fa-info-circle" style={{ fontSize: '2rem', marginBottom: '1rem' }}></i>
+              <p style={{ margin: 0 }}>SellerMirror分析が実行されていません</p>
+              <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.85rem' }}>
+                編集画面で「SM分析」ボタンをクリックしてください
+              </p>
             </div>
           )}
         </div>
       </div>
 
       {/* データ完全性インジケーター */}
-      <div style={{ marginTop: '1.5rem', padding: '1rem', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #dee2e6' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+      <div style={{ 
+        padding: '1rem', 
+        background: '#f8f9fa', 
+        borderRadius: '8px', 
+        border: '1px solid #dee2e6' 
+      }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: '0.75rem' 
+        }}>
           <h5 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600 }}>
             <i className="fas fa-clipboard-check"></i> データ完全性
           </h5>
-          <span style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--ilm-success)' }}>
-            85%
+          <span style={{ 
+            fontSize: '1.2rem', 
+            fontWeight: 700, 
+            color: completeness >= 80 ? '#28a745' : completeness >= 60 ? '#ffc107' : '#dc3545'
+          }}>
+            {completeness}%
           </span>
         </div>
-        <div style={{ width: '100%', height: '8px', background: '#e9ecef', borderRadius: '4px', overflow: 'hidden' }}>
-          <div style={{ width: '85%', height: '100%', background: 'var(--ilm-success)', transition: 'width 0.3s ease' }}></div>
+        <div style={{ 
+          width: '100%', 
+          height: '8px', 
+          background: '#e9ecef', 
+          borderRadius: '4px', 
+          overflow: 'hidden' 
+        }}>
+          <div style={{ 
+            width: `${completeness}%`, 
+            height: '100%', 
+            background: completeness >= 80 ? '#28a745' : completeness >= 60 ? '#ffc107' : '#dc3545',
+            transition: 'width 0.3s ease' 
+          }}></div>
         </div>
-        <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#6c757d' }}>
-          推奨: HTML説明文の作成で完全性を向上
+        <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: '#6c757d' }}>
+          {completeness < 80 && (
+            <div>
+              <strong>改善ポイント:</strong>
+              <ul style={{ marginTop: '0.5rem', paddingLeft: '1.5rem' }}>
+                {!(product as any)?.english_title && <li>英語タイトルの追加</li>}
+                {!(product as any)?.hts_code && <li>HTSコードの取得</li>}
+                {!smData.analyzed && <li>SellerMirror分析の実行</li>}
+                {!product.listing_data?.html_description && <li>HTML説明文の作成</li>}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </div>

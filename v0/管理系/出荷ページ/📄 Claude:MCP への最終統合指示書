@@ -1,0 +1,56 @@
+📄 Claude/MCP への最終統合指示書
+提供された出荷管理システム（ShippingManager.jsx）をプロジェクトに統合し、受注管理システムと連携させて実運用可能な状態に移行するための指示書を作成します。
+
+I. 🎯 目標
+提供されたShippingManager.jsxファイルの内容をプロジェクトに統合し、Order Manager V2.0 と同じ Firebase orders コレクションに接続し、出荷作業用UIとして機能させる。
+
+II. 💾 外部API・データ連携の完了（最優先）
+このシステムは受注管理システム（OrderManager_V2.jsx）と同じデータベースを使用する必要があります。
+
+Firebase認証情報の設置:
+
+定数 __firebase_config に、Order Manager V2.0と同一の有効な Firebase プロジェクトの認証情報を正確に設定してください。
+
+プロジェクトID (projectId) が必ず一致することを確認してください。
+
+JavaScript
+
+const __firebase_config = {
+    apiKey: "[Order Managerと同一のAPI Key]",
+    authDomain: "[Order Managerと同一のAuth Domain]",
+    projectId: "[Order Managerと同一のProject ID]",
+    // ... 他のフィールドも適切に設定
+};
+データパスの検証:
+
+__app_idがorder_manager_v2であることを確認し、ordersコレクションへのアクセスが正しく行われていることを検証してください。
+
+III. 🖥️ 機能とUI/UXの最終検証
+以下の重要な出荷作業向け機能が、指示通りに動作していることを検証してください。
+
+1. 📦 タスク A & B: 出荷キューボード
+自動分類: 取得した注文データが shippingStatus に基づき、「処理待ち (pending)」、「梱包中 (processing)」、「出荷準備完了 (ready)」 の3つのレーンに正しく表示されること。
+
+ドラッグ＆ドロップ: 注文カードをあるレーンから別のレーンにドラッグ＆ドロップした際、Firestore上の shippingStatus フィールドが更新されるロジックが実行されること。
+
+2. 📝 タスク C: 出荷詳細パネル
+追跡番号管理:
+
+詳細パネルに追跡番号を入力し、「保存」ボタンを押すと、その値がFirestoreの注文データ（trackingNumberフィールド）に保存されるモックロジックが実行されること。
+
+伝票生成モック:
+
+追跡番号がない状態で「伝票生成」ボタンを押すと、警告メッセージが表示されること。
+
+追跡番号がある状態で「伝票生成」ボタンを押すと、「伝票印刷プレビュー」モーダルが表示されること。
+
+出荷完了:
+
+「出荷完了」ボタンを押すと、shippingStatusがshippedに更新され、注文がキューから消えること。
+
+IV. 📋 技術的制約の最終確認
+単一ファイル構造: 全てのコードがShippingManager.jsxの単一ファイル内に含まれていること。
+
+スタイリング: スタイリングが全てインラインのTailwind CSSクラスで、提供されたHTMLの紫を基調としたデザインテーマを再現していること。
+
+この指示書に基づき、ShippingManager.jsxをデプロイし、受注管理と連携した出荷作業を外注スタッフが効率的に行える環境を実現してください。

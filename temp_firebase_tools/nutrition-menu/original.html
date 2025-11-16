@@ -1,0 +1,532 @@
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, doc, collection, query, onSnapshot, setDoc, updateDoc, deleteDoc, where, getDocs, addDoc } from 'firebase/firestore';
+
+// --- 環境変数とFirebaseの初期化 ---
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'nutrition-app-default';
+const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+let db, auth;
+if (Object.keys(firebaseConfig).length) {
+  const app = initializeApp(firebaseConfig);
+  db = getFirestore(app);
+  auth = getAuth(app);
+}
+
+// --- ダミーデータ: レシピと栄養素 (本来は大量のデータベースが必要) ---
+const DUMMY_RECIPES = [
+  { id: 'r1', name: '鶏むね肉と野菜のグリル', mealType: 'Dinner', calories: 450, protein: 45, fat: 15, carb: 30, iron: 3, calcium: 50 },
+  { id: 'r2', name: '豆腐とわかめの味噌汁', mealType: 'Breakfast', calories: 80, protein: 7, fat: 3, carb: 8, iron: 1, calcium: 150 },
+  { id: 'r3', name: 'マグロとアボカド丼', mealType: 'Lunch', calories: 650, protein: 40, fat: 35, carb: 45, iron: 5, calcium: 30 },
+  { id: 'r4', name: 'オートミールとフルーツ', mealType: 'Breakfast', calories: 250, protein: 10, fat: 5, carb: 40, iron: 2, calcium: 80 },
+  { id: 'r5', name: 'ブロッコリーのアーリオオーリオ', mealType: 'Side', calories: 120, protein: 4, fat: 10, carb: 6, iron: 1, calcium: 40 },
+];
+
+const DUMMY_SUPPLEMENTS = [
+  { name: 'プロテインパウダー', nutrients: { protein: 25 } },
+  { name: 'マルチビタミン', nutrients: { iron: 5, calcium: 100 } },
+  { name: 'DHA/EPAオイル', nutrients: { fat: 5 } },
+];
+
+// 1日の推奨摂取量 (目標値)
+const DAILY_GOALS = {
+  calories: 2000,
+  protein: 120,
+  fat: 70,
+  carb: 250,
+  iron: 10,
+  calcium: 600,
+};
+
+// --- ヘルパー関数 ---
+const formatDate = (date) => date.toISOString().split('T')[0];
+
+// --- UIコンポーネント ---
+
+// 栄養素の棒グラフ表示
+const NutrientBar = ({ name, intake, goal, unit = 'g', colorClass }) => {
+  const percentage = Math.min(100, Math.round((intake / goal) * 100));
+  const isOver = intake > goal;
+
+  return (
+    <div className="mb-4">
+      <div className="flex justify-between items-center mb-1">
+        <span className="text-sm font-semibold text-gray-700">{name}</span>
+        <span className="text-sm">
+          <span className={`font-bold ${isOver ? 'text-red-500' : 'text-gray-900'}`}>{intake}{unit}</span> / {goal}{unit}
+        </span>
+      </div>
+      <div className="w-full bg-gray-200 rounded-full h-2.5">
+        <div
+          className={`h-2.5 rounded-full ${colorClass} transition-all duration-500`}
+          style={{ width: `${percentage}%` }}
+          title={`${percentage}%達成`}
+        ></div>
+      </div>
+    </div>
+  );
+};
+
+// 日付選択コンポーネント
+const DateSelector = ({ selectedDate, onChange }) => {
+  const handleDateChange = (e) => onChange(new Date(e.target.value));
+
+  return (
+    <div className="mb-6 flex items-center justify-center space-x-4">
+      <button
+        onClick={() => {
+          const newDate = new Date(selectedDate);
+          newDate.setDate(newDate.getDate() - 1);
+          onChange(newDate);
+        }}
+        className="p-2 bg-indigo-100 text-indigo-700 rounded-full hover:bg-indigo-200 transition"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+      </button>
+      <input
+        type="date"
+        value={formatDate(selectedDate)}
+        onChange={handleDateChange}
+        className="p-2 border border-gray-300 rounded-lg text-center font-medium shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+      />
+      <button
+        onClick={() => {
+          const newDate = new Date(selectedDate);
+          newDate.setDate(newDate.getDate() + 1);
+          onChange(newDate);
+        }}
+        className="p-2 bg-indigo-100 text-indigo-700 rounded-full hover:bg-indigo-200 transition"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" /></svg>
+      </button>
+    </div>
+  );
+};
+
+// --- メインアプリケーションコンポーネント ---
+const App = () => {
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [userId, setUserId] = useState(null);
+  const [currentPage, setCurrentPage] = useState('menu-planning'); // 'menu-planning' or 'supplement-tracker'
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  // Firestoreからのデータ
+  const [menuPlans, setMenuPlans] = useState([]);
+  const [supplementLogs, setSupplementLogs] = useState([]);
+
+  const userIdDisplay = userId || '未認証';
+
+  // 1. Firebase認証と初期化
+  useEffect(() => {
+    if (!auth || !db) {
+      console.error("Firebase is not initialized. Check __firebase_config.");
+      setIsAuthReady(true);
+      return;
+    }
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setUserId(user.uid);
+      } else {
+        try {
+          if (initialAuthToken) {
+            await signInWithCustomToken(auth, initialAuthToken);
+          } else {
+            await signInAnonymously(auth);
+          }
+          setUserId(auth.currentUser.uid);
+        } catch (error) {
+          console.error("Firebase Auth Error:", error);
+        }
+      }
+      setIsAuthReady(true);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // 2. Firestoreデータ購読 (献立とサプリメント)
+  useEffect(() => {
+    if (!db || !userId) return;
+
+    // 献立データ購読
+    const menuRef = collection(db, 'artifacts', appId, 'users', userId, 'menu_plans');
+    const qMenu = query(menuRef);
+    const unsubMenu = onSnapshot(qMenu, (snapshot) => {
+      const plans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setMenuPlans(plans);
+    }, (error) => console.error("Menu Plans Snapshot Error:", error));
+
+    // サプリメントデータ購読
+    const supplementRef = collection(db, 'artifacts', appId, 'users', userId, 'supplement_logs');
+    const qSupplement = query(supplementRef);
+    const unsubSupplement = onSnapshot(qSupplement, (snapshot) => {
+      const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setSupplementLogs(logs);
+    }, (error) => console.error("Supplement Logs Snapshot Error:", error));
+
+    return () => {
+      unsubMenu();
+      unsubSupplement();
+    };
+  }, [userId]);
+
+  // 3. 献立の追加/削除ロジック
+  const handleAddMeal = useCallback(async (date, mealType, recipeId) => {
+    if (!userId || !db) return;
+    const recipe = DUMMY_RECIPES.find(r => r.id === recipeId);
+    if (!recipe) return;
+
+    const newMeal = {
+      date: formatDate(date),
+      mealType: mealType,
+      recipeId: recipeId,
+      recipeName: recipe.name,
+      nutrients: recipe.nutrients,
+      timestamp: Date.now(),
+    };
+
+    try {
+      await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'menu_plans'), newMeal);
+      console.log('献立を追加しました:', newMeal);
+    } catch (e) {
+      console.error('献立追加エラー:', e);
+    }
+  }, [userId]);
+
+  const handleDeleteMeal = useCallback(async (mealId) => {
+    if (!userId || !db) return;
+    try {
+      await deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'menu_plans', mealId));
+      console.log('献立を削除しました:', mealId);
+    } catch (e) {
+      console.error('献立削除エラー:', e);
+    }
+  }, [userId]);
+
+  // 4. サプリメントの記録ロジック (日付、サプリ名、量/回数などをシンプルに記録)
+  const handleAddSupplement = useCallback(async (date, supplementName) => {
+    if (!userId || !db) return;
+    const supplement = DUMMY_SUPPLEMENTS.find(s => s.name === supplementName);
+    if (!supplement) return;
+
+    const newLog = {
+      date: formatDate(date),
+      supplementName: supplementName,
+      nutrients: supplement.nutrients,
+      timestamp: Date.now(),
+    };
+
+    try {
+      await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'supplement_logs'), newLog);
+      console.log('サプリメントを記録しました:', newLog);
+    } catch (e) {
+      console.error('サプリメント記録エラー:', e);
+    }
+  }, [userId]);
+
+  // 5. 特定日の栄養摂取量の計算 (献立 + サプリメント)
+  const calculateDailyIntake = useMemo(() => {
+    const todayStr = formatDate(selectedDate);
+    
+    // 1. 献立からの摂取量
+    const mealIntake = menuPlans
+      .filter(p => p.date === todayStr)
+      .reduce((acc, meal) => {
+        Object.keys(meal.nutrients).forEach(key => {
+          acc[key] = (acc[key] || 0) + meal.nutrients[key];
+        });
+        return acc;
+      }, {});
+
+    // 2. サプリメントからの摂取量
+    const supplementIntake = supplementLogs
+      .filter(log => log.date === todayStr)
+      .reduce((acc, log) => {
+        Object.keys(log.nutrients).forEach(key => {
+          acc[key] = (acc[key] || 0) + log.nutrients[key];
+        });
+        return acc;
+      }, {});
+      
+    // 3. 合計摂取量 (献立 + サプリメント)
+    const totalIntake = { ...mealIntake };
+    Object.keys(supplementIntake).forEach(key => {
+        totalIntake[key] = (totalIntake[key] || 0) + supplementIntake[key];
+    });
+
+    return totalIntake;
+  }, [selectedDate, menuPlans, supplementLogs]);
+
+
+  // --- メインUIコンポーネント: 献立計画 ---
+  const MenuPlanningView = ({ dailyIntake }) => {
+    const todayMenu = menuPlans.filter(p => p.date === formatDate(selectedDate));
+    const [selectedRecipe, setSelectedRecipe] = useState(DUMMY_RECIPES[0].id);
+    const [selectedMealType, setSelectedMealType] = useState('Dinner');
+
+    return (
+      <div className="p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* 献立の概要と栄養バー (左側) */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg">
+          <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">今日の栄養サマリー</h2>
+          <div className="space-y-3">
+            <NutrientBar name="カロリー" intake={dailyIntake.calories || 0} goal={DAILY_GOALS.calories} unit="kcal" colorClass="bg-red-400" />
+            <NutrientBar name="タンパク質" intake={dailyIntake.protein || 0} goal={DAILY_GOALS.protein} unit="g" colorClass="bg-indigo-500" />
+            <NutrientBar name="脂質" intake={dailyIntake.fat || 0} goal={DAILY_GOALS.fat} unit="g" colorClass="bg-yellow-500" />
+            <NutrientBar name="炭水化物" intake={dailyIntake.carb || 0} goal={DAILY_GOALS.carb} unit="g" colorClass="bg-green-500" />
+          </div>
+
+          <h3 className="text-lg font-semibold text-gray-700 mt-8 mb-3">本日の献立詳細</h3>
+          <div className="space-y-3">
+            {['Breakfast', 'Lunch', 'Dinner', 'Side'].map(mealType => (
+              <div key={mealType} className="bg-gray-50 p-3 rounded-lg border">
+                <p className="font-bold text-indigo-700 mb-1">
+                  {mealType === 'Breakfast' ? '朝食 (7:00-9:00)' : mealType === 'Lunch' ? '昼食 (12:00-14:00)' : mealType === 'Dinner' ? '夕食 (18:00-20:00)' : 'その他'}
+                </p>
+                {todayMenu.filter(p => p.mealType === mealType).map(meal => (
+                  <div key={meal.id} className="flex justify-between items-center bg-white p-2 rounded-md shadow-sm mt-1">
+                    <span className="text-sm">{meal.recipeName}</span>
+                    <button
+                      onClick={() => handleDeleteMeal(meal.id)}
+                      className="text-red-500 hover:text-red-700 p-1 rounded-full transition"
+                      title="削除"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 011 1v6a1 1 0 11-2 0V9a1 1 0 011-1zm7 1a1 1 0 00-2 0v6a1 1 0 102 0V9z" clipRule="evenodd" /></svg>
+                    </button>
+                  </div>
+                ))}
+                {todayMenu.filter(p => p.mealType === mealType).length === 0 && (
+                  <p className="text-sm text-gray-400 italic">献立がありません</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* レシピ追加・外部連携 (右側) */}
+        <div className="lg:col-span-1 space-y-6">
+          <div className="bg-indigo-50 p-6 rounded-xl shadow-lg">
+            <h3 className="text-lg font-bold text-indigo-800 mb-4">献立追加</h3>
+            <div className="space-y-3">
+              <select
+                value={selectedMealType}
+                onChange={(e) => setSelectedMealType(e.target.value)}
+                className="w-full p-2 border border-indigo-300 rounded-lg shadow-sm"
+              >
+                <option value="Breakfast">朝食</option>
+                <option value="Lunch">昼食</option>
+                <option value="Dinner">夕食</option>
+                <option value="Side">間食/その他</option>
+              </select>
+              <select
+                value={selectedRecipe}
+                onChange={(e) => setSelectedRecipe(e.target.value)}
+                className="w-full p-2 border border-indigo-300 rounded-lg shadow-sm"
+              >
+                {DUMMY_RECIPES.map(recipe => (
+                  <option key={recipe.id} value={recipe.id}>{recipe.name}</option>
+                ))}
+              </select>
+              <button
+                onClick={() => handleAddMeal(selectedDate, selectedMealType, selectedRecipe)}
+                className="w-full bg-indigo-600 text-white font-semibold py-2 rounded-lg hover:bg-indigo-700 transition duration-150 shadow-md"
+              >
+                献立に追加
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+            <h3 className="text-lg font-bold text-gray-800 mb-4">外部連携 (高度機能)</h3>
+            <button
+              className="w-full bg-gray-200 text-gray-700 font-semibold py-2 rounded-lg mb-3 cursor-not-allowed"
+              title="この機能には、サーバーサイドの認証と継続的なデータ同期が必要です。"
+              disabled
+            >
+              Googleカレンダー連携 (サーバー必須)
+            </button>
+            <button
+              className="w-full bg-gray-200 text-gray-700 font-semibold py-2 rounded-lg cursor-not-allowed"
+              title="この機能には、ウェブスクレイピングまたはレシピAPIの利用が必要です。"
+              disabled
+            >
+              ネットレシピデータベース構築 (サーバー必須)
+            </button>
+            <p className="text-xs text-gray-500 mt-2">
+              ※大量データ処理や外部API連携には、安全なサーバーサイドの実装が必要です。
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // --- メインUIコンポーネント: サプリメント記録 ---
+  const SupplementTrackerView = ({ dailyIntake }) => {
+    const [selectedSupplement, setSelectedSupplement] = useState(DUMMY_SUPPLEMENTS[0].name);
+
+    // 不足している栄養素の計算 (目標 - 献立・サプリからの摂取)
+    const deficiency = useMemo(() => {
+      const def = {};
+      Object.keys(DAILY_GOALS).forEach(key => {
+        const goal = DAILY_GOALS[key];
+        const intake = dailyIntake[key] || 0;
+        def[key] = goal - intake;
+      });
+      return def;
+    }, [dailyIntake]);
+
+    const todaySupplements = supplementLogs.filter(log => log.date === formatDate(selectedDate));
+
+    return (
+      <div className="p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* 栄養不足の分析 (左側) */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg">
+          <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">栄養素不足分析</h2>
+          <p className="text-gray-600 mb-6">
+            献立からの摂取量に基づいて、**今日不足している栄養素**を補うための分析結果です。
+          </p>
+          <div className="space-y-4">
+            {Object.keys(deficiency).map(key => {
+              const shortfall = deficiency[key];
+              const goal = DAILY_GOALS[key];
+              const unit = key === 'calories' ? 'kcal' : 'g';
+              const isDeficient = shortfall > 0;
+
+              return (
+                <div key={key} className="p-3 rounded-lg" style={{ backgroundColor: isDeficient ? '#fef2f2' : '#f0fdf4' }}>
+                  <div className="flex justify-between items-center">
+                    <span className={`font-bold ${isDeficient ? 'text-red-600' : 'text-green-600'}`}>
+                      {key.charAt(0).toUpperCase() + key.slice(1)}
+                    </span>
+                    <span className="text-sm">
+                      {isDeficient ? `不足: ${shortfall.toFixed(0)}${unit}` : `達成: ${intake.toFixed(0)}${unit}`}
+                    </span>
+                  </div>
+                  {isDeficient && (
+                    <p className="text-xs text-red-500 mt-1">
+                      *目標 {goal}{unit}に対し、{(goal - shortfall).toFixed(0)}{unit}摂取済み。
+                      {key === 'protein' && "サプリメントでタンパク質を補うことを検討してください。"}
+                      {key === 'iron' && "鉄分は吸収の良いヘム鉄サプリメントが有効です。"}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* サプリメント記録 (右側) */}
+        <div className="lg:col-span-1 space-y-6">
+          <div className="bg-white p-6 rounded-xl shadow-lg">
+            <h3 className="text-lg font-bold text-indigo-800 mb-4">サプリメント記録</h3>
+            <div className="space-y-3">
+              <select
+                value={selectedSupplement}
+                onChange={(e) => setSelectedSupplement(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-lg shadow-sm"
+              >
+                {DUMMY_SUPPLEMENTS.map(s => (
+                  <option key={s.name} value={s.name}>{s.name}</option>
+                ))}
+              </select>
+              <button
+                onClick={() => handleAddSupplement(selectedDate, selectedSupplement)}
+                className="w-full bg-teal-600 text-white font-semibold py-2 rounded-lg hover:bg-teal-700 transition duration-150 shadow-md"
+              >
+                摂取を記録
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-gray-100 p-6 rounded-xl shadow-inner">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">今日のサプリメント</h3>
+            <div className="space-y-2">
+              {todaySupplements.map(log => (
+                <div key={log.id} className="flex justify-between items-center bg-white p-2 rounded-md shadow-sm">
+                  <span className="text-sm">{log.supplementName}</span>
+                  <button
+                    onClick={() => deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'supplement_logs', log.id))}
+                    className="text-red-400 hover:text-red-600 p-1 transition"
+                    title="削除"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 011 1v6a1 1 0 11-2 0V9a1 1 0 011-1zm7 1a1 1 0 00-2 0v6a1 1 0 102 0V9z" clipRule="evenodd" /></svg>
+                  </button>
+                </div>
+              ))}
+              {todaySupplements.length === 0 && (
+                <p className="text-sm text-gray-400 italic">記録がありません</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  if (!isAuthReady) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="text-lg text-indigo-600">認証中...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-100 font-sans">
+      {/* ヘッダーとナビゲーション */}
+      <header className="bg-white shadow-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+          <h1 className="text-2xl font-extrabold text-indigo-700">統合健康計画</h1>
+          <nav className="flex space-x-4">
+            <button
+              onClick={() => setCurrentPage('menu-planning')}
+              className={`px-4 py-2 rounded-full font-medium transition ${
+                currentPage === 'menu-planning' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              献立 & 栄養目標
+            </button>
+            <button
+              onClick={() => setCurrentPage('supplement-tracker')}
+              className={`px-4 py-2 rounded-full font-medium transition ${
+                currentPage === 'supplement-tracker' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              サプリメント & 不足分析
+            </button>
+          </nav>
+          <div className="text-sm text-gray-500">
+            ユーザーID: <span className="font-mono text-xs bg-gray-200 p-1 rounded">{userIdDisplay}</span>
+          </div>
+        </div>
+      </header>
+
+      {/* 日付セレクタ */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <DateSelector selectedDate={selectedDate} onChange={setSelectedDate} />
+      </div>
+
+      {/* メインコンテンツ */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">
+        <div className="bg-white rounded-xl shadow-2xl overflow-hidden">
+          {currentPage === 'menu-planning' ? (
+            <MenuPlanningView dailyIntake={calculateDailyIntake} />
+          ) : (
+            <SupplementTrackerView dailyIntake={calculateDailyIntake} />
+          )}
+        </div>
+      </main>
+
+      {/* フッター */}
+      <footer className="py-4 text-center text-sm text-gray-500">
+        &copy; 2024 栄養管理システム. Firestoreを利用してデータを保存しています。
+      </footer>
+    </div>
+  );
+};
+
+export default App;

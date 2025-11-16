@@ -17,11 +17,10 @@
   --muted: #f1f5f9;
   --muted-foreground: #64748b;
   --border: #e2e8f0;
-  --input: #ffffff;  /* 入力フィールドの背景を白に */
+  --input: #ffffff;
   --ring: #22577E;
   --radius: 0.5rem;
   
-  /* ポップオーバーとデストラクティブ */
   --popover: #ffffff;
   --popover-foreground: #22577E;
   --destructive: #ef4444;
@@ -132,17 +131,16 @@
   --foreground: #e2e8f0;
   --card: #1e293b;
   --card-foreground: #e2e8f0;
-  --primary: #3b82f6;  /* ダークモードでは青色を使用 */
+  --primary: #3b82f6;
   --primary-foreground: #ffffff;
   --secondary: #475569;
   --accent: #334155;
   --muted: #1e293b;
   --muted-foreground: #94a3b8;
   --border: #334155;
-  --input: #0f172a;  /* ダークモードの入力フィールド背景 */
+  --input: #0f172a;
   --ring: #3b82f6;
   
-  /* ダークモード用ポップオーバー */
   --popover: #1e293b;
   --popover-foreground: #e2e8f0;
   --destructive: #dc2626;
@@ -185,6 +183,12 @@
   * {
     @apply border-border outline-ring/50;
   }
+  
+  /* 🔥 スクロールバーのジャンピング現象を防止 */
+  html {
+    overflow-y: scroll; /* 常にスクロールバーを表示 */
+  }
+  
   body {
     @apply bg-background text-foreground;
   }

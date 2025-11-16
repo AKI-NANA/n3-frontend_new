@@ -1,346 +1,299 @@
-# 🚀 N3プロジェクト デプロイメントガイド
+# 自動出品スケジューラー - デプロイメントガイド
 
-## 📊 プロジェクト概要
+## 🚀 セットアップ手順
 
-- **本番URL**: https://n3.emverze.com
-- **VPSサーバー**: tk2-236-27682.vs.sakura.ne.jp (160.16.120.186)
-- **フロントエンド**: Next.js 15.5.4 (ポート3000)
-- **バックエンド**: PHP/Laravel (ポート8080)
-- **Webサーバー**: Nginx (リバースプロキシ)
-- **SSL証明書**: Let's Encrypt (自動更新)
-- **DNS管理**: Cloudflare
-- **ドメイン取得**: エックスサーバー
+### 1. データベースマイグレーション
 
----
+Supabase SQL Editorで以下のSQLを実行：
 
-## 🔧 環境構成
-
-### サーバー情報
-```
-OS: Ubuntu 24.04.3 LTS
-Node.js: 18.x (→ 20.x へのアップグレード推奨)
-PM2: プロセスマネージャー
-Nginx: リバースプロキシ & SSL終端
+```sql
+-- ファイル: database/migrations/add_category_distribution_and_cron_logs.sql
 ```
 
-### ポート構成
-```
-80   → Nginx (HTTP → HTTPS リダイレクト)
-443  → Nginx (HTTPS)
-3000 → Next.js (内部のみ)
-8080 → PHP API (内部のみ)
-```
+このSQLは以下を実行します：
+- `listing_schedules`テーブルにカテゴリ分布カラム追加
+- `cron_execution_logs`テーブル作成
+- `category_distribution_settings`テーブル作成
+- 必要なインデックス作成
 
----
+### 2. 環境変数の設定
 
-## 📝 標準デプロイ手順
-
-### 1. ローカルでの開発・修正
+`.env.local`ファイルに以下を追加：
 
 ```bash
-cd ~/n3-frontend_new
+# Cron認証シークレット（ランダムな文字列を生成）
+CRON_SECRET=your-secure-random-string-here
 
-# コードを修正
-
-# 動作確認
-npm run dev
+# 既存の環境変数（確認）
+NEXT_PUBLIC_SUPABASE_URL=...
+SUPABASE_SERVICE_ROLE_KEY=...
+EBAY_AUTH_TOKEN=...
+EBAY_USER_TOKEN_GREEN=...
 ```
 
-### 2. Gitへコミット & プッシュ
+**CRON_SECRETの生成方法：**
+```bash
+# ターミナルで実行
+openssl rand -base64 32
+```
+
+### 3. Vercelへのデプロイ
+
+#### 3.1 Vercelプロジェクト設定
+
+1. Vercelダッシュボードにログイン
+2. プロジェクトを選択
+3. **Settings** → **Environment Variables**
+4. 以下の環境変数を追加：
+   - `CRON_SECRET`: 生成したランダム文字列
+   - その他の既存環境変数も確認
+
+#### 3.2 デプロイ
 
 ```bash
-# 変更をステージング
+# ローカルから
 git add .
-
-# コミット
-git commit -m "機能追加: XXXの実装"
-
-# GitHub へプッシュ
+git commit -m "Add automated listing scheduler with category distribution"
 git push origin main
 ```
 
-### 3. VPSへのデプロイ
+または
 
-#### 3-1. VPSに接続
 ```bash
-ssh ubuntu@tk2-236-27682.vs.sakura.ne.jp
+# Vercel CLIから
+vercel --prod
 ```
 
-#### 3-2. プロジェクトディレクトリに移動
+### 4. Cron設定の確認
+
+デプロイ後、Vercelダッシュボードで確認：
+
+1. **Deployments** → 最新のデプロイを選択
+2. **Cron Jobs** タブを確認
+3. `/api/cron/execute-schedules` が表示されていることを確認
+4. スケジュール: `* * * * *` (1分ごと)
+
+### 5. 動作確認
+
+#### 5.1 ローカルテスト
+
 ```bash
-cd ~/n3-frontend_new
+# 開発サーバー起動
+npm run dev
+
+# 別ターミナルでCronエンドポイントをテスト
+curl http://localhost:3000/api/cron/execute-schedules
 ```
 
-#### 3-3. 最新コードを取得
+#### 5.2 本番環境テスト
+
 ```bash
-git pull origin main
+# 手動でCronをトリガー
+curl -X GET https://your-domain.vercel.app/api/cron/execute-schedules \
+  -H "Authorization: Bearer your-cron-secret"
 ```
 
-#### 3-4. 依存関係のインストール（package.json が変更された場合のみ）
+### 6. スケジュール生成
+
+1. `http://localhost:3000/listing-management` にアクセス
+2. **カテゴリ分散** タブで設定を調整：
+   - **有効化**: ON
+   - **分析期間**: 7日
+   - **最低カテゴリ数**: 1
+   - **重み**: 0.3（バランス型）
+3. **スケジュール生成** ボタンをクリック
+4. 生成されたスケジュールをカレンダーで確認
+
+### 7. 監視とログ
+
+#### Vercelダッシュボード
+- **Functions** → **Logs** でCron実行ログを確認
+- エラーがあれば通知される
+
+#### Supabaseダッシュボード
+1. `cron_execution_logs` テーブルで実行履歴を確認
+2. `listing_history` テーブルで出品結果を確認
+
+---
+
+## 🔧 トラブルシューティング
+
+### Cronが実行されない
+
+**確認事項：**
+1. `vercel.json` が正しくコミットされているか
+2. Vercelダッシュボードで Cron Jobs が表示されているか
+3. 環境変数 `CRON_SECRET` が設定されているか
+
+**解決方法：**
 ```bash
-npm install
+# 再デプロイ
+git commit --allow-empty -m "Trigger redeploy for cron"
+git push origin main
 ```
 
-#### 3-5. ビルド
-```bash
-npm run build
+### スケジュールが実行されない
+
+**確認事項：**
+1. `listing_schedules` テーブルに `status='pending'` のレコードがあるか
+2. `scheduled_time` が現在時刻±5分以内か
+3. 商品の `status` が `'ready_to_list'` か
+
+**デバッグ：**
+```sql
+-- Supabase SQL Editor
+SELECT * FROM listing_schedules 
+WHERE status = 'pending' 
+ORDER BY scheduled_time DESC 
+LIMIT 10;
+
+SELECT * FROM yahoo_scraped_products 
+WHERE status = 'ready_to_list' 
+LIMIT 10;
 ```
 
-#### 3-6. アプリケーション再起動
-```bash
-pm2 restart n3-frontend
-```
+### eBay出品エラー
 
-#### 3-7. ログ確認
-```bash
-pm2 logs n3-frontend --lines 20
+**確認事項：**
+1. eBay User Tokenが有効か（18ヶ月期限）
+2. 商品データが完全か（title, category_id, priceなど）
+3. eBay APIの日次制限を超えていないか
+
+**ログ確認：**
+```sql
+SELECT * FROM listing_history 
+WHERE status = 'failed' 
+ORDER BY listed_at DESC 
+LIMIT 20;
 ```
 
 ---
 
-## ⚡ クイックデプロイコマンド（一括実行）
+## 📊 カテゴリ分散の動作確認
 
-VPS上で以下のコマンドを実行するだけでデプロイ完了：
+### 統計の確認
 
-```bash
-cd ~/n3-frontend_new && \
-git pull origin main && \
-npm install && \
-npm run build && \
-pm2 restart n3-frontend && \
-pm2 logs n3-frontend --lines 20
+```sql
+-- 直近7日間のカテゴリ別出品数
+SELECT 
+  (ebay_api_data->>'category_id') as category_id,
+  (ebay_api_data->>'category_name') as category_name,
+  COUNT(*) as count,
+  MAX(listed_at) as last_listed
+FROM yahoo_scraped_products
+WHERE status = 'listed'
+  AND listed_at >= NOW() - INTERVAL '7 days'
+GROUP BY ebay_api_data->>'category_id', ebay_api_data->>'category_name'
+ORDER BY count DESC;
+```
+
+### スケジュールのカテゴリ分布
+
+```sql
+-- 今後のスケジュールのカテゴリ分布
+SELECT 
+  date,
+  category_distribution
+FROM listing_schedules
+WHERE status = 'pending'
+  AND date >= CURRENT_DATE
+ORDER BY date, scheduled_time;
 ```
 
 ---
 
-## 🔒 HTTPS設定（完了済み）
+## ⚙️ 設定のカスタマイズ
 
-### DNS設定（Cloudflare）
-```
-Type: A
-Name: n3
-IPv4 address: 160.16.120.186
-Proxy status: DNS only（グレーの雲）
-TTL: Auto
-```
+### スコア重視型（高利益優先）
 
-### SSL証明書
-```
-発行元: Let's Encrypt
-有効期限: 90日（自動更新）
-証明書パス: /etc/letsencrypt/live/n3.emverze.com/
+```typescript
+categoryDistribution: {
+  enabled: true,
+  lookbackDays: 3,
+  minCategoriesPerDay: 1,
+  categoryBalanceWeight: 0.1  // スコア重視
+}
 ```
 
-### 証明書の更新確認
-```bash
-sudo certbot renew --dry-run
+### バランス型（推奨）
+
+```typescript
+categoryDistribution: {
+  enabled: true,
+  lookbackDays: 7,
+  minCategoriesPerDay: 1,
+  categoryBalanceWeight: 0.3  // バランス
+}
 ```
 
----
+### カテゴリ分散重視型（SEO最優先）
 
-## 🛠️ トラブルシューティング
-
-### 問題1: サイトにアクセスできない
-
-```bash
-# Nginxの状態確認
-sudo systemctl status nginx
-
-# Nginxを再起動
-sudo systemctl restart nginx
-
-# アプリケーションの状態確認
-pm2 status
-```
-
-### 問題2: ビルドエラー
-
-```bash
-# node_modules を削除して再インストール
-rm -rf node_modules package-lock.json
-npm install
-npm run build
-```
-
-### 問題3: Git pull でコンフリクト
-
-```bash
-# ローカルの変更を退避
-git stash
-
-# 最新を取得
-git pull origin main
-
-# 退避した変更を戻す
-git stash pop
-```
-
-### 問題4: PM2でアプリが起動しない
-
-```bash
-# プロセスを完全に削除して再起動
-pm2 delete n3-frontend
-pm2 start npm --name "n3-frontend" -- start
-pm2 save
-```
-
-### 問題5: デプロイしても変更が反映されない
-
-**症状:**
-- GitHubには最新のコードがある
-- デプロイも成功している
-- しかし本番環境に変更が反映されていない
-
-**原因:**
-- VPSが間違ったブランチにいる可能性
-- feature branchにいると、mainの変更が反映されない
-
-**解決策:**
-
-```bash
-# VPSに接続
-ssh ubuntu@tk2-236-27682.vs.sakura.ne.jp
-
-# 現在のブランチを確認
-cd ~/n3-frontend_new
-git branch
-git log --oneline -3
-
-# ⚠️ mainブランチ以外にいる場合
-git checkout main
-git pull origin main
-
-# 最新のコミットハッシュを確認（GitHubと一致するか）
-git log --oneline -1
-
-# クリーンビルド & 再起動
-rm -rf .next
-npm run build
-pm2 restart n3-frontend
-```
-
-**予防策:**
-- デプロイ前に必ずVPSのブランチを確認
-- VPSは常にmainブランチにいるべき
-- feature branchでの作業はローカルのみ
-
----
-
-## 📂 重要なファイル
-
-### 環境変数
-```
-ファイル: ~/n3-frontend_new/.env.local
-※ Gitには含まれない（.gitignoreで除外）
-※ 変更後は必ずビルド & 再起動が必要
-```
-
-### Nginx設定
-```
-ファイル: /etc/nginx/sites-available/n3.emverze.com
-シンボリックリンク: /etc/nginx/sites-enabled/n3.emverze.com
-```
-
-### PM2設定
-```
-起動スクリプト: npm start
-作業ディレクトリ: ~/n3-frontend_new
-ログ: ~/.pm2/logs/n3-frontend-*.log
+```typescript
+categoryDistribution: {
+  enabled: true,
+  lookbackDays: 14,
+  minCategoriesPerDay: 2,
+  categoryBalanceWeight: 0.6  // カテゴリ優先
+}
 ```
 
 ---
 
-## ⚠️ 注意事項
+## 📈 パフォーマンス最適化
 
-### .env.local の管理
-- **絶対にGitにコミットしない**（機密情報が含まれる）
-- VPS上で直接編集する
-- 変更後は必ず `npm run build` と `pm2 restart` を実行
+### Vercel Cron制限
 
-### SSL証明書
-- 90日ごとに自動更新（Certbot の systemd timer）
-- 更新失敗時はメール通知が届く
+- **Hobby**: 10秒タイムアウト
+- **Pro**: 60秒タイムアウト
+- **1回の実行**: 最大5セッション
 
-### ファイアウォール
-- SSH (22), HTTP (80), HTTPS (443) のみ許可
-- 3000, 8080 は内部通信のみ（外部から直接アクセス不可）
+### 大量出品の場合
 
----
+商品数が多い場合、セッションを小分けに：
 
-## 🚀 今後の改善項目
-
-### 優先度：高
-- [ ] ログイン/ログアウト機能の完全実装
-- [ ] 認証ガード（未ログイン時のアクセス制限）
-- [ ] Node.js 20へのアップグレード
-
-### 優先度：中
-- [ ] モニタリング設定（Slack通知等）
-- [ ] 自動バックアップ設定
-- [ ] CI/CDパイプライン構築
-
-### 優先度：低
-- [ ] ログローテーション設定
-- [ ] パフォーマンス最適化
-- [ ] エラーハンドリング強化
-
----
-
-## 📞 緊急時の対応
-
-### サイトが完全にダウンした場合
-
-```bash
-# 1. VPSに接続
-ssh ubuntu@tk2-236-27682.vs.sakura.ne.jp
-
-# 2. すべてのサービスを再起動
-sudo systemctl restart nginx
-pm2 restart all
-
-# 3. ログを確認
-sudo tail -f /var/log/nginx/error.log
-pm2 logs --lines 50
-```
-
-### SSL証明書エラー
-
-```bash
-# 証明書を再取得
-sudo certbot --nginx -d n3.emverze.com --force-renewal
-sudo systemctl restart nginx
+```typescript
+limits: {
+  dailyMin: 5,    // 最小を下げる
+  dailyMax: 30,   // 最大を下げる
+  weeklyMin: 50,
+  weeklyMax: 150,
+  monthlyMax: 400
+}
 ```
 
 ---
 
-## 📋 デプロイ完了チェックリスト
+## 🔐 セキュリティ
 
-### 開発環境
-- [ ] ローカルで動作確認
-- [ ] コードレビュー
-- [ ] Gitコミット & プッシュ
+### 本番環境でのチェックリスト
 
-### VPS環境
-- [ ] `git pull` で最新コード取得
-- [ ] `npm install` で依存関係更新
-- [ ] `npm run build` でビルド成功
-- [ ] `pm2 restart` で再起動
-- [ ] ログにエラーがないか確認
-
-### 本番確認
-- [ ] https://n3.emverze.com にアクセス可能
-- [ ] 鍵マーク（SSL）が表示される
-- [ ] 主要機能が動作する
-- [ ] レスポンス速度が正常
+- [ ] `CRON_SECRET` を強力なランダム文字列に変更
+- [ ] Supabase RLSポリシーを確認
+- [ ] eBay User Tokenを環境変数で管理
+- [ ] エラーログを定期的に確認
+- [ ] 不正なアクセスがないか監視
 
 ---
 
-## 🔗 関連リンク
+## 📝 次のステップ
 
-- **GitHub リポジトリ**: https://github.com/AKI-NANA/n3-frontend_new
-- **Cloudflare ダッシュボード**: https://dash.cloudflare.com/
-- **さくらVPS コントロールパネル**: https://secure.sakura.ad.jp/vps/
+1. **1週間の運用テスト**
+   - スケジュール生成
+   - 自動実行の確認
+   - エラーログの監視
+
+2. **カテゴリ分散の効果測定**
+   - eBayでの検索順位の変化
+   - ビュー数・ウォッチャー数の増加
+   - 売上への影響
+
+3. **将来的な拡張**
+   - VPS移行（より高頻度実行が必要な場合）
+   - 他マーケットプレイスへの対応
+   - A/Bテスト機能の追加
 
 ---
 
-最終更新日: 2025年10月21日
+**作成日**: 2025-11-02  
+**バージョン**: 1.0  
+**メンテナンス**: 定期的に実行ログを確認し、エラーがあれば対処してください。

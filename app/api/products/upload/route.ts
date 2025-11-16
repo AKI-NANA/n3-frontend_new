@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     // 1. 既存データのクリア
     if (options.clearExisting) {
       const { error: deleteError } = await supabase
-        .from('products')
+        .from('products_master')
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000') // 全削除
 
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
 
       if (skusToCheck.length > 0) {
         const { data: existing, error: checkError } = await supabase
-          .from('products')
+          .from('products_master')
           .select('sku')
           .in('sku', skusToCheck)
 
@@ -208,7 +208,7 @@ export async function POST(request: NextRequest) {
       const batch = products.slice(i, i + batchSize)
 
       const { data, error } = await supabase
-        .from('products')
+        .from('products_master')
         .insert(batch)
         .select('id')
 

@@ -32,12 +32,44 @@ function replacePlaceholders(template: string, productData: any): string {
   
   console.log('🔄 Replacing placeholders with product data:', productData);
   
+  // 🔥 conditionの英語化
+  const conditionMap: Record<string, string> = {
+    '新品': 'New',
+    '未使用': 'New',
+    '中古': 'Used',
+    '中古品': 'Used',
+    '開封済み': 'Open Box',
+    'ジャンク': 'For Parts or Not Working'
+  };
+  
+  const conditionEn = conditionMap[productData?.condition || ''] || 
+                      listingData.condition_en || 
+                      'Used';
+  
+  // 🔥 descriptionは英語版を優先、無い場合は自動生成
+  let descriptionEn = productData?.english_description || productData?.description || ''
+  
+  // 商品説明が「なし」または空の場合、自動生成
+  if (!descriptionEn || descriptionEn === 'なし' || descriptionEn.length < 10) {
+    const parts = [
+      productData?.english_title || productData?.title || 'Quality product',
+      productData?.scraped_data?.brand ? `Brand: ${productData.scraped_data.brand}` : '',
+      `Condition: ${conditionEn}`,
+      'Authentic product imported from Japan.',
+      'Ships worldwide with tracking number.',
+      'Please check the photos carefully before purchasing.'
+    ].filter(Boolean)
+    
+    descriptionEn = parts.join(' | ')
+    console.log('🤖 商品説明を自動生成:', descriptionEn)
+  }
+  
   const replaced = template
     .replace(/\{\{TITLE\}\}/g, productData?.english_title || productData?.title || 'N/A')
-    .replace(/\{\{CONDITION\}\}/g, listingData.condition || 'Used')
+    .replace(/\{\{CONDITION\}\}/g, conditionEn)
     .replace(/\{\{LANGUAGE\}\}/g, 'Japanese')
     .replace(/\{\{RARITY\}\}/g, 'Rare')
-    .replace(/\{\{DESCRIPTION\}\}/g, productData?.description || productData?.english_title || 'N/A')
+    .replace(/\{\{DESCRIPTION\}\}/g, descriptionEn)
     .replace(/\{\{PRICE\}\}/g, productData?.price_usd || productData?.price || '0')
     .replace(/\{\{BRAND\}\}/g, productData?.brand || 'N/A')
     .replace(/\{\{SHIPPING_INFO\}\}/g, listingData.shipping_info || 'Standard Shipping')
@@ -79,25 +111,26 @@ export function TabHTML({ product, marketplace, marketplaceName }: TabHTMLProps)
 
         console.log(`📝 Generating HTML for Product ID: ${product.id}, SKU: ${product.sku}, Marketplace: ${marketplace}`);
 
-        // ステップ1: 既に生成済みのHTMLがあるか確認
+        // ✅ ステップ1: 既に生成済みのHTMLがあるか確認（products_master_idを使用）
         let existingHtml = null;
         try {
           const { data, error } = await supabase
             .from('product_html_generated')
             .select('*')
-            .eq('product_id', product.id)
+            .eq('products_master_id', product.id)
             .eq('marketplace', marketplace)
-            .single();
+            .maybeSingle();
           
-          if (!error) {
+          if (data && !error) {
             existingHtml = data;
+            console.log('✅ 既存の生成済みHTMLを取得 (products_master_id):', existingHtml);
           }
         } catch (err) {
           console.log('⚠️ 既存HTML取得時のエラー（初回時は正常）:', err);
         }
 
         if (existingHtml) {
-          console.log('✅ 既存の生成済みHTMLを取得:', existingHtml);
+          console.log('✅ 既存の生成済みHTMLを使用:', existingHtml);
           console.log('📄 HTML Content:', existingHtml.generated_html);
           setTemplate(existingHtml);
           setGeneratedHtml(existingHtml);
@@ -113,29 +146,46 @@ export function TabHTML({ product, marketplace, marketplaceName }: TabHTMLProps)
         let template_data = null;
         
         // 方法1: デフォルトテンプレートを取得
-        let defaultTemplate = null;
         try {
-          const { data } = await supabase
+          const { data, error } = await supabase
             .from('html_templates')
             .select('*')
             .eq('is_default_preview', true)
-            .single();
+            .maybeSingle();
           
-          defaultTemplate = data;
+          if (data && !error) {
+            template_data = data;
+            console.log('✅ デフォルトテンプレートを取得:', template_data);
+          }
         } catch (err) {
           console.log('⚠️ デフォルトテンプレート取得エラー:', err);
         }
 
-        if (defaultTemplate) {
-          template_data = defaultTemplate;
-          console.log('✅ デフォルトテンプレートを取得:', template_data);
-        }
-
+        // 🔥 テンプレートが見つからない場合は基本HTMLを使用
         if (!template_data) {
-          setError('利用可能なテンプレートがありません');
-          setHtmlContent('<p style="color: #d32f2f; text-align: center;">テンプレートが見つかりません</p>');
-          setIsLoading(false);
-          return;
+          console.log('ℹ️ デフォルトテンプレートが存在しないため、基本HTMLを使用します');
+          template_data = {
+            id: 'default',
+            name: 'Basic Template',
+            html_content: `
+              <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto;">
+                <h1 style="color: #333;">{{TITLE}}</h1>
+                <div style="margin: 20px 0;">
+                  <h2>Product Details</h2>
+                  <p><strong>Condition:</strong> {{CONDITION}}</p>
+                  <p><strong>SKU:</strong> {{SKU}}</p>
+                </div>
+                <div style="margin: 20px 0;">
+                  <h2>Description</h2>
+                  <p>{{DESCRIPTION}}</p>
+                </div>
+                <div style="margin: 20px 0;">
+                  <h2>Shipping Information</h2>
+                  <p>{{SHIPPING_INFO}}</p>
+                </div>
+              </div>
+            `
+          };
         }
 
         setTemplate(template_data);
@@ -143,23 +193,39 @@ export function TabHTML({ product, marketplace, marketplaceName }: TabHTMLProps)
         // ステップ3: プレースホルダーを置換して個別HTMLを生成
         setSaveStatus('HTMLを生成中...');
         const htmlToUse = template_data.html_content || template_data.languages?.en_US?.html_content || '<p>No content</p>';
+        
+        // 🔥 デバッグ: productオブジェクトの内容を確認
+        console.log('🔍 productオブジェクトの中身:', {
+          id: product.id,
+          title: product.title,
+          english_title: product.english_title,
+          description: product.description,
+          english_description: product.english_description,
+          condition: product.condition,
+          english_condition: product.english_condition
+        });
+        
         const generatedContent = replacePlaceholders(htmlToUse, product);
         
-        // ステップ4: 生成したHTMLをDBに保存
+        // ✅ ステップ4: 生成したHTMLをDBに保存（products_master_idを使用）
         setSaveStatus('HTMLをデータベースに保存中...');
+        
+        const htmlRecord = {
+          products_master_id: product.id,
+          sku: product.sku,
+          marketplace: marketplace,
+          template_id: template_data.id || template_data.name,
+          template_name: template_data.name,
+          generated_html: generatedContent,
+        };
+        
+        console.log('💾 Saving HTML record:', htmlRecord);
         
         const { data: savedHtml, error: saveError } = await supabase
           .from('product_html_generated')
-          .insert({
-            product_id: product.id,
-            sku: product.sku,
-            marketplace: marketplace,
-            template_id: template_data.id || template_data.name,
-            template_name: template_data.name,
-            generated_html: generatedContent,
-          })
+          .insert(htmlRecord)
           .select()
-          .single();
+          .maybeSingle();
 
         if (saveError) {
           console.warn('⚠️ 初回保存エラー（既存の可能性）:', saveError.message);
@@ -173,10 +239,10 @@ export function TabHTML({ product, marketplace, marketplaceName }: TabHTMLProps)
               template_name: template_data.name,
               updated_at: new Date().toISOString(),
             })
-            .eq('product_id', product.id)
+            .eq('products_master_id', product.id)
             .eq('marketplace', marketplace)
             .select()
-            .single();
+            .maybeSingle();
 
           if (updateError) {
             throw updateError;
@@ -191,10 +257,28 @@ export function TabHTML({ product, marketplace, marketplaceName }: TabHTMLProps)
         setSaveStatus('✓ HTMLを生成・保存しました');
         console.log('✅ HTML生成完了:', generatedContent.substring(0, 100) + '...');
 
-      } catch (err) {
-        console.error('❌ エラー:', err);
-        setError('HTML生成に失敗しました: ' + (err as any).message);
+      } catch (err: unknown) {
+        console.error('❌ HTML生成エラー:', err);
+        
+        if (err instanceof Error) {
+          console.error('Error message:', err.message);
+          console.error('Error stack:', err.stack);
+          setError('HTML生成に失敗しました: ' + err.message);
+        } else if (typeof err === 'object' && err !== null) {
+          console.error('Error object:', JSON.stringify(err, null, 2));
+          setError('HTML生成に失敗しました: ' + JSON.stringify(err));
+        } else {
+          console.error('Unknown error type:', typeof err);
+          setError('HTML生成に失敗しました');
+        }
+        
         setSaveStatus('');
+        
+        setHtmlContent('<div style="padding: 20px; text-align: center; color: #d32f2f;">' +
+          '<h3>⚠️ HTML生成エラー</h3>' +
+          '<p>テンプレートの読み込みに失敗しました。</p>' +
+          '<p style="font-size: 0.9em; color: #666;">商品データは正常に読み込まれています。</p>' +
+          '</div>');
       } finally {
         setIsLoading(false);
       }
@@ -281,7 +365,6 @@ export function TabHTML({ product, marketplace, marketplaceName }: TabHTMLProps)
         <i className="fas fa-code"></i> <span style={{ color: 'var(--ilm-primary)' }}>{marketplaceName}</span> 商品説明HTML
       </h3>
       
-      {/* ステータス情報バー */}
       {isLoading && (
         <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#fff3cd', border: '1px solid #ffc107', borderRadius: '6px' }}>
           <div style={{ fontSize: '0.85rem', color: '#856404' }}>
@@ -312,12 +395,11 @@ export function TabHTML({ product, marketplace, marketplaceName }: TabHTMLProps)
             <strong>📋 テンプレート:</strong> {template.name}
             {editMode && <span style={{ marginLeft: '1rem', fontWeight: 600, color: '#ff6600' }}>【編集モード】</span>}
             <br/>
-            <strong>🎯 SKU:</strong> {product?.sku} | <strong>Product ID:</strong> {product?.id}
+            <strong>🎯 SKU:</strong> {product?.sku} | <strong>Master ID:</strong> {product?.id}
           </div>
         </div>
       )}
       
-      {/* ツールバー */}
       <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
         <button 
           className={styles.btn}
@@ -360,9 +442,7 @@ export function TabHTML({ product, marketplace, marketplaceName }: TabHTMLProps)
         )}
       </div>
       
-      {/* エディタとプレビュー */}
       <div className={styles.htmlEditorContainer}>
-        {/* エディタペイン */}
         <div className={styles.editorPane}>
           <div className={styles.editorHeader}>
             <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>
@@ -384,7 +464,6 @@ export function TabHTML({ product, marketplace, marketplaceName }: TabHTMLProps)
           </div>
         </div>
         
-        {/* プレビューペイン */}
         <div className={styles.editorPane}>
           <div className={styles.editorHeader}>
             <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>
@@ -400,16 +479,15 @@ export function TabHTML({ product, marketplace, marketplaceName }: TabHTMLProps)
         </div>
       </div>
       
-      {/* ヒント */}
       <div style={{ marginTop: '1rem', padding: '1rem', background: '#f8f9fa', borderRadius: '6px' }}>
         <h5 style={{ margin: '0 0 0.5rem 0', fontSize: '0.95rem' }}>
           <i className="fas fa-lightbulb"></i> 仕組み
         </h5>
         <ul style={{ fontSize: '0.85rem', color: '#6c757d', margin: 0, paddingLeft: '1.5rem', lineHeight: 1.6 }}>
+          <li>products_master_idでマッピング</li>
           <li>テンプレートをDBから検索</li>
           <li>{`{{TITLE}}`}などを商品データに置換</li>
-          <li>データごとに異なるHTMLを生成</li>
-          <li>生成したHTMLをproduct_html_generatedテーブルに保存</li>
+          <li>生成したHTMLをproduct_html_generatedに保存</li>
           <li>編集で修正 → 保存でDB更新</li>
         </ul>
       </div>

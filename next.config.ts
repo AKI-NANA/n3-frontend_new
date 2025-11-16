@@ -1,6 +1,9 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+  // ワークスペースルートの明示的な設定
+  outputFileTracingRoot: '/Users/aritahiroaki/n3-frontend_new',
+  
   // 画像の最適化設定
   images: {
     remotePatterns: [

@@ -123,6 +123,7 @@ export const navigationItems: MenuItem[] = [
     top: 513,
     submenu: [
       { text: '統合Webツール', link: '/complete-web-tool', icon: 'tools', status: 'ready' },
+      { text: 'HTS分類自動化', link: '/tools/hts-classification', icon: 'package', status: 'new' },
       { text: 'maru9商品データ修正', link: '/maru9-tool', icon: 'shopping-cart', status: 'ready' },
       { text: 'Ollama AI管理', link: '/ollama-manager', icon: 'robot', status: 'new' },
       { text: '自動振り分けシステム', link: '/auto-sort-system', icon: 'sort', status: 'new' }

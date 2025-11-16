@@ -1,4 +1,14 @@
-// lib/smart-scheduler.ts - モール別ランダム化対応版
+// lib/smart-scheduler.ts - カテゴリ分散対応版
+import { SupabaseClient } from '@supabase/supabase-js'
+import {
+  CategoryDistributionSettings,
+  getRecentCategoryStats,
+  findUnderrepresentedCategories,
+  sortProductsWithCategoryDistribution,
+  groupProductsByCategory,
+  generateCategoryDistributionReport
+} from './category-distribution'
+
 export interface MarketplaceSettings {
   marketplace: string
   account: string
@@ -21,6 +31,7 @@ export interface ScheduleSettings {
     monthlyMax: number
   }
   marketplaceAccounts: MarketplaceSettings[]
+  categoryDistribution?: CategoryDistributionSettings // カテゴリ分散設定（オプション）
 }
 
 export interface Product {
@@ -29,6 +40,10 @@ export interface Product {
   profit_amount_usd: number | null
   target_marketplaces: string[]
   listing_priority: string
+  ebay_api_data?: {
+    category_id?: string
+    category_name?: string
+  }
 }
 
 export interface ScheduledSession {
@@ -39,6 +54,7 @@ export interface ScheduledSession {
   account: string
   plannedCount: number
   avgAiScore: number
+  categoryId?: string // カテゴリIDを追加
   products: Product[]
   itemIntervalMin: number
   itemIntervalMax: number
@@ -46,15 +62,81 @@ export interface ScheduledSession {
 
 export class SmartScheduleGenerator {
   private settings: ScheduleSettings
+  private supabase?: SupabaseClient
   
-  constructor(settings: ScheduleSettings) {
+  constructor(settings: ScheduleSettings, supabase?: SupabaseClient) {
     this.settings = settings
+    this.supabase = supabase
   }
 
-  generateMonthlySchedule(products: Product[], startDate: Date, endDate: Date): ScheduledSession[] {
-    const sortedProducts = this.sortProductsByPriority(products)
+  /**
+   * 月次スケジュール生成（カテゴリ分散対応）
+   */
+  async generateMonthlySchedule(
+    products: Product[], 
+    startDate: Date, 
+    endDate: Date
+  ): Promise<ScheduledSession[]> {
+    console.log('📅 [Scheduler] スケジュール生成開始')
+    console.log(`📦 [Scheduler] 対象商品: ${products.length}件`)
+    
+    // カテゴリ分散設定がある場合は適用
+    let sortedProducts: Product[]
+    
+    if (this.settings.categoryDistribution && this.supabase) {
+      console.log('🎯 [Scheduler] カテゴリ分散ロジック適用中...')
+      
+      try {
+        // 直近の出品カテゴリ統計を取得
+        const recentStats = await getRecentCategoryStats(
+          this.supabase,
+          this.settings.categoryDistribution.lookbackDays
+        )
+        
+        console.log(`📊 [Scheduler] 直近${this.settings.categoryDistribution.lookbackDays}日間のカテゴリ統計: ${recentStats.length}件`)
+        
+        // 商品をカテゴリ別にグループ化
+        const categoryGroups = groupProductsByCategory(products)
+        console.log(`📂 [Scheduler] ユニークカテゴリ数: ${categoryGroups.size}件`)
+        
+        // 不足しているカテゴリを特定
+        const underrepresentedCategories = findUnderrepresentedCategories(
+          categoryGroups,
+          recentStats,
+          this.settings.categoryDistribution.minCategoriesPerDay
+        )
+        
+        console.log(`⚠️ [Scheduler] 出品不足カテゴリ: ${underrepresentedCategories.length}件`)
+        
+        // カテゴリ分散を考慮してソート
+        sortedProducts = sortProductsWithCategoryDistribution(
+          products,
+          underrepresentedCategories,
+          this.settings.categoryDistribution
+        )
+        
+        // レポート生成
+        const report = generateCategoryDistributionReport(sortedProducts)
+        console.log('📊 [Scheduler] カテゴリ分散レポート:', report)
+        
+      } catch (error) {
+        console.error('❌ [Scheduler] カテゴリ分散処理エラー:', error)
+        console.log('⚠️ [Scheduler] フォールバック: 通常の優先度ソートを使用')
+        sortedProducts = this.sortProductsByPriority(products)
+      }
+    } else {
+      console.log('📊 [Scheduler] 通常の優先度ソートを使用')
+      sortedProducts = this.sortProductsByPriority(products)
+    }
+    
     const availableDays = this.calculateAvailableDays(startDate, endDate)
-    const dailyDistribution = this.randomDistribution(sortedProducts.length, availableDays.length, this.settings.limits)
+    const dailyDistribution = this.randomDistribution(
+      sortedProducts.length, 
+      availableDays.length, 
+      this.settings.limits
+    )
+    
+    console.log(`📅 [Scheduler] 配分日数: ${availableDays.length}日`)
     
     const sessions: ScheduledSession[] = []
     let productIndex = 0
@@ -65,14 +147,16 @@ export class SmartScheduleGenerator {
       
       if (dailyCount === 0) continue
       
-      const daySessions = this.splitIntoSessions(
-        sortedProducts.slice(productIndex, productIndex + dailyCount),
-        date
-      )
+      const dayProducts = sortedProducts.slice(productIndex, productIndex + dailyCount)
+      const daySessions = this.splitIntoSessions(dayProducts, date)
       
       sessions.push(...daySessions)
       productIndex += dailyCount
+      
+      console.log(`📅 [Scheduler] ${date.toISOString().split('T')[0]}: ${dailyCount}件 → ${daySessions.length}セッション`)
     }
+    
+    console.log(`✅ [Scheduler] スケジュール生成完了: ${sessions.length}セッション`)
     
     return sessions
   }
@@ -107,7 +191,11 @@ export class SmartScheduleGenerator {
     return days
   }
 
-  private randomDistribution(totalProducts: number, daysCount: number, limits: ScheduleSettings['limits']): number[] {
+  private randomDistribution(
+    totalProducts: number, 
+    daysCount: number, 
+    limits: ScheduleSettings['limits']
+  ): number[] {
     const distribution: number[] = []
     let remaining = totalProducts
     
@@ -162,6 +250,22 @@ export class SmartScheduleGenerator {
         const scheduledTime = this.randomTime(date, i, sessionCount, randomConfig)
         const avgAiScore = sessionProducts.reduce((sum, p) => sum + (p.ai_confidence_score || 0), 0) / sessionProducts.length
         
+        // セッションの主要カテゴリを決定（最も多いカテゴリ）
+        const categoryMap = new Map<string, number>()
+        sessionProducts.forEach(p => {
+          const catId = p.ebay_api_data?.category_id || 'unknown'
+          categoryMap.set(catId, (categoryMap.get(catId) || 0) + 1)
+        })
+        
+        let primaryCategory = 'unknown'
+        let maxCount = 0
+        categoryMap.forEach((count, catId) => {
+          if (count > maxCount) {
+            maxCount = count
+            primaryCategory = catId
+          }
+        })
+        
         sessions.push({
           date: date.toISOString().split('T')[0],
           sessionNumber: i + 1,
@@ -170,6 +274,7 @@ export class SmartScheduleGenerator {
           account,
           plannedCount: sessionProducts.length,
           avgAiScore: Math.round(avgAiScore),
+          categoryId: primaryCategory,
           products: sessionProducts,
           itemIntervalMin: randomConfig.itemInterval.min,
           itemIntervalMax: randomConfig.itemInterval.max
@@ -195,7 +300,12 @@ export class SmartScheduleGenerator {
     return groups
   }
 
-  private randomTime(date: Date, sessionIndex: number, totalSessions: number, config: MarketplaceSettings['randomization']): Date {
+  private randomTime(
+    date: Date, 
+    sessionIndex: number, 
+    totalSessions: number, 
+    config: MarketplaceSettings['randomization']
+  ): Date {
     const startHour = 9
     const endHour = 21
     const hoursRange = endHour - startHour
@@ -232,7 +342,16 @@ export class SmartScheduleGenerator {
   }
 }
 
-export async function saveSchedulesToDatabase(sessions: ScheduledSession[], supabase: any) {
+/**
+ * スケジュールをデータベースに保存
+ */
+export async function saveSchedulesToDatabase(
+  sessions: ScheduledSession[], 
+  supabase: SupabaseClient
+) {
+  console.log('💾 [Scheduler] データベース保存開始')
+  
+  // 既存のpendingスケジュールを削除
   await supabase.from('listing_schedules').delete().eq('status', 'pending')
   
   const scheduleInserts = sessions.map(session => ({
@@ -243,25 +362,42 @@ export async function saveSchedulesToDatabase(sessions: ScheduledSession[], supa
     account: session.account,
     planned_count: session.plannedCount,
     avg_ai_score: session.avgAiScore,
+    category_id: session.categoryId, // カテゴリIDを保存
     item_interval_min: session.itemIntervalMin,
     item_interval_max: session.itemIntervalMax,
     status: 'pending'
   }))
   
-  const { data: schedules, error } = await supabase.from('listing_schedules').insert(scheduleInserts).select()
+  const { data: schedules, error } = await supabase
+    .from('listing_schedules')
+    .insert(scheduleInserts)
+    .select()
   
-  if (error) throw error
+  if (error) {
+    console.error('❌ [Scheduler] スケジュール保存エラー:', error)
+    throw error
+  }
   
+  console.log(`✅ [Scheduler] ${schedules.length}件のスケジュールを保存`)
+  
+  // 商品とスケジュールを紐付け
   for (let i = 0; i < sessions.length; i++) {
     const session = sessions[i]
     const schedule = schedules[i]
     const productIds = session.products.map(p => p.id)
     
-    await supabase.from('yahoo_scraped_products').update({
-      listing_session_id: `${schedule.id}`,
-      scheduled_listing_date: session.scheduledTime.toISOString()
-    }).in('id', productIds)
+    if (productIds.length > 0) {
+      await supabase
+        .from('yahoo_scraped_products')
+        .update({
+          listing_session_id: `${schedule.id}`,
+          scheduled_listing_date: session.scheduledTime.toISOString()
+        })
+        .in('id', productIds)
+    }
   }
+  
+  console.log('✅ [Scheduler] 商品とスケジュールの紐付け完了')
   
   return schedules
 }

@@ -13,8 +13,11 @@ export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
 
+    console.log('\ud83d\udd0d ログイン試行:', { email, passwordLength: password?.length });
+
     // バリデーション
     if (!email || !password) {
+      console.log('\u274c バリデーションエラー: メールまたはパスワードが未入力');
       return NextResponse.json(
         { error: 'メールアドレスとパスワードは必須です' },
         { status: 400 }
@@ -22,6 +25,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (typeof email !== 'string' || typeof password !== 'string') {
+      console.log('\u274c バリデーションエラー: 入力形式が無効');
       return NextResponse.json(
         { error: '無効な入力形式です' },
         { status: 400 }
@@ -29,6 +33,8 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = await createClient();
+    
+    console.log('\ud83d\udd0d Supabaseクライアント作成完了');
     
     // ユーザー検索
     const { data: user, error } = await supabase
@@ -38,19 +44,34 @@ export async function POST(request: NextRequest) {
       .eq('is_active', true)
       .single();
 
+    console.log('\ud83d\udd0d ユーザー検索結果:', { 
+      found: !!user, 
+      error: error?.message,
+      email: email.toLowerCase().trim()
+    });
+
     if (error || !user) {
-      console.log('ログイン失敗: ユーザーが見つかりません', email);
+      console.log('\u274c ログイン失敗: ユーザーが見つかりません', email);
+      console.log('   Supabaseエラー:', error);
       return NextResponse.json(
         { error: 'メールアドレスまたはパスワードが正しくありません' },
         { status: 401 }
       );
     }
 
+    console.log('\u2705 ユーザー見つかりました:', { id: user.id, email: user.email, role: user.role });
+
     // パスワード検証
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
 
+    console.log('\ud83d\udd0d パスワード検証:', { 
+      isValid: isValidPassword,
+      inputPassword: password.substring(0, 3) + '***',
+      hashPrefix: user.password_hash.substring(0, 10) + '...'
+    });
+
     if (!isValidPassword) {
-      console.log('ログイン失敗: パスワードが一致しません', email);
+      console.log('\u274c ログイン失敗: パスワードが一致しません', email);
       return NextResponse.json(
         { error: 'メールアドレスまたはパスワードが正しくありません' },
         { status: 401 }
