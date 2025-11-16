@@ -255,6 +255,9 @@ export const navigationItems: NavigationItem[] = [
       { text: "注文管理", link: "/order-management", icon: "package", status: "ready", priority: 6 },
       { text: "配送管理", link: "/shipping-management", icon: "truck", status: "ready", priority: 7 },
       { text: "問い合わせ管理", link: "/inquiry-management", icon: "message-circle", status: "ready", priority: 8 },
+      { text: "受注管理（統合版）", link: "/management/orders/v2", icon: "shopping-cart", status: "ready", priority: 9 },
+      { text: "出荷管理システム", link: "/management/shipping", icon: "truck", status: "ready", priority: 10 },
+      { text: "統合ダッシュボード", link: "/management/dashboard", icon: "layout-dashboard", status: "ready", priority: 11 },
     ]
   },
 
@@ -271,6 +274,7 @@ export const navigationItems: NavigationItem[] = [
       { text: "市場リサーチ", link: "/research/market-research", icon: "trending-up", status: "ready", priority: 2 },
       { text: "スコアリング", link: "/research/scoring", icon: "bar-chart", status: "ready", priority: 3 },
       { text: "Amazon リサーチ", link: "/tools/amazon-research", icon: "shopping-cart", status: "ready", priority: 4 },
+      { text: "Amazon 刈り取り", link: "/tools/amazon-arbitrage", icon: "zap", status: "ready", priority: 5 },
     ]
   },
 
@@ -355,11 +359,12 @@ export const navigationItems: NavigationItem[] = [
     submenu: [
       { text: "Yahoo!オークション", link: "/yahoo-auction-dashboard", icon: "shopping-cart", status: "ready", priority: 1 },
       { text: "eBay", link: "/ebay", icon: "globe", status: "ready", priority: 2 },
-      { text: "メルカリ", link: "/mercari", icon: "shopping-cart", status: "ready", priority: 3 },
-      { text: "Amazon連携", link: "/amazon", icon: "globe", status: "pending", priority: 4 },
-      { text: "楽天連携", link: "/rakuten", icon: "globe", status: "pending", priority: 5 },
-      { text: "Yahoo連携", link: "/yahoo", icon: "globe", status: "pending", priority: 6 },
-      { text: "API管理", link: "/api", icon: "database", status: "ready", priority: 7 },
+      { text: "eBay SEO管理", link: "/tools/ebay-seo", icon: "search", status: "ready", priority: 3 },
+      { text: "メルカリ", link: "/mercari", icon: "shopping-cart", status: "ready", priority: 4 },
+      { text: "Amazon連携", link: "/amazon", icon: "globe", status: "pending", priority: 5 },
+      { text: "楽天連携", link: "/rakuten", icon: "globe", status: "pending", priority: 6 },
+      { text: "Yahoo連携", link: "/yahoo", icon: "globe", status: "pending", priority: 7 },
+      { text: "API管理", link: "/api", icon: "database", status: "ready", priority: 8 },
     ]
   },
 
@@ -438,6 +443,10 @@ export const navigationItems: NavigationItem[] = [
       { text: "商品承認", link: "/tools/approval", icon: "check-circle", status: "ready", priority: 3 },
       { text: "利益計算ツール", link: "/tools/profit-calculator", icon: "calculator", status: "ready", priority: 4 },
       { text: "ワークフローエンジン", link: "/tools/workflow-engine", icon: "cog", status: "ready", priority: 5 },
+      { text: "キャッシュフロー予測", link: "/tools/cash-flow-forecast", icon: "trending-up", status: "ready", priority: 6 },
+      { text: "出品最適化", link: "/tools/listing-optimization", icon: "target", status: "ready", priority: 7 },
+      { text: "タスク管理V4", link: "/management/tasks", icon: "check-square", status: "ready", priority: 8 },
+      { text: "製品主導型仕入れ", link: "/management/product-sourcing", icon: "package", status: "ready", priority: 9 },
     ]
   },
 
