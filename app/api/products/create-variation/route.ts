@@ -1,7 +1,7 @@
 // /app/api/products/create-variation/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import { calculateDynamicShippingDdp } from '@/services/priceCalculationService';
+import { calculateDynamicShippingDdp } from '@/lib/services/pricing/priceCalculationService';
 import { Product, GroupingItem } from '@/types/product';
 
 // ⚠️ 注意: ここではDB操作のモックと Supabase/Prisma/SQL の抽象化を前提とします。
