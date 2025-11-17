@@ -77,10 +77,22 @@ export const navigationItems: MenuItem[] = [
     ]
   },
   {
+    id: 'research-analytics',
+    label: 'リサーチ・分析',
+    icon: 'chart-line',
+    top: 351,
+    submenu: [
+      { text: 'リサーチ分析ダッシュボード', link: '/research-analysis', icon: 'bar-chart', status: 'new' },
+      { text: '市場分析', link: '/market-analysis', icon: 'trending-up', status: 'pending' },
+      { text: '競合分析', link: '/competitor-analysis', icon: 'users', status: 'pending' },
+      { text: '価格トレンド分析', link: '/price-trend-analysis', icon: 'line-chart', status: 'pending' }
+    ]
+  },
+  {
     id: 'accounting',
     label: '記帳・会計',
     icon: 'calculator',
-    top: 351,
+    top: 405,
     submenu: [
       { text: '記帳メイン', link: '/kicho', icon: 'book', status: 'ready' },
       { text: 'eBay売上記帳', link: '/ebay-kicho', icon: 'ebay', status: 'pending' },
@@ -91,7 +103,7 @@ export const navigationItems: MenuItem[] = [
     id: 'system',
     label: 'システム管理',
     icon: 'cogs',
-    top: 405,
+    top: 459,
     submenu: [
       { text: 'APIキー管理', link: '/apikey', icon: 'key', status: 'ready' },
       { text: 'Universal Data Hub', link: '/universal-data-hub', icon: 'database', status: 'new' },
@@ -104,7 +116,7 @@ export const navigationItems: MenuItem[] = [
     id: 'external',
     label: '外部連携',
     icon: 'external-link-alt',
-    top: 459,
+    top: 513,
     submenu: [
       { text: 'Yahoo Auction Tool', link: '/yahoo-auction', icon: 'gavel', status: 'new' },
       { text: 'メインツール', link: '/yahoo-auction-main', icon: 'rocket', status: 'new' },
@@ -120,7 +132,7 @@ export const navigationItems: MenuItem[] = [
     id: 'others',
     label: 'その他',
     icon: 'tools',
-    top: 513,
+    top: 567,
     submenu: [
       { text: '統合Webツール', link: '/complete-web-tool', icon: 'tools', status: 'ready' },
       { text: 'HTS分類自動化', link: '/tools/hts-classification', icon: 'package', status: 'new' },
