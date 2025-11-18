@@ -1,8 +1,13 @@
 // /app/api/products/create-variation/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import { calculateDynamicShippingDdp } from '@/services/priceCalculationService';
 import { Product, GroupingItem } from '@/types/product';
+
+// Stub function for calculateDynamicShippingDdp (service not yet implemented)
+function calculateDynamicShippingDdp(parentProduct: Product, childProducts: Product[]): Product {
+    // TODO: Implement actual shipping calculation logic
+    return parentProduct;
+}
 
 // ⚠️ 注意: ここではDB操作のモックと Supabase/Prisma/SQL の抽象化を前提とします。
 // 実際には Supabase クライアントなどを使用します。
