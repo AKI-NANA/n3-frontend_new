@@ -48,7 +48,7 @@ async function findZonesByCountryCode(
   serviceCode?: string
 ): Promise<number[]> {
   try {
-    let query = supabase
+    const query = supabase
       .from('cpass_zone_countries')
       .select('zone_id, cpass_countries!inner(id, country_code)')
       .eq('country_code', countryCode)

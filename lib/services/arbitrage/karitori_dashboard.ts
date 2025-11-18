@@ -143,7 +143,7 @@ export class KaritoriDashboardService {
         } else {
             newStatus = 'manual-skipped';
             
-            let reason = [];
+            const reason = [];
             if (!isProfitable) reason.push(`利益率(${alert.profitRate * 100}%)が${this.MIN_PROFIT_RATE * 100}%未満`);
             if (!isFastMoving) reason.push(`BSR(${alert.currentBSR}位)が${this.MAX_BSR_FOR_AUTO}位を超過`);
             

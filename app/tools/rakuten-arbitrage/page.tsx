@@ -36,7 +36,6 @@ interface TrackedRoute {
   url: string;
 }
 
-@Component({
   selector: 'app-root',
   template: `
     <script src="https://cdn.tailwindcss.com"></script>

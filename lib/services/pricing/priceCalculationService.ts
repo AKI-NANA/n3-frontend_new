@@ -60,7 +60,7 @@ export function calculateDynamicShippingDdp(
  * 構成品の原価を合計するロジック（III-1 セット品作成用）
  */
 export function calculateTotalCostPrice(items: GroupingItem[], skuMaster: Product[]): number {
-    let totalCost = 0;
+    const totalCost = 0;
     // ... SKUマスターから構成品の原価をlookupし、数量を乗算して合計するロジックを実装 ...
     return totalCost;
 }

@@ -1,11 +1,6 @@
 'use client'
 
-import requests
-import json
 
-GEMINI_API_KEY = "" # 実際のAPIキーを設定
-
-def translate_and_adapt(text: str, source_lang: str, target_lang: str, theme: str):
     """
     Gemini APIを使用して、テキストを高品質に翻訳・最適化する。
     

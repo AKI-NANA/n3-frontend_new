@@ -1,18 +1,24 @@
-import { getSupabaseServerClient } from "@/lib/supabase/server"
-import { NextResponse } from "next/server"
+import { createClient } from '@/lib/supabase/server'; // 修正: createClient に
+import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const supabase = await getSupabaseServerClient()
+    // 修正: createClient を呼び出す
+    const supabase = await createClient();
 
-    const { data, error } = await supabase.from("products_master").select("*").order("created_at", { ascending: false })
+    const { data: products, error } = await supabase
+      .from('products_master')
+      .select('*')
+      .order('created_at', { ascending: false });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 })
+      console.error('データベース取得エラー:', error);
+      return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
     }
 
-    return NextResponse.json({ data })
+    return NextResponse.json(products);
   } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 })
+    console.error('API実行エラー:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

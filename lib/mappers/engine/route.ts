@@ -79,8 +79,8 @@ export async function POST(req: NextRequest) {
 
         // 4. SKU/在庫のマッピング (例: Coupangは独自のItem IDを持つ)
         let platformSku = product.sku;
-        let stockQuantity = product.stock_quantity;
-        let additionalFields: any = {};
+        const stockQuantity = product.stock_quantity;
+        const additionalFields: any = {};
 
         switch (targetPlatform) {
             case 'Coupang':
