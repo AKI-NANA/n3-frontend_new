@@ -116,7 +116,20 @@ export default function GitDeployPage() {
   }, [])
 
   const handleGitPush = async () => {
-    if (!commitMessage.trim()) {
+    // コミット済みの変更があるか確認
+    const hasLocalCommits = gitStatus?.branch && 
+      (gitStatus as any).debug?.longStatus?.includes('Your branch is ahead')
+
+    if (!hasLocalCommits && !commitMessage.trim() && !gitStatus?.hasChanges) {
+      setResult({ 
+        success: false, 
+        message: 'プッシュする変更がありません' 
+      })
+      return
+    }
+
+    // コミット済みの変更があればメッセージなしでもOK
+    if (!hasLocalCommits && gitStatus?.hasChanges && !commitMessage.trim()) {
       setResult({ 
         success: false, 
         message: 'コミットメッセージを入力してください' 
@@ -541,6 +554,17 @@ export default function GitDeployPage() {
                       <AlertDescription className="text-xs">
                         ⚠️ デバッグ: ファイルが検出されていますが hasChanges が false です。
                         開発サーバーを再起動してください。
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {/* コミット済みの変更がある場合 */}
+                  {!gitStatus.hasChanges && (gitStatus as any).debug?.longStatus?.includes('Your branch is ahead') && (
+                    <Alert className="bg-blue-50 border-blue-200">
+                      <CheckCircle className="w-4 h-4 text-blue-600" />
+                      <AlertDescription className="text-xs">
+                        🚀 ローカルにコミット済みの変更があります。<br/>
+                        「Git Push 実行」ボタンでGitHubにプッシュできます（メッセージ不要）
                       </AlertDescription>
                     </Alert>
                   )}
@@ -1267,26 +1291,30 @@ export default function GitDeployPage() {
                 </div>
                 
                 {/* Push不可理由の表示 */}
-                {(!gitStatus?.hasChanges || !commitMessage.trim()) && (
+                {!gitStatus?.hasChanges && !(gitStatus as any)?.debug?.longStatus?.includes('Your branch is ahead') && (
                   <Alert variant="destructive">
                     <AlertCircle className="w-4 h-4" />
                     <AlertDescription className="text-xs space-y-1">
-                      {!gitStatus?.hasChanges && (
-                        <>
-                          <p>⚠️ Pushできない理由: 変更されたファイルがありません</p>
-                          {gitStatus?.files && gitStatus.files.length > 0 && (
-                            <p className="text-orange-600">💡 ヒント: ファイルは検出されていますが、Git が変更として認識していません。開発サーバーを再起動するか、ターミナルで `git status` を実行してください。</p>
-                          )}
-                        </>
+                      <p>⚠️ Pushできない理由: プッシュする変更がありません</p>
+                      {gitStatus?.files && gitStatus.files.length > 0 && (
+                        <p className="text-orange-600">💡 ヒント: ファイルは検出されていますが、Git が変更として認識していません。開発サーバーを再起動するか、ターミナルで `git status` を実行してください。</p>
                       )}
-                      {gitStatus?.hasChanges && !commitMessage.trim() && "⚠️ Pushできない理由: コミットメッセージを入力してください"}
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                {gitStatus?.hasChanges && !commitMessage.trim() && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="w-4 h-4" />
+                    <AlertDescription className="text-xs">
+                      ⚠️ コミットメッセージを入力してください
                     </AlertDescription>
                   </Alert>
                 )}
 
                 <Button 
                   onClick={handleGitPush} 
-                  disabled={loading || !gitStatus?.hasChanges || !commitMessage.trim()}
+                  disabled={loading || (!gitStatus?.hasChanges && !(gitStatus as any).debug?.longStatus?.includes('Your branch is ahead'))}
                   className="w-full"
                 >
                   {loading ? (
@@ -1298,6 +1326,9 @@ export default function GitDeployPage() {
                     <>
                       <Upload className="w-4 h-4 mr-2" />
                       Git Push 実行
+                      {(gitStatus as any)?.debug?.longStatus?.includes('Your branch is ahead') && 
+                        !gitStatus?.hasChanges && 
+                        ' (コミット済みをプッシュ)'}
                     </>
                   )}
                 </Button>
