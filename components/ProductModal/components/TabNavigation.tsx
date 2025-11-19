@@ -1,6 +1,6 @@
 'use client';
 
-import styles from '../FullFeaturedModal.module.css';
+import styles from '../FullFeaturedModal.css';
 
 const TABS = [
   { id: 'overview', label: '統合概要', icon: 'fas fa-chart-pie', mpSpecific: false },

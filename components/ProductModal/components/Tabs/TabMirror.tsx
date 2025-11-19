@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import styles from '../../FullFeaturedModal.module.css';
+import styles from '../../FullFeaturedModal.css';
 import type { Product } from '@/types/product';
 import { useMirrorSelectionStore } from '@/store/mirrorSelectionStore';
 

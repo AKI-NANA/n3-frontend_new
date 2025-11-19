@@ -2,7 +2,7 @@
 'use client'
 
 import { useState } from 'react'
-import styles from '../../FullFeaturedModal.module.css'
+import styles from '../../FullFeaturedModal.css'
 import type { Product } from '@/types/product'
 import type { HtsCandidate } from '@/lib/tariffService'
 

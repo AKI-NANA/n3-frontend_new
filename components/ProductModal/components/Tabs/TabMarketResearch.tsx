@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import styles from '../../FullFeaturedModal.module.css'
+import styles from '../../FullFeaturedModal.css'
 import { MarketResearchTab } from '@/app/tools/editing/components/MarketResearchTab'
 import { PricingStrategyModal } from '@/app/tools/editing/components/PricingStrategyModal'
 

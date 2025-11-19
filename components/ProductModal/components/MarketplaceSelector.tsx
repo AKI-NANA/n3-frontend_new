@@ -1,6 +1,6 @@
 'use client';
 
-import styles from '../FullFeaturedModal.module.css';
+import styles from '../FullFeaturedModal.css';
 
 const MARKETPLACES = [
   { id: 'ebay', name: 'eBay', icon: 'fab fa-ebay', className: 'ebay', color: '#0064d2' },

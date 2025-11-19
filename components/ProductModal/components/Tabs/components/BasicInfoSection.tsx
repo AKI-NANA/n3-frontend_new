@@ -1,7 +1,7 @@
 'use client';
 
 import type { Product } from '@/types/product';
-import styles from '../../../FullFeaturedModal.module.css';
+import styles from '../../../FullFeaturedModal.css';
 
 export interface BasicInfoSectionProps {
   product: Product | null;

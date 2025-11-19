@@ -1,6 +1,6 @@
 'use client';
 
-import styles from '../../FullFeaturedModal.module.css';
+import styles from '../../FullFeaturedModal.css';
 import type { Product } from '@/types/product';
 
 export interface TabFinalProps {

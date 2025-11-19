@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import styles from '../../FullFeaturedModal.module.css';
+import styles from '../../FullFeaturedModal.css';
 import type { Product } from '@/types/product';
 
 export interface TabImagesProps {

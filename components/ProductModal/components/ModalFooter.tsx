@@ -1,6 +1,6 @@
 'use client';
 
-import styles from '../FullFeaturedModal.module.css';
+import styles from '../FullFeaturedModal.css';
 
 export interface ModalFooterProps {
   currentTab: string;
