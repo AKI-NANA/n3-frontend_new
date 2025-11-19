@@ -39,6 +39,11 @@ export default function CleanupTab() {
   const [resetResult, setResetResult] = useState<any>(null)
   const [verifyLoading, setVerifyLoading] = useState(false)
   const [verifyResult, setVerifyResult] = useState<any>(null)
+  
+  // VPS完全クリーンアップ用の状態
+  const [vpsCleanLoading, setVpsCleanLoading] = useState(false)
+  const [vpsCleanResult, setVpsCleanResult] = useState<any>(null)
+  const [showVpsCleanConfirm, setShowVpsCleanConfirm] = useState(false)
 
   // バックアップ一覧を取得
   useEffect(() => {
@@ -252,6 +257,43 @@ export default function CleanupTab() {
       })
     } finally {
       setVerifyLoading(false)
+    }
+  }
+
+  const handleVpsClean = async () => {
+    if (!showVpsCleanConfirm) {
+      setShowVpsCleanConfirm(true)
+      return
+    }
+
+    setVpsCleanLoading(true)
+    setVpsCleanResult(null)
+    
+    try {
+      const response = await fetch('/api/deploy/clean-vps', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sshHost: 'tk2-236-27682.vs.sakura.ne.jp',
+          sshUser: 'ubuntu',
+          projectPath: '~/n3-frontend_new'
+        })
+      })
+
+      const data = await response.json()
+      setVpsCleanResult({
+        success: response.ok,
+        message: data.message,
+        results: data.results
+      })
+    } catch (error) {
+      setVpsCleanResult({
+        success: false,
+        message: 'VPSクリーンアップに失敗しました'
+      })
+    } finally {
+      setVpsCleanLoading(false)
+      setShowVpsCleanConfirm(false)
     }
   }
 
@@ -907,6 +949,103 @@ export default function CleanupTab() {
           </AlertDescription>
         </Alert>
       )}
+
+      {/* VPS完全クリーンアップ */}
+      <Card className="border-2 border-red-200 dark:border-red-800">
+        <CardHeader className="bg-red-50 dark:bg-red-900/20">
+          <CardTitle className="flex items-center gap-2">
+            <Trash2 className="w-5 h-5 text-red-600" />
+            🗑️ VPS完全クリーンアップ（.env保持）
+          </CardTitle>
+          <CardDescription>
+            VPSのプロジェクトディレクトリを完全削除（環境変数は保持）
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4 pt-6">
+          <Alert className="bg-amber-50 dark:bg-amber-900/20 border-amber-200">
+            <AlertCircle className="w-4 h-4 text-amber-600" />
+            <AlertDescription className="text-sm">
+              <strong>⚠️ 重要:</strong><br/>
+              • プロジェクトディレクトリを完全削除します<br/>
+              • .env と .env.production は保持されます<br/>
+              • 削除後は「デプロイ」タブでデプロイが必要です
+            </AlertDescription>
+          </Alert>
+
+          {!showVpsCleanConfirm ? (
+            <Button
+              onClick={handleVpsClean}
+              disabled={vpsCleanLoading}
+              variant="destructive"
+              className="w-full"
+              size="lg"
+            >
+              <Trash2 className="w-5 h-5 mr-2" />
+              VPSを完全クリーンアップ
+            </Button>
+          ) : (
+            <div className="space-y-3">
+              <Alert variant="destructive">
+                <AlertCircle className="w-4 h-4" />
+                <AlertDescription>
+                  <strong>⚠️ 確認:</strong><br/>
+                  VPSのプロジェクトディレクトリを完全削除します。<br/>
+                  .env ファイルは保持されます。<br/>
+                  <br/>
+                  本当に実行しますか？
+                </AlertDescription>
+              </Alert>
+              <div className="flex gap-3">
+                <Button
+                  onClick={handleVpsClean}
+                  disabled={vpsCleanLoading}
+                  variant="destructive"
+                  className="flex-1"
+                >
+                  {vpsCleanLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      削除中...
+                    </>
+                  ) : (
+                    <>はい、削除します</>
+                  )}
+                </Button>
+                <Button
+                  onClick={() => setShowVpsCleanConfirm(false)}
+                  variant="outline"
+                  disabled={vpsCleanLoading}
+                  className="flex-1"
+                >
+                  キャンセル
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {vpsCleanResult && (
+            <Alert variant={vpsCleanResult.success ? 'default' : 'destructive'}>
+              {vpsCleanResult.success ? (
+                <CheckCircle className="w-4 h-4" />
+              ) : (
+                <XCircle className="w-4 h-4" />
+              )}
+              <AlertDescription>
+                {vpsCleanResult.message}
+                {vpsCleanResult.results && (
+                  <div className="mt-2 space-y-1 text-xs">
+                    {vpsCleanResult.results.map((r: any, idx: number) => (
+                      <div key={idx}>
+                        {r.success ? '✅' : '❌'} {r.stdout || r.error}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
 
       {/* 使い方ガイド */}
       <Card>
