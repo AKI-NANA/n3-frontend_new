@@ -33,6 +33,12 @@ export async function POST(request: NextRequest) {
         command: `cd ${localProjectPath} && git add -A && git commit -m "deploy: 完全クリーンデプロイ前の自動コミット ${timestamp}" || echo '変更なし、またはコミット済み'`
       },
 
+      // Phase 1.5: GitHubの最新を取得（リベース）
+      {
+        name: 'GitHubの最新を取得',
+        command: `cd ${localProjectPath} && git pull origin main --rebase && echo 'Git pull --rebase 完了'`
+      },
+
       // Phase 2: mainブランチにプッシュ
       {
         name: 'GitHubにプッシュ',
@@ -75,25 +81,31 @@ export async function POST(request: NextRequest) {
         command: `ssh ${sshUser}@${sshHost} "cd ${projectPath} && npm install && echo 'npm install 完了'"`
       },
       
-      // Phase 9: ネイティブモジュール再ビルド
+      // Phase 9: lightningcss を強制インストール
+      {
+        name: 'lightningcss 強制インストール',
+        command: `ssh ${sshUser}@${sshHost} "cd ${projectPath} && npm install lightningcss-linux-x64-gnu --save-optional --force && echo 'lightningcss インストール完了'"`
+      },
+      
+      // Phase 10: ネイティブモジュール再ビルド
       {
         name: 'ネイティブモジュール再ビルド',
         command: `ssh ${sshUser}@${sshHost} "cd ${projectPath} && npm rebuild --verbose && echo 'npm rebuild 完了'"`
       },
       
-      // Phase 10: 本番ビルド
+      // Phase 11: 本番ビルド
       {
         name: '本番ビルド',
         command: `ssh ${sshUser}@${sshHost} "cd ${projectPath} && npm run build && echo 'ビルド完了'"`
       },
       
-      // Phase 11: PM2再起動
+      // Phase 12: PM2再起動
       {
         name: 'PM2再起動',
         command: `ssh ${sshUser}@${sshHost} "pm2 restart n3-frontend || (pm2 start npm --name 'n3-frontend' -- start && pm2 save) && echo 'PM2再起動完了'"`
       },
       
-      // Phase 12: 一時ファイル削除
+      // Phase 13: 一時ファイル削除
       {
         name: '一時ファイル削除',
         command: `ssh ${sshUser}@${sshHost} "rm -f /tmp/.env.backup /tmp/.env.production.backup"`
@@ -132,8 +144,15 @@ export async function POST(request: NextRequest) {
           success: false
         });
         
-        // クリティカルなフェーズで失敗したらロールバック
-        if (['GitHubから完全クローン', '依存関係インストール', 'ネイティブモジュール再ビルド', '本番ビルド'].includes(name)) {
+        // クリティカルなフェーズで失敗したらロールバック（ただしGit pull --rebaseは除く）
+        if (['GitHubから完全クローン', '依存関係インストール', 'lightningcss 強制インストール', 'ネイティブモジュール再ビルド', '本番ビルド'].includes(name)) {
+          shouldRollback = true;
+          failedPhase = name;
+          break;
+        }
+        
+        // GitHubにプッシュが失敗した場合もロールバック
+        if (name === 'GitHubにプッシュ') {
           shouldRollback = true;
           failedPhase = name;
           break;
