@@ -415,6 +415,7 @@ export const navigationItems: NavigationItem[] = [
     priority: 15,
     submenu: [
       { text: "🏥 システムヘルスチェック", link: "/system-health", icon: "check-circle", status: "ready", priority: 0 },
+      { text: "🔄 SyncMaster Hub", link: "/tools/sync-master-hub", icon: "refresh-cw", status: "ready", priority: 0.5 },
       { text: "Git & デプロイ", link: "/tools/git-deploy", icon: "git-branch", status: "ready", priority: 1 },
       { text: "Supabase接続", link: "/tools/supabase-connection", icon: "database", status: "ready", priority: 2 },
       { text: "API テストツール", link: "/tools/api-test", icon: "zap", status: "ready", priority: 3 },
