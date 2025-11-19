@@ -69,24 +69,43 @@ export default function GitDeployPage() {
 
   const checkGitStatus = async () => {
     setCheckingStatus(true)
+    setResult(null)
     try {
+      console.log('Fetching git status...')
       const response = await fetch('/api/git/status')
+      console.log('Response status:', response.status)
+      
       if (!response.ok) {
         const errorData = await response.json()
         console.error('Git status API error:', errorData)
         throw new Error(`HTTP ${response.status}: ${errorData.error || response.statusText}`)
       }
+      
       const data = await response.json()
+      console.log('Git status data:', data)
+      
       if (data.error) {
         console.error('Git status error:', data.error)
         setResult({ success: false, message: `Git状態の取得に失敗: ${data.error}` })
+        setGitStatus(null)
       } else {
+        console.log('Setting git status:', {
+          hasChanges: data.hasChanges,
+          filesCount: data.files?.length || 0,
+          branch: data.branch
+        })
         setGitStatus(data)
+        
+        // デバッグ用のメッセージ
+        if (!data.hasChanges && data.files?.length > 0) {
+          console.warn('Warning: files exist but hasChanges is false')
+        }
       }
     } catch (error) {
       console.error('Git status check failed:', error)
       const errorMessage = error instanceof Error ? error.message : 'Git状態の取得に失敗しました'
       setResult({ success: false, message: errorMessage })
+      setGitStatus(null)
     } finally {
       setCheckingStatus(false)
     }
@@ -434,22 +453,29 @@ export default function GitDeployPage() {
             <CardContent>
               {gitStatus ? (
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Badge variant="outline">
                       {gitStatus.branch || 'main'} ブランチ
                     </Badge>
                     {gitStatus.hasChanges ? (
                       <Badge variant="default" className="bg-yellow-500">
-                        {gitStatus.files.length} ファイル変更あり
+                        {gitStatus.files?.length || 0} ファイル変更あり
                       </Badge>
                     ) : (
                       <Badge variant="default" className="bg-green-500">
                         変更なし
                       </Badge>
                     )}
+                    {/* デバッグ情報 */}
+                    <Badge variant="outline" className="text-xs">
+                      hasChanges: {String(gitStatus.hasChanges)}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      files: {gitStatus.files?.length || 0}
+                    </Badge>
                   </div>
                   
-                  {gitStatus.hasChanges && gitStatus.files.length > 0 && (
+                  {gitStatus.files && gitStatus.files.length > 0 && (
                     <div className="mt-3">
                       <p className="text-sm font-medium mb-2">変更されたファイル:</p>
                       <div className="bg-slate-50 dark:bg-slate-900 rounded p-3 max-h-40 overflow-y-auto">
@@ -460,6 +486,17 @@ export default function GitDeployPage() {
                         ))}
                       </div>
                     </div>
+                  )}
+                  
+                  {/* 警告メッセージ */}
+                  {!gitStatus.hasChanges && gitStatus.files && gitStatus.files.length > 0 && (
+                    <Alert className="bg-orange-50 border-orange-200">
+                      <AlertCircle className="w-4 h-4 text-orange-600" />
+                      <AlertDescription className="text-xs">
+                        ⚠️ デバッグ: ファイルが検出されていますが hasChanges が false です。
+                        開発サーバーを再起動してください。
+                      </AlertDescription>
+                    </Alert>
                   )}
                 </div>
               ) : (
@@ -1166,8 +1203,15 @@ export default function GitDeployPage() {
                 {(!gitStatus?.hasChanges || !commitMessage.trim()) && (
                   <Alert variant="destructive">
                     <AlertCircle className="w-4 h-4" />
-                    <AlertDescription className="text-xs">
-                      {!gitStatus?.hasChanges && "⚠️ Pushできない理由: 変更されたファイルがありません"}
+                    <AlertDescription className="text-xs space-y-1">
+                      {!gitStatus?.hasChanges && (
+                        <>
+                          <p>⚠️ Pushできない理由: 変更されたファイルがありません</p>
+                          {gitStatus?.files && gitStatus.files.length > 0 && (
+                            <p className="text-orange-600">💡 ヒント: ファイルは検出されていますが、Git が変更として認識していません。開発サーバーを再起動するか、ターミナルで `git status` を実行してください。</p>
+                          )}
+                        </>
+                      )}
                       {gitStatus?.hasChanges && !commitMessage.trim() && "⚠️ Pushできない理由: コミットメッセージを入力してください"}
                     </AlertDescription>
                   </Alert>
