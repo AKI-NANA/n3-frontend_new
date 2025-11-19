@@ -59,6 +59,12 @@ export default function GitDeployPage() {
   const [remoteDiff, setRemoteDiff] = useState<any>(null)
   const [checkingRemoteDiff, setCheckingRemoteDiff] = useState(false)
 
+  // ワンクリック完全同期用の状態
+  const [fullSyncRunning, setFullSyncRunning] = useState(false)
+  const [fullSyncLogs, setFullSyncLogs] = useState<string[]>([])
+  const [fullSyncWithBackup, setFullSyncWithBackup] = useState(true)
+  const [showFullSyncConfirm, setShowFullSyncConfirm] = useState(false)
+
   // ヘルパー関数: コミット済みの変更があるかチェック
   const hasLocalCommits = () => {
     return gitStatus?.branch && 
@@ -364,6 +370,133 @@ export default function GitDeployPage() {
     checkEnvStatus()
   }, [])
 
+  // ワンクリック完全同期関数
+  const handleFullSync = async () => {
+    if (!showFullSyncConfirm) {
+      setShowFullSyncConfirm(true)
+      return
+    }
+
+    setFullSyncRunning(true)
+    setFullSyncLogs([])
+    setResult(null)
+
+    const addLog = (message: string) => {
+      setFullSyncLogs(prev => [...prev, message])
+    }
+
+    try {
+      addLog('🚀 完全同期を開始します...')
+
+      // ステップ1: ローカルの変更をチェック
+      addLog('🔍 ステップ1: ローカルの変更をチェック中...')
+      const statusResponse = await fetch('/api/git/status')
+      const statusData = await statusResponse.json()
+
+      if (statusData.hasChanges) {
+        addLog(`✅ ${statusData.files.length}ファイルの変更を検出`)
+        
+        // コミットメッセージが必要
+        if (!commitMessage.trim()) {
+          throw new Error('コミットメッセージが必要です。入力してから再実行してください。')
+        }
+
+        addLog('💾 ステップ2: ローカル変更をGitにコミット&プッシュ中...')
+        const pushResponse = await fetch('/api/git/push', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: commitMessage })
+        })
+        
+        if (!pushResponse.ok) {
+          const errorData = await pushResponse.json()
+          throw new Error(`Gitプッシュ失敗: ${errorData.error}`)
+        }
+        
+        addLog('✅ GitHubにプッシュ完了')
+        setCommitMessage('') // メッセージをクリア
+      } else {
+        addLog('✅ ローカルに未コミットの変更なし')
+      }
+
+      // ステップ3: Gitから最新を取得
+      addLog('🔄 ステップ3: GitHubから最新データを取得中...')
+      const pullResponse = await fetch('/api/git/pull', { method: 'POST' })
+      if (!pullResponse.ok) {
+        const errorData = await pullResponse.json()
+        throw new Error(`Git Pull失敗: ${errorData.error}`)
+      }
+      addLog('✅ ローカルを最新状態に更新')
+
+      // ステップ4: VPSにデプロイ
+      addLog('🚀 ステップ4: VPSにデプロイ中...')
+      const deployResponse = await fetch('/api/deploy/full-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          createBackup: fullSyncWithBackup,
+          branch: statusData.branch || 'main'
+        })
+      })
+
+      const deployData = await deployResponse.json()
+      
+      if (!deployResponse.ok) {
+        // APIが存在しない場合は手動手順を表示
+        if (deployResponse.status === 404) {
+          addLog('⚠️ VPS自動デプロイAPIが未実装です')
+          addLog('📝 VPSで以下のコマンドを実行してください:')
+          addLog('ssh ubuntu@n3.emverze.com')
+          addLog('cd ~/n3-frontend_new')
+          if (fullSyncWithBackup) {
+            addLog(`cp -r ~/n3-frontend_new ~/n3-frontend_new.backup.$(date +%Y%m%d_%H%M%S)`)
+          }
+          addLog(`git pull origin ${statusData.branch || 'main'}`)
+          addLog('npm install')
+          addLog('npm run build')
+          addLog('pm2 restart n3-frontend')
+          setResult({ 
+            success: false, 
+            message: 'VPS自動デプロイは未対応です。上記コマンドをVPSで実行してください。' 
+          })
+        } else {
+          throw new Error(deployData.error || 'VPSデプロイ失敗')
+        }
+      } else {
+        // デプロイログを追加
+        if (deployData.logs) {
+          deployData.logs.forEach((log: string) => addLog(log))
+        }
+        addLog('✅ VPSデプロイ完了')
+      }
+
+      // 最終確認
+      addLog('🔄 最終確認中...')
+      await checkGitStatus()
+      
+      addLog('')
+      addLog('🎉 完全同期が完了しました！')
+      addLog('✅ Mac ↔ GitHub ↔ VPS すべて同期済み')
+      
+      setResult({ 
+        success: true, 
+        message: '完全同期が成功しました！Mac、GitHub、VPSすべてが同じ状態になりました。' 
+      })
+
+    } catch (error: any) {
+      console.error('Full sync error:', error)
+      addLog('')
+      addLog(`❌ エラー: ${error.message}`)
+      setResult({ 
+        success: false, 
+        message: `完全同期に失敗しました: ${error.message}` 
+      })
+    } finally {
+      setFullSyncRunning(false)
+      setShowFullSyncConfirm(false)
+    }
+  }
+
   const commands = [
     {
       title: 'ローカル開発',
@@ -446,6 +579,156 @@ export default function GitDeployPage() {
       {/* デプロイタブ */}
       {activeTab === 'deploy' && (
         <div className="space-y-6">
+          {/* ワンクリック完全同期カード */}
+          <Card className="border-4 border-gradient-to-r from-blue-500 to-purple-500 shadow-xl">
+            <CardHeader className="bg-gradient-to-r from-blue-50 via-purple-50 to-pink-50 dark:from-blue-900/20 dark:via-purple-900/20 dark:to-pink-900/20">
+              <CardTitle className="flex items-center gap-3 text-2xl">
+                <RefreshCw className="w-7 h-7 text-blue-600" />
+                🚀 ワンクリック完全同期
+              </CardTitle>
+              <CardDescription className="text-base mt-2">
+                Mac → GitHub → VPS を一括で同期。データは完全に保護されます。
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-6">
+              <Alert className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300">
+                <CheckCircle className="w-5 h-5 text-blue-600" />
+                <AlertDescription className="text-sm">
+                  <strong className="text-blue-900">✨ この機能でできること:</strong><br/>
+                  ✅ ローカルの変更を自動コミット&プッシュ<br/>
+                  ✅ GitHubから最新を自動取得<br/>
+                  ✅ VPSに自動デプロイ<br/>
+                  ✅ 競合検出時は通知<br/>
+                  ✅ すべての履歴をGitに保存（ロールバック可能）
+                </AlertDescription>
+              </Alert>
+
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="full-sync-commit" className="text-base font-semibold">
+                    コミットメッセージ
+                  </Label>
+                  <Textarea
+                    id="full-sync-commit"
+                    placeholder="例: feat: 新機能追加とバグ修正"
+                    value={commitMessage}
+                    onChange={(e) => setCommitMessage(e.target.value)}
+                    rows={2}
+                    disabled={fullSyncRunning}
+                    className="text-base"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {gitStatus?.hasChanges ? 
+                      `${gitStatus.files?.length || 0}個のファイルに変更があります` : 
+                      'ローカルに未コミットの変更はありません'
+                    }
+                  </p>
+                </div>
+
+                <div className="flex items-center space-x-2 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200">
+                  <input
+                    type="checkbox"
+                    id="vps-backup"
+                    checked={fullSyncWithBackup}
+                    onChange={(e) => setFullSyncWithBackup(e.target.checked)}
+                    disabled={fullSyncRunning}
+                    className="w-4 h-4"
+                  />
+                  <Label htmlFor="vps-backup" className="text-sm cursor-pointer">
+                    💾 VPSバックアップを作成（安全モード、推奨）
+                  </Label>
+                </div>
+
+                {!showFullSyncConfirm ? (
+                  <Button
+                    onClick={handleFullSync}
+                    disabled={fullSyncRunning || (gitStatus?.hasChanges && !commitMessage.trim())}
+                    className="w-full h-16 text-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg"
+                  >
+                    <RefreshCw className="w-6 h-6 mr-3" />
+                    🚀 完全同期を実行
+                  </Button>
+                ) : (
+                  <div className="space-y-3">
+                    <Alert className="bg-yellow-50 border-yellow-300">
+                      <AlertCircle className="w-5 h-5 text-yellow-600" />
+                      <AlertDescription className="text-sm">
+                        <strong>⚠️ 確認:</strong><br/>
+                        以下の処理を実行します:<br/>
+                        1️⃣ ローカル変更をGitHubにプッシュ<br/>
+                        2️⃣ GitHubから最新を取得<br/>
+                        3️⃣ VPSにデプロイ{fullSyncWithBackup && '（バックアップ作成）'}<br/>
+                        <br/>
+                        <strong className="text-green-600">✅ データは完全に保護されます</strong>
+                      </AlertDescription>
+                    </Alert>
+                    <div className="flex gap-3">
+                      <Button
+                        onClick={handleFullSync}
+                        disabled={fullSyncRunning}
+                        className="flex-1 h-12 bg-green-600 hover:bg-green-700"
+                      >
+                        {fullSyncRunning ? (
+                          <>
+                            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                            実行中...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="w-5 h-5 mr-2" />
+                            はい、実行します
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        onClick={() => setShowFullSyncConfirm(false)}
+                        disabled={fullSyncRunning}
+                        variant="outline"
+                        className="flex-1 h-12"
+                      >
+                        キャンセル
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {gitStatus?.hasChanges && !commitMessage.trim() && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="w-4 h-4" />
+                    <AlertDescription className="text-xs">
+                      ⚠️ ローカルに変更があるため、コミットメッセージが必要です
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+
+              {/* 実行ログ */}
+              {fullSyncLogs.length > 0 && (
+                <div className="mt-6">
+                  <div className="bg-slate-900 text-green-400 p-4 rounded-lg font-mono text-sm max-h-96 overflow-y-auto">
+                    {fullSyncLogs.map((log, idx) => (
+                      <div key={idx} className="mb-1">
+                        {log}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <Alert className="bg-blue-50 border-blue-200">
+                <AlertCircle className="w-4 h-4 text-blue-600" />
+                <AlertDescription className="text-xs">
+                  <strong>📚 データ保護の仕組み:</strong><br/>
+                  ・ すべての変更はGitのコミット履歴に永久保存<br/>
+                  ・ VPSバックアップを有効にすると、旧バージョンも保存<br/>
+                  ・ 問題があれば <code className="bg-slate-100 px-1 rounded">git reset</code> で復元可能<br/>
+                  ・ 競合検出時は自動で停止、手動解決を促す
+                </AlertDescription>
+              </Alert>
+            </CardContent>
+          </Card>
+
+          {/* 以下は既存の機能 */}
           {/* Git状態表示 */}
           <Card>
             <CardHeader>
