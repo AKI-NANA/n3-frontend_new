@@ -71,10 +71,22 @@ export default function GitDeployPage() {
     setCheckingStatus(true)
     try {
       const response = await fetch('/api/git/status')
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('Git status API error:', errorData)
+        throw new Error(`HTTP ${response.status}: ${errorData.error || response.statusText}`)
+      }
       const data = await response.json()
-      setGitStatus(data)
+      if (data.error) {
+        console.error('Git status error:', data.error)
+        setResult({ success: false, message: `Git状態の取得に失敗: ${data.error}` })
+      } else {
+        setGitStatus(data)
+      }
     } catch (error) {
       console.error('Git status check failed:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Git状態の取得に失敗しました'
+      setResult({ success: false, message: errorMessage })
     } finally {
       setCheckingStatus(false)
     }
@@ -271,11 +283,19 @@ export default function GitDeployPage() {
     setCheckingSyncStatus(true)
     try {
       const response = await fetch('/api/git/sync-status')
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
       const data = await response.json()
-      setSyncStatus(data)
+      if (data.error) {
+        setSyncStatus({ error: data.error })
+      } else {
+        setSyncStatus(data)
+      }
     } catch (error) {
       console.error('Sync status check failed:', error)
-      setSyncStatus({ error: '同期状態の確認に失敗しました' })
+      const errorMessage = error instanceof Error ? error.message : '同期状態の確認に失敗しました'
+      setSyncStatus({ error: `同期状態の確認に失敗しました: ${errorMessage}` })
     } finally {
       setCheckingSyncStatus(false)
     }
@@ -285,11 +305,19 @@ export default function GitDeployPage() {
     setCheckingRemoteDiff(true)
     try {
       const response = await fetch('/api/git/remote-diff')
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
       const data = await response.json()
-      setRemoteDiff(data)
+      if (data.error) {
+        setRemoteDiff({ error: data.error })
+      } else {
+        setRemoteDiff(data)
+      }
     } catch (error) {
       console.error('Remote diff check failed:', error)
-      setRemoteDiff({ error: 'リモート差分の確認に失敗しました' })
+      const errorMessage = error instanceof Error ? error.message : 'リモート差分の確認に失敗しました'
+      setRemoteDiff({ error: `リモート差分の確認に失敗しました: ${errorMessage}` })
     } finally {
       setCheckingRemoteDiff(false)
     }
