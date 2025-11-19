@@ -1,4 +1,4 @@
-import { getSupabaseServerClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase/server"
 import { type NextRequest, NextResponse } from "next/server"
 
 export async function POST(request: NextRequest) {
@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid platform" }, { status: 400 })
     }
 
-    const supabase = await getSupabaseServerClient()
+    const supabase = await createClient()
 
     // 出品情報を保存
     const table = platform === "ebay" ? "ebay_listings" : "mercari_listings"

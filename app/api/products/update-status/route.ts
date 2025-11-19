@@ -1,4 +1,4 @@
-import { getSupabaseServerClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase/server"
 import { type NextRequest, NextResponse } from "next/server"
 
 export async function PATCH(request: NextRequest) {
@@ -10,7 +10,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Invalid status" }, { status: 400 })
     }
 
-    const supabase = await getSupabaseServerClient()
+    const supabase = await createClient()
 
     const { data, error } = await supabase.from("products_master").update({ status }).eq("sku", sku).select()
 

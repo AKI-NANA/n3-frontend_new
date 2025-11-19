@@ -1,4 +1,4 @@
-import { getSupabaseServerClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase/server"
 import { type NextRequest, NextResponse } from "next/server"
 
 export async function GET(request: NextRequest) {
@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "SKU parameter is required" }, { status: 400 })
     }
 
-    const supabase = await getSupabaseServerClient()
+    const supabase = await createClient()
 
     const { data, error } = await supabase.from("products_master").select("*").eq("sku", sku).single()
 
