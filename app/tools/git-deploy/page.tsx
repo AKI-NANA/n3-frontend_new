@@ -770,7 +770,12 @@ export default function GitDeployPage() {
                 </Button>
               </div>
               <CardDescription>
-                GitHubにあるがローカルに存在しないファイルを確認
+                GitHubにあるがローカルに存在しないファイルを確認<br/>
+                {remoteDiff?.branch && remoteDiff?.remoteBranch && (
+                  <Badge variant="outline" className="text-xs mt-1">
+                    比較: {remoteDiff.branch} (local) ↔ {remoteDiff.remoteBranch}
+                  </Badge>
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 pt-6">
@@ -1288,21 +1293,33 @@ export default function GitDeployPage() {
                     value={commitMessage}
                     onChange={(e) => setCommitMessage(e.target.value)}
                     rows={3}
-                    disabled={!gitStatus?.hasChanges}
+                    disabled={!gitStatus?.hasChanges && !hasLocalCommits()}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    変更内容を具体的に記述してください
-                  </p>
+                  {(!gitStatus?.hasChanges && !hasLocalCommits()) ? (
+                    <p className="text-xs text-green-600">
+                      ✅ 変更がないため、メッセージは不要です
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      変更内容を具体的に記述してください
+                    </p>
+                  )}
                 </div>
                 
                 {/* Push不可理由の表示 */}
                 {!gitStatus?.hasChanges && !hasLocalCommits() && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="w-4 h-4" />
+                  <Alert className="bg-green-50 border-green-200">
+                    <CheckCircle className="w-4 h-4 text-green-600" />
                     <AlertDescription className="text-xs space-y-1">
-                      <p>⚠️ Pushできない理由: プッシュする変更がありません</p>
-                      {gitStatus?.files && gitStatus.files.length > 0 && (
-                        <p className="text-orange-600">💡 ヒント: ファイルは検出されていますが、Git が変更として認識していません。開発サーバーを再起動するか、ターミナルで `git status` を実行してください。</p>
+                      <p>✅ すべての変更がGitHubにプッシュ済みです</p>
+                      <p className="text-gray-600">
+                        ローカルとGitHubは完全に同期されています。<br/>
+                        新しい変更を行うと、再度プッシュできるようになります。
+                      </p>
+                      {(gitStatus as any)?.debug?.longStatus?.includes('up to date') && (
+                        <p className="text-green-700 font-medium mt-2">
+                          🎉 GitHubと完全同期: {gitStatus.branch}
+                        </p>
                       )}
                     </AlertDescription>
                   </Alert>
@@ -1317,26 +1334,36 @@ export default function GitDeployPage() {
                   </Alert>
                 )}
 
-                <Button 
-                  onClick={handleGitPush} 
-                  disabled={loading || (!gitStatus?.hasChanges && !hasLocalCommits())}
-                  className="w-full"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      実行中...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="w-4 h-4 mr-2" />
-                      Git Push 実行
-                      {hasLocalCommits() && 
-                        !gitStatus?.hasChanges && 
-                        ' (コミット済みをプッシュ)'}
-                    </>
-                  )}
-                </Button>
+                {(!gitStatus?.hasChanges && !hasLocalCommits()) ? (
+                  <Button 
+                    disabled={true}
+                    className="w-full bg-gray-400 cursor-not-allowed"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    プッシュ済み（変更なし）
+                  </Button>
+                ) : (
+                  <Button 
+                    onClick={handleGitPush} 
+                    disabled={loading}
+                    className="w-full"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        実行中...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4 mr-2" />
+                        Git Push 実行
+                        {hasLocalCommits() && 
+                          !gitStatus?.hasChanges && 
+                          ' (コミット済みをプッシュ)'}
+                      </>
+                    )}
+                  </Button>
+                )}
 
                 <div className="text-xs text-muted-foreground space-y-1">
                   <p className="font-medium">実行されるコマンド：</p>
