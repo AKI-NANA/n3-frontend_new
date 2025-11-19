@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI駆動型 問い合わせ対応システム</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Firebase SDK (Firestore/Auth) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, collection, query, onSnapshot, getDocs, updateDoc, writeBatch, where, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firestoreのログレベルをデバッグに設定
+        setLogLevel('Debug');
+
+        // グローバル変数（Canvas環境から提供されるものを想定）
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'ai-inquiry-hub-default';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { /* 仮のFirebase設定 */ };
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        let app, db, auth, userId = 'loading';
+
+        // 認証と初期化
+        async function initFirebase() {
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                userId = auth.currentUser?.uid || crypto.randomUUID();
+                window.db = db;
+                window.auth = auth;
+                window.userId = userId;
+                window.appId = appId;
+                
+                // 初回データ投入を試行
+                await ensureInitialData();
+                // Firestoreリスナーを設定
+                setupFirestoreListeners();
+                
+                console.log("Firebase初期化完了。User ID:", userId);
+                document.getElementById('current-user-id').textContent = userId;
+
+            } catch (error) {
+                console.error("Firebase初期化または認証エラー:", error);
+                document.getElementById('current-user-id').textContent = `ERROR: ${error.message.substring(0, 30)}...`;
+            }
+        }
+
+        // データのパス構築（プライベートデータ）
+        function getCollectionPath(collectionName) {
+            return `artifacts/${appId}/users/${userId}/${collectionName}`;
+        }
+        
+        // --- データ構造と初期データ投入 ---
+        const initialInquiries = [
+            { id: 'I-001', orderId: 'ORD-1001', status: 'New', customerMessageRaw: '注文した商品がまだ届きません。追跡番号を教えてください。', level0Choice: null, aiCategory: null, trackingNumber: 'TRK-987654', shippingStatus: '未出荷', responseScore: 0, responseDate: null },
+            { id: 'I-002', orderId: 'ORD-1002', status: 'New', customerMessageRaw: '届いた商品の箱が潰れていました。交換できますか？', level0Choice: null, aiCategory: null, trackingNumber: 'TRK-987655', shippingStatus: '出荷済み', responseScore: 0, responseDate: null },
+            { id: 'I-003', orderId: 'ORD-1003', status: 'Level0_Pending', customerMessageRaw: 'この商品の保証期間は何年ですか？もう少し安くなりませんか？', level0Choice: '3', aiCategory: null, trackingNumber: 'TRK-987656', shippingStatus: '出荷済み', responseScore: 0, responseDate: null },
+            { id: 'I-004', orderId: 'ORD-1004', status: 'Draft_Generated', customerMessageRaw: '昨日届いた商品に不備がありました。すぐに交換対応お願いします。', level0Choice: '2', aiCategory: 'Product_Defect', aiDraftText: 'お客様、この度はご不便をおかけし申し訳ございません。直ちに交換手続きに入ります。返送方法につきましては、別途メールにてご案内いたします。', trackingNumber: 'TRK-987657', shippingStatus: '出荷済み', responseScore: 0, responseDate: null },
+            { id: 'I-005', orderId: 'ORD-1005', status: 'Completed', customerMessageRaw: '迅速な対応ありがとうございました！', level0Choice: '4', aiCategory: 'Other', finalResponseText: 'お喜びいただけて幸いです。', trackingNumber: 'TRK-987658', shippingStatus: '出荷済み', responseScore: 95, responseDate: new Date().toISOString() },
+        ];
+
+        async function ensureInitialData() {
+            const batch = writeBatch(db);
+            const inquiriesRef = collection(db, getCollectionPath('inquiries'));
+            
+            // 既にデータがあるか確認
+            const q = query(inquiriesRef, where('userId', '==', userId));
+            const snapshot = await getDocs(q);
+            
+            if (snapshot.empty) {
+                console.log("初期データ投入を開始します。");
+                initialInquiries.forEach(inquiry => {
+                    const docRef = doc(inquiriesRef, inquiry.id);
+                    batch.set(docRef, { ...inquiry, userId: userId });
+                });
+                await batch.commit();
+                console.log("初期データ投入完了。");
+            }
+        }
+        
+        // Firestoreリスナーの設定
+        function setupFirestoreListeners() {
+            if (!db || !userId) return;
+
+            const inquiriesRef = collection(db, getCollectionPath('inquiries'));
+            const q = query(inquiriesRef, where('userId', '==', userId));
+
+            // 問い合わせリストのリアルタイム更新
+            onSnapshot(q, (snapshot) => {
+                const inquiries = snapshot.docs.map(doc => doc.data());
+                window.handleInquiryData(inquiries);
+            }, (error) => {
+                console.error("問い合わせデータの取得エラー:", error);
+            });
+            
+            // ナレッジベースのシミュレーションデータ
+            // 実際は別のコレクションだが、ここではアプリ内に固定値を定義
+            const knowledgeBase = {
+                'Shipping_Delay': [
+                    { category: 'Shipping_Delay', message: '荷物が遅れています', response: 'お待たせしており申し訳ございません。現在、配送業者に確認中です。' },
+                    { category: 'Shipping_Delay', message: '追跡番号が見つかりません', response: '追跡システムへの反映に遅れが出ております。明日再度お試しください。' },
+                ],
+                'Product_Defect': [
+                    { category: 'Product_Defect', message: '商品が壊れていました', response: 'ご迷惑をおかけし大変申し訳ございません。直ちに交換手続きを行います。' },
+                    { category: 'Product_Defect', message: '部品が足りません', response: '欠品によりご不便をおかけします。すぐに不足部品を発送いたします。' },
+                ]
+            };
+            window.knowledgeBase = knowledgeBase;
+        }
+
+        // グローバルにFirebase関数を公開
+        window.initFirebase = initFirebase;
+        window.getCollectionPath = getCollectionPath;
+    </script>
+    <style>
+        /* juchu_kanri_html.htmlのテーマカラーを参考に */
+        .juchu-primary { background-color: #1e40af; }
+        .juchu-secondary { background-color: #3b82f6; }
+        .juchu-accent { color: #60a5fa; }
+        .juchu-border { border-color: #e5e7eb; }
+
+        /* ナレッジパネルのスタイル */
+        .knowledge-panel {
+            min-height: calc(100vh - 4rem); /* ヘッダーの高さを引く */
+        }
+        
+        /* カスタムスクロールバー */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #bbb; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #999; }
+        
+        /* ロードアニメーション */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #1e40af;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans antialiased" onload="initFirebase()">
+
+    <!-- ヘッダー -->
+    <header class="juchu-primary text-white p-4 shadow-lg flex justify-between items-center sticky top-0 z-10">
+        <h1 class="text-xl font-bold flex items-center">
+            <i data-lucide="zap" class="mr-2 h-6 w-6"></i>
+            AI駆動型 問い合わせ最適化ハブ
+        </h1>
+        <div class="text-sm">
+            ユーザーID: <span id="current-user-id" class="font-mono text-yellow-300">Loading...</span>
+        </div>
+    </header>
+
+    <!-- メインコンテンツレイアウト (3カラム) -->
+    <div class="flex h-[calc(100vh-4rem)]">
+        
+        <!-- 左: 問い合わせリスト (Queue) -->
+        <div id="inquiry-list-panel" class="w-1/4 bg-white border-r juchu-border overflow-y-auto p-4 flex flex-col space-y-4">
+            <h2 class="text-lg font-semibold border-b pb-2 mb-2 text-gray-700">対応キュー</h2>
+            
+            <!-- 一括承認ボタン (フェーズIII - 一括承認ビュー) -->
+            <button onclick="showBulkApprovalView()" class="w-full text-center py-2 px-4 rounded-lg text-sm font-medium transition duration-150 shadow-md 
+                             bg-green-600 text-white hover:bg-green-700 flex items-center justify-center">
+                <i data-lucide="check-circle" class="w-4 h-4 mr-2"></i>
+                <span id="draft-count">0</span>件のAIドラフトを一括承認
+            </button>
+            
+            <div id="inquiry-status-filters" class="flex flex-wrap gap-2 text-xs">
+                <!-- ステータスフィルターボタンはJSで描画 -->
+            </div>
+            
+            <div id="inquiry-list" class="space-y-2">
+                <!-- 問い合わせアイテムがここに表示される -->
+                <div class="text-center p-4 text-gray-500" id="loading-indicator">
+                    <div class="spinner mx-auto"></div>
+                    <p class="mt-2">データを読み込み中...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 中央: 詳細表示/回答エリア -->
+        <div id="center-panel" class="w-2/4 bg-gray-50 overflow-y-auto p-6">
+            <div id="detail-view" class="bg-white p-6 rounded-xl shadow-lg h-full">
+                <p class="text-gray-500 text-center py-20">左側のリストから問い合わせを選択してください。</p>
+            </div>
+        </div>
+
+        <!-- 右: ナレッジサポートパネル (フェーズIV - ナレッジサポートの充実) -->
+        <div class="w-1/4 bg-white border-l juchu-border overflow-y-auto knowledge-panel p-4 flex flex-col">
+            <h2 class="text-lg font-semibold border-b pb-2 mb-4 text-gray-700">ナレッジサポート</h2>
+            
+            <!-- タブ切り替え -->
+            <div class="flex border-b mb-4">
+                <button id="tab-manual" onclick="setActiveTab('manual')" class="tab-button active flex-1 py-2 text-sm font-medium text-center border-b-2 border-transparent hover:border-blue-500">
+                    <i data-lucide="book-open" class="w-4 h-4 inline-block mr-1"></i> 対応マニュアル
+                </button>
+                <button id="tab-examples" onclick="setActiveTab('examples')" class="tab-button flex-1 py-2 text-sm font-medium text-center border-b-2 border-transparent hover:border-blue-500">
+                    <i data-lucide="clipboard-check" class="w-4 h-4 inline-block mr-1"></i> 過去の成功事例
+                </button>
+            </div>
+            
+            <div id="knowledge-content" class="flex-grow overflow-y-auto">
+                <div id="manual-content" class="tab-content">
+                    <h3 class="font-bold text-gray-700 mb-2">FAQ & 対応原則</h3>
+                    <ul class="list-disc list-inside text-sm text-gray-600 space-y-2 pl-4">
+                        <li>在庫がない場合: **「仕入れ漏れアラート」**を確認し、直ちに仕入れ担当者に連絡すること。</li>
+                        <li>配送遅延の場合: 必ず受注IDから追跡番号をシステム連携で取得し、顧客に伝える。</li>
+                        <li>AIドラフト利用率: 90%以上を目指すこと。</li>
+                    </ul>
+                    
+                    <h3 class="font-bold text-gray-700 mt-4 mb-2">AIカテゴリ別 ベストプラクティス</h3>
+                    <div id="manual-ai-categories" class="space-y-3">
+                        <!-- AI CategoryごとのテンプレートがJSで表示される -->
+                        <div class="p-3 bg-gray-100 rounded-md">
+                            <p class="font-medium text-blue-800">Shipping_Delay (配送遅延)</p>
+                            <p class="text-xs text-gray-600 mt-1">テンプレート: 大変申し訳ございません。ご注文[OrderId]の追跡番号[TrackingNumber]をご確認ください。</p>
+                        </div>
+                        <div class="p-3 bg-gray-100 rounded-md">
+                            <p class="font-medium text-blue-800">Product_Defect (商品不具合)</p>
+                            <p class="text-xs text-gray-600 mt-1">テンプレート: ご不便をおかけし恐縮です。すぐに交換手続きをご案内いたします。</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="examples-content" class="tab-content hidden">
+                    <p class="text-sm text-gray-600 mb-2">
+                        <i data-lucide="zap" class="w-4 h-4 inline-block mr-1 text-yellow-500"></i> 
+                        現在選択中の問い合わせのAIカテゴリに基づき、成功事例を動的に表示します。
+                    </p>
+                    <div id="dynamic-examples" class="space-y-4">
+                        <p class="text-center text-gray-400 p-4">問い合わせを選択するか、AIがカテゴリ分類するまでお待ちください。</p>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- モーダル（一括承認ビュー） -->
+    <div id="bulk-approval-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 z-20 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <header class="p-4 border-b flex justify-between items-center bg-gray-50">
+                <h3 class="text-xl font-bold text-gray-800">AI回答ドラフト 一括承認ビュー</h3>
+                <button onclick="closeBulkApprovalView()" class="text-gray-500 hover:text-gray-700">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </header>
+            
+            <div class="p-4 flex-grow overflow-y-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <p class="text-sm text-gray-600">AIが生成した回答ドラフトを確認し、問題なければチェックを入れて一括送信してください。</p>
+                    <button id="run-draft-generation" onclick="processBulkDraftGeneration()" class="py-1 px-3 rounded text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition duration-150">
+                        <i data-lucide="rotate-cw" class="w-3 h-3 inline-block mr-1"></i> AIドラフト再生成
+                    </button>
+                </div>
+
+                <div id="draft-list" class="space-y-3">
+                    <!-- ドラフトリストがここに表示される -->
+                    <p class="text-center text-gray-400 p-8">承認待ちのドラフトはありません。</p>
+                </div>
+            </div>
+            
+            <footer class="p-4 border-t bg-gray-50 flex justify-end">
+                <button id="bulk-send-button" onclick="sendBulkResponses()" disabled class="py-2 px-6 rounded-lg text-sm font-bold transition duration-150 shadow-md 
+                                 bg-green-600 text-white hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center">
+                    <i data-lucide="send" class="w-4 h-4 mr-2"></i>
+                    チェックした<span id="checked-count">0</span>件を一括送信・対応完了
+                </button>
+            </footer>
+        </div>
+    </div>
+
+    <script type="module">
+        import { doc, updateDoc, collection, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // グローバルにアクセス可能な変数と関数
+        window.inquiriesData = [];
+        window.selectedInquiry = null;
+        window.activeTab = 'manual';
+        
+        // LLM APIの定数
+        const API_KEY = ""; // Canvas環境で自動で付与されるため空でOK
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
+        
+        // ステータスと対応する色
+        const STATUS_MAP = {
+            'New': { label: '新規', color: 'bg-red-500', icon: 'bell' },
+            'Level0_Pending': { label: '分類待ち', color: 'bg-yellow-500', icon: 'git-commit' },
+            'Draft_Pending': { label: 'AI分析中', color: 'bg-blue-500', icon: 'cpu' },
+            'Draft_Generated': { label: '承認待ち', color: 'bg-green-500', icon: 'clipboard-check' },
+            'Completed': { label: '完了', color: 'bg-gray-400', icon: 'check-circle' }
+        };
+
+        // --- UI操作関数 ---
+        
+        /**
+         * LucideアイコンをHTMLに変換して描画
+         */
+        function renderIcons() {
+            lucide.createIcons();
+        }
+
+        /**
+         * タブ切り替え
+         */
+        window.setActiveTab = function(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-button').forEach(el => el.classList.remove('border-blue-500', 'text-blue-600', 'active'));
+
+            const contentEl = document.getElementById(`${tabName}-content`);
+            const buttonEl = document.getElementById(`tab-${tabName}`);
+            
+            if (contentEl) contentEl.classList.remove('hidden');
+            if (buttonEl) buttonEl.classList.add('border-blue-500', 'text-blue-600', 'active');
+            
+            window.activeTab = tabName;
+            renderIcons();
+        }
+        
+        /**
+         * 問い合わせデータ更新ハンドラー (onSnapshotから呼び出される)
+         */
+        window.handleInquiryData = function(inquiries) {
+            window.inquiriesData = inquiries;
+            renderInquiryList();
+            renderBulkDraftCount();
+            renderStatusFilters();
+            
+            // 選択中の問い合わせがデータから消えた場合にリセット
+            if (window.selectedInquiry && !inquiries.find(i => i.id === window.selectedInquiry.id)) {
+                window.selectedInquiry = null;
+                renderDetailView();
+            }
+            
+            renderIcons();
+            document.getElementById('loading-indicator').classList.add('hidden');
+        }
+
+        /**
+         * 問い合わせリストの描画
+         */
+        function renderInquiryList() {
+            const listEl = document.getElementById('inquiry-list');
+            listEl.innerHTML = '';
+            
+            // ステータス順にソート (New > Pending > Draft > Completed)
+            const sortedInquiries = [...window.inquiriesData].sort((a, b) => {
+                const statusOrder = { 'New': 1, 'Level0_Pending': 2, 'Draft_Pending': 3, 'Draft_Generated': 4, 'Completed': 5 };
+                return statusOrder[a.status] - statusOrder[b.status];
+            });
+
+            sortedInquiries.forEach(inquiry => {
+                const isSelected = window.selectedInquiry && window.selectedInquiry.id === inquiry.id;
+                const statusInfo = STATUS_MAP[inquiry.status] || { label: '不明', color: 'bg-gray-300', icon: 'help-circle' };
+                
+                const itemHtml = `
+                    <div id="inquiry-${inquiry.id}" 
+                         onclick="selectInquiry('${inquiry.id}')"
+                         class="p-3 border rounded-lg cursor-pointer transition duration-150 ${isSelected ? 'border-blue-500 bg-blue-50 shadow-md' : 'bg-white hover:bg-gray-50 border-gray-200'}">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-semibold text-gray-700">${inquiry.orderId}</span>
+                            <span class="px-2 py-0.5 text-xs font-medium text-white rounded-full ${statusInfo.color} flex items-center">
+                                <i data-lucide="${statusInfo.icon}" class="w-3 h-3 mr-1"></i>
+                                ${statusInfo.label}
+                            </span>
+                        </div>
+                        <p class="text-sm font-medium text-gray-800 truncate">${inquiry.customerMessageRaw}</p>
+                        <p class="text-xs text-gray-500 mt-1">分類: ${inquiry.aiCategory || '未分類'}</p>
+                    </div>
+                `;
+                listEl.insertAdjacentHTML('beforeend', itemHtml);
+            });
+            renderIcons();
+        }
+        
+        /**
+         * ステータスフィルターの描画（今回は未実装だが、UIの骨格のみ）
+         */
+        function renderStatusFilters() {
+            const filterEl = document.getElementById('inquiry-status-filters');
+            // 全ステータスを可視化（ここではクリックイベントはつけない）
+            filterEl.innerHTML = Object.entries(STATUS_MAP).map(([key, info]) => `
+                <span class="px-2 py-1 text-xs font-medium text-white rounded ${info.color}">
+                    ${info.label} (${window.inquiriesData.filter(i => i.status === key).length})
+                </span>
+            `).join('');
+        }
+
+        /**
+         * 承認待ち件数の更新
+         */
+        function renderBulkDraftCount() {
+            const count = window.inquiriesData.filter(i => i.status === 'Draft_Generated').length;
+            document.getElementById('draft-count').textContent = count;
+        }
+
+        /**
+         * 問い合わせを選択
+         */
+        window.selectInquiry = function(inquiryId) {
+            window.selectedInquiry = window.inquiriesData.find(i => i.id === inquiryId);
+            renderInquiryList();
+            renderDetailView();
+            renderDynamicExamples();
+            renderIcons();
+        }
+
+        /**
+         * 詳細ビューの描画
+         */
+        function renderDetailView() {
+            const detailEl = document.getElementById('detail-view');
+            if (!window.selectedInquiry) {
+                detailEl.innerHTML = '<p class="text-gray-500 text-center py-20">左側のリストから問い合わせを選択してください。</p>';
+                return;
+            }
+
+            const inquiry = window.selectedInquiry;
+            const statusInfo = STATUS_MAP[inquiry.status] || { label: '不明', color: 'bg-gray-300', icon: 'help-circle' };
+            const isEditable = inquiry.status !== 'Completed';
+            
+            // 受注情報パネルの描画
+            const orderPanel = `
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4">
+                    <div class="flex justify-between items-start">
+                        <h4 class="font-bold text-blue-800 flex items-center">
+                            <i data-lucide="package-open" class="w-4 h-4 mr-2"></i> 受注連携情報 (${inquiry.orderId})
+                        </h4>
+                        <button onclick="alert('受注管理ツールへ遷移をシミュレーション')" class="text-blue-600 text-xs font-medium hover:text-blue-800 transition">
+                            <i data-lucide="external-link" class="w-3 h-3 inline-block mr-1"></i> 受注詳細を表示
+                        </button>
+                    </div>
+                    <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
+                        <p><span class="font-medium text-gray-600">追跡番号:</span> <span class="font-mono text-gray-800">${inquiry.trackingNumber}</span></p>
+                        <p><span class="font-medium text-gray-600">出荷ステータス:</span> <span class="font-bold ${inquiry.shippingStatus === '未出荷' ? 'text-red-600' : 'text-green-600'}">${inquiry.shippingStatus}</span></p>
+                    </div>
+                    ${inquiry.shippingStatus === '未出荷' && inquiry.aiCategory === 'Shipping_Delay' ? 
+                        `<div class="mt-3 p-2 bg-red-100 border border-red-300 rounded-md">
+                            <h5 class="text-sm font-bold text-red-700 flex items-center">
+                                <i data-lucide="alert-triangle" class="w-4 h-4 mr-2"></i> 仕入れ漏れアラート
+                            </h5>
+                            <p class="text-xs text-red-600 mt-1">この注文は未出荷で配送遅延の問い合わせです。至急、仕入れ状況を確認してください。</p>
+                        </div>` 
+                        : ''}
+                </div>
+            `;
+
+            // メッセージパネル
+            const messagePanel = `
+                <div class="border-b pb-4 mb-4">
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">
+                        問い合わせ (${inquiry.id})
+                    </h3>
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="px-3 py-1 text-sm font-medium text-white rounded-full ${statusInfo.color} flex items-center">
+                            <i data-lucide="${statusInfo.icon}" class="w-4 h-4 mr-1"></i>
+                            ステータス: ${statusInfo.label}
+                        </span>
+                        <span class="text-gray-500">AI分類: <span class="font-bold text-blue-700">${inquiry.aiCategory || '未分類'}</span></span>
+                    </div>
+                </div>
+
+                <div class="space-y-4 mb-6">
+                    <!-- 顧客メッセージ -->
+                    <div class="bg-gray-100 p-4 rounded-lg border-l-4 border-gray-400">
+                        <p class="font-bold text-sm text-gray-700 mb-1">顧客メッセージ (Raw)</p>
+                        <p class="text-gray-800 whitespace-pre-wrap">${inquiry.customerMessageRaw}</p>
+                    </div>
+
+                    <!-- Level 0 フィルターシミュレーション -->
+                    ${inquiry.status === 'New' ? `
+                        <div class="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-500">
+                            <p class="font-bold text-sm text-yellow-800 mb-2 flex items-center">
+                                <i data-lucide="bot" class="w-4 h-4 mr-2"></i> Level 0 フィルター: 自動質問送信済
+                            </p>
+                            <p class="text-xs text-yellow-700 mb-2">顧客の応答をシミュレートし、AI分析キューへ移行させます。</p>
+                            <div class="flex flex-wrap gap-2">
+                                ${['1. 配送', '2. 返品', '3. 仕様', '4. その他'].map((choice, index) => `
+                                    <button onclick="processLevel0Filter('${inquiry.id}', '${index + 1}')" 
+                                            class="px-3 py-1 text-xs rounded-full bg-yellow-600 text-white hover:bg-yellow-700 transition">
+                                        ${choice}を選択したとシミュレート
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${inquiry.level0Choice ? `
+                        <div class="bg-blue-50 p-3 rounded-md text-sm text-blue-800 border border-blue-200">
+                            <span class="font-bold">顧客の選択:</span> ${['1. 追跡・配送', '2. 返品・不具合', '3. 商品の使用方法・仕様', '4. その他'][parseInt(inquiry.level0Choice) - 1] || '不明'}
+                        </div>
+                    ` : ''}
+
+                    <!-- AI分析/ドラフトボタン -->
+                    ${inquiry.status === 'Level0_Pending' ? `
+                        <div class="text-center p-4 border rounded-lg bg-indigo-50">
+                            <button onclick="generateSingleDraft('${inquiry.id}')" id="single-draft-btn-${inquiry.id}"
+                                    class="py-2 px-6 rounded-lg text-sm font-bold transition duration-150 shadow-md bg-indigo-600 text-white hover:bg-indigo-700">
+                                <i data-lucide="cpu" class="w-4 h-4 inline-block mr-2"></i> AIに回答ドラフトを生成させる
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            // 回答エリア
+            const responseArea = `
+                <div class="mt-6 border-t pt-4">
+                    <h4 class="text-lg font-bold text-gray-800 mb-2 flex items-center">
+                        <i data-lucide="message-square-text" class="w-4 h-4 mr-2"></i> 回答ドラフト
+                        ${inquiry.aiCategory ? `<span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700">AI分類: ${inquiry.aiCategory}</span>` : ''}
+                    </h4>
+                    <textarea id="response-draft" rows="10" ${!isEditable ? 'disabled' : ''}
+                              class="w-full p-3 border rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm bg-gray-50">${inquiry.aiDraftText || (inquiry.finalResponseText || 'AIドラフトを生成するか、手動で入力してください。')}</textarea>
+                    
+                    ${isEditable ? `
+                        <div class="flex justify-end mt-4 space-x-3">
+                            <button onclick="saveDraft('${inquiry.id}')" class="py-2 px-4 rounded-lg text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 transition">
+                                <i data-lucide="save" class="w-4 h-4 inline-block mr-2"></i> ドラフトを保存
+                            </button>
+                            <button onclick="sendResponse('${inquiry.id}')" class="py-2 px-4 rounded-lg text-sm font-bold bg-green-600 text-white hover:bg-green-700 transition">
+                                <i data-lucide="send" class="w-4 h-4 inline-block mr-2"></i> この回答を送信・完了
+                            </button>
+                        </div>
+                    ` : `<p class="text-right text-sm text-green-600 font-bold mt-2">対応完了済み (${new Date(inquiry.responseDate).toLocaleString()})</p>`}
+                </div>
+            `;
+
+            detailEl.innerHTML = orderPanel + messagePanel + responseArea;
+            renderIcons();
+        }
+
+        /**
+         * 過去の成功事例の動的表示
+         */
+        function renderDynamicExamples() {
+            const examplesEl = document.getElementById('dynamic-examples');
+            const inquiry = window.selectedInquiry;
+            
+            if (!inquiry || !inquiry.aiCategory) {
+                examplesEl.innerHTML = '<p class="text-center text-gray-400 p-4">AIがカテゴリ分類するまでお待ちください。</p>';
+                return;
+            }
+            
+            const category = inquiry.aiCategory;
+            const examples = window.knowledgeBase[category] || [];
+            
+            if (examples.length === 0) {
+                examplesEl.innerHTML = `<p class="text-center text-gray-400 p-4">カテゴリ「${category}」の過去事例は見つかりませんでした。</p>`;
+                return;
+            }
+
+            examplesEl.innerHTML = `
+                <p class="font-bold text-sm text-blue-700 mb-2">カテゴリ「${category}」の成功事例 (Score High Top ${examples.length})</p>
+                ${examples.map((ex, index) => `
+                    <div class="p-3 border rounded-lg bg-gray-50 shadow-sm">
+                        <p class="text-xs font-semibold text-gray-600 mb-1">#${index + 1} 類似顧客メッセージ</p>
+                        <p class="text-sm text-gray-800 mb-2 whitespace-pre-wrap italic">"${ex.message}"</p>
+                        <p class="text-xs font-semibold text-green-600 mb-1">#${index + 1} 最終回答文 (ベストプラクティス)</p>
+                        <p class="text-sm text-gray-800 whitespace-pre-wrap">${ex.response}</p>
+                    </div>
+                `).join('')}
+            `;
+            renderIcons();
+        }
+
+        // --- Firebase/Firestore データ操作関数 ---
+
+        /**
+         * Level 0 フィルターの顧客の選択をシミュレートし、DBを更新
+         */
+        window.processLevel0Filter = async function(inquiryId, choice) {
+            const inquiryRef = doc(window.db, window.getCollectionPath('inquiries'), inquiryId);
+            
+            let newStatus;
+            // 4. その他（担当者との会話を希望）の場合、Draft_Generated (AIがドラフトを作成済みとして) にして最優先で人間に振り分けるシミュレーション
+            // 1, 2, 3 の場合は AI 分析ステップへ (Level0_Pending -> Draft_Pending)
+            if (choice === '4') {
+                newStatus = 'Draft_Generated';
+                // 実際はAIがここで即座に簡易ドラフトを作成する
+                await updateDoc(inquiryRef, {
+                    level0Choice: choice,
+                    status: newStatus,
+                    aiCategory: 'Other',
+                    aiDraftText: 'お客様、担当者に引き継ぎました。改めて詳細を確認し、ご連絡いたします。お待たせして申し訳ございません。'
+                });
+            } else {
+                newStatus = 'Draft_Pending';
+                await updateDoc(inquiryRef, {
+                    level0Choice: choice,
+                    status: newStatus,
+                });
+            }
+            
+            // 選択された問い合わせをリフレッシュ
+            window.selectedInquiry = window.inquiriesData.find(i => i.id === inquiryId);
+            window.selectedInquiry.level0Choice = choice;
+            window.selectedInquiry.status = newStatus;
+            renderDetailView();
+            alert(`Level 0 フィルターを処理しました。ステータスは「${STATUS_MAP[newStatus].label}」に更新されました。`);
+        }
+        
+        /**
+         * 単一の問い合わせに対し、AIドラフトを生成する (Level0_Pendingから呼び出し)
+         */
+        window.generateSingleDraft = async function(inquiryId) {
+            const inquiry = window.inquiriesData.find(i => i.id === inquiryId);
+            if (!inquiry || inquiry.status !== 'Level0_Pending') return;
+            
+            const button = document.getElementById(`single-draft-btn-${inquiryId}`);
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = '<div class="spinner inline-block mr-2"></div> AIが分析中...';
+            }
+            
+            // Gemini API呼び出しシミュレーション
+            const result = await callGeminiForDraft(inquiry);
+            
+            if (result) {
+                const inquiryRef = doc(window.db, window.getCollectionPath('inquiries'), inquiryId);
+                await updateDoc(inquiryRef, {
+                    status: 'Draft_Generated',
+                    aiCategory: result.aiCategory,
+                    aiDraftText: result.draftResponse,
+                });
+                alert('AIドラフトが正常に生成されました。');
+            } else {
+                alert('AIドラフトの生成に失敗しました。');
+            }
+            
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = '<i data-lucide="cpu" class="w-4 h-4 inline-block mr-2"></i> AIに回答ドラフトを生成させる';
+            }
+        }
+
+        /**
+         * 一括回答ドラフト機能 (フェーズIII)
+         * Level0_Pending の問い合わせを対象に、一括でドラフトを生成する
+         */
+        window.processBulkDraftGeneration = async function() {
+            const targets = window.inquiriesData.filter(i => i.status === 'Draft_Pending');
+            if (targets.length === 0) {
+                alert('現在、AI分析待ちの問い合わせはありません。');
+                return;
+            }
+
+            if (!confirm(`${targets.length}件の問い合わせに対してAIドラフトを一括生成します。よろしいですか？`)) return;
+
+            const button = document.getElementById('run-draft-generation') || document.getElementById('draft-count');
+            const originalText = button ? button.textContent : '';
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = '<div class="spinner inline-block mr-2"></div> AIが分析・生成中...';
+            }
+
+            const batch = writeBatch(window.db);
+            let successCount = 0;
+            
+            for (const inquiry of targets) {
+                // LLMを呼び出す
+                const result = await callGeminiForDraft(inquiry);
+                
+                if (result) {
+                    const inquiryRef = doc(window.db, window.getCollectionPath('inquiries'), inquiry.id);
+                    batch.update(inquiryRef, {
+                        status: 'Draft_Generated',
+                        aiCategory: result.aiCategory,
+                        aiDraftText: result.draftResponse,
+                    });
+                    successCount++;
+                } else {
+                    console.error(`AIドラフト生成失敗: ${inquiry.id}`);
+                }
+            }
+
+            await batch.commit();
+            alert(`${targets.length}件中、${successCount}件のAIドラフト生成に成功し、承認待ちに移行しました。`);
+            
+            if (button) {
+                button.disabled = false;
+                button.textContent = originalText;
+                renderBulkApprovalList(); // モーダルが開いていれば更新
+                renderIcons();
+            }
+        }
+        
+        /**
+         * Gemini APIを呼び出し、AI_Categoryと回答ドラフトを生成する
+         */
+        async function callGeminiForDraft(inquiry) {
+            const systemInstruction = `
+                あなたはプロのカスタマーサポートAIです。
+                提供された顧客メッセージと、Level 0フィルターで顧客が選択したオプションに基づき、以下のタスクを遂行してください。
+                1. AI_Categoryを次のいずれかから一つ選定: 'Shipping_Delay', 'Product_Defect', 'Price_Question', 'Other'。
+                2. 以下の情報（[OrderId], [TrackingNumber], [ShippingStatus]）を適切に組み込み、敬意を払った自然な日本語の回答ドラフトを作成してください。特にShipping_Delayの場合、追跡番号と状況を必ず言及してください。
+            `;
+
+            const level0Label = ['1. 追跡・配送', '2. 返品・不具合', '3. 商品の使用方法・仕様', '4. その他'][parseInt(inquiry.level0Choice) - 1] || '不明';
+            
+            const userQuery = `
+                顧客メッセージ: ${inquiry.customerMessageRaw}
+                顧客の選択肢: ${inquiry.level0Choice} (${level0Label})
+                関連情報:
+                - 受注ID: ${inquiry.orderId}
+                - 追跡番号: ${inquiry.trackingNumber}
+                - 出荷ステータス: ${inquiry.shippingStatus}
+                
+                上記の情報を元に、AI_Categoryと回答ドラフトをJSON形式で出力してください。
+            `;
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemInstruction }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            "aiCategory": { "type": "STRING" },
+                            "draftResponse": { "type": "STRING" }
+                        },
+                        "propertyOrdering": ["aiCategory", "draftResponse"]
+                    }
+                }
+            };
+
+            // Exponential Backoff付きのAPI呼び出し
+            const maxRetries = 5;
+            let currentDelay = 1000; // 1秒
+            
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    
+                    const result = await response.json();
+                    const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    
+                    if (jsonText) {
+                        try {
+                            const parsed = JSON.parse(jsonText);
+                            return {
+                                aiCategory: parsed.aiCategory || 'Other',
+                                draftResponse: parsed.draftResponse || 'AIは回答を生成できませんでした。手動で対応してください。'
+                            };
+                        } catch (e) {
+                            console.error("JSONパースエラー:", e, "Raw Text:", jsonText);
+                            throw new Error("Invalid JSON response from AI.");
+                        }
+                    } else {
+                        throw new Error("No text content returned from AI.");
+                    }
+                } catch (error) {
+                    if (i === maxRetries - 1) {
+                        console.error("Gemini API呼び出しの最終的な失敗:", error);
+                        return null; 
+                    }
+                    console.warn(`API呼び出し失敗。リトライ ${i + 1}/${maxRetries}。待機時間 ${currentDelay}ms`);
+                    await new Promise(resolve => setTimeout(resolve, currentDelay));
+                    currentDelay *= 2; // 指数関数的バックオフ
+                }
+            }
+            return null;
+        }
+
+        /**
+         * ドラフトの保存
+         */
+        window.saveDraft = async function(inquiryId) {
+            const draftText = document.getElementById('response-draft').value;
+            const inquiryRef = doc(window.db, window.getCollectionPath('inquiries'), inquiryId);
+            
+            try {
+                await updateDoc(inquiryRef, {
+                    aiDraftText: draftText, // ドラフトとして保存
+                    status: 'Draft_Generated' // 保存後は承認待ちに戻す
+                });
+                alert('回答ドラフトを保存しました。');
+            } catch (error) {
+                console.error("ドラフト保存エラー:", error);
+                alert('ドラフトの保存に失敗しました。');
+            }
+        }
+
+        /**
+         * 回答の送信・完了 (個別)
+         */
+        window.sendResponse = async function(inquiryId) {
+            const finalResponse = document.getElementById('response-draft').value;
+            const inquiryRef = doc(window.db, window.getCollectionPath('inquiries'), inquiryId);
+            
+            try {
+                await updateDoc(inquiryRef, {
+                    finalResponseText: finalResponse,
+                    responseDate: new Date().toISOString(),
+                    responseScore: 80, // 初期スコア
+                    status: 'Completed'
+                });
+                alert('回答を送信し、対応を完了しました。');
+            } catch (error) {
+                console.error("回答送信エラー:", error);
+                alert('回答の送信に失敗しました。');
+            }
+        }
+        
+        // --- 一括承認ビュー (モーダル) 関数 ---
+
+        window.showBulkApprovalView = function() {
+            document.getElementById('bulk-approval-modal').classList.remove('hidden');
+            renderBulkApprovalList();
+            renderIcons();
+        }
+        
+        window.closeBulkApprovalView = function() {
+            document.getElementById('bulk-approval-modal').classList.add('hidden');
+        }
+
+        /**
+         * 一括承認リストの描画
+         */
+        function renderBulkApprovalList() {
+            const draftListEl = document.getElementById('draft-list');
+            draftListEl.innerHTML = '';
+            
+            const drafts = window.inquiriesData.filter(i => i.status === 'Draft_Generated');
+            
+            if (drafts.length === 0) {
+                draftListEl.innerHTML = '<p class="text-center text-gray-400 p-8">現在、承認待ちのAIドラフトはありません。</p>';
+                document.getElementById('bulk-send-button').disabled = true;
+                document.getElementById('checked-count').textContent = '0';
+                return;
+            }
+
+            drafts.forEach(inquiry => {
+                const itemHtml = `
+                    <div id="draft-item-${inquiry.id}" class="p-4 border rounded-lg bg-gray-50 flex items-start space-x-3">
+                        <!-- チェックボックス -->
+                        <input type="checkbox" data-inquiry-id="${inquiry.id}" 
+                               onchange="updateCheckedCount()"
+                               class="mt-1 h-5 w-5 text-green-600 border-gray-300 rounded focus:ring-green-500">
+                        
+                        <!-- 詳細 -->
+                        <div class="flex-1">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm font-bold text-gray-800">${inquiry.orderId} - ${inquiry.id}</span>
+                                <span class="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">${inquiry.aiCategory}</span>
+                            </div>
+                            
+                            <p class="text-xs font-medium text-gray-500 mb-1">顧客メッセージ:</p>
+                            <p class="text-sm text-gray-700 mb-3 italic truncate max-w-full">${inquiry.customerMessageRaw}</p>
+                            
+                            <p class="text-xs font-medium text-green-600 mb-1">AIドラフト (承認対象):</p>
+                            <div class="p-2 bg-white rounded border border-gray-200 text-sm whitespace-pre-wrap max-h-24 overflow-y-auto">
+                                ${inquiry.aiDraftText || 'AIドラフトなし'}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                draftListEl.insertAdjacentHTML('beforeend', itemHtml);
+            });
+            updateCheckedCount();
+        }
+
+        /**
+         * チェックボックスの件数を更新し、一括送信ボタンの有効/無効を切り替える
+         */
+        window.updateCheckedCount = function() {
+            const checkedBoxes = document.querySelectorAll('#draft-list input[type="checkbox"]:checked');
+            document.getElementById('checked-count').textContent = checkedBoxes.length;
+            document.getElementById('bulk-send-button').disabled = checkedBoxes.length === 0;
+        }
+
+        /**
+         * チェックされたドラフトを一括で送信・対応完了にする
+         */
+        window.sendBulkResponses = async function() {
+            const checkedBoxes = document.querySelectorAll('#draft-list input[type="checkbox"]:checked');
+            if (checkedBoxes.length === 0) return;
+            
+            if (!confirm(`${checkedBoxes.length}件の回答を一括で送信し、対応を完了します。よろしいですか？`)) return;
+
+            const button = document.getElementById('bulk-send-button');
+            const originalText = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<div class="spinner inline-block mr-2"></div> 一括送信中...';
+
+            const batch = writeBatch(window.db);
+            let successCount = 0;
+            const now = new Date().toISOString();
+
+            checkedBoxes.forEach(checkbox => {
+                const inquiryId = checkbox.getAttribute('data-inquiry-id');
+                const inquiry = window.inquiriesData.find(i => i.id === inquiryId);
+                
+                if (inquiry) {
+                    const inquiryRef = doc(window.db, window.getCollectionPath('inquiries'), inquiryId);
+                    batch.update(inquiryRef, {
+                        finalResponseText: inquiry.aiDraftText, // AIドラフトを最終回答として採用
+                        responseDate: now,
+                        responseScore: 90, // 一括承認は高スコア
+                        status: 'Completed'
+                    });
+                    successCount++;
+                }
+            });
+
+            await batch.commit();
+            alert(`${successCount}件の回答を一括で送信し、対応を完了しました。`);
+            
+            button.innerHTML = originalText;
+            window.closeBulkApprovalView(); // モーダルを閉じる
+            renderIcons();
+        }
+        
+    </script>
+</body>
+</html>
