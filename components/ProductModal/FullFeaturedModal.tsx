@@ -5,7 +5,7 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { useState, useEffect } from 'react';
-import styles from './FullFeaturedModal.module.css';
+import styles from './FullFeaturedModal.css';
 import type { Product } from '@/types/product';
 
 // コンポーネントインポート
