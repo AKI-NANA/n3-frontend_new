@@ -59,6 +59,12 @@ export default function GitDeployPage() {
   const [remoteDiff, setRemoteDiff] = useState<any>(null)
   const [checkingRemoteDiff, setCheckingRemoteDiff] = useState(false)
 
+  // ヘルパー関数: コミット済みの変更があるかチェック
+  const hasLocalCommits = () => {
+    return gitStatus?.branch && 
+           (gitStatus as any)?.debug?.longStatus?.includes('Your branch is ahead')
+  }
+
   // Git状態をチェック
   useEffect(() => {
     const hostname = window.location.hostname
@@ -117,10 +123,9 @@ export default function GitDeployPage() {
 
   const handleGitPush = async () => {
     // コミット済みの変更があるか確認
-    const hasLocalCommits = gitStatus?.branch && 
-      (gitStatus as any).debug?.longStatus?.includes('Your branch is ahead')
+    const localCommits = hasLocalCommits()
 
-    if (!hasLocalCommits && !commitMessage.trim() && !gitStatus?.hasChanges) {
+    if (!localCommits && !commitMessage.trim() && !gitStatus?.hasChanges) {
       setResult({ 
         success: false, 
         message: 'プッシュする変更がありません' 
@@ -129,7 +134,7 @@ export default function GitDeployPage() {
     }
 
     // コミット済みの変更があればメッセージなしでもOK
-    if (!hasLocalCommits && gitStatus?.hasChanges && !commitMessage.trim()) {
+    if (!localCommits && gitStatus?.hasChanges && !commitMessage.trim()) {
       setResult({ 
         success: false, 
         message: 'コミットメッセージを入力してください' 
@@ -559,7 +564,7 @@ export default function GitDeployPage() {
                   )}
                   
                   {/* コミット済みの変更がある場合 */}
-                  {!gitStatus.hasChanges && (gitStatus as any).debug?.longStatus?.includes('Your branch is ahead') && (
+                  {!gitStatus.hasChanges && hasLocalCommits() && (
                     <Alert className="bg-blue-50 border-blue-200">
                       <CheckCircle className="w-4 h-4 text-blue-600" />
                       <AlertDescription className="text-xs">
@@ -1291,7 +1296,7 @@ export default function GitDeployPage() {
                 </div>
                 
                 {/* Push不可理由の表示 */}
-                {!gitStatus?.hasChanges && !(gitStatus as any)?.debug?.longStatus?.includes('Your branch is ahead') && (
+                {!gitStatus?.hasChanges && !hasLocalCommits() && (
                   <Alert variant="destructive">
                     <AlertCircle className="w-4 h-4" />
                     <AlertDescription className="text-xs space-y-1">
@@ -1314,7 +1319,7 @@ export default function GitDeployPage() {
 
                 <Button 
                   onClick={handleGitPush} 
-                  disabled={loading || (!gitStatus?.hasChanges && !(gitStatus as any).debug?.longStatus?.includes('Your branch is ahead'))}
+                  disabled={loading || (!gitStatus?.hasChanges && !hasLocalCommits())}
                   className="w-full"
                 >
                   {loading ? (
@@ -1326,7 +1331,7 @@ export default function GitDeployPage() {
                     <>
                       <Upload className="w-4 h-4 mr-2" />
                       Git Push 実行
-                      {(gitStatus as any)?.debug?.longStatus?.includes('Your branch is ahead') && 
+                      {hasLocalCommits() && 
                         !gitStatus?.hasChanges && 
                         ' (コミット済みをプッシュ)'}
                     </>
