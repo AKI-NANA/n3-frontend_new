@@ -13,7 +13,7 @@ import { recalculateFromPriceChange } from '@/lib/pricing-engine';
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // 1. 監視対象商品を取得
     const { data: targets, error: fetchError } = await supabase
@@ -247,7 +247,7 @@ export async function GET(request: NextRequest) {
       processed: results.length,
       changes_detected: results.filter((r) => r.has_change).length,
       price_changes_count: price_changes.length,
-      errors: errors.length,
+      error_count: errors.length,
       results,
       errors,
     });

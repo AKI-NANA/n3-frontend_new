@@ -50,7 +50,8 @@ export function DataIntegrityChecker() {
       // 配送ポリシー確認
       const { count: policyCount } = await supabase
         .from('ebay_shipping_policies')
-        .select('*', { count: 'exact' })\n        .eq('active', true)
+        .select('*', { count: 'exact' })
+        .eq('active', true)
       
       // 配送ゾーン確認（送料実費）
       const { count: zoneCount } = await supabase

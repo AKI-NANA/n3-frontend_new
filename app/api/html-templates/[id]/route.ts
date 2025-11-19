@@ -4,9 +4,10 @@ import { createClient } from '@/lib/supabase/client'
 // DELETE - テンプレート削除
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await context.params
     const supabase = createClient()
     const id = parseInt(params.id)
 

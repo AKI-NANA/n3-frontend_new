@@ -3,7 +3,6 @@ import { createClient } from '@supabase/supabase-js'
 import { 
   incrementApiCallCount, 
   getApiCallStatus, 
-  canMakeApiCall,
   waitBeforeApiCall,
   canMakeApiCallSafely
 } from '@/lib/research/api-call-tracker'

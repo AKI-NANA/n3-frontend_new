@@ -19,7 +19,7 @@ export interface ShippingCalculationResult {
   carrier_name: string
   service_code: string
   service_name: string
-  service_type: string  // Express / Standard / Economy
+  service_type?: string  // Express / Standard / Economy
   zone_code: string
   zone_name: string
   
@@ -68,6 +68,7 @@ export interface ShippingCalculationResult {
     length_cm?: number
     width_cm?: number
     height_cm?: number
+    total_cm?: number
   }
   restrictions: string[]
   warnings: string[]
@@ -86,18 +87,21 @@ export interface MatrixData {
     carrier_code: string
     service_name: string
     service_code: string
-    service_type: string
+    service_type?: string
+    zone_codes?: string[]
     rates: Array<{
-      carrier_name: string
-      carrier_code: string
-      service_name: string
-      service_code: string
+      carrier_name?: string
+      carrier_code?: string
+      service_name?: string
+      service_code?: string
       service_type?: string
       price_jpy: number
       price_usd: number
       weight_g: number
       country_code: string
+      zone_code?: string
       available: boolean
+      restricted?: boolean
     }>
   }>
   generated_at: string
@@ -164,4 +168,71 @@ export interface APIResponse<T> {
     timestamp: string
   }
   meta?: Record<string, any>
+}
+
+// CPass料金データ
+export interface CPassRate {
+  id: string
+  service_code: string
+  destination_country: string
+  zone_code: string
+  weight_from_g: number
+  weight_to_g: number
+  price_jpy: number
+  price_usd: number
+  delivery_days: string
+  tracking: boolean
+  insurance: boolean
+  signature_required: boolean
+  size_limit_cm: number | null
+  effective_date: string
+  note: string | null
+  created_at: string
+  updated_at: string
+}
+
+// 日本郵便料金データ
+export interface ShippingRate {
+  id: string
+  carrier_id: string
+  service_id: string
+  zone_id: string
+  weight_from_g: number
+  weight_to_g: number
+  price_jpy: number
+  price_usd: number | null
+  effective_date: string
+  expiry_date: string | null
+  is_active: boolean
+  note: string | null
+  created_at: string
+  updated_at: string
+}
+
+// Eloji料金データ
+export interface ElojiRate {
+  id: string
+  carrier_name: string
+  service_name: string
+  origin_country: string
+  destination_country: string
+  zone_code: string
+  weight_from_g: number
+  weight_to_g: number
+  price_jpy: number
+  price_usd: number
+  delivery_days_min: number
+  delivery_days_max: number
+  tracking: boolean
+  insurance_included: boolean
+  signature_required: boolean
+  max_length_cm: number | null
+  max_width_cm: number | null
+  max_height_cm: number | null
+  max_total_dimension_cm: number | null
+  volumetric_factor: number
+  effective_date: string
+  note: string | null
+  created_at: string
+  updated_at: string
 }

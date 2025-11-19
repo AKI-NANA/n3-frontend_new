@@ -43,7 +43,7 @@ export type TargetMallId =
 
 // 変換結果の型
 export interface ConversionResult {
-  data: any | null; // モールAPI向けの最終データ
+  data: Record<string, unknown> | null; // モールAPI向けの最終データ
   gross_profit_jpy: number | null; // 粗利 (JPY)
   errors: string[]; // 変換エラーリスト
 }
@@ -173,10 +173,10 @@ function calculateTargetPrice(
 export function convertProductData(
   product: Product,
   mallId: TargetMallId,
-  outputFormat: "API_JSON" | "CSV_UPLOAD" = "API_JSON" // デフォルトをAPI_JSONに設定
+  _outputFormat: "API_JSON" | "CSV_UPLOAD" = "API_JSON" // デフォルトをAPI_JSONに設定（未使用だがインターフェース保持のため残す）
 ): ConversionResult {
   const errors: string[] = [];
-  let convertedData: any = {};
+  let convertedData: Record<string, unknown> = {};
 
   // 1. 利益計算と価格決定
   const pricingResult = calculateTargetPrice(product, mallId);

@@ -6,13 +6,14 @@ import { getHTSHeadingsByChapter } from '@/lib/supabase/hts'
 import { ArrowLeft } from 'lucide-react'
 
 interface Props {
-  params: { code: string }
+  params: Promise<{ code: string }>
 }
 
-export default function ChapterDetailPage({ params }: Props) {
+export default async function ChapterDetailPage({ params }: Props) {
+  const { code } = await params
   const { data: headings, isLoading } = useQuery({
-    queryKey: ['hts-headings', params.code],
-    queryFn: () => getHTSHeadingsByChapter(params.code),
+    queryKey: ['hts-headings', code],
+    queryFn: () => getHTSHeadingsByChapter(code),
     staleTime: 5 * 60 * 1000,
   })
 
@@ -37,7 +38,7 @@ export default function ChapterDetailPage({ params }: Props) {
             Chapters
           </Link>
           <span className="text-gray-400">→</span>
-          <span className="text-gray-700 font-medium">Chapter {params.code}</span>
+          <span className="text-gray-700 font-medium">Chapter {code}</span>
         </div>
 
         {/* ヘッダー */}

@@ -53,7 +53,7 @@ function calculateProfit(sellingPriceUSD: number, costJPY: number, weightG: numb
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const productId = params.id

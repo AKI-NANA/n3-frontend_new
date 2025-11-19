@@ -109,9 +109,10 @@ async function generateUnifiedRateTable(supabase: any, serviceType: string) {
   }
 
   // アフリカとUSAを除外
+  type CountryData = { country_code: string; country_name_en?: string; country_name_ja?: string }
   const uniqueCountries = Array.from(
     new Map(
-      allCountries
+      (allCountries as CountryData[])
         .filter(c => !AFRICAN_COUNTRIES.includes(c.country_code) && c.country_code !== 'US')
         .map(c => [c.country_code, c])
     ).values()

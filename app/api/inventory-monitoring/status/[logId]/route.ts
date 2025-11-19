@@ -6,7 +6,7 @@ import { getExecutionStatus } from '@/lib/inventory-monitoring/batch-job'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { logId: string } }
+  context: { params: Promise<{ logId: string }> }
 ) {
   try {
     const logId = params.logId

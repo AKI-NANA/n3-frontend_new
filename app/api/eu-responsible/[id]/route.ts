@@ -8,9 +8,10 @@ import { euResponsiblePersonService } from '@/lib/services/euResponsiblePersonSe
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await context.params
     const id = parseInt(params.id)
     if (isNaN(id)) {
       return NextResponse.json(
@@ -23,10 +24,11 @@ export async function PATCH(
     const result = await euResponsiblePersonService.updateResponsiblePerson(id, body)
 
     return NextResponse.json(result)
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'EU責任者の更新に失敗しました'
     console.error('EU責任者更新エラー:', error)
     return NextResponse.json(
-      { error: error.message || 'EU責任者の更新に失敗しました' },
+      { error: errorMessage },
       { status: 500 }
     )
   }

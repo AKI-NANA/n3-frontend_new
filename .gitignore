@@ -6,6 +6,9 @@
 _archived/
 **/client_secret*.json
 
+# アーカイブディレクトリ
+_archive/
+
 # Scriptsディレクトリ（ローカルには残すが、Gitには含めない）
 scripts/
 
@@ -32,3 +35,42 @@ cleanup-*.sh
 fix-git-*.sh
 GIT_PUSH_*.md
 .secrets/
+organize-*.sh
+*.sh
+
+# ドキュメント・レポート
+*_FIX_*.md
+*_COMPLETE.md
+*_GUIDE.md
+*_REPORT.md
+BUILD_*.md
+TYPESCRIPT_*.md
+SUPABASE_*.md
+ALL_*.md
+PHASE*.md
+*.txt
+
+# 無効化ファイル
+*.disabled
+*.backup
+*.bak
+*.old
+*.original
+
+# TypeScriptバックアップファイル
+*_old.tsx
+*_old.ts
+*_original.tsx
+*_original.ts
+*_backup.tsx
+*_backup.ts
+*.tsx.bak
+*.ts.bak
+*.tsx.original
+*.ts.original
+
+# SQL
+*.sql
+
+# 不要ファイルパターン（自動追加）
+*_backup.*

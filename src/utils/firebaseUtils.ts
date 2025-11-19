@@ -120,7 +120,7 @@ const AIAnalysisRef = () => collection(db, getAIAnalysisCollectionPath());
  * 最終会計データをFirestoreに保存する
  * @param ledgerData AccountingFinalLedgerデータ
  */
-export async function saveFinalLedger(ledgerData: any): Promise<void> {
+export async function saveFinalLedger(ledgerData: Record<string, unknown> & { id: string }): Promise<void> {
   const ledgerRef = AccountingLedgerRef();
   // ドキュメントIDは取引IDを使用
   const docRef = doc(ledgerRef, ledgerData.id);
@@ -140,7 +140,7 @@ export async function saveFinalLedger(ledgerData: any): Promise<void> {
  * AI分析結果をFirestoreに保存する
  * @param analysisData AIAnalysisResultデータ
  */
-export async function saveAIAnalysisResult(analysisData: any): Promise<void> {
+export async function saveAIAnalysisResult(analysisData: Record<string, unknown>): Promise<void> {
   const analysisRef = AIAnalysisRef();
   // 自動生成IDを使用
   try {

@@ -2,7 +2,7 @@
 'use client'
 
 import { Calculator, CheckCircle, XCircle, AlertTriangle, HelpCircle, TrendingUp, DollarSign, ArrowRight, Settings, Percent } from 'lucide-react'
-import { STORE_FEES } from '@/app/ebay-pricing/page'
+import { STORE_FEES } from '@/lib/constants/ebay'
 import { useState, useMemo, useEffect } from 'react'
 
 interface CalculatorTabProps {

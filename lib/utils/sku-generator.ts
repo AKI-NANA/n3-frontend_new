@@ -10,7 +10,7 @@ import { createClient } from '@/lib/supabase/server'
  * @returns Promise<string> 新しいSKU (例: "ITEM-000001")
  */
 export async function generateNextSKU(): Promise<string> {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // 最新のSKUを取得（ITEM-で始まるもののみ）
   const { data, error } = await supabase
@@ -48,6 +48,9 @@ export async function generateNextSKU(): Promise<string> {
   
   return `ITEM-${paddedNumber}`
 }
+
+// エイリアスエクスポート（後方互換性）
+export const generateSKU = generateNextSKU
 
 /**
  * 複数のSKUを一括生成

@@ -45,7 +45,8 @@ import { HTSCodeSearchTab } from '@/components/ebay-pricing/hts-code-search-tab'
 import { BulkPatternCalculator } from '@/components/ebay-pricing/bulk-pattern-calculator'
 import { PriceAutomationTab } from '@/components/pricing-automation/PriceAutomationTab'
 import { TabButton } from '@/components/ebay-pricing/tab-button'
-import { PriceCalculationEngine, STORE_FEES } from '@/lib/ebay-pricing/price-calculation-engine'
+import { PriceCalculationEngine } from '@/lib/ebay-pricing/price-calculation-engine'
+import { STORE_FEES } from '@/lib/constants/ebay'
 import { UsaShippingCalculatorTest } from '@/components/ebay-pricing/usa-shipping-calculator-test'
 import { UsaPriceCalculatorComplete } from '@/components/ebay-pricing/usa-price-calculator-complete'
 import { testHTSSearch } from '@/lib/ebay-pricing/test-hts-search'
@@ -53,7 +54,6 @@ import { calculateUsaPrice } from '@/lib/ebay-pricing/usa-price-calculator'
 import { calculateUsaPriceV2 } from '@/lib/ebay-pricing/usa-price-calculator-v2'
 import { calculateUsaPriceV3 } from '@/lib/ebay-pricing/usa-price-calculator-v3'
 
-export { STORE_FEES }
 
 export default function EbayPricingPage() {
   const [activeTab, setActiveTab] = useState('calculator-v2')

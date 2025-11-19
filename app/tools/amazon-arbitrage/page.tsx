@@ -1,9 +1,11 @@
+'use client'
+
 // ファイル: /app/tools/amazon-arbitrage/page.tsx
 // Next.js App Router ページコンポーネント
 
 import React from 'react';
-import styles from '../../components/ProductModal/FullFeaturedModal.module.css'; // 既存のCSSを流用
-import { Product } from '../../types/product';
+import styles from '@/components/ProductModal/FullFeaturedModal.module.css'; // 既存のCSSを流用
+import { Product } from '@/types/product';
 import { Button } from '@/components/ui/button'; // shadcn/uiのButtonを仮定
 
 // ダミーデータ（実際はAPIから取得）

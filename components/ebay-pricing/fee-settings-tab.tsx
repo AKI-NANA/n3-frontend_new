@@ -1,4 +1,4 @@
-import { STORE_FEES } from '@/app/ebay-pricing/page'
+import { STORE_FEES } from '@/lib/constants/ebay'
 
 interface FeeSettingsTabProps {
   categoryFees: any[]

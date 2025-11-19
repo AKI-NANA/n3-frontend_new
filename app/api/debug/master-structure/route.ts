@@ -9,10 +9,15 @@ const supabase = createClient(
 export async function GET() {
   try {
     // 1. テーブル構造を取得
-    const { data: structureData, error: structureError } = await supabase
-      .rpc('get_table_structure', { table_name: 'products_master' })
-      .then(() => ({ data: null, error: { message: 'RPC not available' } }))
-      .catch(() => ({ data: null, error: { message: 'RPC failed' } }))
+    let structureData = null
+    let structureError = null
+    try {
+      const result = await supabase.rpc('get_table_structure', { table_name: 'products_master' })
+      structureData = result.data
+      structureError = result.error
+    } catch (e) {
+      structureError = { message: 'RPC failed' }
+    }
     
     // 2. サンプルデータを1件取得して実際のフィールドを確認
     const { data: sampleData, error: sampleError } = await supabase

@@ -4,6 +4,18 @@ const nextConfig: NextConfig = {
   // ワークスペースルートの明示的な設定
   outputFileTracingRoot: '/Users/aritahiroaki/n3-frontend_new',
   
+  // ビルドから除外するパターン
+  pageExtensions: ['tsx', 'ts', 'jsx', 'js'],
+  
+  // Turbopack設定：アーカイブを除外
+  turbopack: {
+    rules: {
+      '**/_archive/**': {
+        loaders: [],
+      },
+    },
+  },
+  
   // 画像の最適化設定
   images: {
     remotePatterns: [
@@ -19,12 +31,9 @@ const nextConfig: NextConfig = {
   },
   // 厳格モード
   reactStrictMode: true,
-  // TypeScript/ESLintエラーを無視（開発時）
+  // TypeScriptエラーを無視（開発時）
   typescript: {
     ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
   },
 }
 

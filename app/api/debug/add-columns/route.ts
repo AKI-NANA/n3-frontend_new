@@ -39,15 +39,22 @@ export async function POST() {
     const results = []
     
     for (const query of queries) {
-      const { error } = await supabase.rpc('exec_sql', { sql: query }).catch(async () => {
-        // rpcが使えない場合は、直接実行を試みる
-        return { error: 'RPC not available, please run SQL manually' }
-      })
+      let error = null
+      
+      try {
+        // rpcを実行し、結果を直接 await で受け取る
+        const result = await supabase.rpc('exec_sql', { sql: query })
+        error = result.error // result オブジェクトから error プロパティを取得
+      } catch (e) {
+        // ネットワークエラーなど、Postgrestが処理できないエラーをキャッチ
+        console.error(`Error executing RPC for query: ${query}`, e)
+        error = e instanceof Error ? e : new Error('Unknown error')
+      }
       
       results.push({
         query: query.substring(0, 100) + '...',
         success: !error,
-        error: error?.message || null
+        error: error ? (error instanceof Error ? error.message : String(error)) : null
       })
     }
 
