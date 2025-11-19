@@ -475,6 +475,52 @@ export default function GitDeployPage() {
                     </Badge>
                   </div>
                   
+                  {/* デバッグパネル */}
+                  {(gitStatus as any).debug && (
+                    <details className="bg-slate-100 dark:bg-slate-800 p-3 rounded text-xs">
+                      <summary className="cursor-pointer font-medium mb-2">🔍 デバッグ情報を表示</summary>
+                      <div className="space-y-2 mt-2">
+                        <div>
+                          <strong>プロジェクトルート:</strong>
+                          <code className="block bg-slate-200 dark:bg-slate-700 p-1 rounded mt-1">
+                            {(gitStatus as any).debug.projectRoot}
+                          </code>
+                        </div>
+                        <div>
+                          <strong>git status 出力長:</strong> {(gitStatus as any).debug.statusOutputLength} 文字
+                        </div>
+                        <div>
+                          <strong>trim後の長さ:</strong> {(gitStatus as any).debug.statusOutputTrimmedLength} 文字
+                        </div>
+                        <div>
+                          <strong>検出ファイル数:</strong> {(gitStatus as any).debug.filesDetected}
+                        </div>
+                        <div>
+                          <strong>git diff で検出:</strong> {(gitStatus as any).debug.diffFiles?.length || 0} ファイル
+                        </div>
+                        <div>
+                          <strong>未追跡ファイル:</strong> {(gitStatus as any).debug.untrackedFiles?.length || 0} ファイル
+                        </div>
+                        {(gitStatus as any).debug.rawStatusOutput && (
+                          <div>
+                            <strong>git status --porcelain の生出力:</strong>
+                            <pre className="block bg-slate-200 dark:bg-slate-700 p-2 rounded mt-1 overflow-x-auto">
+                              {(gitStatus as any).debug.rawStatusOutput || '(空)'}
+                            </pre>
+                          </div>
+                        )}
+                        {(gitStatus as any).debug.longStatus && (
+                          <div>
+                            <strong>git status (詳細):</strong>
+                            <pre className="block bg-slate-200 dark:bg-slate-700 p-2 rounded mt-1 overflow-x-auto text-xs">
+                              {(gitStatus as any).debug.longStatus}
+                            </pre>
+                          </div>
+                        )}
+                      </div>
+                    </details>
+                  )}
+                  
                   {gitStatus.files && gitStatus.files.length > 0 && (
                     <div className="mt-3">
                       <p className="text-sm font-medium mb-2">変更されたファイル:</p>
@@ -495,6 +541,27 @@ export default function GitDeployPage() {
                       <AlertDescription className="text-xs">
                         ⚠️ デバッグ: ファイルが検出されていますが hasChanges が false です。
                         開発サーバーを再起動してください。
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {!gitStatus.hasChanges && (!gitStatus.files || gitStatus.files.length === 0) && (gitStatus as any).debug && (
+                    <Alert className="bg-red-50 border-red-200">
+                      <AlertCircle className="w-4 h-4 text-red-600" />
+                      <AlertDescription className="text-xs space-y-1">
+                        <p>❌ Git が変更を検出していません</p>
+                        <p className="font-medium">考えられる原因:</p>
+                        <ul className="list-disc list-inside ml-2">
+                          <li>すべての変更が既にコミット済み</li>
+                          <li>git add が実行されていない（未ステージング）</li>
+                          <li>.gitignore でファイルが除外されている</li>
+                        </ul>
+                        <p className="mt-2 font-medium">対処法:</p>
+                        <p>ターミナルで以下を実行してください:</p>
+                        <code className="block bg-slate-100 p-2 rounded mt-1">
+                          cd /Users/aritahiroaki/n3-frontend_new<br/>
+                          git status
+                        </code>
                       </AlertDescription>
                     </Alert>
                   )}
