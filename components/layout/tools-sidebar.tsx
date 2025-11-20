@@ -97,6 +97,7 @@ const navigationItems = [
       { text: "権限設定", link: "/permissions", icon: Shield, status: "ready" as const },
       { text: "バックアップ", link: "/backup", icon: Database, status: "new" as const },
       { text: "ログ管理", link: "/logs", icon: FileText, status: "pending" as const },
+      { text: "開発ガバナンス・ルール", link: "/tools/governance-rules", icon: Shield, status: "new" as const },
       { text: "Gitデプロイ・ガバナンス", link: "/tools/git-deploy", icon: GitBranch, status: "new" as const },
     ],
   },
