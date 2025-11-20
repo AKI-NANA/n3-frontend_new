@@ -270,6 +270,7 @@ export const navigationItems: NavigationItem[] = [
     icon: "target",
     priority: 7,
     submenu: [
+      { text: "リサーチ結果管理", link: "/research/results", icon: "database", status: "new", priority: 0 },
       { text: "eBay リサーチ", link: "/research/ebay-research", icon: "globe", status: "ready", priority: 1 },
       { text: "市場リサーチ", link: "/research/market-research", icon: "trending-up", status: "ready", priority: 2 },
       { text: "スコアリング", link: "/research/scoring", icon: "bar-chart", status: "ready", priority: 3 },
