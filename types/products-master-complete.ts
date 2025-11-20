@@ -59,7 +59,13 @@ export interface ProductsMaster {
   listing_data: ListingData | null;
   ebay_api_data: EbayApiData | null;
   scraped_data: any | null;
-  
+
+  // ===== バリエーション・セット品関連 (2025-11-20追加) =====
+  parent_sku_id: string | null;                    // 親SKU参照 (バリエーション/セット品の親子関係)
+  variation_type: 'Parent' | 'Child' | 'Single';   // バリエーションタイプ
+  policy_group_id: string | null;                  // ポリシーグループID (カテゴリ + DDPティア + サイズティア)
+  external_tool_sync_status: string | null;        // 外部ツール連携ステータス (Ebaymugなど)
+
   // ===== メタ情報 =====
   created_at: string;
   updated_at: string;
@@ -75,20 +81,68 @@ export interface ListingData {
   shipping_service?: string;
   base_shipping_usd?: number;           // 実送料 (配送会社に支払う)
   product_price_usd?: number;
-  
+
   // 利益情報
   profit_margin?: number;               // 利益率 (還付前)
   profit_amount_usd?: number;           // 利益額 (還付前)
   profit_margin_refund?: number;        // 利益率 (還付後)
   profit_amount_refund?: number;        // 利益額 (還付後)
-  
+
   // 商品情報
   weight_g?: number;
   hs_code?: string;
   condition?: string;
-  
+
+  // ===== バリエーション・セット品関連 (2025-11-20追加) =====
+
+  // 親SKU用フィールド
+  min_ddp_cost_usd?: number;            // 最低DDPコスト（統一Item Price）
+  variation_attributes?: string[];      // バリエーション属性名（例: ["Color", "Size"]）
+  variations?: VariationChild[];        // 子SKU情報
+
+  // 子SKU用フィールド
+  variation_sku?: string;               // バリエーションSKU
+  actual_ddp_cost_usd?: number;         // 本来のDDPコスト
+  shipping_surcharge_usd?: number;      // USA向け送料加算額
+  attributes?: VariationAttribute[];    // このバリエーションの属性値
+
+  // セット品用フィールド
+  components?: BundleComposition[];     // 構成品情報
+  total_component_cost?: number;        // 構成品の合計コスト
+
   // その他
   [key: string]: any;
+}
+
+/**
+ * バリエーション属性
+ */
+export interface VariationAttribute {
+  name: string;   // 例: "Color", "Size"
+  value: string;  // 例: "Red", "Large"
+}
+
+/**
+ * 子SKU情報（親SKUのlisting_data.variationsに格納）
+ */
+export interface VariationChild {
+  variation_sku: string;
+  attributes: VariationAttribute[];
+  actual_ddp_cost_usd: number;
+  shipping_surcharge_usd: number;
+  stock_quantity: number;
+  image_url?: string;
+}
+
+/**
+ * セット品の構成品
+ */
+export interface BundleComposition {
+  child_sku: string;
+  child_title: string;
+  quantity: number;
+  unit_cost?: number;
+  total_cost?: number;
 }
 
 /**

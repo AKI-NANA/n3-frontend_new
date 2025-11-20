@@ -97,6 +97,85 @@ export interface MarketplaceFees {
 }
 
 /**
+ * バリエーション・セット品関連型
+ */
+
+// バリエーションタイプ
+export type VariationType = 'Parent' | 'Child' | 'Single';
+
+// Grouping Boxのアイテム
+export interface GroupingItem {
+  id: string;
+  sku: string;
+  title: string;
+  image?: string;
+  quantity: number;
+  ddp_cost_usd: number;
+  stock_quantity?: number;
+  size_cm?: {
+    length: number;
+    width: number;
+    height: number;
+  };
+  weight_g?: number;
+}
+
+// バリエーション属性
+export interface VariationAttribute {
+  name: string;  // 例: "Color", "Size"
+  value: string; // 例: "Red", "Large"
+}
+
+// セット品の構成品
+export interface BundleComposition {
+  child_sku: string;
+  child_title: string;
+  quantity: number;
+  unit_cost?: number;
+  total_cost?: number;
+}
+
+// listing_dataのバリエーション拡張
+export interface VariationListingData {
+  // 親SKU用
+  min_ddp_cost_usd?: number;           // 最低DDPコスト（統一Item Price）
+  variation_attributes?: string[];     // バリエーション属性名（例: ["Color", "Size"]）
+  variations?: VariationChild[];       // 子SKU情報
+
+  // 子SKU用
+  variation_sku?: string;              // バリエーションSKU
+  actual_ddp_cost_usd?: number;        // 本来のDDPコスト
+  shipping_surcharge_usd?: number;     // USA向け送料加算額
+  attributes?: VariationAttribute[];   // このバリエーションの属性値
+
+  // セット品用
+  components?: BundleComposition[];    // 構成品情報
+  total_component_cost?: number;       // 構成品の合計コスト
+}
+
+// 子SKU情報（親SKUのlisting_data.variationsに格納）
+export interface VariationChild {
+  variation_sku: string;
+  attributes: VariationAttribute[];
+  actual_ddp_cost_usd: number;
+  shipping_surcharge_usd: number;
+  stock_quantity: number;
+  image_url?: string;
+}
+
+// バリエーション対応カテゴリ
+export interface EbayVariationCategory {
+  id: string;
+  category_id: number;
+  category_name: string;
+  category_path?: string;
+  default_attributes: string[];        // 推奨属性名
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
  * API リクエスト/レスポンス型
  */
 
@@ -136,6 +215,41 @@ export interface SaveImagesResponse {
   savedCount?: number;
   error?: string;
   message?: string;
+}
+
+/**
+ * バリエーション/セット品 API リクエスト/レスポンス型
+ */
+
+export interface CreateVariationRequest {
+  selectedItems: GroupingItem[];
+  parentSkuName: string;
+  attributes: { [key: string]: string };  // 属性定義
+  pricingStrategy: 'min_ddp';              // 最低価格ベース戦略
+}
+
+export interface CreateVariationResponse {
+  success: boolean;
+  parentSku?: string;
+  minPrice?: number;
+  children?: VariationChild[];
+  warnings?: string[];
+  error?: string;
+}
+
+export interface CreateBundleRequest {
+  selectedItems: GroupingItem[];
+  bundleSkuName: string;
+  bundleTitle: string;
+}
+
+export interface CreateBundleResponse {
+  success: boolean;
+  bundleSku?: string;
+  totalCost?: number;
+  maxStock?: number;
+  components?: BundleComposition[];
+  error?: string;
 }
 
 /**

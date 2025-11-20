@@ -191,6 +191,12 @@ export interface Product {
     error_message?: string | null
     listed_at: string
   }>
+
+  // ===== バリエーション・セット品関連 (新規) =====
+  parent_sku_id?: string | null           // 親SKU参照
+  variation_type?: 'Parent' | 'Child' | 'Single'  // バリエーションタイプ
+  policy_group_id?: string | null         // ポリシーグループID (カテゴリ + DDPティア + サイズティア)
+  external_tool_sync_status?: string | null  // 外部ツール連携ステータス
 }
 
 export interface ProductUpdate {
