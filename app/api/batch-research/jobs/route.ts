@@ -256,6 +256,21 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error("❌ ジョブ一覧取得エラー:", error);
+      // テーブルが存在しない場合はモックデータを返す（ローカル開発用）
+      if (error.code === 'PGRST205') {
+        console.warn("⚠️ テーブルが存在しません。モックデータを返します。");
+        return NextResponse.json({
+          success: true,
+          jobs: [],
+          pagination: {
+            total: 0,
+            limit,
+            offset,
+            hasMore: false,
+          },
+          note: "データベーステーブルが存在しません。実際の環境ではテーブルを作成してください。"
+        });
+      }
       throw error;
     }
 
