@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { 
+import {
   Home, Package, Warehouse, ShoppingCart, Bot, Calculator, Settings,
   Link as LinkIcon, List, Plus, Tags, BarChart3,
   TrendingUp, Archive, Truck, AlertCircle, Zap, Target, Database,
   FileText, DollarSign, Users, Shield, Globe,
-  Upload, Cog, CheckCircle, Edit, Calendar
+  Upload, Cog, CheckCircle, Edit, Calendar, GitBranch
 } from 'lucide-react'
 
 const navigationItems = [
@@ -89,14 +89,15 @@ const navigationItems = [
     ],
   },
   {
-    id: "system", 
-    label: "システム管理", 
+    id: "system",
+    label: "システム管理",
     icon: Settings,
     submenu: [
       { text: "ユーザー管理", link: "/users", icon: Users, status: "ready" as const },
       { text: "権限設定", link: "/permissions", icon: Shield, status: "ready" as const },
       { text: "バックアップ", link: "/backup", icon: Database, status: "new" as const },
       { text: "ログ管理", link: "/logs", icon: FileText, status: "pending" as const },
+      { text: "Gitデプロイ・ガバナンス", link: "/tools/git-deploy", icon: GitBranch, status: "new" as const },
     ],
   },
   {
