@@ -275,6 +275,7 @@ export const navigationItems: NavigationItem[] = [
       { text: "スコアリング", link: "/research/scoring", icon: "bar-chart", status: "ready", priority: 3 },
       { text: "Amazon リサーチ", link: "/tools/amazon-research", icon: "shopping-cart", status: "ready", priority: 4 },
       { text: "Amazon 刈り取り", link: "/tools/amazon-arbitrage", icon: "zap", status: "ready", priority: 5 },
+      { text: "大規模バッチリサーチ", link: "/tools/batch-research", icon: "database", status: "new", priority: 6 },
     ]
   },
 
