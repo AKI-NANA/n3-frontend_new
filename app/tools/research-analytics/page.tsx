@@ -524,7 +524,8 @@ const ResearchAnalyticsDashboard = () => {
   // Firestore認証ロジック
   useEffect(() => {
     if (!db || !auth) {
-      console.error("Firebase is not initialized.");
+      console.warn("Firebase is not initialized. Some features may be unavailable.");
+      setIsAuthReady(false);
       return;
     }
 

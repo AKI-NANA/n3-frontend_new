@@ -234,7 +234,7 @@ export default function AmazonResearchPage() {
                         <p className="font-bold text-green-600">
                           ${product.current_price?.toFixed(2)}
                         </p>
-                        {product.profit_amount !== undefined && (
+                        {product.profit_amount != null && (
                           <p className="text-xs text-muted-foreground">
                             利益: ${product.profit_amount.toFixed(2)}
                           </p>
