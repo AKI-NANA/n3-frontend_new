@@ -57,15 +57,17 @@ const App = () => {
   // MARK: - 初期化と認証
   useEffect(() => {
     if (!firebaseConfig) {
-        setError("Firebase設定がありません。環境を確認してください。");
+        console.warn("Firebase設定がありません。モックデータモードで動作します。");
+        setIsAuthReady(true); // Firebase未設定でもページを表示
+        setUserId('mock-user-id');
         return;
     }
-    
+
     try {
         const app = initializeApp(firebaseConfig);
         db = getFirestore(app);
         auth = getAuth(app);
-        
+
         const signIn = async () => {
             if (initialAuthToken) {
                 await signInWithCustomToken(auth, initialAuthToken);
@@ -85,39 +87,46 @@ const App = () => {
 
         return () => unsubscribe();
     } catch (e) {
-        // Firebase initialization disabled
-        setError("Firebaseの初期化に失敗しました。");
+        console.error("Firebaseの初期化に失敗しました:", e);
+        setIsAuthReady(true); // エラーでもページを表示
+        setUserId('mock-user-id');
     }
   }, []);
 
   // MARK: - Firestore データ同期 (onSnapshot)
   useEffect(() => {
     if (!isAuthReady || !userId) return;
+    if (!db) {
+      console.warn("Firebaseが初期化されていません。モックデータモードで動作します。");
+      return;
+    }
 
-    // 1. 商品リストの同期
-    const productsRef = collection(db, getCollectionPath(userId, 'sourcing_products'));
-    const unsubscribeProducts = onSnapshot(query(productsRef), (snapshot) => {
-      const productList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setProducts(productList.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
-    }, (e) => {
-        console.error("Products Snapshot Error:", e);
-        setError("商品リストの取得に失敗しました。");
-    });
+    try {
+      // 1. 商品リストの同期
+      const productsRef = collection(db, getCollectionPath(userId, 'sourcing_products'));
+      const unsubscribeProducts = onSnapshot(query(productsRef), (snapshot) => {
+        const productList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setProducts(productList.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
+      }, (e) => {
+          console.error("Products Snapshot Error:", e);
+      });
 
-    // 2. 仕入れ先リストの同期
-    const suppliersRef = collection(db, getCollectionPath(userId, 'supplier_contacts'));
-    const unsubscribeSuppliers = onSnapshot(query(suppliersRef), (snapshot) => {
-      const supplierList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setSuppliers(supplierList.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
-    }, (e) => {
-        console.error("Suppliers Snapshot Error:", e);
-        setError("仕入れ先リストの取得に失敗しました。");
-    });
+      // 2. 仕入れ先リストの同期
+      const suppliersRef = collection(db, getCollectionPath(userId, 'supplier_contacts'));
+      const unsubscribeSuppliers = onSnapshot(query(suppliersRef), (snapshot) => {
+        const supplierList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setSuppliers(supplierList.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
+      }, (e) => {
+          console.error("Suppliers Snapshot Error:", e);
+      });
 
-    return () => {
-      unsubscribeProducts();
-      unsubscribeSuppliers();
-    };
+      return () => {
+        unsubscribeProducts();
+        unsubscribeSuppliers();
+      };
+    } catch (e) {
+      console.error("データ同期エラー:", e);
+    }
   }, [isAuthReady, userId]);
 
   // MARK: - データ管理アクション
