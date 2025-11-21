@@ -2,11 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import styles from '../../FullFeaturedModal.module.css';
-import type { Product } from '@/types/product';
+import type { Product, ResearchPromptType } from '@/types/product';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
+import { Search, Image, FileText, Globe } from 'lucide-react';
 
 export interface TabDataProps {
   product: Product | null;
 }
+
+// 💡 AIリサーチプロンプト選択肢のリスト
+const PROMPT_OPTIONS: { label: string; type: ResearchPromptType; icon: React.ReactNode }[] = [
+  { label: "画像から商品特定（最安値適用）", type: 'IMAGE_ONLY', icon: <Image className="h-4 w-4 mr-2" /> },
+  { label: "データ不足を全て補完", type: 'FILL_MISSING_DATA', icon: <FileText className="h-4 w-4 mr-2" /> },
+  { label: "標準（HTS/原産国/素材）", type: 'FULL_RESEARCH_STANDARD', icon: <Globe className="h-4 w-4 mr-2" /> },
+  { label: "出品必須データのみ取得", type: 'LISTING_DATA_ONLY', icon: <FileText className="h-4 w-4 mr-2" /> },
+  { label: "✅ HTS専用 (Claude MCP連携)", type: 'HTS_CLAUDE_MCP', icon: <Globe className="h-4 w-4 mr-2" /> },
+];
 
 export function TabData({ product }: TabDataProps) {
   // 🔥 強制デバッグログ
@@ -27,6 +38,9 @@ export function TabData({ product }: TabDataProps) {
   
   // 🔥 翻訳状態管理
   const [translating, setTranslating] = useState(false);
+
+  // 🔥 AIリサーチ状態管理
+  const [researching, setResearching] = useState(false);
   
   // 🔥 productが更新されたらformDataも更新
   const [formData, setFormData] = useState({
@@ -181,6 +195,66 @@ export function TabData({ product }: TabDataProps) {
       alert('✗ 翻訳エラー: ' + (error.message || 'ネットワークエラーが発生しました'));
     } finally {
       setTranslating(false);
+    }
+  };
+
+  // 🔥 AIリサーチ実行
+  const handleRunResearch = async (type: ResearchPromptType) => {
+    if (!product?.id) {
+      alert('商品IDが見つかりません');
+      return;
+    }
+
+    const selectedOption = PROMPT_OPTIONS.find(opt => opt.type === type);
+    const confirmed = confirm(`「${selectedOption?.label}」を実行しますか？\n\nAIがデータを取得し、データベースに保存します。`);
+    if (!confirmed) return;
+
+    setResearching(true);
+    try {
+      const response = await fetch('/api/gemini/run-prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productId: product.id,
+          type: type,
+          productData: {
+            id: product.id,
+            title: formData.title,
+            description: formData.description,
+            sku: product.sku,
+            listing_data: (product as any)?.listing_data || {},
+            gallery_images: (product as any)?.gallery_images || [],
+            primary_image_url: (product as any)?.listing_data?.primary_image_url,
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ AIリサーチAPIエラー:', errorText);
+        throw new Error(`APIエラー: ${response.status} - ${errorText}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        console.log('✅ AIリサーチAPIレスポンス:', result);
+        alert('✓ AIリサーチが完了しました\n\nモーダルを閉じて再度開くと更新が表示されます。');
+
+        // 🔥 商品データ更新イベントを発行
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('product-updated', {
+            detail: { productId: product.id }
+          }));
+        }
+      } else {
+        alert('✗ AIリサーチに失敗しました: ' + (result.error || '不明なエラー'));
+      }
+    } catch (error: any) {
+      console.error('AI Research error:', error);
+      alert('✗ AIリサーチエラー: ' + (error.message || 'ネットワークエラーが発生しました'));
+    } finally {
+      setResearching(false);
     }
   };
 
@@ -624,6 +698,73 @@ export function TabData({ product }: TabDataProps) {
                   </>
                 )}
               </button>
+            </div>
+          </div>
+
+          {/* 🔥 AIリサーチドロップダウン */}
+          <div style={{ marginTop: '1rem', padding: '1rem', background: '#fff3e0', borderRadius: '8px', border: '1px solid #ff9800' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#ff9800', marginBottom: '0.25rem' }}>
+                  <Search className="inline h-4 w-4 mr-1" /> AIリサーチ（マルチプロンプト）
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#666' }}>
+                  複数のAIプロンプトから選択して、商品データを自動取得
+                </div>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    disabled={researching}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      background: researching ? '#ccc' : '#ff9800',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: researching ? 'not-allowed' : 'pointer',
+                      fontWeight: 600,
+                      fontSize: '0.9rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                    }}
+                  >
+                    {researching ? (
+                      <>
+                        <i className="fas fa-spinner fa-spin"></i>
+                        リサーチ中...
+                      </>
+                    ) : (
+                      <>
+                        <Search className="h-4 w-4" />
+                        AIリサーチを選択
+                      </>
+                    )}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-72">
+                  <DropdownMenuLabel style={{ fontSize: '0.9rem', fontWeight: 600, color: '#ff9800' }}>
+                    リサーチプロンプトの選択
+                  </DropdownMenuLabel>
+                  {PROMPT_OPTIONS.map((option) => (
+                    <DropdownMenuItem
+                      key={option.type}
+                      onSelect={() => handleRunResearch(option.type)}
+                      style={{
+                        cursor: 'pointer',
+                        padding: '0.75rem 0.5rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                      }}
+                    >
+                      {option.icon}
+                      <span style={{ fontSize: '0.85rem' }}>{option.label}</span>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
