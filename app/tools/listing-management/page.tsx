@@ -11,6 +11,7 @@ import { useState, useEffect } from 'react';
 import { IntegratedListingTable } from '@/components/listing/IntegratedListingTable';
 import { ListingEditModal } from '@/components/listing/ListingEditModal';
 import { StockDetailPanel } from '@/components/listing/StockDetailPanel';
+import { ExecutionLogsPanel } from '@/components/listing/ExecutionLogsPanel';
 import type { ListingItem } from '@/types/listing';
 import type { Platform } from '@/lib/multichannel/types';
 
@@ -29,6 +30,7 @@ export default function ListingManagementPage() {
   const [editPlatform, setEditPlatform] = useState<Platform>('ebay');
   const [editAccountId, setEditAccountId] = useState('');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isLogsOpen, setIsLogsOpen] = useState(false);
   const [stats, setStats] = useState<Stats>({
     todayListingSuccess: 0,
     fatalErrors: 0,
@@ -151,6 +153,12 @@ export default function ListingManagementPage() {
             <button className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
               CSVエクスポート
             </button>
+            <button
+              onClick={() => setIsLogsOpen(true)}
+              className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+            >
+              実行ログを表示
+            </button>
           </div>
           <div className="flex gap-3">
             <a
@@ -213,6 +221,11 @@ export default function ListingManagementPage() {
         sku={selectedSku}
         isOpen={isStockDetailOpen}
         onClose={() => setIsStockDetailOpen(false)}
+      />
+
+      <ExecutionLogsPanel
+        isOpen={isLogsOpen}
+        onClose={() => setIsLogsOpen(false)}
       />
     </div>
   );
