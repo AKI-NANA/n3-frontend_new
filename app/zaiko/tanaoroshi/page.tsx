@@ -41,6 +41,9 @@ export default function TanaoroshiPage() {
   const [loading, setLoading] = useState(true)
   const [pendingCount, setPendingCount] = useState(0)
   const [syncing, setSyncing] = useState(false)
+
+  // タブ管理（承認ツール統合）
+  const [activeTab, setActiveTab] = useState<'inventory' | 'approval' | 'all'>('inventory')
   
   // Modal State
   const [showRegistrationModal, setShowRegistrationModal] = useState(false)
@@ -299,6 +302,46 @@ export default function TanaoroshiPage() {
           </p>
         </div>
 
+        {/* タブナビゲーション */}
+        <div className="bg-white rounded-xl shadow-sm p-1 mb-6 flex gap-1">
+          <button
+            onClick={() => setActiveTab('inventory')}
+            className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
+              activeTab === 'inventory'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <i className="fas fa-box mr-2"></i>
+            棚卸し / バリエーション作成
+          </button>
+          <button
+            onClick={() => setActiveTab('approval')}
+            className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
+              activeTab === 'approval'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <i className="fas fa-clipboard-check mr-2"></i>
+            承認待ちアイテム
+          </button>
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
+              activeTab === 'all'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <i className="fas fa-database mr-2"></i>
+            全データ表示
+          </button>
+        </div>
+
+      {/* 棚卸しタブのコンテンツ */}
+      {activeTab === 'inventory' && (
+        <>
       {/* 統計ヘッダー */}
       <StatsHeader stats={stats} selectedCount={selectedProducts.size} />
 
@@ -493,15 +536,66 @@ export default function TanaoroshiPage() {
           </div>
         </div>
       )}
+        </>
+      )}
+
+      {/* 承認待ちアイテムタブのコンテンツ */}
+      {activeTab === 'approval' && (
+        <div className="w-full h-[80vh] border border-gray-200 rounded-lg bg-white shadow-sm">
+          <iframe
+            src="/approval"
+            title="承認待ちアイテム"
+            className="w-full h-full border-0 rounded-lg"
+          />
+        </div>
+      )}
+
+      {/* 全データ表示タブのコンテンツ */}
+      {activeTab === 'all' && (
+        <div className="bg-white rounded-xl shadow-sm p-8">
+          <div className="text-center">
+            <i className="fas fa-database text-6xl text-slate-300 mb-4"></i>
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">全データ表示</h2>
+            <p className="text-slate-600 mb-6">
+              棚卸しデータと承認待ちアイテムを統合して表示します
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+              <div className="border border-slate-200 rounded-lg p-4 text-left">
+                <h3 className="font-semibold text-slate-900 mb-2">
+                  <i className="fas fa-box text-blue-600 mr-2"></i>
+                  棚卸しデータ
+                </h3>
+                <p className="text-sm text-slate-600">
+                  全{stats.total}件の在庫商品
+                </p>
+              </div>
+              <div className="border border-slate-200 rounded-lg p-4 text-left">
+                <h3 className="font-semibold text-slate-900 mb-2">
+                  <i className="fas fa-clipboard-check text-orange-600 mr-2"></i>
+                  承認待ちアイテム
+                </h3>
+                <p className="text-sm text-slate-600">
+                  {pendingCount}件の判定待ち商品
+                </p>
+              </div>
+            </div>
+            <p className="text-sm text-slate-500 mt-6">
+              統合ビュー機能は今後のアップデートで実装予定です
+            </p>
+          </div>
+        </div>
+      )}
       </div>
 
-      {/* Grouping Box Sidebar */}
-      <GroupingBoxSidebar
-        selectedProducts={getSelectedProductsData()}
-        onClearSelection={handleClearSelection}
-        onCreateVariation={handleCreateVariation}
-        onCreateBundle={handleCreateBundle}
-      />
+      {/* Grouping Box Sidebar - 棚卸しタブのみ表示 */}
+      {activeTab === 'inventory' && (
+        <GroupingBoxSidebar
+          selectedProducts={getSelectedProductsData()}
+          onClearSelection={handleClearSelection}
+          onCreateVariation={handleCreateVariation}
+          onCreateBundle={handleCreateBundle}
+        />
+      )}
     </div>
   )
 }
