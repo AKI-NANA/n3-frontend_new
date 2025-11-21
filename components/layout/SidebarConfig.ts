@@ -279,6 +279,25 @@ export const navigationItems: NavigationItem[] = [
   },
 
   // ==============================================
+  // 🛒 Amazon管理
+  // ==============================================
+  {
+    id: "amazon-tools",
+    label: "Amazon管理",
+    icon: "shopping-cart",
+    priority: 7.5,
+    submenu: [
+      {
+        text: "Amazon自動取得設定",
+        link: "/tools/amazon-config",
+        icon: "settings",
+        status: "ready",
+        priority: 1
+      },
+    ]
+  },
+
+  // ==============================================
   // 📈 分析
   // ==============================================
   {
