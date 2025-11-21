@@ -10,12 +10,14 @@ import { createClient } from '@/lib/supabase/server';
 import { CredentialsManager } from '@/services/CredentialsManager';
 import { ExclusiveLockManager } from '@/services/ExclusiveLockManager';
 import { ListingResultLogger } from '@/services/ListingResultLogger';
+import { VariationConverter } from '@/services/VariationConverter';
 import { EbayClient, EbayListingData } from '@/lib/api-clients/EbayClient';
 import { AmazonClient, AmazonListingData } from '@/lib/api-clients/AmazonClient';
 import { CoupangClient, CoupangListingData } from '@/lib/api-clients/CoupangClient';
 import { ShopifyClient, ShopifyListingData } from '@/lib/api-clients/ShopifyClient';
 import { Platform } from '@/types/strategy';
 import { Product } from '@/types/product';
+import { VariationConversionError } from '@/types/variation';
 
 interface BatchListingRequest {
   limit?: number;           // 処理件数（デフォルト: 50）
@@ -213,45 +215,97 @@ async function processListing(
 }
 
 /**
- * eBayに出品
+ * eBayに出品（バリエーション対応）
  */
 async function listToEbay(product: Product, config: any) {
   const client = new EbayClient(config);
 
-  const listingData: EbayListingData = {
-    sku: product.sku,
-    title: product.title,
-    description: product.description || '',
-    category_id: '123456', // TODO: カテゴリーマッピング
-    price: product.price,
-    quantity: product.current_stock_count || 1,
-    condition: 'New',
-    images: product.images?.map((img) => img.url) || [],
-  };
+  // バリエーション商品かチェック
+  const isParent = await VariationConverter.isParentSku(product.sku);
 
-  return await client.addItem(listingData);
+  if (isParent) {
+    // 親SKUの場合: バリエーション変換を実行
+    console.log(`🔄 バリエーション変換中: ${product.sku}`);
+    const conversionResult = await VariationConverter.convert(product.sku, 'ebay');
+
+    if ('code' in conversionResult) {
+      // 変換エラー
+      const error = conversionResult as VariationConversionError;
+      return {
+        success: false,
+        error: {
+          code: error.code,
+          message: error.message,
+          retryable: false,
+        },
+      };
+    }
+
+    // eBayバリエーションAPIを呼び出し
+    return await client.addItemVariations(conversionResult);
+  } else {
+    // 単品商品の場合: 通常の出品
+    const listingData: EbayListingData = {
+      sku: product.sku,
+      title: product.title,
+      description: product.description || '',
+      category_id: '123456', // TODO: カテゴリーマッピング
+      price: product.price,
+      quantity: product.current_stock_count || 1,
+      condition: 'New',
+      images: product.images?.map((img) => img.url) || [],
+    };
+
+    return await client.addItem(listingData);
+  }
 }
 
 /**
- * Amazonに出品
+ * Amazonに出品（バリエーション対応）
  */
 async function listToAmazon(product: Product, config: any) {
   const client = new AmazonClient(config);
 
-  const listingData: AmazonListingData = {
-    sku: product.sku,
-    asin: product.asin,
-    product_type: 'PRODUCT', // TODO: 商品タイプマッピング
-    title: product.title,
-    description: product.description || '',
-    brand: product.brand_name || 'Generic',
-    price: product.price,
-    quantity: product.current_stock_count || 1,
-    condition: 'NewItem',
-    images: product.images?.map((img) => img.url) || [],
-  };
+  // バリエーション商品かチェック
+  const isParent = await VariationConverter.isParentSku(product.sku);
 
-  return await client.createListing(listingData);
+  if (isParent) {
+    // 親SKUの場合: バリエーション変換を実行
+    console.log(`🔄 バリエーション変換中: ${product.sku}`);
+    const conversionResult = await VariationConverter.convert(product.sku, 'amazon');
+
+    if ('code' in conversionResult) {
+      // 変換エラー
+      const error = conversionResult as VariationConversionError;
+      return {
+        success: false,
+        error: {
+          code: error.code,
+          message: error.message,
+          retryable: false,
+        },
+      };
+    }
+
+    // Amazonバリエーション（親子関係）を一括出品
+    return await client.createParentChildListings(conversionResult);
+  } else {
+    // 単品商品の場合: 通常の出品
+    const listingData: AmazonListingData = {
+      sku: product.sku,
+      asin: product.asin,
+      product_type: 'PRODUCT', // TODO: 商品タイプマッピング
+      title: product.title,
+      description: product.description || '',
+      brand: product.brand_name || 'Generic',
+      price: product.price,
+      quantity: product.current_stock_count || 1,
+      condition: 'NewItem',
+      images: product.images?.map((img) => img.url) || [],
+    };
+
+    return await client.createListing(listingData);
+  }
 }
 
 /**

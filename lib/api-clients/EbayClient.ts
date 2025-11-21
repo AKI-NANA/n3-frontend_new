@@ -146,6 +146,41 @@ export class EbayClient {
   }
 
   /**
+   * バリエーション商品の出品（AddFixedPriceItem with Variations）
+   */
+  async addItemVariations(variationData: any): Promise<ApiCallResult<string>> {
+    const xml = this.buildAddItemVariationsXML(variationData);
+    const response = await this.callApi('AddFixedPriceItem', xml);
+
+    if (!response.success || !response.data) {
+      return response;
+    }
+
+    const parsed: EbayApiResponse = this.xmlParser.parse(response.data);
+
+    if (parsed.AddItemResponse?.Ack === 'Success') {
+      return {
+        success: true,
+        data: parsed.AddItemResponse.ItemID,
+      };
+    }
+
+    // エラー処理
+    const errors = parsed.AddItemResponse?.Errors || [];
+    const errorMessages = errors.map((e) => `[${e.ErrorCode}] ${e.LongMessage}`).join('; ');
+
+    return {
+      success: false,
+      error: {
+        code: errors[0]?.ErrorCode || 'UNKNOWN',
+        message: errorMessages || 'バリエーション出品に失敗しました',
+        details: errors,
+      },
+      retryable: this.isRetryableError(errors[0]?.ErrorCode),
+    };
+  }
+
+  /**
    * AddItem用のXMLを構築
    */
   private buildAddItemXML(data: EbayListingData): string {
@@ -225,6 +260,64 @@ export class EbayClient {
           Description: data.description ? `<![CDATA[${data.description}]]>` : undefined,
           StartPrice: data.price ? data.price.toFixed(2) : undefined,
           Quantity: data.quantity,
+        },
+      },
+    };
+
+    return this.xmlBuilder.build(itemObj);
+  }
+
+  /**
+   * バリエーション出品用のXMLを構築
+   */
+  private buildAddItemVariationsXML(data: any): string {
+    const itemObj = {
+      '?xml': {
+        '@_version': '1.0',
+        '@_encoding': 'utf-8',
+      },
+      AddFixedPriceItemRequest: {
+        '@_xmlns': 'urn:ebay:apis:eBLBaseComponents',
+        RequesterCredentials: {
+          eBayAuthToken: this.config.credentials.ebay_auth_token,
+        },
+        ErrorLanguage: 'en_US',
+        WarningLevel: 'High',
+        Item: {
+          Title: data.title,
+          Description: `<![CDATA[${data.description}]]>`,
+          PrimaryCategory: {
+            CategoryID: data.category_id,
+          },
+          Country: 'US',
+          Currency: 'USD',
+          DispatchTimeMax: 3,
+          ListingDuration: 'GTC',
+          ListingType: 'FixedPriceItem',
+          PaymentMethods: 'PayPal',
+          PictureDetails: {
+            PictureURL: data.pictures,
+          },
+          // バリエーション設定
+          Variations: {
+            Variation: data.variations.map((v: any) => ({
+              SKU: v.sku,
+              StartPrice: v.start_price.toFixed(2),
+              Quantity: v.quantity,
+              VariationSpecifics: {
+                NameValueList: v.variation_specifics.map((spec: any) => ({
+                  Name: spec.name,
+                  Value: spec.value,
+                })),
+              },
+            })),
+          },
+          VariationSpecificsSet: {
+            NameValueList: data.variation_specifics_set.map((set: any) => ({
+              Name: set.name,
+              Value: set.values,
+            })),
+          },
         },
       },
     };

@@ -167,6 +167,81 @@ export class AmazonClient {
   }
 
   /**
+   * バリエーション商品の出品（親子関係）
+   * 1. 親SKUを作成
+   * 2. 子SKUを順次作成して親に紐付け
+   */
+  async createParentChildListings(variationData: any): Promise<ApiCallResult<string>> {
+    try {
+      // 1. 親SKUの作成
+      const parentPayload = {
+        productType: variationData.product_type,
+        requirements: 'LISTING',
+        attributes: variationData.attributes,
+      };
+
+      const parentEndpoint = `/listings/2021-08-01/items/${encodeURIComponent(
+        variationData.parent_sku
+      )}`;
+      const parentResponse = await this.callApi('PUT', parentEndpoint, parentPayload);
+
+      if (!parentResponse.success) {
+        return {
+          success: false,
+          error: {
+            code: 'PARENT_CREATION_FAILED',
+            message: '親SKUの作成に失敗しました',
+          },
+          retryable: false,
+        };
+      }
+
+      // 2. 子SKUの順次作成
+      for (const child of variationData.children) {
+        const childPayload = {
+          productType: variationData.product_type,
+          requirements: 'LISTING_OFFER_ONLY',
+          attributes: {
+            ...child.attributes,
+            parent_sku: [
+              {
+                value: variationData.parent_sku,
+                marketplace_id: this.marketplaceId,
+              },
+            ],
+          },
+          offers: child.offers,
+        };
+
+        const childEndpoint = `/listings/2021-08-01/items/${encodeURIComponent(child.sku)}`;
+        const childResponse = await this.callApi('PUT', childEndpoint, childPayload);
+
+        if (!childResponse.success) {
+          console.error(`❌ 子SKU作成失敗: ${child.sku}`, childResponse.error);
+          // 子SKUの失敗は警告として記録し、処理を継続
+        }
+
+        // レート制限対策
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
+
+      return {
+        success: true,
+        data: variationData.parent_sku,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'VARIATION_CREATION_ERROR',
+          message: error instanceof Error ? error.message : 'バリエーション作成中にエラーが発生しました',
+        },
+        retryable: false,
+      };
+    }
+  }
+
+  /**
    * Listing Payload構築
    */
   private buildListingPayload(data: AmazonListingData): any {
