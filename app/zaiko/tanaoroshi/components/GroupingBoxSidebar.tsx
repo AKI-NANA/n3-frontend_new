@@ -82,6 +82,13 @@ export function GroupingBoxSidebar({
   const [showTemplates, setShowTemplates] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateOption | null>(null)
 
+  // 親SKUメタデータ（eBay出品用）
+  const [parentTitle, setParentTitle] = useState('')
+  const [parentDescription, setParentDescription] = useState('')
+  const [parentImages, setParentImages] = useState<string[]>([])
+  const [variationAttributes, setVariationAttributes] = useState<{ [sku: string]: { [key: string]: string } }>({})
+  const [creatingVariation, setCreatingVariation] = useState(false)
+
   // 最大DDPコストベースの価格シミュレーション
   const maxDdpCost = selectedProducts.length > 0
     ? Math.max(...selectedProducts.map(p => p.cost_price || 0))
@@ -242,7 +249,7 @@ export function GroupingBoxSidebar({
 
       const precisionCalcItems = selectedProducts.map(p => ({
         sku: p.sku,
-        cost_jpy: p.cost_jpy || 0,
+        cost_jpy: p.source_data?.cost_jpy || p.cost_price * 150, // フォールバック: USD→JPY概算
         weight_g: p.source_data?.weight_g || p.source_data?.ddp_weight_g || 0,
         hs_code: p.source_data?.hs_code || null,
         origin_country: p.source_data?.origin_country || null
@@ -401,6 +408,115 @@ export function GroupingBoxSidebar({
     } finally {
       setLoading(false)
     }
+  }
+
+  // バリエーション作成実行
+  const executeVariationCreation = async () => {
+    // フォーム検証
+    if (!parentTitle.trim()) {
+      alert('⚠️ 親SKUタイトルを入力してください')
+      return
+    }
+
+    if (parentImages.length === 0) {
+      alert('⚠️ 親SKU画像を最低1枚アップロードしてください')
+      return
+    }
+
+    if (!compatibility?.isCompatible) {
+      alert('⚠️ 適合性チェックに合格していません')
+      return
+    }
+
+    // 子SKU属性の検証
+    const missingAttributes = selectedProducts.filter(p => {
+      const attrs = variationAttributes[p.sku || '']
+      return !attrs || Object.keys(attrs).length === 0
+    })
+
+    if (missingAttributes.length > 0) {
+      alert(`⚠️ 以下の商品のバリエーション属性が未設定です:\n${missingAttributes.map(p => p.sku).join(', ')}`)
+      return
+    }
+
+    setCreatingVariation(true)
+
+    try {
+      // API呼び出し
+      const response = await fetch('/api/products/create-variation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          selected_items: selectedProducts.map(p => ({
+            id: p.id,
+            sku: p.sku,
+            product_name: p.product_name,
+            cost_jpy: p.source_data?.cost_jpy || p.cost_price * 150, // フォールバック: USD→JPY概算
+            cost_price: p.cost_price || 0,
+            images: p.images || [],
+            source_data: p.source_data,
+            attributes: variationAttributes[p.sku || ''] || {}
+          })),
+          parent_metadata: {
+            title: parentTitle,
+            description: parentDescription,
+            images: parentImages
+          }
+        })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        alert(
+          `✅ バリエーション作成成功！\n\n` +
+          `親SKU: ${result.parent_sku}\n` +
+          `統一価格: $${result.unified_price_usd}\n` +
+          `バリエーション数: ${result.variations_count}個\n\n` +
+          `次のステップ: eBay出品画面で最終確認して公開してください`
+        )
+        onClearSelection()
+        setParentTitle('')
+        setParentDescription('')
+        setParentImages([])
+        setVariationAttributes({})
+      } else {
+        throw new Error(result.error || 'バリエーション作成失敗')
+      }
+    } catch (error: any) {
+      console.error('❌ バリエーション作成エラー:', error)
+      alert(`❌ バリエーション作成失敗:\n\n${error.message}`)
+    } finally {
+      setCreatingVariation(false)
+    }
+  }
+
+  // 画像アップロードハンドラー
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files) return
+
+    // 簡易実装: FileReader でData URLに変換（本番ではS3等にアップロード）
+    Array.from(files).forEach(file => {
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setParentImages(prev => [...prev, event.target!.result as string])
+        }
+      }
+      reader.readAsDataURL(file)
+    })
+  }
+
+  // バリエーション属性の更新
+  const updateVariationAttribute = (sku: string, attributeName: string, attributeValue: string) => {
+    setVariationAttributes(prev => ({
+      ...prev,
+      [sku]: {
+        ...prev[sku],
+        [attributeName]: attributeValue
+      }
+    }))
   }
 
   if (selectedProducts.length === 0) {
@@ -616,6 +732,98 @@ export function GroupingBoxSidebar({
         </div>
       )}
 
+      {/* 親SKUメタデータ設定（eBay出品用） */}
+      {selectedProducts.length >= 2 && compatibility?.isCompatible && (
+        <div className="p-4 border-b border-slate-200 bg-amber-50">
+          <h4 className="font-semibold text-amber-900 mb-3 flex items-center">
+            <i className="fas fa-edit mr-2"></i>
+            親SKUメタデータ（必須）
+          </h4>
+
+          {/* 統一タイトル */}
+          <div className="mb-3">
+            <label className="text-xs font-semibold text-amber-900 mb-1 block">
+              統一タイトル <span className="text-red-600">*</span>
+            </label>
+            <input
+              type="text"
+              value={parentTitle}
+              onChange={(e) => setParentTitle(e.target.value)}
+              placeholder="例: Golf Club Set - Multiple Weights Available"
+              className="w-full px-3 py-2 text-sm border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              maxLength={80}
+            />
+            <p className="text-xs text-amber-600 mt-1">
+              {parentTitle.length}/80文字（eBay推奨: 60-80文字）
+            </p>
+          </div>
+
+          {/* 統一説明文 */}
+          <div className="mb-3">
+            <label className="text-xs font-semibold text-amber-900 mb-1 block">
+              統一説明文（任意）
+            </label>
+            <textarea
+              value={parentDescription}
+              onChange={(e) => setParentDescription(e.target.value)}
+              placeholder="商品の共通説明を入力してください..."
+              className="w-full px-3 py-2 text-sm border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
+              rows={3}
+              maxLength={500}
+            />
+            <p className="text-xs text-amber-600 mt-1">
+              {parentDescription.length}/500文字
+            </p>
+          </div>
+
+          {/* 親SKU画像アップロード */}
+          <div className="mb-3">
+            <label className="text-xs font-semibold text-amber-900 mb-1 block">
+              親SKU画像 <span className="text-red-600">*</span>
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleImageUpload}
+              className="hidden"
+              id="parent-image-upload"
+            />
+            <label
+              htmlFor="parent-image-upload"
+              className="block w-full px-3 py-2 text-sm text-center border-2 border-dashed border-amber-300 rounded-lg cursor-pointer hover:bg-amber-100 transition-colors"
+            >
+              <i className="fas fa-cloud-upload-alt mr-2"></i>
+              画像をアップロード（複数可）
+            </label>
+
+            {/* アップロード済み画像プレビュー */}
+            {parentImages.length > 0 && (
+              <div className="grid grid-cols-3 gap-2 mt-2">
+                {parentImages.map((img, index) => (
+                  <div key={index} className="relative">
+                    <img
+                      src={img}
+                      alt={`Parent ${index + 1}`}
+                      className="w-full h-20 object-cover rounded border border-amber-300"
+                    />
+                    <button
+                      onClick={() => setParentImages(prev => prev.filter((_, i) => i !== index))}
+                      className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-700"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="text-xs text-amber-600 mt-1">
+              {parentImages.length}枚アップロード済み（最低1枚必須）
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* 選択商品リスト */}
       <div className="flex-1 overflow-y-auto p-4">
         <h4 className="font-semibold text-slate-900 mb-3">選択中の商品</h4>
@@ -670,6 +878,169 @@ export function GroupingBoxSidebar({
           })}
         </div>
       </div>
+
+      {/* 子SKU属性確認・編集（バリエーション属性設定） */}
+      {selectedProducts.length >= 2 && compatibility?.isCompatible && (
+        <div className="p-4 border-b border-slate-200 bg-indigo-50">
+          <h4 className="font-semibold text-indigo-900 mb-3 flex items-center">
+            <i className="fas fa-tags mr-2"></i>
+            バリエーション属性設定
+          </h4>
+          <p className="text-xs text-indigo-700 mb-3">
+            各商品のバリエーション属性を設定してください（例: Color, Size, Weight）
+          </p>
+
+          <div className="space-y-3">
+            {selectedProducts.map((product, index) => {
+              const attrs = variationAttributes[product.sku || ''] || {}
+
+              return (
+                <div key={product.id} className="bg-white rounded-lg p-3 border border-indigo-200">
+                  <div className="flex items-start gap-2 mb-2">
+                    <div className="w-8 h-8 bg-slate-200 rounded overflow-hidden flex-shrink-0">
+                      {product.images && product.images.length > 0 ? (
+                        <img
+                          src={product.images[0]}
+                          alt={product.product_name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Package className="w-4 h-4 text-slate-400" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-indigo-900 truncate">
+                        {product.product_name}
+                      </p>
+                      <p className="text-xs text-indigo-600 font-mono">
+                        {product.sku}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 属性入力フィールド */}
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs text-indigo-800 mb-1 block">
+                          属性名1 <span className="text-red-600">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="例: Color"
+                          value={Object.keys(attrs)[0] || ''}
+                          onChange={(e) => {
+                            const oldKey = Object.keys(attrs)[0]
+                            const newKey = e.target.value
+                            if (oldKey) {
+                              const newAttrs = { ...attrs }
+                              newAttrs[newKey] = newAttrs[oldKey]
+                              delete newAttrs[oldKey]
+                              setVariationAttributes(prev => ({
+                                ...prev,
+                                [product.sku || '']: newAttrs
+                              }))
+                            } else if (newKey) {
+                              updateVariationAttribute(product.sku || '', newKey, '')
+                            }
+                          }}
+                          className="w-full px-2 py-1 text-xs border border-indigo-300 rounded focus:ring-1 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-indigo-800 mb-1 block">
+                          値1 <span className="text-red-600">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="例: Blue"
+                          value={Object.values(attrs)[0] || ''}
+                          onChange={(e) => {
+                            const key = Object.keys(attrs)[0]
+                            if (key) {
+                              updateVariationAttribute(product.sku || '', key, e.target.value)
+                            }
+                          }}
+                          className="w-full px-2 py-1 text-xs border border-indigo-300 rounded focus:ring-1 focus:ring-indigo-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* 追加属性（オプション） */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs text-indigo-800 mb-1 block">
+                          属性名2（任意）
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="例: Size"
+                          value={Object.keys(attrs)[1] || ''}
+                          onChange={(e) => {
+                            const oldKey = Object.keys(attrs)[1]
+                            const newKey = e.target.value
+                            if (oldKey && newKey) {
+                              const newAttrs = { ...attrs }
+                              newAttrs[newKey] = newAttrs[oldKey]
+                              delete newAttrs[oldKey]
+                              setVariationAttributes(prev => ({
+                                ...prev,
+                                [product.sku || '']: newAttrs
+                              }))
+                            } else if (newKey) {
+                              updateVariationAttribute(product.sku || '', newKey, '')
+                            }
+                          }}
+                          className="w-full px-2 py-1 text-xs border border-indigo-300 rounded focus:ring-1 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-indigo-800 mb-1 block">
+                          値2
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="例: Large"
+                          value={Object.values(attrs)[1] || ''}
+                          onChange={(e) => {
+                            const key = Object.keys(attrs)[1]
+                            if (key) {
+                              updateVariationAttribute(product.sku || '', key, e.target.value)
+                            }
+                          }}
+                          className="w-full px-2 py-1 text-xs border border-indigo-300 rounded focus:ring-1 focus:ring-indigo-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 属性プレビュー */}
+                  {Object.keys(attrs).length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-indigo-200">
+                      <p className="text-xs text-indigo-700 font-semibold mb-1">
+                        設定済み属性:
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {Object.entries(attrs).map(([key, value]) => (
+                          <Badge key={key} className="text-xs bg-indigo-100 text-indigo-800 border-indigo-300">
+                            {key}: {value || '未設定'}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          <p className="text-xs text-indigo-600 mt-3 bg-indigo-100 rounded p-2">
+            💡 ヒント: 全ての商品に最低1つの属性を設定してください。eBayでは「Color」や「Size」がよく使われます。
+          </p>
+        </div>
+      )}
 
       {/* 既存親SKU候補リスト */}
       {selectedProducts.length >= 1 && (
@@ -790,12 +1161,27 @@ export function GroupingBoxSidebar({
       {/* アクションボタン */}
       <div className="p-4 border-t border-slate-200 bg-slate-50 space-y-2">
         <Button
-          onClick={onCreateVariation}
-          disabled={!compatibility?.isCompatible || selectedProducts.length < 2}
+          onClick={executeVariationCreation}
+          disabled={
+            !compatibility?.isCompatible ||
+            selectedProducts.length < 2 ||
+            !parentTitle.trim() ||
+            parentImages.length === 0 ||
+            creatingVariation
+          }
           className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-slate-300"
         >
-          <Layers className="w-4 h-4 mr-2" />
-          新規バリエーション作成（eBay）
+          {creatingVariation ? (
+            <>
+              <i className="fas fa-spinner fa-spin mr-2"></i>
+              作成中...
+            </>
+          ) : (
+            <>
+              <Layers className="w-4 h-4 mr-2" />
+              バリエーション作成実行（eBay）
+            </>
+          )}
         </Button>
         <Button
           onClick={onCreateBundle}
@@ -809,9 +1195,13 @@ export function GroupingBoxSidebar({
         <p className="text-xs text-slate-500 text-center mt-2">
           {selectedProducts.length < 2
             ? '2個以上の商品を選択してください'
-            : compatibility?.isCompatible
-            ? 'バリエーション作成の準備完了'
-            : '条件を満たしていません'}
+            : !compatibility?.isCompatible
+            ? '適合性チェックに合格していません'
+            : !parentTitle.trim()
+            ? '親SKUタイトルを入力してください'
+            : parentImages.length === 0
+            ? '親SKU画像を1枚以上アップロードしてください'
+            : 'バリエーション作成の準備完了'}
         </p>
       </div>
     </div>
