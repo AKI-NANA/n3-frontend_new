@@ -77,9 +77,64 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ===== ステップ2: 基準値決定（最大DDPコスト） =====
+    // ===== ステップ2: 精密DDP計算 =====
+    // inventory_masterのsource_dataから重量・HSコード・原産国を取得し、
+    // 正確なDDP costを計算（簡易的なcost_priceではなく関税・MPF/HMF考慮）
 
-    const ddpCosts = selectedItems.map(item => item.ddp_cost_usd)
+    console.log('🔬 精密DDP計算を開始...')
+
+    // 精密計算API用のリクエストを準備
+    const precisionCalcItems = selectedItems.map(item => ({
+      sku: item.sku,
+      cost_jpy: item.cost_jpy || 0,
+      weight_g: item.weight_g || 0,
+      hs_code: item.source_data?.hs_code || null,
+      origin_country: item.source_data?.origin_country || null
+    }))
+
+    // 精密DDP計算APIを呼び出し
+    let preciseDdpCosts: Map<string, number> = new Map()
+
+    try {
+      const calcResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/products/calculate-precise-ddp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: precisionCalcItems })
+      })
+
+      if (!calcResponse.ok) {
+        throw new Error(`精密DDP計算API失敗: ${calcResponse.status}`)
+      }
+
+      const calcResult = await calcResponse.json()
+
+      if (calcResult.success) {
+        // SKUごとの精密DDP costをマップに格納
+        calcResult.results.forEach((result: any) => {
+          preciseDdpCosts.set(result.sku, result.precise_ddp_cost_usd)
+        })
+
+        console.log('✅ 精密DDP計算完了:', {
+          total: calcResult.summary.total_items,
+          complete_data: calcResult.summary.complete_data_count,
+          max: `$${calcResult.summary.max_ddp_cost_usd.toFixed(2)}`,
+          min: `$${calcResult.summary.min_ddp_cost_usd.toFixed(2)}`
+        })
+      } else {
+        throw new Error(calcResult.error || '精密DDP計算失敗')
+      }
+    } catch (error: any) {
+      console.warn('⚠️ 精密DDP計算失敗、フォールバックとして簡易ddp_cost_usdを使用:', error.message)
+      // フォールバック: 既存のddp_cost_usdを使用
+      selectedItems.forEach(item => {
+        preciseDdpCosts.set(item.sku, item.ddp_cost_usd)
+      })
+    }
+
+    // ===== ステップ3: 基準値決定（最大DDPコスト） =====
+
+    // 精密計算されたDDPコストを使用
+    const ddpCosts = selectedItems.map(item => preciseDdpCosts.get(item.sku) || item.ddp_cost_usd)
     const weights = selectedItems.map(item => item.weight_g || 0).filter(w => w > 0)
 
     const minDdpCost = Math.min(...ddpCosts)
@@ -124,7 +179,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // ===== ステップ3: 最適な配送ポリシーの自動選定 =====
+    // ===== ステップ4: 最適な配送ポリシーの自動選定 =====
     // 既存システムのロジックに従い、重量AND価格範囲で選定
 
     const maxWeightKg = maxWeight / 1000
@@ -170,10 +225,11 @@ export async function POST(request: NextRequest) {
       weight_range: `${selectedPolicy.weight_min_kg}kg - ${selectedPolicy.weight_max_kg}kg`
     } : '自動選定失敗（手動設定が必要）')
 
-    // ===== ステップ4: 子SKU情報の生成（最大DDPコストベース） =====
+    // ===== ステップ5: 子SKU情報の生成（最大DDPコストベース） =====
 
     const variations = selectedItems.map((item, index) => {
-      const actualDdpCost = item.ddp_cost_usd
+      // 精密計算されたDDPコストを使用
+      const actualDdpCost = preciseDdpCosts.get(item.sku) || item.ddp_cost_usd
       const excessProfit = maxDdpCost - actualDdpCost // 追加利益
 
       return {
@@ -187,11 +243,14 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // ===== ステップ5: 親SKUの作成 =====
+    // ===== ステップ6: 親SKUの作成 =====
 
-    const priorityItem = selectedItems.reduce((max, item) =>
-      item.ddp_cost_usd > max.ddp_cost_usd ? item : max
-    )
+    // 最大DDP costを持つアイテムを基準として使用（精密計算値で比較）
+    const priorityItem = selectedItems.reduce((max, item) => {
+      const maxCost = preciseDdpCosts.get(max.sku) || max.ddp_cost_usd
+      const itemCost = preciseDdpCosts.get(item.sku) || item.ddp_cost_usd
+      return itemCost > maxCost ? item : max
+    })
 
     const parentListingData = {
       max_ddp_cost_usd: maxDdpCost, // 【重要】統一Item Price
