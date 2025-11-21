@@ -41,6 +41,22 @@ interface CompatibilityCheck {
   warnings: string[]
 }
 
+interface ParentCandidate {
+  parent_sku: string
+  parent_id: string
+  current_variation_count: number
+  current_max_ddp_cost: number
+  current_unified_price: number
+  new_max_ddp_cost: number
+  new_unified_price: number
+  price_change: number
+  price_change_percent: number
+  compatibility_score: number
+  compatibility_issues: string[]
+  category_id: string | null
+  variation_attributes: string[]
+}
+
 export function GroupingBoxSidebar({
   selectedProducts,
   onClearSelection,
@@ -49,6 +65,9 @@ export function GroupingBoxSidebar({
 }: GroupingBoxSidebarProps) {
   const [compatibility, setCompatibility] = useState<CompatibilityCheck | null>(null)
   const [loading, setLoading] = useState(false)
+  const [parentCandidates, setParentCandidates] = useState<ParentCandidate[]>([])
+  const [loadingCandidates, setLoadingCandidates] = useState(false)
+  const [showCandidates, setShowCandidates] = useState(false)
 
   // 最大DDPコストベースの価格シミュレーション
   const maxDdpCost = selectedProducts.length > 0
@@ -69,6 +88,87 @@ export function GroupingBoxSidebar({
 
     checkCompatibility()
   }, [selectedProducts])
+
+  // 既存親SKU候補を検索
+  const searchParentCandidates = async () => {
+    setLoadingCandidates(true)
+    setShowCandidates(true)
+    try {
+      const selectedItems = selectedProducts.map(p => ({
+        id: p.id,
+        sku: p.sku || `AUTO-${p.unique_id}`,
+        ddp_cost_usd: p.cost_price || 0,
+        weight_g: p.source_data?.weight_g || 0,
+        category_id: p.source_data?.category_id || p.category
+      }))
+
+      const response = await fetch('/api/products/find-parent-candidates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ selectedItems })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setParentCandidates(data.candidates || [])
+      } else {
+        console.error('候補検索エラー:', data.error)
+        setParentCandidates([])
+      }
+    } catch (error) {
+      console.error('候補検索エラー:', error)
+      setParentCandidates([])
+    } finally {
+      setLoadingCandidates(false)
+    }
+  }
+
+  // 既存親に追加
+  const addToParent = async (parentSku: string) => {
+    if (!confirm(`親SKU「${parentSku}」に追加しますか？`)) return
+
+    try {
+      const newItems = selectedProducts.map(p => ({
+        id: p.id,
+        sku: p.sku || `AUTO-${p.unique_id}`,
+        title: p.product_name,
+        image: p.images && p.images.length > 0 ? p.images[0] : '',
+        ddp_cost_usd: p.cost_price || 0,
+        stock_quantity: p.physical_quantity || 0,
+        weight_g: p.source_data?.weight_g || 0,
+        category_id: p.source_data?.category_id || p.category
+      }))
+
+      // 簡単な属性設定（ユーザーが後で編集可能）
+      const attributes = selectedProducts.map((_, i) => [
+        { name: 'Variant', value: `Option ${i + 1}` }
+      ])
+
+      const response = await fetch('/api/products/add-to-variation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          parentSku,
+          newItems,
+          attributes
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        alert(`✅ 追加成功！\n\n親SKU: ${parentSku}\n追加した子SKU: ${newItems.length}個\n新統一価格: $${data.summary.newMaxDdp.toFixed(2)}`)
+        onClearSelection()
+        setShowCandidates(false)
+      } else {
+        alert(`❌ 追加失敗: ${data.error}`)
+      }
+    } catch (error: any) {
+      console.error('追加エラー:', error)
+      alert(`❌ 追加エラー: ${error.message}`)
+    }
+  }
 
   const checkCompatibility = async () => {
     setLoading(true)
@@ -381,6 +481,122 @@ export function GroupingBoxSidebar({
         </div>
       </div>
 
+      {/* 既存親SKU候補リスト */}
+      {selectedProducts.length >= 1 && (
+        <div className="border-t border-slate-200">
+          <div className="p-4">
+            <Button
+              onClick={searchParentCandidates}
+              disabled={loadingCandidates}
+              variant="outline"
+              className="w-full border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+            >
+              {loadingCandidates ? (
+                <>
+                  <i className="fas fa-spinner fa-spin mr-2"></i>
+                  検索中...
+                </>
+              ) : (
+                <>
+                  <i className="fas fa-search mr-2"></i>
+                  既存親SKUを検索
+                </>
+              )}
+            </Button>
+          </div>
+
+          {showCandidates && (
+            <div className="px-4 pb-4">
+              {parentCandidates.length === 0 ? (
+                <div className="text-center py-4 text-sm text-slate-500">
+                  互換性のある既存親SKUが見つかりませんでした
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  <p className="text-xs font-semibold text-slate-700 mb-2">
+                    {parentCandidates.length}件の候補が見つかりました
+                  </p>
+                  {parentCandidates.map((candidate, index) => (
+                    <div
+                      key={index}
+                      className="bg-indigo-50 border border-indigo-200 rounded-lg p-3"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <p className="font-semibold text-indigo-900 text-sm">
+                            {candidate.parent_sku}
+                          </p>
+                          <p className="text-xs text-indigo-600">
+                            現在 {candidate.current_variation_count} バリエーション
+                          </p>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className={`text-xs ${
+                            candidate.compatibility_score >= 80
+                              ? 'bg-green-100 text-green-700 border-green-300'
+                              : candidate.compatibility_score >= 60
+                              ? 'bg-yellow-100 text-yellow-700 border-yellow-300'
+                              : 'bg-orange-100 text-orange-700 border-orange-300'
+                          }`}
+                        >
+                          {candidate.compatibility_score.toFixed(0)}点
+                        </Badge>
+                      </div>
+
+                      <div className="text-xs text-indigo-700 space-y-1 mb-2">
+                        <div className="flex justify-between">
+                          <span>現在の統一価格:</span>
+                          <span className="font-semibold">
+                            ${candidate.current_unified_price.toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>追加後の統一価格:</span>
+                          <span className="font-semibold">
+                            ${candidate.new_unified_price.toFixed(2)}
+                          </span>
+                        </div>
+                        {candidate.price_change !== 0 && (
+                          <div className="flex justify-between text-orange-700">
+                            <span>価格変更:</span>
+                            <span className="font-semibold">
+                              {candidate.price_change > 0 ? '+' : ''}
+                              ${candidate.price_change.toFixed(2)} (
+                              {candidate.price_change_percent > 0 ? '+' : ''}
+                              {candidate.price_change_percent.toFixed(1)}%)
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {candidate.compatibility_issues.length > 0 && (
+                        <div className="text-xs text-orange-600 mb-2">
+                          {candidate.compatibility_issues.map((issue, i) => (
+                            <div key={i} className="flex items-start gap-1">
+                              <AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                              <span>{issue}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <Button
+                        onClick={() => addToParent(candidate.parent_sku)}
+                        size="sm"
+                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-xs"
+                      >
+                        この親SKUに追加
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* アクションボタン */}
       <div className="p-4 border-t border-slate-200 bg-slate-50 space-y-2">
         <Button
@@ -389,7 +605,7 @@ export function GroupingBoxSidebar({
           className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-slate-300"
         >
           <Layers className="w-4 h-4 mr-2" />
-          バリエーション作成（eBay）
+          新規バリエーション作成（eBay）
         </Button>
         <Button
           onClick={onCreateBundle}
