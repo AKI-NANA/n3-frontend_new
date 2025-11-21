@@ -246,23 +246,23 @@ export default function TanaoroshiPage() {
     loadPendingCount() // 判定待ち件数も更新
   }
 
-  // eBay同期実行
+  // eBay同期実行（inventory_masterに直接同期）
   const handleEbaySync = async (account: 'mjt' | 'green' | 'all') => {
-    if (!confirm(`eBay ${account.toUpperCase()}アカウントのデータを同期しますか？`)) return
-    
+    if (!confirm(`eBay ${account.toUpperCase()}アカウントのデータを同期しますか？\n\n棚卸し画面に直接表示されます。`)) return
+
     setSyncing(true)
     try {
-      const response = await fetch('/api/sync/ebay-to-queue', {
+      const response = await fetch('/api/sync/ebay-to-inventory', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ account, limit: 100 })
       })
-      
+
       const data = await response.json()
-      
+
       if (data.success) {
-        alert(`✅ 同期完了\n新規: ${data.total_synced}件\nスキップ: ${data.total_skipped}件`)
-        loadPendingCount() // 判定待ち件数を更新
+        alert(`✅ 同期完了\n\n新規: ${data.total_synced}件\n更新: ${data.total_updated}件\nスキップ: ${data.total_skipped}件`)
+        loadProducts() // 商品リストを再読み込み
       } else {
         alert(`❌ 同期エラー: ${data.error}`)
       }
@@ -358,8 +358,8 @@ export default function TanaoroshiPage() {
           セット商品作成 ({selectedProducts.size})
         </Button>
 
-        {/* eBay同期ボタン */}
-        <div className="relative">
+        {/* eBay同期ボタン（ドロップダウンメニュー付き） */}
+        <div className="relative group">
           <Button
             onClick={() => handleEbaySync('all')}
             disabled={syncing}
@@ -374,10 +374,35 @@ export default function TanaoroshiPage() {
             ) : (
               <>
                 <i className="fas fa-cloud-download-alt mr-2"></i>
-                eBay同期
+                eBay同期（全アカウント）
               </>
             )}
           </Button>
+          {!syncing && (
+            <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-slate-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+              <button
+                onClick={() => handleEbaySync('mjt')}
+                className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-blue-50 rounded-t-lg"
+              >
+                <i className="fas fa-store mr-2 text-blue-600"></i>
+                MJTアカウント
+              </button>
+              <button
+                onClick={() => handleEbaySync('green')}
+                className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-blue-50"
+              >
+                <i className="fas fa-store mr-2 text-green-600"></i>
+                GREENアカウント
+              </button>
+              <button
+                onClick={() => handleEbaySync('all')}
+                className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-blue-50 rounded-b-lg border-t border-slate-100"
+              >
+                <i className="fas fa-store-alt mr-2 text-indigo-600"></i>
+                全アカウント
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="flex-1"></div>
