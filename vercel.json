@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/inventory-tracking?type=NORMAL_FREQUENCY",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/inventory-tracking?type=HIGH_FREQUENCY",
+      "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/inventory-sync/worker",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}
