@@ -39,7 +39,11 @@ export type TargetMallId =
   | "FALABELLA"
   | "ETSY"
   | "DISCOGS"
-  | "GRAILED";
+  | "GRAILED"
+  | "CATAWIKI"
+  | "BONANZA"
+  | "FACEBOOK_MARKETPLACE"
+  | "EBAY_US";
 
 // 変換結果の型
 export interface ConversionResult {
@@ -68,6 +72,8 @@ function getCurrencyByMallId(mallId: TargetMallId): string {
     case "OTTO":
     case "CHRONO24":
       return "EUR";
+    case "CATAWIKI":
+      return "EUR"; // Catawikiは主にEUR（ヨーロッパ市場）
     case "NOON":
     case "FALABELLA":
     case "MERCADO_LIBRE":
@@ -76,6 +82,9 @@ function getCurrencyByMallId(mallId: TargetMallId): string {
     case "DISCOGS":
     case "GRAILED":
     case "TCGPLAYER":
+    case "BONANZA":
+    case "FACEBOOK_MARKETPLACE":
+    case "EBAY_US":
       return "USD"; // これらのモールはUSD圏/USD決済を想定
     default:
       return "USD";
@@ -339,6 +348,77 @@ export function convertProductData(
         currency: "USD",
         size: "One Size", // サイズ情報が必要
         category: "Outerwear",
+      };
+      break;
+
+    case "CATAWIKI":
+      // Catawiki (オークション) 向けデータ変換ロジック (EURベース)
+      convertedData = {
+        title: product.title_jp,
+        starting_price: pricingResult.localPrice * 0.7, // 開始価格を販売価格の70%に設定
+        reserve_price: pricingResult.localPrice, // 最低落札価格
+        estimated_value: {
+          min: pricingResult.localPrice * 0.8,
+          max: pricingResult.localPrice * 1.2,
+        },
+        currency: "EUR",
+        category: "collectables", // デフォルトカテゴリ
+        auction_duration: 7, // 7日間
+        shipping_method: "DDP",
+        origin_country: "JP",
+        authenticity: "uncertified",
+        expertise: "requested",
+      };
+      break;
+
+    case "BONANZA":
+      // Bonanza 向けデータ変換ロジック (USDベース)
+      convertedData = {
+        title: product.title_jp,
+        price: pricingResult.localPrice,
+        currency: "USD",
+        format: "fixedPrice",
+        shipping_profile: "INTERNATIONAL_STANDARD",
+        returns_accepted: true,
+        return_period: 30,
+        payment_methods: ["PayPal", "Credit Card"],
+        quantity: product.current_stock,
+      };
+      break;
+
+    case "FACEBOOK_MARKETPLACE":
+      // Facebook Marketplace 向けデータ変換ロジック (USDベース)
+      convertedData = {
+        title: product.title_jp,
+        price: pricingResult.localPrice,
+        currency: "USD",
+        category: "products",
+        location: {
+          city: "Tokyo",
+          country: "JP",
+        },
+        shipping_options: {
+          ships_from: "JP",
+          shipping_method: "international",
+          shipping_cost: pricingResult.localShippingCost,
+        },
+        availability: product.current_stock > 0 ? "in_stock" : "out_of_stock",
+        inventory_sync: true,
+      };
+      break;
+
+    case "EBAY_US":
+      // eBay US 向けデータ変換ロジック (USDベース)
+      convertedData = {
+        title: product.title_jp,
+        price: pricingResult.localPrice,
+        currency: "USD",
+        format: "fixedPrice",
+        location: "JP",
+        shipping_type: "calculated",
+        returns_accepted: true,
+        return_period: 30,
+        quantity: product.current_stock,
       };
       break;
 
