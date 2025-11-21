@@ -47,11 +47,11 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // 1. 戦略決定済み商品を取得
+    // 1. 戦略決定済み または 出品スケジュール待ち の商品を取得
     let query = supabase
       .from('products_master')
       .select('*')
-      .eq('status', '戦略決定済');
+      .in('status', ['戦略決定済', '出品スケジュール待ち']);
 
     if (targetPlatform) {
       query = query.eq('recommended_platform', targetPlatform);
