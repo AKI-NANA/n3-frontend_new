@@ -3,6 +3,13 @@
  * NAGANO-3モーダルシステム用
  */
 
+// 在庫・価格追従システム用: 参照URL型定義
+export interface ReferenceUrl {
+  url: string;
+  price: number;
+  is_available: boolean;
+}
+
 export interface Product {
   id: string;
   asin: string;
@@ -13,14 +20,14 @@ export interface Product {
   price: number;
   cost?: number;
   profit?: number;
-  
+
   // HTS分類情報（学習システム用）
   category_name?: string | null;
   brand_name?: string | null;
   material?: string | null;
   hts_code?: string | null;
   origin_country?: string | null;
-  
+
   // HTS自動判定結果
   suggested_category?: string;
   suggested_brand?: string;
@@ -30,24 +37,39 @@ export interface Product {
   hts_confidence?: 'very_high' | 'high' | 'medium' | 'low' | 'uncertain';
   hts_source?: 'learning' | 'category_master' | 'brand_master' | 'material_pattern' | 'official';
   origin_country_hint?: string;
-  
+
   // 確認状態
   hts_needs_review?: boolean;
   hts_is_approved?: boolean;
-  
+
+  // === 在庫・価格追従システム (B-3) のフィールド ===
+  external_url?: string; // 外部商品ページURL
+  asin_sku?: string | null; // 外部ASIN/SKU
+  ranking?: number | null; // ランキング
+  sales_count?: number | null; // 販売数
+  release_date?: string | null; // 発売日
+  is_duplicate?: boolean; // 重複フラグ
+  status?: '取得完了' | '優先度決定済' | '承認待' | string; // ステータス
+  priority_score?: number | null; // 優先度スコア
+  reference_urls?: ReferenceUrl[]; // 複数の仕入先URL（JSONB）
+  median_price?: number | null; // 中央値価格
+  current_stock_count?: number | null; // 現在在庫数
+  last_check_time?: string | null; // 最終チェック時刻
+  check_frequency?: '通常' | '高頻度' | string; // チェック頻度
+
   // 画像データ
   images: ProductImage[];
   selectedImages: string[];
-  
+
   // カテゴリ情報
   category?: Category;
-  
+
   // 在庫情報
   stock?: StockInfo;
-  
+
   // マーケットプレイス情報
   marketplace?: MarketplaceData;
-  
+
   // メタデータ
   createdAt?: string;
   updatedAt?: string;
