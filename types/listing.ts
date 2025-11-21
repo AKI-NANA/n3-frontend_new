@@ -251,3 +251,118 @@ export interface VeroProtection {
   isVeroProtected: boolean; // VERO対象か
   recommendedDescription?: string; // 推奨説明文
 }
+
+/**
+ * 出品実行ステータス
+ */
+export type ExecutionStatus =
+  | 'strategy_determined' // 戦略決定済
+  | 'listing_in_progress' // 出品中
+  | 'listed' // 出品完了
+  | 'api_retry_pending' // APIリトライ待ち
+  | 'listing_failed' // 出品停止（要確認）
+  | 'delisted'; // 出品取り下げ
+
+/**
+ * エラータイプ
+ */
+export type ErrorType = 'temporary' | 'fatal';
+
+/**
+ * 出品実行結果
+ */
+export interface ExecutionResult {
+  sku: string;
+  platform: Platform;
+  accountId: string;
+  success: boolean;
+  listingId?: string; // モール側で付与されたID（eBay Item ID, Amazon ASIN等）
+  errorType?: ErrorType;
+  errorCode?: string;
+  errorMessage?: string;
+  timestamp: Date;
+}
+
+/**
+ * 出品実行リクエスト
+ */
+export interface ExecuteListingRequest {
+  sku: string;
+  platform: Platform;
+  accountId: string;
+  forceExecute?: boolean; // 強制実行フラグ
+}
+
+/**
+ * 一括出品実行リクエスト
+ */
+export interface BatchExecuteRequest {
+  filter?: {
+    status?: ExecutionStatus;
+    minStock?: number;
+    platforms?: Platform[];
+  };
+  dryRun?: boolean; // ドライラン（実際には実行しない）
+}
+
+/**
+ * 一括出品実行レスポンス
+ */
+export interface BatchExecuteResponse {
+  totalProcessed: number;
+  successCount: number;
+  failureCount: number;
+  results: ExecutionResult[];
+  errors: {
+    sku: string;
+    error: string;
+  }[];
+}
+
+/**
+ * API認証情報（環境変数から取得）
+ */
+export interface ApiCredentials {
+  // eBay
+  ebay?: {
+    appId: string;
+    devId: string;
+    certId: string;
+    oauthToken: string;
+    siteId: string; // 0=US, 15=Australia, 186=Japan
+  };
+  // Amazon
+  amazon?: {
+    region: 'us' | 'eu' | 'fe'; // North America, Europe, Far East
+    clientId: string;
+    clientSecret: string;
+    refreshToken: string;
+    sellerId: string;
+    marketplaceId: string;
+  };
+  // Coupang
+  coupang?: {
+    accessKey: string;
+    secretKey: string;
+    vendorId: string;
+  };
+}
+
+/**
+ * 出品データペイロード（モール共通）
+ */
+export interface ListingPayload {
+  sku: string;
+  title: string;
+  description: string;
+  price: number;
+  currency: string;
+  quantity: number;
+  condition: 'New' | 'Used' | 'Refurbished';
+  categoryId?: string;
+  images: string[];
+  itemSpecifics?: ItemSpecific[];
+  variations?: VariationChild[];
+  shippingPolicy?: string;
+  returnPolicy?: string;
+}
