@@ -68,6 +68,12 @@ export interface Product {
   last_check_time?: string | null; // 最終チェック時刻
   check_frequency?: '通常' | '高頻度' | string; // 在庫チェック間隔
 
+  // 多販路出品戦略システム (Strategy Engine)
+  recommended_platform?: string | null; // 推奨プラットフォーム
+  recommended_account_id?: number | null; // 推奨アカウントID
+  strategy_score?: number | null; // 戦略スコア
+  strategy_decision_data?: any; // JSONB: 全候補と除外理由
+
   // メタデータ
   createdAt?: string;
   updatedAt?: string;
