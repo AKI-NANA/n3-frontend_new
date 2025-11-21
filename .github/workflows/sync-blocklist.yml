@@ -1,0 +1,29 @@
+name: eBay Blocklist Auto Sync
+
+# 毎日午前2時（UTC）に実行
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  # 手動実行も可能
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Sync eBay Blocklist
+        run: |
+          curl -X GET \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            ${{ secrets.APP_URL }}/api/ebay/blocklist/cron-sync
+
+      - name: Check sync result
+        run: echo "Blocklist sync completed"
+
+# セットアップ手順:
+# 1. GitHub Secrets に以下を追加:
+#    - CRON_SECRET: ランダムな秘密キー
+#    - APP_URL: デプロイされたアプリのURL (例: https://your-app.vercel.app)
+# 2. このファイルをコミット＆プッシュ
+# 3. GitHub Actions が自動的に有効化されます
