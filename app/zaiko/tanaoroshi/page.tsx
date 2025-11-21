@@ -10,6 +10,8 @@ import { ProductRegistrationModal } from './components/ProductRegistrationModal'
 import { SetProductModal } from './components/SetProductModal'
 import { BulkImageUpload } from './components/BulkImageUpload'
 import { MarketplaceSelector } from './components/MarketplaceSelector'
+import { GroupingBoxSidebar } from './components/GroupingBoxSidebar'
+import { VariationCreationModal } from './components/VariationCreationModal'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
@@ -44,6 +46,7 @@ export default function TanaoroshiPage() {
   const [showRegistrationModal, setShowRegistrationModal] = useState(false)
   const [showSetModal, setShowSetModal] = useState(false)
   const [showBulkUpload, setShowBulkUpload] = useState(false)
+  const [showVariationModal, setShowVariationModal] = useState(false)
   const [editingProduct, setEditingProduct] = useState<InventoryProduct | null>(null)
   const [selectedMarketplace, setSelectedMarketplace] = useState('all')
 
@@ -187,6 +190,26 @@ export default function TanaoroshiPage() {
     setSelectedProducts(newSelection)
   }
 
+  // 選択中の商品データを取得
+  const getSelectedProductsData = (): InventoryProduct[] => {
+    return products.filter(p => selectedProducts.has(p.id))
+  }
+
+  // バリエーション作成ハンドラー
+  const handleCreateVariation = () => {
+    setShowVariationModal(true)
+  }
+
+  // セット品作成ハンドラー
+  const handleCreateBundle = () => {
+    setShowSetModal(true)
+  }
+
+  // 選択クリア
+  const handleClearSelection = () => {
+    setSelectedProducts(new Set())
+  }
+
   // 商品編集
   const handleEdit = (product: InventoryProduct) => {
     setEditingProduct(product)
@@ -263,16 +286,18 @@ export default function TanaoroshiPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
-      {/* ヘッダー */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">
-          📦 棚卸し・在庫管理
-        </h1>
-        <p className="text-slate-600">
-          全モールの在庫を一元管理。eBay、Amazon、Shopeeの出品中商品も統合表示されます。
-        </p>
-      </div>
+    <div className="flex min-h-screen bg-slate-50">
+      {/* メインコンテンツ */}
+      <div className="flex-1 p-6 overflow-x-hidden">
+        {/* ヘッダー */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">
+            📦 棚卸し・在庫管理
+          </h1>
+          <p className="text-slate-600">
+            全モールの在庫を一元管理。eBay、Amazon、Shopeeの出品中商品も統合表示されます。
+          </p>
+        </div>
 
       {/* 統計ヘッダー */}
       <StatsHeader stats={stats} selectedCount={selectedProducts.size} />
@@ -390,6 +415,8 @@ export default function TanaoroshiPage() {
               product={product}
               onEdit={() => handleEdit(product)}
               onDelete={() => handleDelete(product)}
+              isSelected={selectedProducts.has(product.id)}
+              onToggleSelection={() => toggleProductSelection(product.id)}
             />
           ))}
         </div>
@@ -415,6 +442,14 @@ export default function TanaoroshiPage() {
         />
       )}
 
+      {showVariationModal && (
+        <VariationCreationModal
+          products={getSelectedProductsData()}
+          onClose={() => setShowVariationModal(false)}
+          onSuccess={handleModalSuccess}
+        />
+      )}
+
       {showBulkUpload && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -433,6 +468,15 @@ export default function TanaoroshiPage() {
           </div>
         </div>
       )}
+      </div>
+
+      {/* Grouping Box Sidebar */}
+      <GroupingBoxSidebar
+        selectedProducts={getSelectedProductsData()}
+        onClearSelection={handleClearSelection}
+        onCreateVariation={handleCreateVariation}
+        onCreateBundle={handleCreateBundle}
+      />
     </div>
   )
 }

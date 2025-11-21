@@ -29,10 +29,11 @@
 複数のアイテムをバリエーション（色・サイズなど）として出品します。
 
 **特徴:**
-- **最低価格ベース戦略**: 全バリエーションの中で最も安いDDPコストを統一Item Price（eBay出品価格）とする
-- **ダイナミック送料加算**: Item Priceとの差額をUSA向け送料に動的に加算
-- **EU競争力**: EU（DDU販売）ではItem Priceが安価になるため、競争力を確保
-- **リスク管理**: 過大な送料加算額や外部ツール連携失敗を検出
+- **最大DDPコストベース戦略**: 全バリエーションの中で最も高いDDPコストを統一Item Price（eBay出品価格）とする
+- **構造的赤字リスクゼロ**: 最大DDPコストを統一価格とすることで、全ての子SKUが確実にカバーされる
+- **追加利益の自動計算**: 最大DDPコストより安い子SKUは追加利益（excess_profit_usd）を得る
+- **配送ポリシー自動選定**: 既存の1,200個の配送ポリシーから最適なものを自動選定
+- **外部ツール不要**: Ebaymug連携を完全に廃止し、システム内で完結
 
 ---
 
@@ -85,26 +86,31 @@ CREATE TABLE bundle_compositions (
 
 ```typescript
 {
-  min_ddp_cost_usd: 83.00,           // 統一Item Price
+  max_ddp_cost_usd: 127.66,          // 統一Item Price（最大DDPコスト）
   variation_attributes: ["Color", "Size"],
   variations: [
     {
       variation_sku: "GOLF-001",
       attributes: [{ name: "Color", value: "Red" }],
       actual_ddp_cost_usd: 83.00,
-      shipping_surcharge_usd: 0.00,
+      excess_profit_usd: 44.66,      // 追加利益（max - actual）
       stock_quantity: 10,
-      image_url: "..."
+      image_url: "...",
+      weight_g: 500
     },
     {
       variation_sku: "GOLF-002",
       attributes: [{ name: "Color", value: "Blue" }],
       actual_ddp_cost_usd: 127.66,
-      shipping_surcharge_usd: 44.66,  // USA向け加算額
+      excess_profit_usd: 0.00,       // 最大コスト商品は追加利益なし
       stock_quantity: 5,
-      image_url: "..."
+      image_url: "...",
+      weight_g: 750
     }
-  ]
+  ],
+  shipping_policy_id: "policy_12345",
+  shipping_policy_name: "Standard Shipping (0-1kg)",
+  pricing_strategy: "max_ddp_cost"
 }
 ```
 
@@ -177,16 +183,24 @@ CREATE TABLE bundle_compositions (
 ```json
 {
   "success": true,
-  "message": "バリエーションが正常に作成されました",
+  "message": "バリエーションが正常に作成されました（最大DDPコストベース戦略）",
   "parentSku": "VAR-GOLF-001",
-  "minPrice": 83.00,
+  "unifiedItemPrice": 127.66,
   "children": [...],
+  "shippingPolicy": {
+    "id": "policy_12345",
+    "name": "Standard Shipping (0-1kg)",
+    "weight_range": "0kg - 1kg"
+  },
   "warnings": [],
   "summary": {
     "totalVariations": 2,
-    "unifiedItemPrice": 83.00,
-    "maxShippingSurcharge": 44.66,
-    "failedChildUpdates": 0
+    "unifiedItemPrice": 127.66,
+    "totalExcessProfit": 44.66,
+    "failedChildUpdates": 0,
+    "pricingStrategy": "max_ddp_cost",
+    "redFlagRisk": "ZERO",
+    "externalToolDependency": "NONE"
   }
 }
 ```
@@ -314,17 +328,23 @@ CREATE TABLE bundle_compositions (
 
 - **最低2つのアイテムが必要**
 - **DDPコスト近接**: 最大DDP - 最小DDPが$20または10%を超えないこと
-- **サイズ許容範囲**: 最大体積が最小体積の150%を超えないこと
+- **重量許容範囲**: 最大重量が最小重量の150%を超えないこと
+- **カテゴリーID一致**: Vero対策のため、全アイテムが同じカテゴリーIDである必要があります
 
-### 外部ツール連携
+### 配送ポリシーの自動選定
 
-バリエーション作成後、外部ツール（Ebaymugなど）を使用して、USA向け送料加算ルールを設定する必要があります。
+バリエーション作成時、システムが自動的に以下の処理を実行します:
 
-**手順:**
-1. バリエーションを作成
-2. `shipping_surcharge_usd` > 0 の子SKUを確認
-3. 外部ツールで送料加算ルールを設定
-4. 連携確認後、eBayに出品
+**自動処理:**
+1. グループ内の最大重量を計算
+2. `ebay_shipping_policies_v2` テーブルから適合するポリシーを検索
+3. 最適なポリシーをスコアリングして選定
+4. 親SKUに配送ポリシーIDを自動設定
+
+**メリット:**
+- 外部ツール（Ebaymug）への依存を完全に排除
+- 1,200個の既存ポリシーを効率的に活用
+- 手動設定の手間を削減
 
 ### 在庫連携
 

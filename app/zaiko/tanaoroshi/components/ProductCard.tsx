@@ -7,9 +7,17 @@ interface ProductCardProps {
   product: InventoryProduct
   onEdit: () => void
   onDelete: () => void
+  isSelected?: boolean
+  onToggleSelection?: () => void
 }
 
-export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
+export function ProductCard({
+  product,
+  onEdit,
+  onDelete,
+  isSelected = false,
+  onToggleSelection
+}: ProductCardProps) {
   const getMarketplaceBadge = () => {
     if (product.marketplace === 'ebay') {
       return (
@@ -41,7 +49,7 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
     : '/placeholder-product.jpg'
 
   return (
-    <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border">
+    <div className={`bg-white rounded-lg shadow-sm hover:shadow-md transition-all border ${isSelected ? 'ring-2 ring-purple-500 shadow-lg' : ''}`}>
       {/* 画像 */}
       <div className="relative h-48 bg-slate-100 rounded-t-lg overflow-hidden">
         <img
@@ -52,6 +60,30 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
             e.currentTarget.src = 'https://placehold.co/400x400/e2e8f0/64748b?text=No+Image'
           }}
         />
+
+        {/* チェックボックスオーバーレイ */}
+        {onToggleSelection && (
+          <div
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggleSelection()
+            }}
+            className="absolute top-2 left-2 cursor-pointer"
+          >
+            <div className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all ${
+              isSelected
+                ? 'bg-purple-600 border-purple-600'
+                : 'bg-white/90 border-gray-300 hover:border-purple-400'
+            }`}>
+              {isSelected && (
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="absolute top-2 right-2 flex gap-1">
           {getMarketplaceBadge()}
         </div>
