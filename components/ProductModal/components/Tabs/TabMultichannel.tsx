@@ -5,7 +5,7 @@
  * プラットフォーム選択、データ変換、CSV生成
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Product } from '@/types/product';
 import type {
   Platform,
@@ -14,9 +14,19 @@ import type {
 } from '@/lib/multichannel/types';
 import { getAllPlatforms, getPlatformConfig } from '@/lib/multichannel/platformConfigs';
 import { downloadCSV } from '@/lib/multichannel/csvGenerator';
+import { calculateDuty, calculatePlatformFeeEnhanced, type EnhancedPricingResult } from '@/lib/pricing/PlatformPricing';
 
 interface TabMultichannelProps {
   product: Product | null;
+}
+
+// リアルタイムプレビューデータ
+interface PricingPreview {
+  dutyCost: number;
+  platformFee: number;
+  estimatedPrice: number;
+  profitMargin: number;
+  currency: string;
 }
 
 export function TabMultichannel({ product }: TabMultichannelProps) {
@@ -26,8 +36,79 @@ export function TabMultichannel({ product }: TabMultichannelProps) {
     null
   );
   const [error, setError] = useState<string | null>(null);
+  const [pricingPreview, setPricingPreview] = useState<PricingPreview | null>(null);
 
   const platforms = getAllPlatforms();
+
+  // プラットフォーム変更時にリアルタイムプレビューを計算
+  useEffect(() => {
+    if (!product) {
+      setPricingPreview(null);
+      return;
+    }
+
+    const calculatePreview = () => {
+      const config = getPlatformConfig(selectedPlatform);
+      const priceJpy = (product as any).price_jpy || 1000; // デフォルト値
+      const htsCode = (product as any).hts_code || '9504.40'; // デフォルトHSコード
+      const category = (product as any).category || 'DEFAULT';
+
+      // 国コードを決定
+      const countryMap: Record<string, string> = {
+        amazon_us: 'US',
+        amazon_au: 'AU',
+        amazon_jp: 'JP',
+        ebay: 'US',
+        coupang: 'KR',
+        qoo10: 'SG',
+        shopee: 'SG',
+        mercari: 'JP',
+        shopify: 'US',
+      };
+      const targetCountry = countryMap[selectedPlatform] || 'US';
+
+      // 為替レート（簡易版）
+      const exchangeRates: Record<string, number> = {
+        USD: 150,
+        AUD: 100,
+        KRW: 0.11,
+        SGD: 110,
+        JPY: 1,
+      };
+      const exchangeRate = exchangeRates[config.currency] || 150;
+
+      // 関税計算
+      const dutyCostJpy = calculateDuty(htsCode, priceJpy, targetCountry);
+      const dutyCost = dutyCostJpy / exchangeRate;
+
+      // 仮の販売価格（簡易版）
+      const baseCost = priceJpy / exchangeRate;
+      const estimatedPrice = baseCost * 1.5; // 仮に1.5倍
+
+      // プラットフォーム手数料
+      const platformFee = calculatePlatformFeeEnhanced(
+        selectedPlatform,
+        targetCountry,
+        category,
+        estimatedPrice
+      );
+
+      // 利益率計算（簡易版）
+      const totalCost = baseCost + dutyCost + platformFee;
+      const profit = estimatedPrice - totalCost;
+      const profitMargin = (profit / estimatedPrice) * 100;
+
+      setPricingPreview({
+        dutyCost: Math.round(dutyCost * 100) / 100,
+        platformFee: Math.round(platformFee * 100) / 100,
+        estimatedPrice: Math.round(estimatedPrice * 100) / 100,
+        profitMargin: Math.round(profitMargin * 10) / 10,
+        currency: config.currency,
+      });
+    };
+
+    calculatePreview();
+  }, [selectedPlatform, product]);
 
   // 変換を実行
   const handleTransform = async () => {
@@ -175,6 +256,103 @@ export function TabMultichannel({ product }: TabMultichannelProps) {
               </div>
             </div>
           </div>
+
+          {/* リアルタイムプレビュー */}
+          {pricingPreview && (
+            <div
+              style={{
+                padding: '20px',
+                background: '#f0fdf4',
+                border: '2px solid #10b981',
+                borderRadius: '8px',
+                marginBottom: '24px',
+              }}
+            >
+              <h4 style={{ fontWeight: '600', marginBottom: '16px', color: '#065f46' }}>
+                💰 価格シミュレーション（リアルタイムプレビュー）
+              </h4>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: '16px',
+                }}
+              >
+                <div
+                  style={{
+                    padding: '12px',
+                    background: 'white',
+                    borderRadius: '6px',
+                  }}
+                >
+                  <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>
+                    関税コスト (概算)
+                  </div>
+                  <div style={{ fontSize: '20px', fontWeight: '600', color: '#dc2626' }}>
+                    {pricingPreview.dutyCost.toFixed(2)} {pricingPreview.currency}
+                  </div>
+                </div>
+                <div
+                  style={{
+                    padding: '12px',
+                    background: 'white',
+                    borderRadius: '6px',
+                  }}
+                >
+                  <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>
+                    プラットフォーム手数料 (概算)
+                  </div>
+                  <div style={{ fontSize: '20px', fontWeight: '600', color: '#ea580c' }}>
+                    {pricingPreview.platformFee.toFixed(2)} {pricingPreview.currency}
+                  </div>
+                </div>
+                <div
+                  style={{
+                    padding: '12px',
+                    background: 'white',
+                    borderRadius: '6px',
+                  }}
+                >
+                  <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>
+                    推定販売価格
+                  </div>
+                  <div style={{ fontSize: '20px', fontWeight: '600', color: '#2563eb' }}>
+                    {pricingPreview.estimatedPrice.toFixed(2)} {pricingPreview.currency}
+                  </div>
+                </div>
+                <div
+                  style={{
+                    padding: '12px',
+                    background: 'white',
+                    borderRadius: '6px',
+                  }}
+                >
+                  <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>
+                    利益率 (シミュレーション)
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '20px',
+                      fontWeight: '600',
+                      color: pricingPreview.profitMargin > 20 ? '#10b981' : '#f59e0b',
+                    }}
+                  >
+                    {pricingPreview.profitMargin.toFixed(1)}%
+                  </div>
+                </div>
+              </div>
+              <div
+                style={{
+                  marginTop: '12px',
+                  fontSize: '12px',
+                  color: '#6b7280',
+                  fontStyle: 'italic',
+                }}
+              >
+                ※ これは概算です。実際の価格は「変換」ボタンをクリックして確認してください。
+              </div>
+            </div>
+          )}
 
           {/* 変換実行 */}
           <div style={{ marginBottom: '32px' }}>
