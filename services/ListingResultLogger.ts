@@ -33,11 +33,12 @@ export class ListingResultLogger {
         updated_at: new Date().toISOString(),
       });
 
-      // 2. Products Masterのステータスを更新
+      // 2. Products Masterのステータスと実行ステータスを更新
       await supabase
         .from('products_master')
         .update({
           status: '出品中',
+          execution_status: 'listed',
           updated_at: new Date().toISOString(),
         })
         .eq('sku', sku);
@@ -80,6 +81,8 @@ export class ListingResultLogger {
         ? 'APIリトライ待ち'
         : '出品失敗（要確認）';
 
+      const executionStatus = result.retryable ? 'api_retry_pending' : 'listing_failed';
+
       // 1. Listing Result Logに記録
       await supabase.from('listing_result_logs').insert({
         sku,
@@ -96,11 +99,12 @@ export class ListingResultLogger {
         updated_at: new Date().toISOString(),
       });
 
-      // 2. Products Masterのステータスを更新
+      // 2. Products Masterのステータスと実行ステータスを更新
       await supabase
         .from('products_master')
         .update({
           status: newStatus,
+          execution_status: executionStatus,
           updated_at: new Date().toISOString(),
         })
         .eq('sku', sku);

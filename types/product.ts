@@ -3,6 +3,33 @@
  * NAGANO-3モーダルシステム用
  */
 
+/**
+ * 商品ステータス（ワークフロー全体）
+ */
+export type ProductStatus =
+  | '取得完了'                  // スクレイピング完了
+  | '優先度決定済'              // 優先度スコア算出完了
+  | 'AI処理中'                  // Gemini AI処理中
+  | '外注処理完了'              // 外注作業完了
+  | '戦略決定済'                // 戦略エンジン実行完了
+  | '編集完了'                  // データ編集完了（Phase 5）
+  | '出品スケジュール待ち'      // 承認済み・バッチ出品待ち（Phase 5）
+  | '出品中'                    // 実際に出品中
+  | '出品停止'                  // 出品停止
+  | '戦略キャンセル'            // 承認却下（Phase 5）
+  | 'APIリトライ待ち';          // API一時エラー
+
+/**
+ * 実行ステータス（Phase 5: バッチ出品の結果）
+ */
+export type ExecutionStatus =
+  | 'pending'                   // 実行待ち
+  | 'processing'                // 実行中
+  | 'listed'                    // 出品成功
+  | 'api_retry_pending'         // リトライ待ち
+  | 'listing_failed'            // 出品失敗
+  | 'skipped';                  // スキップ
+
 export interface Product {
   id: string;
   asin: string;
@@ -56,7 +83,8 @@ export interface Product {
   sales_count?: number | null; // 販売数 (Ebay Sold数など)
   release_date?: string | null; // 発売日
   is_duplicate?: boolean; // 重複フラグ
-  status?: '取得完了' | '優先度決定済' | '承認待' | string; // データ処理ステータス
+  status?: ProductStatus; // データ処理ステータス
+  execution_status?: ExecutionStatus; // 実行ステータス（Phase 5）
 
   // B-2: AI処理優先度決定ロジック
   priority_score?: number | null; // 優先度スコア (0〜1000)
