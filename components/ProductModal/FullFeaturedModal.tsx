@@ -28,6 +28,7 @@ import { TabTaxCompliance } from './components/Tabs/TabTaxCompliance'; // ✅ �
 import { TabHTML } from './components/Tabs/TabHTML';
 import { TabFinal } from './components/Tabs/TabFinal';
 import { TabPricingStrategy } from './components/Tabs/TabPricingStrategy';
+import { TabShopee } from './components/Tabs/TabShopee'; // ✅ Shopeeタブ追加
 
 export interface FullFeaturedModalProps {
   product: Product | null;
@@ -192,11 +193,19 @@ export function FullFeaturedModal({
                 </div>
 
                 <div className={`${styles.tabPane} ${currentTab === 'listing' ? styles.active : ''}`}>
-                  <TabListing 
-                    product={product} 
-                    marketplace={currentMarketplace}
-                    marketplaceName={currentMPConfig?.name || 'Unknown'}
-                  />
+                  {currentMarketplace === 'shopee' ? (
+                    <TabShopee
+                      product={product}
+                      marketplace={currentMarketplace}
+                      marketplaceName={currentMPConfig?.name || 'Unknown'}
+                    />
+                  ) : (
+                    <TabListing
+                      product={product}
+                      marketplace={currentMarketplace}
+                      marketplaceName={currentMPConfig?.name || 'Unknown'}
+                    />
+                  )}
                 </div>
                 <div className={`${styles.tabPane} ${currentTab === 'shipping' ? styles.active : ''}`}>
                   <TabShipping 
