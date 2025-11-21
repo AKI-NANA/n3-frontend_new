@@ -6,7 +6,7 @@ import {
   Link, List, Plus, Tags, BarChart3,
   TrendingUp, Archive, Truck, AlertCircle, Zap, Target, Database,
   FileText, DollarSign, Users, Shield, Globe,
-  Pin, ChevronRight, Upload, Cog, CheckCircle, Edit, Calendar, Code, LogOut, GitBranch
+  Pin, ChevronRight, Upload, Cog, CheckCircle, Edit, Calendar, Code, LogOut, GitBranch, MessageCircle
 } from "lucide-react"
 import { getSortedNavigationItems } from "./SidebarConfig"
 
@@ -21,7 +21,7 @@ const iconMap: any = {
   database: Database, "file-text": FileText, "dollar-sign": DollarSign,
   users: Users, shield: Shield, globe: Globe, upload: Upload,
   cog: Cog, "check-circle": CheckCircle, edit: Edit, calendar: Calendar,
-  code: Code, logout: LogOut, "git-branch": GitBranch, tool: Cog
+  code: Code, logout: LogOut, "git-branch": GitBranch, tool: Cog, "message-circle": MessageCircle
 }
 
 const statusLabels = {

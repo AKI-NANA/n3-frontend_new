@@ -35,6 +35,20 @@ export const navigationItems: NavigationItem[] = [
     link: "/",
     priority: 1
   },
+  {
+    id: "control-tower",
+    label: "🚨 管制塔ダッシュボード",
+    icon: "alert-circle",
+    link: "/dashboard",
+    priority: 2
+  },
+  {
+    id: "communication-hub",
+    label: "🚀 統合コミュニケーションハブ",
+    icon: "message-circle",
+    link: "/communication-hub",
+    priority: 3
+  },
   
   // ==============================================
   // ✅ products_master 対応ツール（17個）
