@@ -136,6 +136,214 @@ export type Database = {
           updated_at: string
         }
       }
+      inquiry_knowledge_base: {
+        Row: {
+          id: string
+          inquiry_id: string
+          ai_category: string
+          customer_message_raw: string
+          final_response_text: string
+          response_template_used: string | null
+          response_score: number
+          order_id: string | null
+          response_date: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          inquiry_id: string
+          ai_category: string
+          customer_message_raw: string
+          final_response_text: string
+          response_template_used?: string | null
+          response_score?: number
+          order_id?: string | null
+          response_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          inquiry_id?: string
+          ai_category?: string
+          customer_message_raw?: string
+          final_response_text?: string
+          response_template_used?: string | null
+          response_score?: number
+          order_id?: string | null
+          response_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      inquiries: {
+        Row: {
+          id: string
+          inquiry_id: string
+          order_id: string | null
+          customer_name: string | null
+          customer_message_raw: string
+          level0_choice: string | null
+          ai_category: string | null
+          ai_draft_text: string | null
+          final_response_text: string | null
+          status: string
+          tracking_number: string | null
+          shipping_status: string | null
+          response_score: number
+          response_date: string | null
+          received_at: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          inquiry_id: string
+          order_id?: string | null
+          customer_name?: string | null
+          customer_message_raw: string
+          level0_choice?: string | null
+          ai_category?: string | null
+          ai_draft_text?: string | null
+          final_response_text?: string | null
+          status?: string
+          tracking_number?: string | null
+          shipping_status?: string | null
+          response_score?: number
+          response_date?: string | null
+          received_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          inquiry_id?: string
+          order_id?: string | null
+          customer_name?: string | null
+          customer_message_raw?: string
+          level0_choice?: string | null
+          ai_category?: string | null
+          ai_draft_text?: string | null
+          final_response_text?: string | null
+          status?: string
+          tracking_number?: string | null
+          shipping_status?: string | null
+          response_score?: number
+          response_date?: string | null
+          received_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      inquiry_templates: {
+        Row: {
+          id: string
+          template_id: string
+          ai_category: string
+          template_name: string
+          template_content: string
+          variables: any
+          usage_count: number
+          average_score: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          template_id: string
+          ai_category: string
+          template_name: string
+          template_content: string
+          variables?: any
+          usage_count?: number
+          average_score?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          template_id?: string
+          ai_category?: string
+          template_name?: string
+          template_content?: string
+          variables?: any
+          usage_count?: number
+          average_score?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      inquiry_kpi: {
+        Row: {
+          id: string
+          staff_id: string | null
+          inquiry_id: string | null
+          response_time_seconds: number | null
+          ai_draft_used: boolean
+          manual_edit_count: number
+          customer_satisfaction_score: number | null
+          resolved_on_first_contact: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          staff_id?: string | null
+          inquiry_id?: string | null
+          response_time_seconds?: number | null
+          ai_draft_used?: boolean
+          manual_edit_count?: number
+          customer_satisfaction_score?: number | null
+          resolved_on_first_contact?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          staff_id?: string | null
+          inquiry_id?: string | null
+          response_time_seconds?: number | null
+          ai_draft_used?: boolean
+          manual_edit_count?: number
+          customer_satisfaction_score?: number | null
+          resolved_on_first_contact?: boolean
+          created_at?: string
+        }
+      }
+      inquiry_filter_bot_log: {
+        Row: {
+          id: string
+          inquiry_id: string
+          customer_message: string
+          bot_question_sent: string
+          customer_choice: string | null
+          choice_timestamp: string | null
+          next_action: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          inquiry_id: string
+          customer_message: string
+          bot_question_sent: string
+          customer_choice?: string | null
+          choice_timestamp?: string | null
+          next_action?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          inquiry_id?: string
+          customer_message?: string
+          bot_question_sent?: string
+          customer_choice?: string | null
+          choice_timestamp?: string | null
+          next_action?: string | null
+          created_at?: string
+        }
+      }
     }
   }
 }
