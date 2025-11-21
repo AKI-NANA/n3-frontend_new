@@ -83,14 +83,27 @@ export async function POST(req: NextRequest) {
             source_data: {
               listing_id: listing.listing_id,
               url: listing.url,
-              weight_g: listing.weight_g,
+
+              // 重量データ（DDP計算に必須）
+              actual_weight_g: listing.actual_weight_g,
+              volumetric_weight_g: listing.volumetric_weight_g,
+              ddp_weight_g: listing.ddp_weight_g,  // DDP計算で使用する重量
+
+              // DDP計算に必須のデータ
+              hs_code: listing.hs_code,
+              origin_country: listing.origin_country,
+
+              // その他のメタデータ
               category_id: listing.category_id,
               ebay_condition: listing.condition,
               ebay_price: listing.price,
+
+              // データ完全性フラグ
+              has_complete_ddp_data: listing.has_complete_ddp_data,
               synced_at: new Date().toISOString()
             },
             is_manual_entry: false,
-            priority_score: 50 // デフォルト優先度
+            priority_score: listing.has_complete_ddp_data ? 60 : 40  // 完全データは優先度高
           }
 
           if (existing) {
@@ -155,6 +168,11 @@ export async function POST(req: NextRequest) {
 
 /**
  * eBay Inventory APIから出品データを取得
+ *
+ * DDP計算に必須のデータを確実に取得：
+ * - 実重量と容積重量（重い方を採用）
+ * - HSコード（関税計算に必須）
+ * - 原産国（追加関税に必須）
  */
 async function fetchEbayInventory(account: string, limit: number) {
   try {
@@ -193,16 +211,112 @@ async function fetchEbayInventory(account: string, limit: number) {
       const availability = item.availability || {}
       const packageWeightAndSize = item.packageWeightAndSize || {}
 
+      // ===== 重量計算：実重量と容積重量の両方を取得 =====
+
+      // 実重量の取得とグラム換算
+      let actualWeightG = 0
+      if (packageWeightAndSize.weight?.value) {
+        const weightValue = parseFloat(packageWeightAndSize.weight.value)
+        const unit = packageWeightAndSize.weight.unit?.toUpperCase()
+
+        actualWeightG = unit === 'KILOGRAM' ? weightValue * 1000 :
+                       unit === 'POUND' ? weightValue * 453.592 :
+                       unit === 'OUNCE' ? weightValue * 28.3495 :
+                       unit === 'GRAM' ? weightValue : 0
+      }
+
+      // 容積重量の計算（存在する場合）
+      let volumetricWeightG = 0
+      const dimensions = packageWeightAndSize.dimensions
+      if (dimensions?.length && dimensions?.width && dimensions?.height) {
+        const length = parseFloat(dimensions.length)
+        const width = parseFloat(dimensions.width)
+        const height = parseFloat(dimensions.height)
+        const unit = dimensions.unit?.toUpperCase()
+
+        // インチからセンチに変換
+        const lengthCm = unit === 'INCH' ? length * 2.54 : length
+        const widthCm = unit === 'INCH' ? width * 2.54 : width
+        const heightCm = unit === 'INCH' ? height * 2.54 : height
+
+        // 容積重量（kg） = (長さcm × 幅cm × 高さcm) / 5000
+        const volumetricWeightKg = (lengthCm * widthCm * heightCm) / 5000
+        volumetricWeightG = volumetricWeightKg * 1000
+      }
+
+      // DDP計算用：重い方を採用
+      const ddpWeightG = Math.max(actualWeightG, volumetricWeightG)
+
+      // ===== HSコードの取得 =====
+      // product.aspects または product.customFields から取得
+      let hsCode = null
+
+      // 方法1: aspects から取得
+      if (product.aspects?.['HS Code']) {
+        hsCode = product.aspects['HS Code'][0]
+      } else if (product.aspects?.['HSCode']) {
+        hsCode = product.aspects['HSCode'][0]
+      } else if (product.aspects?.['Harmonized Code']) {
+        hsCode = product.aspects['Harmonized Code'][0]
+      }
+
+      // 方法2: customFields から取得
+      if (!hsCode && product.customFields) {
+        const hsField = product.customFields.find((f: any) =>
+          f.name?.toLowerCase().includes('hs') ||
+          f.name?.toLowerCase().includes('harmonized')
+        )
+        if (hsField) hsCode = hsField.value
+      }
+
+      // ===== 原産国の取得 =====
+      let originCountry = null
+
+      // 方法1: aspects から取得
+      if (product.aspects?.['Country/Region of Manufacture']) {
+        originCountry = product.aspects['Country/Region of Manufacture'][0]
+      } else if (product.aspects?.['Country of Origin']) {
+        originCountry = product.aspects['Country of Origin'][0]
+      } else if (product.aspects?.['Made In']) {
+        originCountry = product.aspects['Made In'][0]
+      }
+
+      // 方法2: customFields から取得
+      if (!originCountry && product.customFields) {
+        const originField = product.customFields.find((f: any) =>
+          f.name?.toLowerCase().includes('origin') ||
+          f.name?.toLowerCase().includes('country') ||
+          f.name?.toLowerCase().includes('manufacture')
+        )
+        if (originField) originCountry = originField.value
+      }
+
+      // 国名を国コードに変換（一般的なマッピング）
+      const countryCodeMap: { [key: string]: string } = {
+        'China': 'CN',
+        'Japan': 'JP',
+        'United States': 'US',
+        'Germany': 'DE',
+        'United Kingdom': 'GB',
+        'Korea, Republic of': 'KR',
+        'South Korea': 'KR',
+        'Taiwan': 'TW',
+        'Hong Kong': 'HK',
+        'Vietnam': 'VN',
+        'Thailand': 'TH',
+        'India': 'IN',
+        'Mexico': 'MX',
+        'Canada': 'CA'
+      }
+
+      let originCountryCode = originCountry
+      if (originCountry && originCountry.length > 2) {
+        originCountryCode = countryCodeMap[originCountry] || originCountry
+      }
+
       // 価格をパース
       const priceValue = availability.price?.value
         ? parseFloat(availability.price.value)
-        : 0
-
-      // 重量を取得（グラム単位に変換）
-      const weightG = packageWeightAndSize.weight?.value
-        ? parseFloat(packageWeightAndSize.weight.value) *
-          (packageWeightAndSize.weight.unit === 'KILOGRAM' ? 1000 :
-           packageWeightAndSize.weight.unit === 'POUND' ? 453.592 : 1)
         : 0
 
       return {
@@ -220,11 +334,29 @@ async function fetchEbayInventory(account: string, limit: number) {
         quantity: availability.shipToLocationAvailability?.quantity || 0,
         sku: item.sku,
         url: `https://www.ebay.com/itm/${item.sku}`,
-        weight_g: weightG
+
+        // DDP計算に必須のデータ
+        actual_weight_g: actualWeightG,
+        volumetric_weight_g: volumetricWeightG,
+        ddp_weight_g: ddpWeightG,
+        hs_code: hsCode,
+        origin_country: originCountryCode,
+
+        // データ完全性フラグ
+        has_complete_ddp_data: !!(ddpWeightG > 0 && hsCode && originCountryCode)
       }
     })
 
-    console.log(`変換完了: ${listings.length}件`)
+    // データ完全性の警告
+    const incompleteItems = listings.filter((l: any) => !l.has_complete_ddp_data)
+    if (incompleteItems.length > 0) {
+      console.warn(`⚠️ DDP計算データが不完全な商品: ${incompleteItems.length}件`)
+      incompleteItems.forEach((item: any) => {
+        console.warn(`  - ${item.sku}: 重量=${item.ddp_weight_g}g, HS=${item.hs_code || 'なし'}, 原産国=${item.origin_country || 'なし'}`)
+      })
+    }
+
+    console.log(`変換完了: ${listings.length}件 (完全データ: ${listings.length - incompleteItems.length}件)`)
     return listings
 
   } catch (error: any) {
