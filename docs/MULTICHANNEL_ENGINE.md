@@ -290,6 +290,61 @@ components/ProductModal/
 - らくらくメルカリ便推奨
 - 手数料: 10%
 
+## 出品戦略エンジン 🎯
+
+**パス**: `/lib/listing/ListingStrategyEngine.ts`
+
+SKUマスターの商品データに基づき、最適な出品先（モール×アカウント×国）を自動決定するシステムです。
+
+### 3層フィルタリングアーキテクチャ
+
+1. **レイヤー1: システム制約チェック** - 物理的・技術的に出品不可能な候補を除外
+   - 重複アカウントチェック（排他制御）
+   - プラットフォーム規約チェック
+   - 在庫・スコア閾値チェック
+
+2. **レイヤー2: ユーザー戦略フィルタリング** - 経営判断・リスク回避のための除外
+   - カテゴリ制限（ブラックリスト/ホワイトリスト）
+   - アカウント専門性（専用化）
+   - 価格レンジ制限
+
+3. **レイヤー3: スコアリング＆優先順位付け** - 最も利益が見込める候補を選択
+   - U_i,Mall = U_i × M_Mall
+   - M_Mall = performance × competition × categoryFit
+
+### 使用例
+
+```typescript
+import { determineListingStrategy } from '@/lib/listing/ListingStrategyEngine';
+
+const result = determineListingStrategy(
+  product,           // SKUMasterData
+  allCandidates,     // MarketplaceCandidate[]
+  existingListings,  // ListingData[]
+  userSettings,      // UserStrategySettings
+  boostSettings,     // MarketplaceBoostSettings[]
+  -10000            // 最低グローバルスコア閾値
+);
+
+console.log(result.finalDecision);
+// {
+//   shouldList: true,
+//   targetPlatform: 'ebay',
+//   targetAccountId: 'ebay_main',
+//   targetCountry: 'US',
+//   reason: '最高スコア候補: ebay (ebay_main) - 最終スコア 111.54'
+// }
+```
+
+### 主要機能
+
+- **排他制御**: 同一プラットフォームに複数アカウントで同一商品を出品するのを防止
+- **規約チェック**: 各モールの出品規約に違反していないかチェック
+- **スコアリング**: 過去の売上実績、競合状況、カテゴリ適合度から最適な出品先を判定
+- **柔軟な戦略設定**: ユーザー定義のカテゴリ制限、価格レンジ、アカウント専門性を反映
+
+詳細は **[出品戦略エンジンドキュメント](./LISTING_STRATEGY_ENGINE.md)** を参照してください。
+
 ## 今後の拡張
 
 ### API連携準備
