@@ -18,6 +18,7 @@ import { ModalFooter } from './components/ModalFooter';
 import { TabOverview } from './components/Tabs/TabOverview';
 import { TabData } from './components/Tabs/TabData';
 import { TabImages } from './components/Tabs/TabImages';
+import { TabImageOptimization } from './components/Tabs/TabImageOptimization'; // ✅ 画像最適化タブ
 import { TabTools } from './components/Tabs/TabTools';
 import { TabMirror } from './components/Tabs/TabMirror';
 import { TabCompetitors } from './components/Tabs/TabCompetitors';
@@ -167,10 +168,18 @@ export function FullFeaturedModal({
                   <TabData product={product} />
                 </div>
                 <div className={`${styles.tabPane} ${currentTab === 'images' ? styles.active : ''}`}>
-                  <TabImages 
-                    product={product} 
+                  <TabImages
+                    product={product}
                     maxImages={currentMPConfig?.maxImages || 12}
                     marketplace={currentMarketplace}
+                    onSave={onSave}
+                  />
+                </div>
+                <div className={`${styles.tabPane} ${currentTab === 'image-optimization' ? styles.active : ''}`}>
+                  <TabImageOptimization
+                    product={product}
+                    marketplace={currentMarketplace}
+                    marketplaceName={currentMPConfig?.name || 'Unknown'}
                     onSave={onSave}
                   />
                 </div>

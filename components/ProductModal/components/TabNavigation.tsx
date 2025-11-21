@@ -6,6 +6,7 @@ const TABS = [
   { id: 'overview', label: '統合概要', icon: 'fas fa-chart-pie', mpSpecific: false },
   { id: 'data', label: 'データ確認', icon: 'fas fa-database', mpSpecific: false },
   { id: 'images', label: '画像選択', icon: 'fas fa-images', mpSpecific: false },
+  { id: 'image-optimization', label: '画像最適化とルール', icon: 'fas fa-magic', mpSpecific: false },
   { id: 'tools', label: 'ツール連携', icon: 'fas fa-tools', mpSpecific: false },
   { id: 'mirror', label: 'Mirror分析', icon: 'fas fa-search-dollar', mpSpecific: false },
   { id: 'competitors', label: '競合分析', icon: 'fas fa-chart-bar', mpSpecific: false },
