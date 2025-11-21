@@ -47,7 +47,27 @@ export interface Product {
   
   // マーケットプレイス情報
   marketplace?: MarketplaceData;
-  
+
+  // === 新しいバックエンド機能 (B-1, B-2, B-3) のためのフィールド ===
+  // B-1: 商品データ取得と重複排除エンジン
+  external_url?: string; // 外部サイトURL (Primary Key)
+  asin_sku?: string | null; // 外部サイトのASIN または SKU (Fallback Key)
+  ranking?: number | null; // 商品ランキング
+  sales_count?: number | null; // 販売数 (Ebay Sold数など)
+  release_date?: string | null; // 発売日
+  is_duplicate?: boolean; // 重複フラグ
+  status?: '取得完了' | '優先度決定済' | '承認待' | string; // データ処理ステータス
+
+  // B-2: AI処理優先度決定ロジック
+  priority_score?: number | null; // 優先度スコア (0〜1000)
+
+  // B-3: 在庫・価格追従システム (回転率対策)
+  reference_urls?: ReferenceUrl[]; // 複数の参照URL（仕入先候補）
+  median_price?: number | null; // 参照URL群の価格中央値
+  current_stock_count?: number | null; // 現在の在庫数
+  last_check_time?: string | null; // 最終チェック時刻
+  check_frequency?: '通常' | '高頻度' | string; // 在庫チェック間隔
+
   // メタデータ
   createdAt?: string;
   updatedAt?: string;
@@ -94,6 +114,14 @@ export interface MarketplaceFees {
   shipping?: number;
   other?: number;
   total: number;
+}
+
+/**
+ * 在庫・価格追従システム用の参照URL型
+ */
+export interface ReferenceUrl {
+  url: string;
+  price: number;
 }
 
 /**
