@@ -50,7 +50,60 @@ export interface ProductsMaster {
   sm_competitor_count: number | null;    // 競合数
   sm_profit_amount_usd: number | null;   // 利益額 (SellerMirror用)
   sm_profit_margin: number | null;       // 利益率 (SellerMirror用)
-  
+
+  // ===== Keepa統合・P-4/P-1戦略関連 =====
+  asin: string | null;                   // Amazon ASIN
+  keepa_domain: number | null;           // Keepaドメイン (1=US, 5=JP, etc.)
+
+  // P-4スコア（市場枯渇戦略）
+  p4_total_score: number | null;         // P-4総合スコア (0-100)
+  p4_stock_out_frequency: number | null; // 在庫切れ頻度スコア (0-40)
+  p4_price_increase: number | null;      // 価格上昇スコア (0-30)
+  p4_bsr_volatility: number | null;      // BSRボラティリティスコア (0-20)
+  p4_current_opportunity: number | null; // 現在の機会スコア (0-10)
+  p4_recommendation: string | null;      // 推奨レベル (excellent/good/moderate/none)
+
+  // P-1スコア（価格ミス戦略）
+  p1_total_score: number | null;         // P-1総合スコア (0-100)
+  p1_price_drop_percentage: number | null; // 価格下落率スコア (0-50)
+  p1_drop_speed: number | null;          // 価格下落速度スコア (0-20)
+  p1_historical_stability: number | null; // 歴史的安定性スコア (0-15)
+  p1_sales_rank_quality: number | null;  // BSRクオリティスコア (0-15)
+  p1_recommendation: string | null;      // 推奨レベル (excellent/good/moderate/none)
+
+  // 統合スコア
+  primary_strategy: string | null;       // 主要戦略 (P-4/P-1)
+  primary_score: number | null;          // 主要スコア
+  should_purchase: boolean | null;       // 購入推奨フラグ
+  urgency: string | null;                // 緊急度 (high/medium/low)
+
+  // Amazon BSR（ベストセラーランク）
+  current_bsr: number | null;            // 現在のBSR
+  avg_bsr_30d: number | null;            // 30日平均BSR
+  avg_bsr_90d: number | null;            // 90日平均BSR
+  bsr_category: string | null;           // BSRカテゴリー
+
+  // Amazon価格履歴
+  current_amazon_price: number | null;   // 現在のAmazon価格
+  avg_amazon_price_30d: number | null;   // 30日平均Amazon価格
+  avg_amazon_price_90d: number | null;   // 90日平均Amazon価格
+  min_amazon_price_90d: number | null;   // 90日最安値
+  max_amazon_price_90d: number | null;   // 90日最高値
+
+  // 在庫状態
+  is_in_stock: boolean | null;           // 現在の在庫状態
+  stock_out_count_90d: number | null;    // 90日間の在庫切れ回数
+  last_stock_out_date: string | null;    // 最終在庫切れ日
+  last_restock_date: string | null;      // 最終再入荷日
+
+  // レビュー情報
+  review_count: number | null;           // レビュー数
+  review_rating: number | null;          // レビュー評価 (0-5)
+
+  // Keepa生データ（JSONB）
+  keepa_data: KeepaData | null;          // Keepa完全データ
+  keepa_last_updated: string | null;     // Keepa最終更新日時
+
   // ===== 画像・メディア =====
   images: string[] | null;
   primary_image: string | null;
@@ -177,6 +230,87 @@ export interface ItemSpecifics {
   'Type'?: string;
   'Category'?: string;
   [key: string]: string | undefined;
+}
+
+/**
+ * Keepa完全データ（JSONB）
+ */
+export interface KeepaData {
+  // 基本情報
+  asin?: string;
+  domainId?: number;
+  title?: string;
+  brand?: string;
+  productGroup?: string;
+  productType?: string;
+  model?: string;
+  color?: string;
+  size?: string;
+
+  // カテゴリー
+  categoryTree?: Array<{ catId: number; name: string }>;
+  rootCategory?: number;
+
+  // 寸法・重量
+  packageDimensions?: {
+    width?: number;
+    height?: number;
+    length?: number;
+    weight?: number;
+  };
+  itemDimensions?: {
+    width?: number;
+    height?: number;
+    length?: number;
+    weight?: number;
+  };
+
+  // 価格履歴（時系列データ）
+  priceHistory?: {
+    amazonPrice?: number[][];       // [timestamp, price][]
+    newPrice?: number[][];
+    usedPrice?: number[][];
+    buyBoxPrice?: number[][];
+  };
+
+  // BSR履歴
+  salesRankHistory?: {
+    [categoryId: string]: number[][]; // [timestamp, rank][]
+  };
+
+  // 統計データ
+  stats?: {
+    current?: number[];
+    avg?: number[];
+    min?: number[];
+    max?: number[];
+    avg30?: number[];
+    avg90?: number[];
+  };
+
+  // オファー情報
+  offers?: Array<{
+    sellerId?: string;
+    condition?: number;
+    price?: number;
+    shipping?: number;
+    isPrime?: boolean;
+    isFBA?: boolean;
+  }>;
+
+  // レビュー
+  reviewCount?: number;
+  rating?: number;
+
+  // その他
+  trackingSince?: number;
+  lastUpdate?: number;
+  imagesCSV?: string;
+  eanList?: string[];
+  upcList?: string[];
+
+  // 生データ保存
+  raw?: any;
 }
 
 /**
