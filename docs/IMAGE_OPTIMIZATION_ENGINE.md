@@ -80,6 +80,44 @@ yarn install
 
 ---
 
+## クイックスタート
+
+### プログラムから使用する場合（推奨）
+
+出品処理に画像最適化を統合する最も簡単な方法：
+
+```typescript
+import { enhanceListingWithImageProcessing } from '@/lib/services/image'
+
+// 既存の出品データ
+const listing = {
+  title: '商品名',
+  description: '説明',
+  price: 100,
+  imageUrls: ['https://example.com/image1.jpg', 'https://example.com/image2.jpg'],
+}
+
+// 画像処理を適用
+const enhancedListing = await enhanceListingWithImageProcessing(
+  listing,
+  product.sku,
+  'ebay', // または 'shopee', 'amazon-global' など
+  userId,
+  product.listing_data?.custom_zoom // オプション
+)
+
+// enhancedListing.imageUrls には処理済みのURLが含まれる
+await createEbayListing(enhancedListing)
+```
+
+これだけで、以下の処理が自動的に実行されます：
+- ✅ ズーム率の適用
+- ✅ モール別ウォーターマークの合成（Amazonは自動除外）
+- ✅ Supabase Storage へのアップロード
+- ✅ 最適化された画像URLの取得
+
+---
+
 ## 使用方法
 
 ### 1. 商品編集モーダルでの使用
@@ -124,7 +162,9 @@ project/
 ├── lib/
 │   └── services/
 │       └── image/
-│           └── ImageProcessorService.ts # コアロジック
+│           ├── ImageProcessorService.ts # コアロジック
+│           ├── ImageProcessorIntegration.ts # 統合ヘルパー
+│           └── index.ts                 # エクスポート
 │
 ├── components/
 │   └── ProductModal/

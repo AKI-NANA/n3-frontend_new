@@ -69,7 +69,7 @@ export async function fetchImageRules(
   accountId: string,
   marketplace: string
 ): Promise<ImageRule | null> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('image_rules')
@@ -178,7 +178,7 @@ export async function generateZoomVariants(
   const originalBuffer = await fetchImageBuffer(imageUrl)
   const variants: ZoomVariant[] = []
 
-  const supabase = createClient()
+  const supabase = await createClient()
 
   for (const [variantName, zoomRatio] of Object.entries(ZOOM_PRESETS)) {
     const processedBuffer = await applyZoom(originalBuffer, zoomRatio)
@@ -251,14 +251,43 @@ export async function applyWatermark(
   // ウォーターマークのサイズを計算（画像サイズの割合）
   const watermarkWidth = Math.round(imageWidth * scale)
 
-  // ウォーターマークをリサイズ＋透過度調整
-  const processedWatermark = await sharp(watermarkBuffer)
+  // ウォーターマークをリサイズ
+  let processedWatermark = await sharp(watermarkBuffer)
     .resize(watermarkWidth, null, {
       fit: 'inside',
       withoutEnlargement: true,
     })
-    .png() // PNG形式で透過度を保持
+    .ensureAlpha() // アルファチャンネルを確保
     .toBuffer()
+
+  // 透過度を適用（opacity < 1.0の場合のみ）
+  if (opacity < 1.0) {
+    const watermarkImage = sharp(processedWatermark)
+    const watermarkMeta = await watermarkImage.metadata()
+
+    // 既存の画像データを取得してアルファチャンネルを調整
+    const { data, info } = await watermarkImage
+      .raw()
+      .toBuffer({ resolveWithObject: true })
+
+    // アルファチャンネルに透過度を適用
+    const channels = info.channels
+    if (channels === 4) { // RGBAの場合
+      for (let i = 3; i < data.length; i += 4) {
+        data[i] = Math.round(data[i] * opacity)
+      }
+
+      processedWatermark = await sharp(data, {
+        raw: {
+          width: info.width,
+          height: info.height,
+          channels: 4,
+        },
+      })
+        .png()
+        .toBuffer()
+    }
+  }
 
   const watermarkMetadata = await sharp(processedWatermark).metadata()
   const watermarkHeight = watermarkMetadata.height || 0
@@ -274,25 +303,14 @@ export async function applyWatermark(
 
   const { left, top } = positions[position]
 
-  // 透過度を適用したウォーターマークを作成
-  const watermarkWithOpacity = await sharp(processedWatermark)
-    .composite([
-      {
-        input: Buffer.from([255, 255, 255, Math.round(opacity * 255)]),
-        raw: { width: 1, height: 1, channels: 4 },
-        tile: true,
-        blend: 'dest-in',
-      },
-    ])
-    .toBuffer()
-
-  // 合成
+  // 合成（Sharpのcompositeで透過度を直接指定）
   const result = await image
     .composite([
       {
-        input: watermarkWithOpacity,
+        input: processedWatermark,
         left,
         top,
+        blend: 'over',
       },
     ])
     .jpeg({ quality: 95 })
@@ -349,7 +367,7 @@ export async function processImageForListing(
   }
 
   // Supabase Storageにアップロード
-  const supabase = createClient()
+  const supabase = await createClient()
   const timestamp = Date.now()
   const fileName = `${sku}_final_${marketplace}_${timestamp}.jpg`
   const filePath = `listings/${fileName}`
