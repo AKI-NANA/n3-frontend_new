@@ -10,6 +10,7 @@
 import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ListingManagementTable } from '@/components/listing/ListingManagementTable';
+import { BatchListingExecutor } from '@/components/listing/BatchListingExecutor';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -116,6 +117,9 @@ function ListingManagementContent() {
           </CardContent>
         </Card>
       </div>
+
+      {/* バッチ出品実行 */}
+      <BatchListingExecutor />
 
       {/* プラットフォーム選択タブ */}
       <Card className="mb-6">
