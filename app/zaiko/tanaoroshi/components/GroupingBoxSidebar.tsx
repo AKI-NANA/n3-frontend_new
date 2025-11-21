@@ -173,13 +173,57 @@ export function GroupingBoxSidebar({
   const checkCompatibility = async () => {
     setLoading(true)
     try {
-      const costs = selectedProducts.map(p => p.cost_price || 0)
+      // ===== 精密DDP計算の実行 =====
+      // source_dataから重量・HSコード・原産国を取得し、正確なDDP costを計算
+
+      console.log('🔬 精密DDP計算を開始（リアルタイム適合性判定）...')
+
+      const precisionCalcItems = selectedProducts.map(p => ({
+        sku: p.sku,
+        cost_jpy: p.cost_jpy || 0,
+        weight_g: p.source_data?.weight_g || p.source_data?.ddp_weight_g || 0,
+        hs_code: p.source_data?.hs_code || null,
+        origin_country: p.source_data?.origin_country || null
+      }))
+
+      let preciseCosts: number[] = []
+
+      try {
+        const calcResponse = await fetch('/api/products/calculate-precise-ddp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items: precisionCalcItems })
+        })
+
+        if (calcResponse.ok) {
+          const calcResult = await calcResponse.json()
+
+          if (calcResult.success) {
+            preciseCosts = calcResult.results.map((r: any) => r.precise_ddp_cost_usd)
+            console.log('✅ 精密DDP計算完了:', {
+              total: calcResult.summary.total_items,
+              complete_data: calcResult.summary.complete_data_count,
+              max: `$${calcResult.summary.max_ddp_cost_usd.toFixed(2)}`,
+              min: `$${calcResult.summary.min_ddp_cost_usd.toFixed(2)}`
+            })
+          } else {
+            throw new Error(calcResult.error || '精密計算失敗')
+          }
+        } else {
+          throw new Error(`API Error: ${calcResponse.status}`)
+        }
+      } catch (error: any) {
+        console.warn('⚠️ 精密DDP計算失敗、フォールバックとしてcost_priceを使用:', error.message)
+        // フォールバック: 簡易的なcost_priceを使用
+        preciseCosts = selectedProducts.map(p => p.cost_price || 0)
+      }
+
       const weights = selectedProducts
-        .map(p => p.source_data?.weight_g || 0)
+        .map(p => p.source_data?.weight_g || p.source_data?.ddp_weight_g || 0)
         .filter(w => w > 0)
 
-      const minCost = Math.min(...costs)
-      const maxCost = Math.max(...costs)
+      const minCost = Math.min(...preciseCosts)
+      const maxCost = Math.max(...preciseCosts)
       const costDiff = maxCost - minCost
       const costDiffPercent = minCost > 0 ? (costDiff / minCost) * 100 : 0
 
