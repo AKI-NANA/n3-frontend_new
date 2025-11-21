@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { LayoutDashboard, AlertTriangle, DollarSign, Truck, Target, TrendingUp, RefreshCw } from 'lucide-react';
+import { LayoutDashboard, AlertTriangle, DollarSign, Truck, Target, TrendingUp, RefreshCw, TrendingDown, Activity } from 'lucide-react';
 
 // --- データの構造定義とモックデータ ---
 // Phase 1 (受注V2.0), Phase 2 (出荷), Phase 4 (財務) から連携されるデータをシミュレート
@@ -8,6 +8,11 @@ const mockKPIs = {
     dailyProfit: 125000,
     monthlyTargetAchieved: 0.85, // 85%達成
     weeklyOrderCount: 150,
+    // Phase 7: SEO/健全性マネージャー KPI
+    activeAuctions: 23,                    // アクティブなオークション数
+    avgHealthScore: 72,                    // 平均健全性スコア
+    deadListings: 12,                      // 死に筋リスティング数
+    auctionConversionRate: 0.68,           // オークション→定額切り替え率
 };
 
 const mockAlerts = [
@@ -15,6 +20,10 @@ const mockAlerts = [
     { type: 'Shipping', message: '🚨 3件の注文が出荷期限まで48時間以内。週末リスクを考慮し、本日中の出荷が必要です。', severity: 'High' }, // Phase 2連携
     { type: 'Sourcing', message: '🔍 仕入れ価格最適化エンジンがAmazonで登録価格より10%安い仕入れ元を発見しました。', severity: 'Medium' }, // Phase 5連携
     { type: 'Account', message: 'eBayアカウントの追跡番号アップロード率が95%を下回っています。', severity: 'Medium' }, // Phase 3連携
+    // Phase 7: SEO/健全性マネージャー連携
+    { type: 'SEO', message: '🎯 5件のオークションが入札なしで終了。自動で定額出品への切り替えを推奨します。', severity: 'Medium' }, // 7-2連携
+    { type: 'SEO', message: '⚠️ 3件の一点もの商品で仕入れ先の在庫ロスを検出。オークション即時終了が必要です。', severity: 'High' }, // 7-3連携
+    { type: 'SEO', message: '📉 12件のリスティングが健全性スコア30以下（死に筋）。自動終了を推奨します。', severity: 'Medium' }, // 7-4連携
 ];
 
 const mockMarketplaceData = [
@@ -155,29 +164,57 @@ const IntegratedDashboardV1 = () => {
 
             {/* 主要KPIセクション */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <KPICard 
-                    title="日次確定利益" 
-                    value={formatCurrency(kpis.dailyProfit)} 
-                    icon={<DollarSign />} 
+                <KPICard
+                    title="日次確定利益"
+                    value={formatCurrency(kpis.dailyProfit)}
+                    icon={<DollarSign />}
                     color={{ bg: 'bg-green-100', text: 'text-green-600' }}
                 />
-                <KPICard 
-                    title="日次売上" 
-                    value={formatCurrency(kpis.dailySales)} 
-                    icon={<DollarSign />} 
+                <KPICard
+                    title="日次売上"
+                    value={formatCurrency(kpis.dailySales)}
+                    icon={<DollarSign />}
                     color={{ bg: 'bg-blue-100', text: 'text-blue-600' }}
                 />
-                 <KPICard 
-                    title="月間目標達成率" 
+                 <KPICard
+                    title="月間目標達成率"
                     value={`${(kpis.monthlyTargetAchieved * 100).toFixed(1)}%`}
-                    icon={<Target />} 
+                    icon={<Target />}
                     color={{ bg: 'bg-indigo-100', text: 'text-indigo-600' }}
                 />
-                <KPICard 
-                    title="今週の注文数" 
+                <KPICard
+                    title="今週の注文数"
                     value={`${kpis.weeklyOrderCount} 件`}
-                    icon={<Truck />} 
+                    icon={<Truck />}
                     color={{ bg: 'bg-purple-100', text: 'text-purple-600' }}
+                />
+            </div>
+
+            {/* Phase 7: SEO/健全性マネージャー KPIセクション */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <KPICard
+                    title="アクティブなオークション"
+                    value={`${kpis.activeAuctions} 件`}
+                    icon={<Activity />}
+                    color={{ bg: 'bg-teal-100', text: 'text-teal-600' }}
+                />
+                <KPICard
+                    title="平均健全性スコア"
+                    value={`${kpis.avgHealthScore} 点`}
+                    icon={<TrendingUp />}
+                    color={{ bg: kpis.avgHealthScore >= 70 ? 'bg-green-100' : 'bg-yellow-100', text: kpis.avgHealthScore >= 70 ? 'text-green-600' : 'text-yellow-600' }}
+                />
+                <KPICard
+                    title="死に筋リスティング"
+                    value={`${kpis.deadListings} 件`}
+                    icon={<TrendingDown />}
+                    color={{ bg: 'bg-red-100', text: 'text-red-600' }}
+                />
+                <KPICard
+                    title="オークション切替率"
+                    value={`${(kpis.auctionConversionRate * 100).toFixed(1)}%`}
+                    icon={<Target />}
+                    color={{ bg: 'bg-orange-100', text: 'text-orange-600' }}
                 />
             </div>
 
