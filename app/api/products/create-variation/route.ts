@@ -124,17 +124,23 @@ export async function POST(request: NextRequest) {
         throw new Error(calcResult.error || '精密DDP計算失敗')
       }
     } catch (error: any) {
-      console.warn('⚠️ 精密DDP計算失敗、フォールバックとして簡易ddp_cost_usdを使用:', error.message)
-      // フォールバック: 既存のddp_cost_usdを使用
-      selectedItems.forEach(item => {
-        preciseDdpCosts.set(item.sku, item.ddp_cost_usd)
-      })
+      console.error('❌ 精密DDP計算API呼び出し失敗:', error.message)
+
+      // ⚠️ 4-D修正: フォールバックは使用せず、バリエーション作成をブロック
+      return NextResponse.json({
+        success: false,
+        error: '精密DDP計算に失敗しました',
+        details: '正確な価格計算ができないため、バリエーション作成を中止しました。データベース接続またはマスターデータ（HSコード、原産国、送料レート、為替レート）に問題がある可能性があります。',
+        technical_error: error.message,
+        action_required: 'システム管理者に連絡してください',
+        failed_items: selectedItems.map(item => item.sku)
+      }, { status: 503 })
     }
 
     // ===== ステップ3: 基準値決定（最大DDPコスト） =====
 
     // 精密計算されたDDPコストを使用
-    const ddpCosts = selectedItems.map(item => preciseDdpCosts.get(item.sku) || item.ddp_cost_usd)
+    const ddpCosts = selectedItems.map(item => preciseDdpCosts.get(item.sku) || 0)
     const weights = selectedItems.map(item => item.weight_g || 0).filter(w => w > 0)
 
     const minDdpCost = Math.min(...ddpCosts)
@@ -346,7 +352,74 @@ export async function POST(request: NextRequest) {
       warnings.push('⚠️ 配送ポリシーの自動選定に失敗しました。手動で設定してください。')
     }
 
-    // ===== ステップ8: 成功レスポンス =====
+    // ===== ステップ8: マスターデータへの紐づけ記録 =====
+    // バリエーション親子関係をparent_child_mapに記録（イベント駆動型価格パトロール用）
+
+    console.log('📝 親子紐づけマスターデータを記録中...')
+
+    // 親リスティングID（現時点ではeBay未出品なので親SKU IDを仮IDとして使用）
+    // 実際のeBay出品成功時に、このIDを実際のeBay Listing IDで更新する必要がある
+    const tempParentListingId = `DRAFT-${parentProduct.sku}`
+
+    try {
+      // parent_child_map に全ての親子関係を記録
+      const parentChildRecords = selectedItems.map((item, index) => ({
+        parent_sku_id: parentProduct.sku,
+        parent_listing_id: tempParentListingId,  // DRAFT状態の仮ID
+        child_sku_id: item.sku,
+        child_inventory_id: item.id || null,  // inventory_master.id
+        variation_attributes: variations[index].attributes,
+        is_active: true
+      }))
+
+      const { data: mappingData, error: mappingError } = await supabase
+        .from('parent_child_map')
+        .insert(parentChildRecords)
+        .select()
+
+      if (mappingError) {
+        console.error('❌ 親子紐づけ記録エラー:', mappingError)
+        warnings.push('⚠️ 親子紐づけマスターデータの記録に失敗しました（価格パトロールが動作しない可能性）')
+      } else {
+        console.log(`✅ 親子紐づけ記録成功: ${mappingData.length}件`)
+      }
+
+      // inventory_master の parent_listing_id も更新
+      const inventoryUpdates = selectedItems.map(async (item) => {
+        if (!item.id) return { success: false, sku: item.sku }
+
+        const { error: invError } = await supabase
+          .from('inventory_master')
+          .update({
+            parent_listing_id: tempParentListingId,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', item.id)
+
+        if (invError) {
+          console.error(`❌ inventory_master更新エラー (${item.sku}):`, invError)
+          return { success: false, sku: item.sku }
+        }
+
+        return { success: true, sku: item.sku }
+      })
+
+      const invResults = await Promise.all(inventoryUpdates)
+      const failedInvUpdates = invResults.filter(r => !r.success)
+
+      if (failedInvUpdates.length > 0) {
+        console.warn('⚠️ 一部のinventory_master更新に失敗:', failedInvUpdates)
+        warnings.push(`⚠️ ${failedInvUpdates.length}件の在庫マスター更新に失敗`)
+      } else {
+        console.log(`✅ inventory_master更新成功: ${invResults.length}件`)
+      }
+
+    } catch (mappingError: any) {
+      console.error('❌ マスターデータ紐づけ処理エラー:', mappingError)
+      warnings.push('⚠️ マスターデータ紐づけ処理でエラーが発生しました')
+    }
+
+    // ===== ステップ9: 成功レスポンス =====
 
     return NextResponse.json({
       success: true,

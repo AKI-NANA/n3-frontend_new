@@ -79,14 +79,20 @@ export function GroupingBoxSidebar({
     return sum + (maxDdpCost - actualCost)
   }, 0)
 
-  // 適合性チェックを実行
+  // 適合性チェックを実行（debounce付き - 4-E最適化）
   useEffect(() => {
     if (selectedProducts.length < 2) {
       setCompatibility(null)
       return
     }
 
-    checkCompatibility()
+    // 500ms待機してから実行（連続選択時は最後の1回のみ実行）
+    const timeoutId = setTimeout(() => {
+      checkCompatibility()
+    }, 500)
+
+    // クリーンアップ関数で前回のタイマーをキャンセル
+    return () => clearTimeout(timeoutId)
   }, [selectedProducts])
 
   // 既存親SKU候補を検索
@@ -213,9 +219,37 @@ export function GroupingBoxSidebar({
           throw new Error(`API Error: ${calcResponse.status}`)
         }
       } catch (error: any) {
-        console.warn('⚠️ 精密DDP計算失敗、フォールバックとしてcost_priceを使用:', error.message)
-        // フォールバック: 簡易的なcost_priceを使用
-        preciseCosts = selectedProducts.map(p => p.cost_price || 0)
+        console.error('❌ 精密DDP計算失敗:', error.message)
+
+        // ⚠️ 4-D修正: フォールバックは使用せず、処理を中断
+        setCompatibility({
+          isCompatible: false,
+          ddpCostCheck: { passed: false, minCost: 0, maxCost: 0, difference: 0, differencePercent: 0 },
+          weightCheck: { passed: false, minWeight: 0, maxWeight: 0, ratio: 0 },
+          categoryCheck: { passed: false, categories: [] },
+          shippingPolicy: null,
+          warnings: [
+            '❌ 精密DDP計算に失敗しました',
+            'データベース接続またはマスターデータ（HSコード、原産国、送料レート）に問題がある可能性があります',
+            '正確な価格計算ができないため、バリエーション作成は実行できません'
+          ]
+        })
+
+        setLoading(false)
+
+        // ユーザーに警告ダイアログを表示
+        alert(
+          '⚠️ 精密DDP計算に失敗しました\n\n' +
+          '正確な価格計算ができないため、バリエーション作成を中止しました。\n\n' +
+          '原因：\n' +
+          '- データベース接続エラー\n' +
+          '- HSコード/原産国マスターデータの不備\n' +
+          '- 送料レートテーブルの不備\n\n' +
+          'システム管理者に連絡してください。\n\n' +
+          `技術的詳細: ${error.message}`
+        )
+
+        return  // 処理を完全に中断
       }
 
       const weights = selectedProducts

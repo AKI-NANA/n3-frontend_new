@@ -13,12 +13,12 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getExchangeRate } from '@/lib/inventory-monitoring/price-recalculation'
 
 // 定数
 const DDP_SERVICE_FEE = 15  // DDP固定手数料
 const MPF_RATE = 0.003464   // Merchandise Processing Fee
 const DEFAULT_FVF_RATE = 0.1319  // eBay Final Value Fee (13.19%)
-const DEFAULT_EXCHANGE_RATE = 150  // JPY/USD
 const DEFAULT_TARIFF_RATE = 0.058  // 基本関税率 5.8%
 
 interface DDPCalculationRequest {
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
     const body: DDPCalculationRequest = await req.json()
     const {
       items,
-      exchange_rate = DEFAULT_EXCHANGE_RATE,
+      exchange_rate: providedExchangeRate,
       fvf_rate = DEFAULT_FVF_RATE
     } = body
 
@@ -78,11 +78,37 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // ===== 為替レートのリアルタイム取得（4-C修正）=====
+    let exchange_rate: number
+
+    if (providedExchangeRate) {
+      // 明示的に指定された場合はそれを使用
+      exchange_rate = providedExchangeRate
+      console.log(`💱 為替レート（指定値）: ¥${exchange_rate}/USD`)
+    } else {
+      // 未指定の場合は外部APIからリアルタイム取得
+      try {
+        const rateJpyToUsd = await getExchangeRate()  // 1円 = X ドル（例: 0.0067）
+        exchange_rate = 1 / rateJpyToUsd  // 1ドル = Y 円（例: 149.25）に変換
+        console.log(`💱 為替レート（リアルタイム取得）: ¥${exchange_rate.toFixed(2)}/USD`)
+      } catch (error: any) {
+        console.error('❌ 為替レート取得失敗:', error.message)
+
+        // ⚠️ フォールバックは使用せず、出品をブロック
+        return NextResponse.json({
+          success: false,
+          error: '為替レート取得に失敗しました',
+          details: '外部為替レートAPIに接続できませんでした。ネットワーク接続を確認してから再試行してください。',
+          technical_error: error.message,
+          action_required: 'システム管理者に連絡するか、しばらく待ってから再試行してください'
+        }, { status: 503 })
+      }
+    }
+
     const supabase = createClient()
     const results: DDPCalculationResult[] = []
 
     console.log(`\n💰 精密DDP計算開始: ${items.length}件`)
-    console.log(`為替レート: ¥${exchange_rate}/USD`)
     console.log(`FVF率: ${(fvf_rate * 100).toFixed(2)}%`)
 
     for (const item of items) {
