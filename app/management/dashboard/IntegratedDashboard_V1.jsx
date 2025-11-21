@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { LayoutDashboard, AlertTriangle, DollarSign, Truck, Target, TrendingUp, RefreshCw } from 'lucide-react';
+import { LayoutDashboard, AlertTriangle, DollarSign, Truck, Target, TrendingUp, RefreshCw, TrendingDown } from 'lucide-react';
+import EbaySeoManagerV1 from '@/components/managers/EbaySeoManagerV1';
 
 // --- データの構造定義とモックデータ ---
 // Phase 1 (受注V2.0), Phase 2 (出荷), Phase 4 (財務) から連携されるデータをシミュレート
@@ -35,6 +36,7 @@ const getSeverityColor = (severity) => {
 
 // --- メインコンポーネント ---
 const IntegratedDashboardV1 = () => {
+    const [activeTab, setActiveTab] = useState('overview'); // タブ管理
     const [kpis, setKpis] = useState(mockKPIs);
     const [alerts, setAlerts] = useState(mockAlerts);
     const [marketplaceData, setMarketplaceData] = useState(mockMarketplaceData);
@@ -140,6 +142,21 @@ const IntegratedDashboardV1 = () => {
         </div>
     );
 
+    // タブボタン
+    const TabButton = ({ id, label, icon: Icon }) => (
+        <button
+            onClick={() => setActiveTab(id)}
+            className={`flex items-center px-6 py-3 font-semibold text-sm transition-colors duration-150 border-b-2 ${
+                activeTab === id
+                    ? 'border-teal-600 text-teal-700'
+                    : 'border-transparent text-gray-600 hover:text-gray-800'
+            }`}
+        >
+            <Icon className="w-5 h-5 mr-2" />
+            {label}
+        </button>
+    );
+
     // --- レイアウト ---
     return (
         <div className="p-8 bg-gray-100 min-h-screen">
@@ -148,52 +165,73 @@ const IntegratedDashboardV1 = () => {
                 総合ダッシュボード V1.0 <span className="text-xl ml-3 text-gray-500">（経営判断ハブ）</span>
             </h1>
 
-            {/* 緊急アラートセクション */}
-            <div className="mb-6">
-                <AlertPanel />
+            {/* タブナビゲーション */}
+            <div className="bg-white rounded-t-lg shadow-md mb-0 border-b border-gray-200">
+                <div className="flex space-x-1">
+                    <TabButton id="overview" label="概要" icon={LayoutDashboard} />
+                    <TabButton id="seo-manager" label="SEO管理 (Phase 7)" icon={TrendingDown} />
+                </div>
             </div>
 
-            {/* 主要KPIセクション */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <KPICard 
-                    title="日次確定利益" 
-                    value={formatCurrency(kpis.dailyProfit)} 
-                    icon={<DollarSign />} 
-                    color={{ bg: 'bg-green-100', text: 'text-green-600' }}
-                />
-                <KPICard 
-                    title="日次売上" 
-                    value={formatCurrency(kpis.dailySales)} 
-                    icon={<DollarSign />} 
-                    color={{ bg: 'bg-blue-100', text: 'text-blue-600' }}
-                />
-                 <KPICard 
-                    title="月間目標達成率" 
-                    value={`${(kpis.monthlyTargetAchieved * 100).toFixed(1)}%`}
-                    icon={<Target />} 
-                    color={{ bg: 'bg-indigo-100', text: 'text-indigo-600' }}
-                />
-                <KPICard 
-                    title="今週の注文数" 
-                    value={`${kpis.weeklyOrderCount} 件`}
-                    icon={<Truck />} 
-                    color={{ bg: 'bg-purple-100', text: 'text-purple-600' }}
-                />
-            </div>
+            {/* タブコンテンツ */}
+            <div className="bg-white rounded-b-lg shadow-md p-6">
+                {activeTab === 'overview' && (
+                    <div>
+                        {/* 緊急アラートセクション */}
+                        <div className="mb-6">
+                            <AlertPanel />
+                        </div>
 
-            {/* 統合パネル (テーブルとAI戦略) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <MarketplaceTable />
-                <AIStrategyReport />
-            </div>
-            
-            <div className="mt-8 text-center">
-                 <button 
-                    onClick={() => { /* データ更新ロジックをここに実装 */ alert('全データソースを連携し、最新情報を取得します。'); }}
-                    className="flex items-center justify-center mx-auto text-blue-600 hover:text-blue-800 transition duration-150 font-semibold"
-                >
-                    <RefreshCw className="w-5 h-5 mr-2 animate-spin-slow" /> 全データソースを更新
-                </button>
+                        {/* 主要KPIセクション */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                            <KPICard
+                                title="日次確定利益"
+                                value={formatCurrency(kpis.dailyProfit)}
+                                icon={<DollarSign />}
+                                color={{ bg: 'bg-green-100', text: 'text-green-600' }}
+                            />
+                            <KPICard
+                                title="日次売上"
+                                value={formatCurrency(kpis.dailySales)}
+                                icon={<DollarSign />}
+                                color={{ bg: 'bg-blue-100', text: 'text-blue-600' }}
+                            />
+                             <KPICard
+                                title="月間目標達成率"
+                                value={`${(kpis.monthlyTargetAchieved * 100).toFixed(1)}%`}
+                                icon={<Target />}
+                                color={{ bg: 'bg-indigo-100', text: 'text-indigo-600' }}
+                            />
+                            <KPICard
+                                title="今週の注文数"
+                                value={`${kpis.weeklyOrderCount} 件`}
+                                icon={<Truck />}
+                                color={{ bg: 'bg-purple-100', text: 'text-purple-600' }}
+                            />
+                        </div>
+
+                        {/* 統合パネル (テーブルとAI戦略) */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <MarketplaceTable />
+                            <AIStrategyReport />
+                        </div>
+
+                        <div className="mt-8 text-center">
+                             <button
+                                onClick={() => { /* データ更新ロジックをここに実装 */ alert('全データソースを連携し、最新情報を取得します。'); }}
+                                className="flex items-center justify-center mx-auto text-blue-600 hover:text-blue-800 transition duration-150 font-semibold"
+                            >
+                                <RefreshCw className="w-5 h-5 mr-2 animate-spin-slow" /> 全データソースを更新
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'seo-manager' && (
+                    <div>
+                        <EbaySeoManagerV1 />
+                    </div>
+                )}
             </div>
         </div>
     );
