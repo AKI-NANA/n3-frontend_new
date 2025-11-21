@@ -57,6 +57,16 @@ interface ParentCandidate {
   variation_attributes: string[]
 }
 
+interface TemplateOption {
+  sku: string
+  title: string
+  template_name: string
+  weight_tier_kg: number
+  price_tier_usd: number
+  recommended_policy_id: number
+  recommended_policy_name: string
+}
+
 export function GroupingBoxSidebar({
   selectedProducts,
   onClearSelection,
@@ -68,6 +78,9 @@ export function GroupingBoxSidebar({
   const [parentCandidates, setParentCandidates] = useState<ParentCandidate[]>([])
   const [loadingCandidates, setLoadingCandidates] = useState(false)
   const [showCandidates, setShowCandidates] = useState(false)
+  const [templates, setTemplates] = useState<TemplateOption[]>([])
+  const [showTemplates, setShowTemplates] = useState(false)
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateOption | null>(null)
 
   // 最大DDPコストベースの価格シミュレーション
   const maxDdpCost = selectedProducts.length > 0
@@ -174,6 +187,49 @@ export function GroupingBoxSidebar({
       console.error('追加エラー:', error)
       alert(`❌ 追加エラー: ${error.message}`)
     }
+  }
+
+  // テンプレート一覧を取得
+  const loadTemplates = async () => {
+    setShowTemplates(true)
+    try {
+      const response = await fetch('/api/shipping-policies/generate-templates')
+      const data = await response.json()
+
+      if (data.success) {
+        const templateOptions = data.templates.map((t: any) => ({
+          sku: t.sku,
+          title: t.title,
+          template_name: t.listing_data?.template_name || '',
+          weight_tier_kg: t.listing_data?.weight_tier_kg || 0,
+          price_tier_usd: t.listing_data?.price_tier_usd || 0,
+          recommended_policy_id: t.listing_data?.recommended_policy_id || null,
+          recommended_policy_name: t.listing_data?.recommended_policy_name || ''
+        }))
+        setTemplates(templateOptions)
+      } else {
+        console.error('テンプレート取得エラー:', data.error)
+        setTemplates([])
+      }
+    } catch (error) {
+      console.error('テンプレート取得エラー:', error)
+      setTemplates([])
+    }
+  }
+
+  // テンプレートを使用してバリエーション作成
+  const createFromTemplate = (template: TemplateOption) => {
+    setSelectedTemplate(template)
+    alert(
+      `✅ テンプレート選択: ${template.template_name}\n\n` +
+      `推奨重量帯: ${template.weight_tier_kg}kg\n` +
+      `推奨価格帯: $${template.price_tier_usd}\n` +
+      `配送ポリシー: ${template.recommended_policy_name}\n\n` +
+      'このテンプレートを使用してバリエーション作成を開始します。'
+    )
+
+    // バリエーション作成モーダルを開く（親コンポーネントに通知）
+    onCreateVariation()
   }
 
   const checkCompatibility = async () => {
@@ -475,6 +531,62 @@ export function GroupingBoxSidebar({
                 <br />
                 スコア: {compatibility.shippingPolicy.score?.toFixed(1)}
               </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* テンプレート選択（優先度4-B） */}
+      {selectedProducts.length >= 2 && (
+        <div className="p-4 border-b border-slate-200 bg-blue-50">
+          <Button
+            onClick={loadTemplates}
+            variant="outline"
+            className="w-full border-blue-300 text-blue-700 hover:bg-blue-100 mb-3"
+          >
+            📋 テンプレートから選択
+          </Button>
+
+          {showTemplates && templates.length > 0 && (
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              <p className="text-xs text-blue-700 mb-2">
+                推奨される配送ポリシーテンプレート:
+              </p>
+              {templates.map((template) => (
+                <div
+                  key={template.sku}
+                  className="bg-white rounded-lg p-3 border border-blue-200 cursor-pointer hover:bg-blue-50 transition-colors"
+                  onClick={() => createFromTemplate(template)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-blue-900">
+                        {template.template_name}
+                      </p>
+                      <p className="text-xs text-blue-600 mt-1">
+                        重量: {template.weight_tier_kg}kg | 価格: ${template.price_tier_usd}
+                      </p>
+                      <p className="text-xs text-blue-500 mt-1 truncate">
+                        {template.recommended_policy_name}
+                      </p>
+                    </div>
+                    <CheckCircle2 className="w-5 h-5 text-blue-600 flex-shrink-0 ml-2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {showTemplates && templates.length === 0 && (
+            <div className="text-center py-4">
+              <p className="text-sm text-blue-600 mb-2">
+                テンプレートが見つかりません
+              </p>
+              <p className="text-xs text-blue-500">
+                /api/shipping-policies/generate-templates
+                <br />
+                を実行してテンプレートを生成してください
+              </p>
             </div>
           )}
         </div>
