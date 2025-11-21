@@ -52,6 +52,86 @@ export interface Product {
   createdAt?: string;
   updatedAt?: string;
   lastEditedBy?: string;
+
+  // ===== Amazon刈り取り自動化システム =====
+
+  // スコアリングと分析
+  arbitrage_score?: number | null;
+  keepa_data?: KeepaData | null;
+  ai_arbitrage_assessment?: AiArbitrageAssessment | null;
+
+  // 刈り取り管理と自動化
+  arbitrage_status?: ArbitrageStatus;
+  purchase_account_id?: string | null;
+  amazon_order_id?: string | null;
+
+  // グローバルFBA完結型（Phase 1: US/JP）
+  target_country?: 'US' | 'JP' | null;
+  optimal_sales_channel?: string | null;
+  fba_shipment_plan_id?: string | null;
+  fba_label_pdf_url?: string | null;
+  physical_inventory_count?: number;
+  initial_purchased_quantity?: number;
+
+  // P-4戦略用データ（市場枯渇予見）
+  final_production_status?: 'discontinued' | 'seasonal_end' | 'regular_stock' | null;
+  keepa_ranking_avg_90d?: number | null;
+  amazon_inventory_status?: 'in_stock' | 'out_of_stock' | 'high_price' | null;
+  multi_market_inventory?: MultiMarketInventory | null;
+  hold_recommendation?: boolean;
+}
+
+// ===== Amazon刈り取り関連の型定義 =====
+
+export type ArbitrageStatus =
+  | 'in_research'           // リサーチ中
+  | 'tracked'               // トラッキング中（Keepa監視）
+  | 'purchased'             // 購入完了（配送中）
+  | 'awaiting_inspection'   // 検品待ち
+  | 'ready_to_list'         // 出品準備完了
+  | 'listed';               // 出品済み
+
+export interface KeepaData {
+  price_history?: Array<{ timestamp: number; price: number }>;
+  rank_history?: Array<{ timestamp: number; rank: number }>;
+  buy_box_history?: Array<{ timestamp: number; price: number; seller: string }>;
+  price_drop_detected?: boolean;
+  price_drop_ratio?: number;
+  average_price_90d?: number;
+  current_price?: number;
+  last_updated?: string;
+}
+
+export interface AiArbitrageAssessment {
+  potential: 'high' | 'medium' | 'low';
+  risk: 'high' | 'medium' | 'low';
+  reason: string;
+  risk_reason?: string;
+  strategy?: 'P-1' | 'P-2' | 'P-3' | 'P-4';  // P-1: 一時的下落、P-4: 市場枯渇予見
+  recommended_action?: 'auto_purchase' | 'manual_review' | 'pass';
+}
+
+export interface MultiMarketInventory {
+  rakuten?: {
+    price: number;
+    inventory: number;
+    url?: string;
+  };
+  yahoo?: {
+    price: number;
+    inventory: number;
+    url?: string;
+  };
+  mercari?: {
+    price: number;
+    inventory: number;
+    url?: string;
+  };
+  amazon_jp?: {
+    price: number;
+    inventory: number;
+    url?: string;
+  };
 }
 
 export interface ProductImage {
