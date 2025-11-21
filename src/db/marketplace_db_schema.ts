@@ -21,6 +21,7 @@ export interface Product {
   current_stock: number; // 実在庫数
   last_price_sync_at: Date | null;
   category_ebay: string; // 共通カテゴリとして利用されるフィールド
+  hs_code?: string; // HSコード（Phase 2: クロスボーダー無在庫対応）AIまたは手動で登録
   // ... 既存の他のフィールド
 }
 
@@ -87,4 +88,45 @@ export interface ShippingRule {
     }>;
     handling_fee: number;
   };
+}
+
+/**
+ * tax_rate_master: 関税・消費税マスター (Phase 2: クロスボーダー無在庫対応)
+ * 国別・品目別の関税率と消費税率を管理する。
+ */
+export interface TaxRateMaster {
+  id: number; // Primary Key
+  hs_code: string; // 商品の国際的な品目分類コード (HSコード)
+  export_country: string; // 輸出国 (例: US, JP, DE)
+  import_country: string; // 輸入国 (販売先国。例: JP, US, DE)
+  duty_rate: number; // 基本関税率 (%)
+  consumption_tax_rate: number; // 輸入国の消費税率 (%) VAT/GSTなど
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+/**
+ * forwarder_api_credentials: フォワーダーAPI接続情報 (Phase 2: DDP自動化)
+ * フォワーダーとのAPI連携に必要な認証情報を管理する。
+ */
+export interface ForwarderApiCredential {
+  id: number; // Primary Key
+  forwarder_name: string; // フォワーダー名 (例: "DHL", "FedEx", "Custom Forwarder")
+  api_endpoint: string; // APIのベースURL
+  api_key: string; // API認証キー
+  api_secret?: string; // APIシークレット（必要な場合）
+  service_type: "DDP" | "DDU" | "BOTH"; // 提供サービスタイプ
+  warehouse_address_json: {
+    // フォワーダー倉庫住所（各国）
+    country: string;
+    address_line1: string;
+    address_line2?: string;
+    city: string;
+    state?: string;
+    postal_code: string;
+  }[];
+  rate_limit_per_hour?: number; // API制限値
+  is_active: boolean; // アクティブ状態
+  created_at?: Date;
+  updated_at?: Date;
 }
