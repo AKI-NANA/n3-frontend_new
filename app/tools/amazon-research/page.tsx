@@ -11,6 +11,8 @@ import { AmazonProduct } from '@/types/amazon'
 import { AmazonProductCard } from '@/components/amazon/AmazonProductCard'
 import { AmazonSearchFilters } from '@/components/amazon/AmazonSearchFilters'
 import { AmazonProfitChart } from '@/components/amazon/AmazonProfitChart'
+import { StrategyConfigPanel } from '@/components/amazon/StrategyConfigPanel'
+import { QueueManagementPanel } from '@/components/amazon/QueueManagementPanel'
 
 export default function AmazonResearchPage() {
   const [products, setProducts] = useState<AmazonProduct[]>([])
@@ -189,6 +191,8 @@ export default function AmazonResearchPage() {
           <TabsTrigger value="grid">グリッド表示</TabsTrigger>
           <TabsTrigger value="list">リスト表示</TabsTrigger>
           <TabsTrigger value="chart">分析チャート</TabsTrigger>
+          <TabsTrigger value="strategy">戦略設定</TabsTrigger>
+          <TabsTrigger value="queue">キュー管理</TabsTrigger>
         </TabsList>
 
         <TabsContent value="grid" className="space-y-4">
@@ -255,6 +259,14 @@ export default function AmazonResearchPage() {
 
         <TabsContent value="chart">
           <AmazonProfitChart products={filteredProducts} />
+        </TabsContent>
+
+        <TabsContent value="strategy">
+          <StrategyConfigPanel />
+        </TabsContent>
+
+        <TabsContent value="queue">
+          <QueueManagementPanel />
         </TabsContent>
       </Tabs>
     </div>
