@@ -4,15 +4,19 @@ import { getFirestore, collection, doc, onSnapshot, setDoc, serverTimestamp, que
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
 
 // ⚠️ 【重要】以下の定数を実際のAPIキーとFirebase設定に置き換えてください。
-const API_KEY = ""; // Gemini API Key
+// 環境変数から読み込むか、直接設定してください。
+const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || ""; // Gemini API Key
+const GEMINI_MODEL = "gemini-2.0-flash-exp"; // 最新の高速モデル
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models";
+
 const __app_id = "order_manager_v2";
 const __firebase_config = {
-    apiKey: "",
-    authDomain: "",
-    projectId: "demo-order-manager",
-    storageBucket: "",
-    messagingSenderId: "",
-    appId: ""
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "",
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "",
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "demo-order-manager",
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "",
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "",
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || ""
 };
 const __initial_auth_token = "demo_token_order";
 
@@ -24,6 +28,51 @@ const auth = getAuth(app);
 // ユーティリティ関数
 const getPrivateCollectionRef = (userId, collectionName) => {
     return collection(db, `artifacts/${__app_id}/users/${userId}/${collectionName}`);
+};
+
+// Gemini API呼び出し関数
+const callGeminiAPI = async (prompt) => {
+    if (!API_KEY) {
+        throw new Error('Gemini APIキーが設定されていません。環境変数 NEXT_PUBLIC_GEMINI_API_KEY を設定してください。');
+    }
+
+    try {
+        const response = await fetch(
+            `${GEMINI_API_URL}/${GEMINI_MODEL}:generateContent?key=${API_KEY}`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{ text: prompt }]
+                    }],
+                    generationConfig: {
+                        temperature: 0.7,
+                        maxOutputTokens: 2048,
+                    }
+                })
+            }
+        );
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(`Gemini API Error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+        }
+
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!text) {
+            throw new Error('Gemini APIから有効なレスポンスが返されませんでした。');
+        }
+
+        return text;
+    } catch (error) {
+        console.error('Gemini API呼び出しエラー:', error);
+        throw error;
+    }
 };
 
 // ------------------------------------
@@ -38,24 +87,28 @@ const ALL_STATUSES = ['new', 'pending', 'processing', 'shipped', 'delivered', 'c
 const initialSampleOrders = [
     {
         id: 'EB001-20241213', date: '2024-12-13 14:30', mall: 'eBay', product: 'Switch Pro Controller', sku: 'NSW-PRO-001',
+        customerName: '山田 太郎',
         totalAmount: 8500, costPrice: 6500, expectedProfit: 2000, profitRate: 23.5,
         paymentStatus: 'paid', shippingStatus: 'pending', aiScore: 85, country: 'US', deadline: '2024-12-20',
         imageUrl: "https://via.placeholder.com/40/1e40af/ffffff?text=E"
     },
     {
         id: 'CP005-20241214', date: '2024-12-14 09:10', mall: 'Coupang', product: 'Bluetooth Earbuds', sku: 'BT-EB-005',
+        customerName: '佐藤 花子',
         totalAmount: 4800, costPrice: 4000, expectedProfit: 800, profitRate: 16.7,
         paymentStatus: 'paid', shippingStatus: 'shipped', aiScore: 68, country: 'KR', deadline: '2024-12-17',
         imageUrl: "https://via.placeholder.com/40/60a5fa/ffffff?text=C"
     },
     {
         id: 'SH010-20241215', date: '2024-12-15 20:50', mall: 'Shopee', product: 'Anime Figure', sku: 'AF-FIG-001',
+        customerName: '鈴木 一郎',
         totalAmount: 12000, costPrice: 9000, expectedProfit: 3000, profitRate: 25.0,
         paymentStatus: 'pending', shippingStatus: 'new', aiScore: 92, country: 'TW', deadline: '2024-12-22',
         imageUrl: "https://via.placeholder.com/40/dc2626/ffffff?text=S"
     },
     {
         id: 'AM020-20241216', date: '2024-12-16 11:00', mall: 'Amazon', product: 'DSLR Camera Lens', sku: 'LENS-DSLR-002',
+        customerName: '田中 美咲',
         totalAmount: 80000, costPrice: 75000, expectedProfit: 5000, profitRate: 6.25,
         paymentStatus: 'paid', shippingStatus: 'processing', aiScore: 45, country: 'DE', deadline: '2024-12-25',
         imageUrl: "https://via.placeholder.com/40/f97316/ffffff?text=A"
@@ -106,6 +159,7 @@ const OrderManager_V2 = () => {
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalContent, setModalContent] = useState({ title: '', body: null });
+    const [isAiLoading, setIsAiLoading] = useState(false);
     
     // タスク B: フィルタリングステート
     const [filters, setFilters] = useState({
@@ -206,48 +260,229 @@ const OrderManager_V2 = () => {
     // タスク C: LLM機能モック
     // ------------------------------------
 
-    const generateEmailDraft = (order, inquiry) => {
-        const draft = `件名: ご注文（${order.id}）に関するご返信
+    const generateEmailDraft = async (order) => {
+        setIsAiLoading(true);
 
-${order.customerName}様
-
-平素は当店をご利用いただき、誠にありがとうございます。
-
-お問い合わせいただいた件について、現在の受注状況（ステータス: ${order.shippingStatus === 'shipped' ? '出荷済み' : '未出荷'}）を踏まえ、以下にご回答いたします。
-
----
-[AIが生成した返信の本文]
-
-お問い合わせ内容: 「${inquiry.substring(0, 50)}...」
-
-最適な回答のドラフトがここに挿入されます。
-例: 誠に申し訳ございません。現在商品は仕入れ先に発注中で、${order.deadline}頃の出荷を予定しております。進捗があり次第、再度ご連絡いたします。
----
-
-引き続きよろしくお願いいたします。`;
-
-        openModal('AI顧客対応メールドラフト', (
-            <div className="space-y-3">
-                <p className="text-sm text-gray-600">このドラフトを元に、内容を調整してご返信ください。</p>
-                <textarea readOnly className="w-full h-40 p-2 border rounded bg-gray-50 text-sm" defaultValue={draft}></textarea>
-                <p className="text-xs text-red-500">※ この機能はGemini APIが有効な場合のみ動作します。</p>
-            </div>
-        ));
+        try {
+            // カスタムモーダルで問い合わせ内容を入力させる
+            openModal('AI顧客対応メール作成', (
+                <div className="space-y-3">
+                    <p className="text-sm text-gray-600">顧客からの問い合わせ内容を入力してください:</p>
+                    <textarea
+                        id="inquiry-input"
+                        className="w-full h-24 p-2 border rounded text-sm"
+                        placeholder="例: 出荷はいつになりますか？"
+                    ></textarea>
+                    <button
+                        className="w-full py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"
+                        onClick={() => handleGenerateEmail(order)}
+                    >
+                        AIメールを生成
+                    </button>
+                </div>
+            ));
+        } finally {
+            setIsAiLoading(false);
+        }
     };
 
-    const analyzeTrouble = (order) => {
-        const analysis = `
-            <h4 class="font-bold text-base mb-2">想定される潜在的トラブル分析 (${order.aiScore}点)</h4>
-            <ul class="list-disc list-inside space-y-2 text-sm">
-                <li><span class="font-semibold text-red-600">要因 1: 関税リスク (${order.mall})</span>: ${order.totalAmount.toLocaleString()}円と高額のため、配送先国（${order.country}）での関税ストップや高額請求が発生し、顧客トラブルに発展する可能性があります。
-                    <span class="block text-xs text-gray-500 mt-1">→ **対応策**: 事前に顧客に関税負担のポリシーを再送し、配送伝票の記載に細心の注意を払う。</span></li>
-                <li><span class="font-semibold text-orange-600">要因 2: 低利益率 (${order.profitRate}%)</span>: 仕入れ値 ${order.costPrice.toLocaleString()}円に対する利益が薄いため、わずかな配送費の誤差やクレーム返品で赤字になるリスクが高いです。
-                    <span class="block text-xs text-gray-500 mt-1">→ **対応策**: 配送保険の費用対効果を再評価し、仕入れ先の変動リスクを再確認する。</span></li>
-                <li><span class="font-semibold text-yellow-600">要因 3: 商品の特殊性</span>: ${order.product} のような特殊商品は、返品時の再販が難しいため、返品・キャンセルポリシーを厳格に適用する必要があります。
-                    <span class="block text-xs text-gray-500 mt-1">→ **対応策**: 出荷前に再度商品チェックを実施し、不備がないことを確認する。</span></li>
-            </ul>
-        `;
-        openModal('AIトラブル/リスク分析', <div dangerouslySetInnerHTML={{ __html: analysis }}></div>);
+    const handleGenerateEmail = async (order) => {
+        const inquiryInput = document.getElementById('inquiry-input');
+        const inquiry = inquiryInput?.value || '';
+
+        if (!inquiry.trim()) {
+            setMessage('⚠️ 問い合わせ内容を入力してください。');
+            return;
+        }
+
+        setIsAiLoading(true);
+
+        try {
+            const prompt = `あなたは、ECサイトのカスタマーサポート担当者です。以下の受注情報と顧客からの問い合わせに基づき、丁寧で適切な日本語の返信メールを作成してください。
+
+【受注情報】
+- 注文番号: ${order.id}
+- 注文日時: ${order.date}
+- 販売チャネル: ${order.mall}
+- 商品名: ${order.product}
+- SKU: ${order.sku}
+- 販売価格: ¥${order.totalAmount.toLocaleString()}
+- 出荷ステータス: ${order.shippingStatus}
+- 配送先国: ${order.country}
+- 出荷期限: ${order.deadline}
+
+【顧客からの問い合わせ】
+${inquiry}
+
+【返信メールの要件】
+1. 件名を含めた完全なメール形式で作成
+2. 丁寧で誠実な口調
+3. 注文の現在の状況を明確に説明
+4. 顧客の不安を解消する具体的な情報を提供
+5. 必要に応じて謝罪や感謝の言葉を含める
+
+返信メールを作成してください:`;
+
+            const aiResponse = await callGeminiAPI(prompt);
+
+            openModal('AI顧客対応メールドラフト', (
+                <div className="space-y-3">
+                    <div className="bg-blue-50 border-l-4 border-blue-500 p-3 mb-3">
+                        <p className="text-sm text-blue-800">
+                            <i className="fas fa-info-circle mr-2"></i>
+                            このドラフトを元に、内容を調整してご返信ください。
+                        </p>
+                    </div>
+                    <textarea
+                        readOnly
+                        className="w-full h-64 p-3 border rounded bg-gray-50 text-sm font-mono"
+                        defaultValue={aiResponse}
+                    ></textarea>
+                    <button
+                        className="w-full py-2 px-4 bg-gray-600 text-white rounded hover:bg-gray-700"
+                        onClick={() => {
+                            navigator.clipboard.writeText(aiResponse);
+                            setMessage('✅ メール内容をクリップボードにコピーしました。');
+                        }}
+                    >
+                        <i className="fas fa-copy mr-2"></i>クリップボードにコピー
+                    </button>
+                </div>
+            ));
+
+            setMessage('✅ AIメールドラフトを生成しました。');
+
+        } catch (error) {
+            console.error('AI Email Generation Error:', error);
+            openModal('エラー', (
+                <div className="space-y-3">
+                    <div className="bg-red-50 border-l-4 border-red-500 p-3">
+                        <p className="text-sm text-red-800">
+                            <i className="fas fa-exclamation-triangle mr-2"></i>
+                            {error.message || 'AIメールの生成に失敗しました。'}
+                        </p>
+                    </div>
+                    {!API_KEY && (
+                        <p className="text-xs text-gray-600">
+                            Gemini APIキーが設定されていません。環境変数 <code className="bg-gray-200 px-1 rounded">NEXT_PUBLIC_GEMINI_API_KEY</code> を設定してください。
+                        </p>
+                    )}
+                </div>
+            ));
+            setMessage('❌ AIメールの生成に失敗しました。');
+        } finally {
+            setIsAiLoading(false);
+        }
+    };
+
+    const analyzeTrouble = async (order) => {
+        setIsAiLoading(true);
+
+        // ローディング中のモーダルを表示
+        openModal('AIトラブル/リスク分析', (
+            <div className="flex flex-col items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                <p className="text-sm text-gray-600">AIが分析を実行中です...</p>
+            </div>
+        ));
+
+        try {
+            const prompt = `あなたは、EC事業のリスク管理の専門家です。以下の受注情報を分析し、この取引で想定される潜在的なトラブル要因を3点特定し、それぞれの対応策を提案してください。
+
+【受注情報】
+- 注文番号: ${order.id}
+- 販売チャネル: ${order.mall}
+- 商品名: ${order.product}
+- SKU: ${order.sku}
+- 販売価格: ¥${order.totalAmount.toLocaleString()}
+- 仕入れ値: ¥${order.costPrice.toLocaleString()}
+- 予想利益: ¥${order.expectedProfit.toLocaleString()}
+- 利益率: ${order.profitRate}%
+- 配送先国: ${order.country}
+- AIリスクスコア: ${order.aiScore}点 (100点満点、低いほど高リスク)
+- 出荷ステータス: ${order.shippingStatus}
+- 出荷期限: ${order.deadline}
+
+【分析要件】
+1. 潜在的なトラブル要因を3点挙げる（関税、配送遅延、商品トラブル、低利益率による赤字リスクなど）
+2. 各要因について、具体的な対応策を提案
+3. リスクレベル（高・中・低）を明記
+
+以下のフォーマットで回答してください:
+
+## 潜在的トラブル分析 (AIスコア: ${order.aiScore}点)
+
+### 🔴 要因1: [要因名] (リスクレベル: 高/中/低)
+[詳細な説明]
+**対応策**: [具体的な対応方法]
+
+### 🟠 要因2: [要因名] (リスクレベル: 高/中/低)
+[詳細な説明]
+**対応策**: [具体的な対応方法]
+
+### 🟡 要因3: [要因名] (リスクレベル: 高/中/低)
+[詳細な説明]
+**対応策**: [具体的な対応方法]
+
+## 総合リスク評価
+[この注文の総合的なリスク評価と推奨アクション]`;
+
+            const aiResponse = await callGeminiAPI(prompt);
+
+            // AIの回答をMarkdown形式で表示
+            openModal('AIトラブル/リスク分析', (
+                <div className="space-y-3">
+                    <div className={`border-l-4 p-3 mb-3 ${
+                        order.aiScore >= 80 ? 'bg-green-50 border-green-500' :
+                        order.aiScore >= 60 ? 'bg-yellow-50 border-yellow-500' :
+                        'bg-red-50 border-red-500'
+                    }`}>
+                        <p className="text-sm font-semibold">
+                            <i className="fas fa-chart-line mr-2"></i>
+                            AIスコア: {order.aiScore}点 / 100点
+                            {order.aiScore >= 80 && ' (低リスク)'}
+                            {order.aiScore >= 60 && order.aiScore < 80 && ' (中リスク)'}
+                            {order.aiScore < 60 && ' (高リスク)'}
+                        </p>
+                    </div>
+                    <div className="max-h-96 overflow-y-auto prose prose-sm max-w-none">
+                        <div className="whitespace-pre-wrap text-sm">{aiResponse}</div>
+                    </div>
+                    <button
+                        className="w-full py-2 px-4 bg-gray-600 text-white rounded hover:bg-gray-700"
+                        onClick={() => {
+                            navigator.clipboard.writeText(aiResponse);
+                            setMessage('✅ 分析結果をクリップボードにコピーしました。');
+                        }}
+                    >
+                        <i className="fas fa-copy mr-2"></i>分析結果をコピー
+                    </button>
+                </div>
+            ));
+
+            setMessage('✅ AIトラブル分析が完了しました。');
+
+        } catch (error) {
+            console.error('AI Trouble Analysis Error:', error);
+            openModal('エラー', (
+                <div className="space-y-3">
+                    <div className="bg-red-50 border-l-4 border-red-500 p-3">
+                        <p className="text-sm text-red-800">
+                            <i className="fas fa-exclamation-triangle mr-2"></i>
+                            {error.message || 'AIトラブル分析に失敗しました。'}
+                        </p>
+                    </div>
+                    {!API_KEY && (
+                        <p className="text-xs text-gray-600">
+                            Gemini APIキーが設定されていません。環境変数 <code className="bg-gray-200 px-1 rounded">NEXT_PUBLIC_GEMINI_API_KEY</code> を設定してください。
+                        </p>
+                    )}
+                </div>
+            ));
+            setMessage('❌ AIトラブル分析に失敗しました。');
+        } finally {
+            setIsAiLoading(false);
+        }
     };
 
 
@@ -366,15 +601,39 @@ ${order.customerName}様
                     </button>
                     
                     {/* タスク C: LLMによる顧客対応メールドラフト機能 */}
-                    <button className="w-full py-2 px-3 rounded border text-gray-700 font-medium flex items-center justify-center gap-2 hover:bg-gray-100 transition" 
-                        onClick={() => generateEmailDraft(selectedOrder, '出荷はいつになりますか？')}>
-                        <i className="fas fa-envelope"></i> AI顧客メール作成
+                    <button
+                        className="w-full py-2 px-3 rounded border text-gray-700 font-medium flex items-center justify-center gap-2 hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => generateEmailDraft(selectedOrder)}
+                        disabled={isAiLoading}
+                    >
+                        {isAiLoading ? (
+                            <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-700"></div>
+                                処理中...
+                            </>
+                        ) : (
+                            <>
+                                <i className="fas fa-envelope"></i> AI顧客メール作成
+                            </>
+                        )}
                     </button>
 
                     {/* タスク C: AIリスク/トラブル分析ボタン */}
-                    <button className={`w-full py-2 px-3 rounded font-medium flex items-center justify-center gap-2 transition ${selectedOrder.aiScore <= 70 ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-yellow-200 text-yellow-800 hover:bg-yellow-300'}`} 
-                        onClick={() => analyzeTrouble(selectedOrder)}>
-                        <i className="fas fa-exclamation-triangle"></i> AIトラブル分析 ({selectedOrder.aiScore <= 70 ? '高リスク' : '低リスク'})
+                    <button
+                        className={`w-full py-2 px-3 rounded font-medium flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed ${selectedOrder.aiScore <= 70 ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-yellow-200 text-yellow-800 hover:bg-yellow-300'}`}
+                        onClick={() => analyzeTrouble(selectedOrder)}
+                        disabled={isAiLoading}
+                    >
+                        {isAiLoading ? (
+                            <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                                分析中...
+                            </>
+                        ) : (
+                            <>
+                                <i className="fas fa-exclamation-triangle"></i> AIトラブル分析 ({selectedOrder.aiScore <= 70 ? '高リスク' : '低リスク'})
+                            </>
+                        )}
                     </button>
                 </div>
             </>
