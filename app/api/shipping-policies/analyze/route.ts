@@ -36,14 +36,16 @@ export async function POST(request: NextRequest) {
       ddpRange: `$${minDdpCostUsd.toFixed(2)} - $${maxDdpCostUsd.toFixed(2)}`
     })
 
-    // ===== ステップ1: 重量条件でフィルタリング =====
+    // ===== ステップ1: 重量と価格条件でフィルタリング =====
 
     const { data: suitablePolicies, error: policyError } = await supabase
-      .from('ebay_shipping_policies_v2')
+      .from('ebay_shipping_policies_final')
       .select('*')
-      .gte('weight_max_kg', maxWeightKg)  // 最大重量をカバーできるポリシー
-      .lte('weight_min_kg', minWeightKg)  // 最小重量も範囲内
-      .order('weight_min_kg', { ascending: true })
+      .gte('weight_to_kg', maxWeightKg)    // 最大重量をカバーできるポリシー
+      .lte('weight_from_kg', minWeightKg)  // 最小重量も範囲内
+      .gte('product_price_usd', minDdpCostUsd)  // 価格下限
+      .lte('product_price_usd', maxDdpCostUsd * 1.2)  // 価格上限（+20%マージン）
+      .order('weight_from_kg', { ascending: true })
       .limit(100)  // 大量取得して後でフィルタ
 
     if (policyError) {
@@ -71,13 +73,14 @@ export async function POST(request: NextRequest) {
 
     const scoredPolicies = suitablePolicies.map(policy => {
       // ポリシーの適用可能範囲を計算
-      const weightCoverage = policy.weight_max_kg - policy.weight_min_kg
-      const weightMargin = policy.weight_max_kg - maxWeightKg
+      const weightCoverage = policy.weight_to_kg - policy.weight_from_kg
+      const weightMargin = policy.weight_to_kg - maxWeightKg
 
       // スコアリング基準:
       // 1. 重量マージンが適切（大きすぎず小さすぎず）
       // 2. 重量カバー範囲が広い（汎用性）
       // 3. ポリシー名に「Standard」「Economy」など一般的なキーワード
+      // 4. 価格範囲の一致度
 
       let score = 100
 
@@ -88,6 +91,10 @@ export async function POST(request: NextRequest) {
 
       // カバー範囲スコア（広い方が良い）
       score += weightCoverage * 5
+
+      // 価格適合度スコア
+      const priceDiff = Math.abs(policy.product_price_usd - maxDdpCostUsd)
+      score -= priceDiff * 0.5  // 価格差が大きいとペナルティ
 
       // 汎用性ボーナス
       if (policy.policy_name?.toLowerCase().includes('standard')) score += 20
@@ -115,7 +122,8 @@ export async function POST(request: NextRequest) {
       rank: index + 1,
       policy_id: policy.id,
       policy_name: policy.policy_name,
-      weight_range: `${policy.weight_min_kg}kg - ${policy.weight_max_kg}kg`,
+      weight_range: `${policy.weight_from_kg}kg - ${policy.weight_to_kg}kg`,
+      price_usd: policy.product_price_usd,
       weight_margin: `+${policy.weight_margin_kg.toFixed(2)}kg`,
       score: policy.score.toFixed(1),
       recommendation_reason: generateRecommendationReason(policy, maxWeightKg, maxDdpCostUsd)
@@ -135,7 +143,8 @@ export async function POST(request: NextRequest) {
         bestMatch: {
           id: bestMatch.id,
           name: bestMatch.policy_name,
-          weight_range: `${bestMatch.weight_min_kg}kg - ${bestMatch.weight_max_kg}kg`,
+          weight_range: `${bestMatch.weight_from_kg}kg - ${bestMatch.weight_to_kg}kg`,
+          price_usd: bestMatch.product_price_usd,
           score: bestMatch.score.toFixed(1),
           weight_margin: `+${bestMatch.weight_margin_kg.toFixed(2)}kg`
         },
@@ -169,9 +178,9 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   try {
     const { data: allPolicies, error } = await supabase
-      .from('ebay_shipping_policies_v2')
-      .select('id, policy_name, weight_min_kg, weight_max_kg')
-      .order('weight_min_kg', { ascending: true })
+      .from('ebay_shipping_policies_final')
+      .select('id, policy_name, weight_from_kg, weight_to_kg, product_price_usd')
+      .order('weight_from_kg', { ascending: true })
 
     if (error) {
       console.error('❌ 全ポリシー取得エラー:', error)
@@ -185,8 +194,8 @@ export async function GET() {
     const totalPolicies = allPolicies?.length || 0
 
     const weightRanges = allPolicies?.map(p => ({
-      min: p.weight_min_kg,
-      max: p.weight_max_kg
+      min: p.weight_from_kg,
+      max: p.weight_to_kg
     })) || []
 
     const minWeight = Math.min(...weightRanges.map(r => r.min))
@@ -194,10 +203,10 @@ export async function GET() {
 
     // 重量帯ごとのポリシー数
     const weightBuckets = {
-      light: allPolicies?.filter(p => p.weight_max_kg <= 1).length || 0,      // ~1kg
-      medium: allPolicies?.filter(p => p.weight_max_kg > 1 && p.weight_max_kg <= 5).length || 0,  // 1-5kg
-      heavy: allPolicies?.filter(p => p.weight_max_kg > 5 && p.weight_max_kg <= 20).length || 0,  // 5-20kg
-      extraHeavy: allPolicies?.filter(p => p.weight_max_kg > 20).length || 0  // 20kg+
+      light: allPolicies?.filter(p => p.weight_to_kg <= 1).length || 0,      // ~1kg
+      medium: allPolicies?.filter(p => p.weight_to_kg > 1 && p.weight_to_kg <= 5).length || 0,  // 1-5kg
+      heavy: allPolicies?.filter(p => p.weight_to_kg > 5 && p.weight_to_kg <= 20).length || 0,  // 5-20kg
+      extraHeavy: allPolicies?.filter(p => p.weight_to_kg > 20).length || 0  // 20kg+
     }
 
     return NextResponse.json({

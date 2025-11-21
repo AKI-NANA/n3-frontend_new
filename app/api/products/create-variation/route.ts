@@ -125,23 +125,44 @@ export async function POST(request: NextRequest) {
     }
 
     // ===== ステップ3: 最適な配送ポリシーの自動選定 =====
+    // 既存システムのロジックに従い、重量AND価格範囲で選定
 
     const maxWeightKg = maxWeight / 1000
 
     const { data: suitablePolicies, error: policyError } = await supabase
-      .from('ebay_shipping_policies_v2')
+      .from('ebay_shipping_policies_final')
       .select('*')
-      .gte('weight_max_kg', maxWeightKg)
-      .order('weight_min_kg', { ascending: true })
+      .gte('weight_to_kg', maxWeightKg)      // 重量上限がカバー
+      .lte('weight_from_kg', maxWeightKg)    // 重量下限がカバー
+      .gte('product_price_usd', maxDdpCost * 0.9)  // 価格の下限（±10%）
+      .lte('product_price_usd', maxDdpCost * 1.1)  // 価格の上限（±10%）
+      .order('product_price_usd', { ascending: true })
       .limit(10)
+
+    let selectedPolicy = null
 
     if (policyError) {
       console.error('❌ 配送ポリシー取得エラー:', policyError)
-    }
 
-    const selectedPolicy = suitablePolicies && suitablePolicies.length > 0
-      ? suitablePolicies[0]
-      : null
+      // フォールバック: 重量のみで検索
+      const { data: fallbackPolicies } = await supabase
+        .from('ebay_shipping_policies_final')
+        .select('*')
+        .gte('weight_to_kg', maxWeightKg)
+        .lte('weight_from_kg', maxWeightKg)
+        .order('product_price_usd', { ascending: true })
+        .limit(1)
+
+      selectedPolicy = fallbackPolicies && fallbackPolicies.length > 0
+        ? fallbackPolicies[0]
+        : null
+
+      console.log('⚠️ フォールバックポリシー使用:', selectedPolicy?.policy_name)
+    } else {
+      selectedPolicy = suitablePolicies && suitablePolicies.length > 0
+        ? suitablePolicies[0]
+        : null
+    }
 
     console.log('📮 選定された配送ポリシー:', selectedPolicy ? {
       id: selectedPolicy.id,
