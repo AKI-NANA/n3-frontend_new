@@ -28,6 +28,7 @@ import { TabTaxCompliance } from './components/Tabs/TabTaxCompliance'; // âœ… è¿
 import { TabHTML } from './components/Tabs/TabHTML';
 import { TabFinal } from './components/Tabs/TabFinal';
 import { TabPricingStrategy } from './components/Tabs/TabPricingStrategy';
+import { TabMultichannel } from './components/Tabs/TabMultichannel';
 
 export interface FullFeaturedModalProps {
   product: Product | null;
@@ -184,11 +185,14 @@ export function FullFeaturedModal({
                   <TabCompetitors product={product} />
                 </div>
                 <div className={`${styles.tabPane} ${currentTab === 'pricing' ? styles.active : ''}`}>
-                  <TabPricingStrategy 
-                    product={product} 
+                  <TabPricingStrategy
+                    product={product}
                     marketplace={currentMarketplace}
                     marketplaceName={currentMPConfig?.name || 'Unknown'}
                   />
+                </div>
+                <div className={`${styles.tabPane} ${currentTab === 'multichannel' ? styles.active : ''}`}>
+                  <TabMultichannel product={product} />
                 </div>
 
                 <div className={`${styles.tabPane} ${currentTab === 'listing' ? styles.active : ''}`}>
