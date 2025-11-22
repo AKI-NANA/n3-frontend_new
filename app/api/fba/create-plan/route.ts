@@ -1,5 +1,5 @@
 /**
- * FBA納品プラン作成API
+ * FBA納品プラン作成API（実装版）
  *
  * Amazon SP-API（Selling Partner API）を使用して、FBA納品プランを自動作成する。
  *
@@ -11,12 +11,7 @@
  * 3. 納品プランを作成（SP-API: createInboundShipmentPlan）
  * 4. 納品ラベルを生成（SP-API: getLabels）
  * 5. DBに納品プランIDとラベルURLを記録
- * 6. ステータスを 'awaiting_inspection' → 'in_fba_shipment' に更新
- *
- * ⚠️ 注意: この実装はモックです。本番環境では以下を実装してください:
- * - Amazon SP-APIの認証（LWA: Login with Amazon）
- * - SP-APIエンドポイントへのリクエスト
- * - エラーハンドリングとリトライロジック
+ * 6. ステータスを 'awaiting_inspection' → 'ready_to_list' に更新
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -26,6 +21,14 @@ interface FbaPlanRequest {
   asin: string;
   quantity: number;
   target_country: 'US' | 'JP';
+  ship_from_address?: {
+    name: string;
+    address_line_1: string;
+    city: string;
+    state_or_province: string;
+    postal_code: string;
+    country_code: string;
+  };
 }
 
 interface FbaPlanResponse {
@@ -37,87 +40,25 @@ interface FbaPlanResponse {
 }
 
 /**
- * FBA納品プランを作成（モック実装）
- *
- * 本番実装では、Amazon SP-APIを使用します。
- * 参考: https://developer-docs.amazon.com/sp-api/docs/fulfillment-inbound-api-v0-reference
+ * FBA納品プランを作成（Amazon SP-API実装）
  */
 async function createFbaShipmentPlan(
   request: FbaPlanRequest
 ): Promise<FbaPlanResponse> {
-  try {
-    // ⚠️ 本番実装例（コメントアウト）:
-    /*
-    const { SellingPartnerAPI } = require('amazon-sp-api');
+  const USE_MOCK = !process.env.SP_API_CLIENT_ID || process.env.NODE_ENV === 'development';
 
-    const spApi = new SellingPartnerAPI({
-      region: request.target_country === 'US' ? 'na' : 'fe',
-      refresh_token: process.env.SP_API_REFRESH_TOKEN,
-      credentials: {
-        SELLING_PARTNER_APP_CLIENT_ID: process.env.SP_API_CLIENT_ID,
-        SELLING_PARTNER_APP_CLIENT_SECRET: process.env.SP_API_CLIENT_SECRET,
-      },
-    });
-
-    // 1. 納品プランを作成
-    const planResponse = await spApi.callAPI({
-      operation: 'createInboundShipmentPlan',
-      endpoint: 'fbaInbound',
-      body: {
-        ShipFromAddress: {
-          Name: 'Your Warehouse',
-          AddressLine1: '123 Main St',
-          City: 'City',
-          StateOrProvinceCode: 'CA',
-          PostalCode: '12345',
-          CountryCode: request.target_country,
-        },
-        InboundShipmentPlanRequestItems: [
-          {
-            ASIN: request.asin,
-            Quantity: request.quantity,
-            SellerSKU: `SKU-${request.asin}`,
-          },
-        ],
-        LabelPrepPreference: 'SELLER_LABEL',
-      },
-    });
-
-    const shipmentPlanId = planResponse.InboundShipmentPlans[0].ShipmentId;
-    const destinationFC = planResponse.InboundShipmentPlans[0].DestinationFulfillmentCenterId;
-
-    // 2. 納品ラベルを取得
-    const labelResponse = await spApi.callAPI({
-      operation: 'getLabels',
-      endpoint: 'fbaInbound',
-      query: {
-        ShipmentId: shipmentPlanId,
-        PageType: 'PackageLabel_Letter_2',
-        NumberOfPackages: 1,
-      },
-    });
-
-    const labelUrl = labelResponse.DownloadURL;
-
-    return {
-      success: true,
-      shipment_plan_id: shipmentPlanId,
-      label_pdf_url: labelUrl,
-      destination_fc: destinationFC,
-    };
-    */
-
-    // モック実装（開発用）
+  if (USE_MOCK) {
     console.log('🤖 [MOCK] FBA納品プラン作成中...');
     console.log(`   ASIN: ${request.asin}`);
     console.log(`   数量: ${request.quantity}`);
     console.log(`   対象国: ${request.target_country}`);
 
-    await new Promise((resolve) => setTimeout(resolve, 2000)); // 2秒待機
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     const mockShipmentPlanId = `FBA${request.target_country}${Math.random()
       .toString(36)
-      .substr(2, 9)}`;
+      .substr(2, 9)
+      .toUpperCase()}`;
     const mockLabelUrl = `https://mock-s3.amazonaws.com/fba-labels/${mockShipmentPlanId}.pdf`;
     const mockDestinationFC = request.target_country === 'US' ? 'PHX7' : 'NRT1';
 
@@ -126,6 +67,97 @@ async function createFbaShipmentPlan(
       shipment_plan_id: mockShipmentPlanId,
       label_pdf_url: mockLabelUrl,
       destination_fc: mockDestinationFC,
+    };
+  }
+
+  try {
+    // Amazon SP-APIクライアントを動的インポート
+    const SellingPartner = require('amazon-sp-api');
+
+    // リージョン設定
+    const region = request.target_country === 'US' ? 'na' : 'fe';
+
+    // SP-APIクライアント初期化
+    const spApi = new SellingPartner({
+      region,
+      refresh_token: process.env.SP_API_REFRESH_TOKEN,
+      credentials: {
+        SELLING_PARTNER_APP_CLIENT_ID: process.env.SP_API_CLIENT_ID,
+        SELLING_PARTNER_APP_CLIENT_SECRET: process.env.SP_API_CLIENT_SECRET,
+      },
+    });
+
+    console.log(`🌐 SP-API連携開始: ${region}`);
+
+    // デフォルトの発送元住所（環境変数から取得可能）
+    const shipFromAddress = request.ship_from_address || {
+      name: process.env.FBA_SHIP_FROM_NAME || 'Your Warehouse',
+      address_line_1: process.env.FBA_SHIP_FROM_ADDRESS || '123 Main St',
+      city: process.env.FBA_SHIP_FROM_CITY || 'City',
+      state_or_province: process.env.FBA_SHIP_FROM_STATE || 'CA',
+      postal_code: process.env.FBA_SHIP_FROM_ZIP || '12345',
+      country_code: request.target_country,
+    };
+
+    console.log(`📦 納品プラン作成中...`);
+
+    // 1. 納品プランを作成
+    const planResponse = await spApi.callAPI({
+      operation: 'createInboundShipmentPlan',
+      endpoint: 'fbaInbound',
+      body: {
+        ShipFromAddress: {
+          Name: shipFromAddress.name,
+          AddressLine1: shipFromAddress.address_line_1,
+          City: shipFromAddress.city,
+          StateOrProvinceCode: shipFromAddress.state_or_province,
+          PostalCode: shipFromAddress.postal_code,
+          CountryCode: shipFromAddress.country_code,
+        },
+        InboundShipmentPlanRequestItems: [
+          {
+            ASIN: request.asin,
+            Quantity: request.quantity,
+            SellerSKU: `SKU-${request.asin}-${Date.now()}`,
+            PrepDetailsList: [],
+          },
+        ],
+        LabelPrepPreference: 'SELLER_LABEL',
+      },
+    });
+
+    if (!planResponse || !planResponse.payload || !planResponse.payload.InboundShipmentPlans) {
+      throw new Error('FBA納品プランの作成に失敗しました');
+    }
+
+    const shipmentPlan = planResponse.payload.InboundShipmentPlans[0];
+    const shipmentPlanId = shipmentPlan.ShipmentId;
+    const destinationFC = shipmentPlan.DestinationFulfillmentCenterId;
+
+    console.log(`✅ 納品プランID: ${shipmentPlanId}, FC: ${destinationFC}`);
+    console.log(`🏷️ 納品ラベル生成中...`);
+
+    // 2. 納品ラベルを取得
+    const labelResponse = await spApi.callAPI({
+      operation: 'getLabels',
+      endpoint: 'fbaInbound',
+      query: {
+        ShipmentId: shipmentPlanId,
+        PageType: 'PackageLabel_Letter_2',
+        LabelType: 'UNIQUE',
+        NumberOfPackages: request.quantity,
+      },
+    });
+
+    const labelUrl = labelResponse?.payload?.DownloadURL || null;
+
+    console.log(`✅ 納品ラベルURL: ${labelUrl}`);
+
+    return {
+      success: true,
+      shipment_plan_id: shipmentPlanId,
+      label_pdf_url: labelUrl,
+      destination_fc: destinationFC,
     };
   } catch (error) {
     console.error('❌ FBA納品プラン作成エラー:', error);
@@ -138,7 +170,7 @@ async function createFbaShipmentPlan(
 
 export async function POST(request: NextRequest) {
   try {
-    const { asin, quantity, target_country } = await request.json();
+    const { asin, quantity, target_country, ship_from_address } = await request.json();
 
     if (!asin || !quantity || !target_country) {
       return NextResponse.json(
@@ -170,6 +202,7 @@ export async function POST(request: NextRequest) {
       asin,
       quantity,
       target_country,
+      ship_from_address,
     });
 
     if (!planResult.success) {
@@ -224,16 +257,23 @@ export async function POST(request: NextRequest) {
  * GET: FBA納品プラン設定の確認（テスト用）
  */
 export async function GET(request: NextRequest) {
+  const isMock = !process.env.SP_API_CLIENT_ID || process.env.NODE_ENV === 'development';
+
   return NextResponse.json({
     success: true,
     message: 'FBA plan creation API is active',
     endpoint: '/api/fba/create-plan',
     method: 'POST',
-    note: 'This is a MOCK implementation. Production requires Amazon SP-API setup.',
+    implementation: isMock ? 'MOCK (Development)' : 'REAL (Amazon SP-API)',
     required_fields: {
       asin: 'string',
       quantity: 'number',
       target_country: '"US" | "JP"',
+      ship_from_address: 'object (optional)',
+    },
+    environment: {
+      sp_api_configured: !!process.env.SP_API_CLIENT_ID,
+      region: process.env.SP_API_REGION || 'Not configured',
     },
   });
 }
