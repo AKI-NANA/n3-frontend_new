@@ -15,7 +15,8 @@ export async function POST(request: NextRequest) {
       marketplace = 'US',
       minScore = 70,
       maxItems = 10,
-      shipFromAddress
+      shipFromAddress,
+      enableAutoPurchase = false // Phase 1.5: 自動購入オプション
     } = body
 
     if (!['US', 'JP'].includes(marketplace)) {
@@ -33,13 +34,15 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`🤖 Starting full automation for ${marketplace}...`)
+    console.log(`🔧 Auto-purchase: ${enableAutoPurchase ? 'ENABLED (Phase 1.5)' : 'DISABLED'}`)
     const startTime = Date.now()
 
     const result = await domesticFBAArbitrage.runFullAutomation(
       marketplace,
       minScore,
       maxItems,
-      shipFromAddress
+      shipFromAddress,
+      enableAutoPurchase // Phase 1.5パラメータ
     )
 
     const executionTime = Date.now() - startTime

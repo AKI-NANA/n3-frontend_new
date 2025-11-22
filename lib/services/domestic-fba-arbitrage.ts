@@ -17,6 +17,10 @@ import { keepaClient } from '@/lib/keepa/keepa-api-client'
 import { AmazonSPAPIClient } from '@/lib/amazon/sp-api-client'
 import { createClient } from '@/lib/supabase/server'
 import type { KeepaProduct, CombinedScore } from '@/types/keepa'
+import { paymentExecutor } from '@/lib/arbitrage/execute-payment'
+import { accountManager } from '@/lib/arbitrage/account-manager'
+import { paymentProcessor } from '@/lib/arbitrage/payment-processor'
+import type { PurchaseRequest } from '@/lib/arbitrage/execute-payment'
 
 export interface ArbitrageOpportunity {
   asin: string
@@ -183,20 +187,145 @@ export class DomesticFBAArbitrageService {
   }
 
   /**
-   * 完全自動化フロー（実験的）
+   * 自動購入実行（Phase 1.5新機能）
+   */
+  async executePurchaseWithAutomation(
+    opp: ArbitrageOpportunity,
+    enableAutoPurchase: boolean = false
+  ): Promise<{
+    success: boolean
+    purchaseId?: string
+    orderId?: string
+    error?: string
+  }> {
+    const supabase = createClient()
+
+    try {
+      // Step 1: 購入記録をDBに作成
+      const { data: purchaseRecord, error: recordError } = await supabase
+        .from('arbitrage_purchases')
+        .insert({
+          asin: opp.asin,
+          quantity: 1,
+          marketplace: opp.marketplace,
+          max_price: opp.currentPrice * 1.1,
+          status: enableAutoPurchase ? 'purchasing' : 'pending_manual_purchase',
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single()
+
+      if (recordError || !purchaseRecord) {
+        throw new Error(`Failed to create purchase record: ${recordError?.message}`)
+      }
+
+      // Step 2: 自動購入が有効な場合、実行
+      if (enableAutoPurchase) {
+        console.log(`🤖 Executing automatic purchase for ${opp.asin}...`)
+
+        // アカウント選択
+        const account = await accountManager.selectOptimalAccount({
+          marketplace: opp.marketplace,
+          minCooldownHours: 2,
+          maxDailyPurchases: 5,
+          maxRiskScore: 50
+        })
+
+        if (!account) {
+          throw new Error('No available Amazon account')
+        }
+
+        // 自動購入実行
+        const purchaseRequest: PurchaseRequest = {
+          asin: opp.asin,
+          quantity: 1,
+          maxPrice: opp.currentPrice * 1.1,
+          marketplace: opp.marketplace,
+          accountId: account.id
+        }
+
+        const result = await paymentExecutor.executePurchase(purchaseRequest)
+
+        if (result.success) {
+          // 購入成功 - DBを更新
+          await supabase
+            .from('arbitrage_purchases')
+            .update({
+              status: 'purchased',
+              purchase_order_id: result.orderId,
+              purchase_date: new Date().toISOString(),
+              actual_price: result.orderTotal,
+              purchase_confirmation: result.confirmationNumber
+            })
+            .eq('id', purchaseRecord.id)
+
+          // アカウント使用記録を更新
+          await accountManager.recordAccountUsage(
+            account.id,
+            true,
+            result.orderTotal
+          )
+
+          console.log(`✅ Successfully purchased ${opp.asin} - Order: ${result.orderId}`)
+
+          return {
+            success: true,
+            purchaseId: purchaseRecord.id,
+            orderId: result.orderId
+          }
+        } else {
+          // 購入失敗
+          await supabase
+            .from('arbitrage_purchases')
+            .update({
+              status: 'purchase_failed',
+              notes: result.error
+            })
+            .eq('id', purchaseRecord.id)
+
+          // アカウント使用記録を更新（失敗）
+          await accountManager.recordAccountUsage(account.id, false)
+
+          return {
+            success: false,
+            purchaseId: purchaseRecord.id,
+            error: result.error
+          }
+        }
+      } else {
+        // 手動購入モード
+        console.log(`📝 Purchase recorded for manual execution: ${opp.asin}`)
+        return {
+          success: true,
+          purchaseId: purchaseRecord.id
+        }
+      }
+    } catch (error: any) {
+      console.error(`❌ Purchase execution failed for ${opp.asin}:`, error)
+      return {
+        success: false,
+        error: error.message
+      }
+    }
+  }
+
+  /**
+   * 完全自動化フロー（Phase 1.5強化版）
    *
    * 1. スキャン
    * 2. 上位N件を選択
-   * 3. 購入記録
+   * 3. 自動購入実行（enableAutoPurchase=trueの場合）
    * 4. FBA納品プラン作成（購入完了後）
    */
   async runFullAutomation(
     marketplace: 'US' | 'JP',
     minScore: number = 70,
     maxItems: number = 10,
-    shipFromAddress: any
+    shipFromAddress: any,
+    enableAutoPurchase: boolean = false
   ) {
     console.log(`🚀 Starting domestic FBA arbitrage automation for ${marketplace}...`)
+    console.log(`🤖 Auto-purchase: ${enableAutoPurchase ? 'ENABLED' : 'DISABLED'}`)
 
     // Step 1: スキャン
     console.log('📊 Step 1: Scanning opportunities...')
@@ -211,24 +340,19 @@ export class DomesticFBAArbitrageService {
       }
     }
 
-    // Step 2: 購入記録（上位5件）
-    console.log('🛒 Step 2: Recording purchases...')
+    // Step 2: 購入実行（上位5件）
+    console.log(`🛒 Step 2: ${enableAutoPurchase ? 'Executing automatic purchases' : 'Recording purchases'}...`)
     const topOpportunities = opportunities.slice(0, Math.min(5, opportunities.length))
     const purchases = []
+    const successfulPurchases = []
 
     for (const opp of topOpportunities) {
-      try {
-        const purchase = await this.recordPurchase({
-          asin: opp.asin,
-          quantity: 1,
-          marketplace,
-          maxPrice: opp.currentPrice * 1.1 // 10%バッファ
-        })
+      const result = await this.executePurchaseWithAutomation(opp, enableAutoPurchase)
 
-        purchases.push(purchase)
-        console.log(`✅ Recorded purchase for ASIN: ${opp.asin}`)
-      } catch (error) {
-        console.error(`❌ Failed to record purchase for ASIN: ${opp.asin}`, error)
+      purchases.push(result)
+
+      if (result.success && result.orderId) {
+        successfulPurchases.push(result)
       }
     }
 
@@ -254,16 +378,27 @@ export class DomesticFBAArbitrageService {
 
     console.log('✅ Automation complete!')
 
+    const nextSteps = enableAutoPurchase
+      ? [
+          '1. ✅ 自動購入完了 - 注文確認メールを確認',
+          '2. 配送完了後、FBA納品プラン作成',
+          '3. 商品をFBA倉庫へ発送'
+        ]
+      : [
+          '1. 手動でAmazon.comにて商品を購入',
+          '2. 購入完了後、FBA納品プラン作成',
+          '3. 商品をFBA倉庫へ発送'
+        ]
+
     return {
       success: true,
-      message: `Successfully processed ${opportunities.length} opportunities and recorded ${purchases.length} purchases`,
+      message: enableAutoPurchase
+        ? `Successfully purchased ${successfulPurchases.length} out of ${purchases.length} items`
+        : `Successfully processed ${opportunities.length} opportunities and recorded ${purchases.length} purchases`,
       opportunities,
       purchases,
-      nextSteps: [
-        '1. 手動でAmazon.comにて商品を購入',
-        '2. 購入完了後、FBA納品プラン作成',
-        '3. 商品をFBA倉庫へ発送'
-      ]
+      successfulPurchases,
+      nextSteps
     }
   }
 
