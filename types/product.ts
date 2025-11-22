@@ -3,6 +3,19 @@
  * NAGANO-3モーダルシステム用
  */
 
+/**
+ * 参照URL（仕入れ先候補）
+ */
+export interface ReferenceUrl {
+  url: string;
+  price: number;
+}
+
+/**
+ * リサーチステータス（統一型）
+ */
+export type ResearchStatus = 'Pending' | 'Promoted' | 'Rejected' | 'Draft';
+
 export interface Product {
   id: string;
   asin: string;
@@ -52,6 +65,25 @@ export interface Product {
   createdAt?: string;
   updatedAt?: string;
   lastEditedBy?: string;
+
+  // === 新しいバックエンド機能のためのフィールド（リサーチデータリポジトリ対応） ===
+  external_url?: string; // 仕入れ元のURL
+  asin_sku?: string | null; // Amazon/他のSKU
+  ranking?: number | null; // BSRランキングなどの市場順位
+  sales_count?: number | null; // サイト別販売実績
+  release_date?: string | null; // 発売日
+  is_duplicate?: boolean; // 重複リサーチ判定
+
+  // 新しい統一ステータスフィールド
+  research_status?: ResearchStatus; // リサーチステータス（既存のstatusと共存）
+  priority_score?: number | null; // 総合スコア（lib/scoringから連携）
+
+  // 在庫追従システムからのデータ
+  reference_urls?: ReferenceUrl[]; // 複数仕入れ先URLと価格
+  median_price?: number | null; // 市場価格の中央値
+  current_stock_count?: number | null; // 現在の仕入れ先在庫数
+  last_check_time?: string | null; // 最終在庫確認日時
+  check_frequency?: '通常' | '高頻度' | string; // 在庫チェック頻度
 }
 
 export interface ProductImage {
