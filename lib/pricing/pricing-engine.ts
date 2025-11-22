@@ -1,6 +1,8 @@
 /**
  * 価格計算エンジン
  * 戦略に基づいて適切な販売価格を計算する
+ *
+ * ✨ 統合機能: 会計システムから取得した実際の経費率を使用可能
  */
 
 import { ResolvedStrategy } from './strategy-resolver'
@@ -13,6 +15,7 @@ export interface PriceCalculationInput {
   competitor_average_price_usd?: number
   current_price_usd?: number
   exchange_rate?: number
+  expense_ratio?: number // ✨ 実際の経費率（%）- 会計システムから取得
 }
 
 export interface PriceCalculationResult {
@@ -37,6 +40,9 @@ export interface PriceCalculationResult {
 
 /**
  * 戦略に基づいて価格を計算する
+ *
+ * ✨ 統合機能: input.expense_ratio が提供されている場合、
+ *    会計システムから取得した実際の経費率を使用します
  */
 export async function calculatePrice(
   input: PriceCalculationInput,
@@ -46,10 +52,17 @@ export async function calculatePrice(
 
   // 1. 基本コスト計算（JPY → USD）
   const baseCostUsd = (input.cost_jpy + input.shipping_cost_jpy) / exchangeRate
-  
-  // 2. 手数料計算（仮: 13%）
-  const feesUsd = baseCostUsd * 0.13
-  
+
+  // 2. 手数料計算
+  // ✨ 実際の経費率を使用（会計システムから取得）、なければデフォルト13%
+  const expenseRatioDecimal = input.expense_ratio ? input.expense_ratio / 100 : 0.13
+  const feesUsd = baseCostUsd * expenseRatioDecimal
+
+  // デバッグログ: 経費率のソース確認
+  if (input.expense_ratio) {
+    console.log(`[PricingEngine] 商品 ${input.product_id}: 実際の経費率を使用 ${input.expense_ratio}% (会計システムより)`)
+  }
+
   // 🔴 損益分岐点（赤字にならない最低価格）
   const breakEvenPriceUsd = baseCostUsd + feesUsd
   
