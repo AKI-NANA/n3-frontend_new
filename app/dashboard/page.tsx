@@ -1,247 +1,164 @@
-// app/dashboard/page.tsx (UPDATED: 外部サービス依存を解消し、模擬データをインライン化)
+// 📁 格納パス: app/dashboard/page.tsx
+// 依頼内容: 総合ダッシュボード - 管制塔型の多販路アラート統合版
+
 "use client";
 
+import { useEffect } from "react";
+import { useDashboardStore } from "@/store/useDashboardStore";
+import AlertWidget from "./AlertWidget";
+import KPICard from "@/components/dashboard/KPICard";
+import MarketplaceTable from "@/components/dashboard/MarketplaceTable";
+import DoughnutChart from "@/components/dashboard/DoughnutChart";
+import InventorySummary from "@/components/dashboard/InventorySummary";
+import OutsourceSummary from "@/components/dashboard/OutsourceSummary";
+import SystemHealthCheck from "@/components/dashboard/SystemHealthCheck";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Activity,
-  ShoppingCart,
-  TrendingUp,
   DollarSign,
-  AlertTriangle,
-  BarChart2,
-  Check,
-  Lightbulb,
-} from "lucide-react"; // LightbulbとCheckを追加
-import { useMemo } from "react";
-import { Button } from "@/components/ui/button";
+  TrendingUp,
+  Package,
+  Percent,
+} from "lucide-react";
 
-// --- エラー解消のための模擬データとサービスロジックのインライン実装 ---
-
-// 模擬KPIデータ取得関数
-const getMedianFinalProfit = () => 18500; // 確定利益の中央値 (新規KPI)
-
-// 模擬カテゴリー別利益成績データ取得関数
-const getCategoryProfitPerformance = () => [
-  { category: "ホビー・フィギュア", medianProfit: 35000 },
-  { category: "アパレル", medianProfit: 18000 },
-  { category: "家電・カメラ", medianProfit: 12000 },
-  { category: "日用品", medianProfit: 8000 },
-];
-
-// 模擬低スコア改善アイテムデータ取得関数
-const getLowScoreItemsForImprovement = () => [
-  { orderId: "SKU-001", category: "アパレル", seoScore: 55 },
-  { orderId: "SKU-005", category: "日用品", seoScore: 48 },
-  { orderId: "SKU-012", category: "家電・カメラ", seoScore: 62 },
-];
-
-// --- 既存のモックデータ ---
-const MOCK_OUTSTANDING_INVOICE_COUNT = 7; // 出荷管理から連携される
-const MOCK_LISTING_LIMIT_REACHED = true;
-
-// ダッシュボードコンポーネント
+/**
+ * 総合ダッシュボード - 管制塔（コントロールタワー）型
+ * 1日の開始時にこの画面を見るだけで、経営状態のサマリー把握と、
+ * 本日絶対に実行すべきタスク（ペナルティ回避含む）がクリアできる状態を目指します。
+ */
 export default function DashboardPage() {
-  // インライン化した模擬アナリティクスサービスの呼び出し
-  const medianProfit = useMemo(() => getMedianFinalProfit(), []);
-  const categoryPerformance = useMemo(() => getCategoryProfitPerformance(), []);
-  const lowScoreItems = useMemo(() => getLowScoreItemsForImprovement(), []);
+  const {
+    alerts,
+    kpis,
+    marketplacePerformance,
+    inventory,
+    outsource,
+    systemHealth,
+    loading,
+    error,
+    lastUpdate,
+    fetchDashboardData,
+  } = useDashboardStore();
+
+  // 初回ロード時にデータを取得
+  useEffect(() => {
+    fetchDashboardData();
+
+    // 30秒ごとに自動更新
+    const interval = setInterval(() => {
+      fetchDashboardData();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [fetchDashboardData]);
 
   // フォーマットヘルパー
   const formatCurrency = (amount: number) => `¥${amount.toLocaleString()}`;
+  const formatPercentage = (value: number) =>
+    `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
+
+  if (error) {
+    return (
+      <div className="p-6 bg-red-50 min-h-screen">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <strong className="font-bold">エラー: </strong>
+          <span className="block sm:inline">{error}</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8 p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-4xl font-extrabold text-indigo-800 border-b pb-2">
-        総合EC管理システム v2.0 ダッシュボード
-      </h1>
-
-      {/* 🚨 最重要アラートハブ (税務調査対策・ペナルティ回避) */}
-      <Card className="border-4 border-red-500 shadow-xl bg-red-50">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-xl font-bold flex items-center gap-2 text-red-700">
-            <AlertTriangle className="h-6 w-6" /> 🚨 最重要アラートハブ
-            (即時対応必須)
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {/* 経費証明不一致アラート (指示書 IV.) */}
-          {MOCK_OUTSTANDING_INVOICE_COUNT > 0 && (
-            <div className="p-3 bg-red-100 rounded-lg border border-red-300 flex justify-between items-center">
-              <p className="font-semibold text-red-800">
-                <span className="text-2xl font-extrabold mr-2">
-                  {MOCK_OUTSTANDING_INVOICE_COUNT}
-                </span>{" "}
-                件の出荷済み受注に対し、**送料証明書が紐付けられていません**。
-              </p>
-              <Button variant="destructive" size="sm">
-                請求書登録へ
-              </Button>
-            </div>
-          )}
-
-          {/* 出品枠上限アラート (指示書 II.) */}
-          {MOCK_LISTING_LIMIT_REACHED && (
-            <div className="p-3 bg-yellow-100 rounded-lg border border-yellow-300 flex justify-between items-center">
-              <p className="font-semibold text-yellow-800">
-                eBay出品枠が上限に達しています。自動出品は停止中です。
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-yellow-800 border-yellow-800"
-              >
-                枠管理へ
-              </Button>
-            </div>
-          )}
-
-          {/* アラートがない場合 */}
-          {!MOCK_OUTSTANDING_INVOICE_COUNT && !MOCK_LISTING_LIMIT_REACHED && (
-            <div className="text-center text-green-600 font-medium py-3">
-              <Check className="h-5 w-5 inline mr-2" />{" "}
-              現在、緊急対応を要するアラートはありません。
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* KPIサマリー (指示書 I.A) */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {/* 1. 確定利益の中央値 (新規KPI) */}
-        <Card className="border-t-4 border-t-green-500">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              確定利益の中央値
-            </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-700">
-              {formatCurrency(medianProfit)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              純利益の安定性を評価
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* 2. 総受注数 (既存) */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              総受注数 (今月)
-            </CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">128</div>
-            <p className="text-xs text-muted-foreground">前月比 +15%</p>
-          </CardContent>
-        </Card>
-
-        {/* 3. 在庫商品数 (既存) */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">在庫商品数</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">5,678</div>
-            <p className="text-xs text-muted-foreground">稼働中: 4,321</p>
-          </CardContent>
-        </Card>
-
-        {/* 4. 平均SEO状態スコア (新規KPI) */}
-        <Card className="border-t-4 border-t-blue-500">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              平均SEO状態スコア
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-700">88.5</div>
-            <p className="text-xs text-muted-foreground">
-              改善タスク: {lowScoreItems.length}件
-            </p>
-          </CardContent>
-        </Card>
+    <div className="space-y-6 p-6 bg-gray-50 min-h-screen">
+      {/* ヘッダー */}
+      <div className="flex justify-between items-center border-b pb-4">
+        <h1 className="text-4xl font-extrabold text-indigo-800">
+          📊 総合ダッシュボード - 管制塔
+        </h1>
+        {lastUpdate && (
+          <p className="text-sm text-gray-500">
+            最終更新: {new Date(lastUpdate).toLocaleTimeString("ja-JP")}
+          </p>
+        )}
       </div>
 
-      {/* 詳細分析セクション (指示書 I.B) */}
+      {/* 1. 🚨 最重要アラート・タスク（ペナルティ/期日管理） */}
+      <AlertWidget />
+
+      {/* 2. 📈 今月の実績サマリー（KPIカード） */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <KPICard
+          title="売上合計"
+          value={formatCurrency(kpis.totalSales)}
+          trend={formatPercentage(kpis.salesChange)}
+          icon={<DollarSign className="h-5 w-5" />}
+        />
+        <KPICard
+          title="純利益"
+          value={formatCurrency(kpis.totalProfit)}
+          trend={formatPercentage(kpis.profitChange)}
+          icon={<TrendingUp className="h-5 w-5" />}
+        />
+        <KPICard
+          title="利益率 (GPM)"
+          value={`${kpis.profitMargin.toFixed(1)}%`}
+          trend={kpis.profitMargin >= 15 ? "目標達成" : "目標未達"}
+          icon={<Percent className="h-5 w-5" />}
+        />
+        <KPICard
+          title="在庫評価額"
+          value={formatCurrency(kpis.inventoryValuation)}
+          trend=""
+          icon={<Package className="h-5 w-5" />}
+        />
+      </div>
+
+      {/* 3. 🌐 モール別パフォーマンステーブル + 📊 ドーナツチャート */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* 1. カテゴリー別利益成績 */}
+        {/* モール別テーブル */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <BarChart2 className="h-5 w-5 text-purple-600" />{" "}
-              カテゴリー別利益成績 (中央値ベース)
+            <CardTitle className="text-xl">
+              🌐 モール別パフォーマンステーブル
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {categoryPerformance.map((item, index) => (
-                <div key={item.category} className="flex items-center">
-                  <span className="w-1/4 text-sm font-medium text-gray-700">
-                    {item.category}
-                  </span>
-                  <div className="w-3/4 flex items-center">
-                    <div className="relative flex-grow h-3 bg-gray-200 rounded-full mr-4">
-                      {/* 簡易な幅シミュレーション: medianProfitの値を最大100%として表示 */}
-                      <div
-                        className="absolute h-3 bg-purple-500 rounded-full"
-                        style={{
-                          width: `${Math.min(100, item.medianProfit / 500)}%`,
-                        }}
-                      ></div>
-                    </div>
-                    <span className="text-sm font-bold w-[120px] text-right">
-                      {formatCurrency(item.medianProfit)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <MarketplaceTable />
           </CardContent>
         </Card>
 
-        {/* 2. SEO改善タスク */}
+        {/* ドーナツチャート */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <Lightbulb className="h-5 w-5 text-orange-600" />{" "}
-              SEO改善推奨アイテム
-            </CardTitle>
+            <CardTitle className="text-xl">📊 収益チャンネル別</CardTitle>
           </CardHeader>
           <CardContent>
-            <ul className="space-y-3">
-              {lowScoreItems.length > 0 ? (
-                lowScoreItems.map((item) => (
-                  <li
-                    key={item.orderId}
-                    className="flex justify-between items-center border-b pb-2 last:border-b-0"
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-gray-800">
-                        {item.orderId}
-                      </p>
-                      <p className="text-xs text-gray-500">{item.category}</p>
-                    </div>
-                    <span className="font-bold text-orange-500">
-                      {item.seoScore}{" "}
-                      <span className="text-xs text-gray-500">点</span>
-                    </span>
-                  </li>
-                ))
-              ) : (
-                <li className="text-sm text-gray-500">
-                  現在、改善が必要なアイテムはありません。
-                </li>
-              )}
-            </ul>
+            <DoughnutChart
+              data={marketplacePerformance.map((mp) => ({
+                label: mp.marketplace,
+                value: mp.profit,
+              }))}
+              className="h-64"
+            />
           </CardContent>
         </Card>
       </div>
+
+      {/* 4. 📦 出品・在庫管理 + 🧑‍💻 外注業務 + ⚙️ システム健全性 */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <InventorySummary />
+        <OutsourceSummary />
+        <SystemHealthCheck />
+      </div>
+
+      {/* ローディングオーバーレイ */}
+      {loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+            <p className="mt-4 text-gray-700 font-medium">データを読み込み中...</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

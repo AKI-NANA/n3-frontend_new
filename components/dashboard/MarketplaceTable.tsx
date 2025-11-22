@@ -10,60 +10,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { TrendingUp, MessageSquare, Truck, DollarSign } from "lucide-react";
+import { TrendingUp, DollarSign } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-
-// 仮のデータ構造
-interface MarketplaceData {
-  marketplace: string;
-  salesCount: number;
-  profit: number;
-  unhandledInquiry: number;
-  unshippedOrders: number;
-}
-
-interface MarketplaceTableProps {
-  data: MarketplaceData[];
-}
-
-const mockData: MarketplaceData[] = [
-  {
-    marketplace: "eBay",
-    salesCount: 450,
-    profit: 15500,
-    unhandledInquiry: 3,
-    unshippedOrders: 5,
-  },
-  {
-    marketplace: "Shopee",
-    salesCount: 120,
-    profit: 3200,
-    unhandledInquiry: 1,
-    unshippedOrders: 0,
-  },
-  {
-    marketplace: "Amazon",
-    salesCount: 88,
-    profit: 2800,
-    unhandledInquiry: 0,
-    unshippedOrders: 2,
-  },
-  {
-    marketplace: "Qoo10",
-    salesCount: 30,
-    profit: 850,
-    unhandledInquiry: 0,
-    unshippedOrders: 0,
-  },
-];
+import { useDashboardData } from "@/store/useDashboardStore";
 
 /**
  * モール別（多販路）の主要KPIを一覧表示するテーブルウィジェット。
  * クリックで詳細モーダルへのドリルダウンを想定。
  */
-const MarketplaceTable: React.FC<MarketplaceTableProps> = () => {
-  // 実際はuseDashboardDataからデータを取得しますが、ここではモックを使用
-  const data = mockData;
+const MarketplaceTable: React.FC = () => {
+  const { marketplacePerformance } = useDashboardData();
+  const data = marketplacePerformance;
 
   return (
     <div className="overflow-x-auto">
