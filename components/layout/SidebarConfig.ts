@@ -165,20 +165,28 @@ export const navigationItems: NavigationItem[] = [
         priority: 15,
         database: "products_master"
       },
-      { 
-        text: "16_HTS階層構造ツール", 
-        link: "/tools/hts-hierarchy", 
-        icon: "layers", 
+      {
+        text: "16_HTS階層構造ツール",
+        link: "/tools/hts-hierarchy",
+        icon: "layers",
         status: "ready",
         priority: 16,
         database: "products_master"
       },
-      { 
-        text: "17_開発ナレッジ事典", 
-        link: "/tools/wisdom-core", 
-        icon: "file-text", 
+      {
+        text: "17_HTS管理ツール",
+        link: "/tools/hts-tools",
+        icon: "cog",
         status: "ready",
         priority: 17,
+        database: "products_master"
+      },
+      {
+        text: "18_開発ナレッジ事典",
+        link: "/tools/wisdom-core",
+        icon: "file-text",
+        status: "ready",
+        priority: 18,
         database: "products_master"
       },
     ]
@@ -200,6 +208,9 @@ export const navigationItems: NavigationItem[] = [
       { text: "eBay価格計算", link: "/ebay-pricing", icon: "calculator", status: "ready", priority: 5 },
       { text: "スコア評価", link: "/score-management", icon: "target", status: "ready", priority: 6 },
       { text: "バリエーション作成", link: "/tools/variation-creator", icon: "layers", status: "ready", priority: 7 },
+      { text: "DDPマトリックス生成", link: "/tools/ddp-matrix-generator", icon: "database", status: "ready", priority: 8 },
+      { text: "DDPテーブル検索", link: "/tools/find-ddp-table", icon: "search", status: "ready", priority: 9 },
+      { text: "DDPデータセットアップ", link: "/tools/setup-ddp-data", icon: "cog", status: "ready", priority: 10 },
     ]
   },
 
@@ -360,11 +371,12 @@ export const navigationItems: NavigationItem[] = [
       { text: "Yahoo!オークション", link: "/yahoo-auction-dashboard", icon: "shopping-cart", status: "ready", priority: 1 },
       { text: "eBay", link: "/ebay", icon: "globe", status: "ready", priority: 2 },
       { text: "eBay SEO管理", link: "/tools/ebay-seo", icon: "search", status: "ready", priority: 3 },
-      { text: "メルカリ", link: "/mercari", icon: "shopping-cart", status: "ready", priority: 4 },
-      { text: "Amazon連携", link: "/amazon", icon: "globe", status: "pending", priority: 5 },
-      { text: "楽天連携", link: "/rakuten", icon: "globe", status: "pending", priority: 6 },
-      { text: "Yahoo連携", link: "/yahoo", icon: "globe", status: "pending", priority: 7 },
-      { text: "API管理", link: "/api", icon: "database", status: "ready", priority: 8 },
+      { text: "eBayカテゴリ同期", link: "/tools/ebay-category-sync", icon: "refresh-cw", status: "ready", priority: 4 },
+      { text: "メルカリ", link: "/mercari", icon: "shopping-cart", status: "ready", priority: 5 },
+      { text: "Amazon連携", link: "/amazon", icon: "globe", status: "pending", priority: 6 },
+      { text: "楽天連携", link: "/rakuten", icon: "globe", status: "pending", priority: 7 },
+      { text: "Yahoo連携", link: "/yahoo", icon: "globe", status: "pending", priority: 8 },
+      { text: "API管理", link: "/api", icon: "database", status: "ready", priority: 9 },
     ]
   },
 
@@ -420,12 +432,14 @@ export const navigationItems: NavigationItem[] = [
       { text: "API テストツール", link: "/tools/api-test", icon: "zap", status: "ready", priority: 3 },
       { text: "eBay Token取得", link: "/api/ebay/auth/authorize", icon: "cog", status: "ready", priority: 4 },
       { text: "外注管理", link: "/admin/outsourcer-management", icon: "users", status: "ready", priority: 5 },
-      { text: "データ収集補助", link: "/data-collection-helper", icon: "database", status: "ready", priority: 6 },
-      { text: "マスター一覧表示", link: "/master-view", icon: "table", status: "ready", priority: 7 },
-      { text: "ユーザー管理", link: "/users", icon: "users", status: "pending", priority: 8 },
-      { text: "権限設定", link: "/permissions", icon: "shield", status: "pending", priority: 9 },
-      { text: "バックアップ", link: "/backup", icon: "database", status: "pending", priority: 10 },
-      { text: "ログ管理", link: "/logs", icon: "file-text", status: "pending", priority: 11 },
+      { text: "外注支払い管理", link: "/tools/contractor-payment", icon: "dollar-sign", status: "ready", priority: 6 },
+      { text: "HTS検証ツール", link: "/tools/hts-verification", icon: "check-circle", status: "ready", priority: 7 },
+      { text: "データ収集補助", link: "/data-collection-helper", icon: "database", status: "ready", priority: 8 },
+      { text: "マスター一覧表示", link: "/master-view", icon: "table", status: "ready", priority: 9 },
+      { text: "ユーザー管理", link: "/users", icon: "users", status: "pending", priority: 10 },
+      { text: "権限設定", link: "/permissions", icon: "shield", status: "pending", priority: 11 },
+      { text: "バックアップ", link: "/backup", icon: "database", status: "pending", priority: 12 },
+      { text: "ログ管理", link: "/logs", icon: "file-text", status: "pending", priority: 13 },
     ]
   },
 
