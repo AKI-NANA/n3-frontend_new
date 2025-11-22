@@ -3,19 +3,29 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { 
+import {
   Home, Package, Warehouse, ShoppingCart, Bot, Calculator, Settings,
   Link as LinkIcon, List, Plus, Tags, BarChart3,
   TrendingUp, Archive, Truck, AlertCircle, Zap, Target, Database,
   FileText, DollarSign, Users, Shield, Globe,
-  Upload, Cog, CheckCircle, Edit, Calendar
+  Upload, Cog, CheckCircle, Edit, Calendar, Video, Sparkles, Share2
 } from 'lucide-react'
 
 const navigationItems = [
   { id: "dashboard", label: "ダッシュボード", icon: Home, link: "/" },
   {
-    id: "listing-tools", 
-    label: "出品ツール", 
+    id: "content-automation",
+    label: "コンテンツ自動化",
+    icon: Bot,
+    submenu: [
+      { text: "コンテンツ自動生成", link: "/tools/content-automation", icon: Sparkles, status: "new" as const },
+      { text: "YouTube制作チェックリスト", link: "/tools/youtube-checklist", icon: Video, status: "new" as const },
+      { text: "統合コンテンツ管理", link: "/tools/integrated-content", icon: Share2, status: "new" as const },
+    ],
+  },
+  {
+    id: "listing-tools",
+    label: "出品ツール",
     icon: Upload,
     submenu: [
       { text: "データ取得", link: "/data-collection", icon: Database, status: "ready" as const },
