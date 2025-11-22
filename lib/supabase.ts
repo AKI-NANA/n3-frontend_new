@@ -136,6 +136,88 @@ export type Database = {
           updated_at: string
         }
       }
+      scraping_batches: {
+        Row: {
+          id: string
+          batch_name: string | null
+          total_urls: number
+          processed_count: number
+          success_count: number
+          failed_count: number
+          status: 'queued' | 'processing' | 'completed' | 'failed' | 'cancelled'
+          created_by: string | null
+          created_at: string
+          started_at: string | null
+          completed_at: string | null
+        }
+        Insert: {
+          id?: string
+          batch_name?: string | null
+          total_urls: number
+          processed_count?: number
+          success_count?: number
+          failed_count?: number
+          status?: 'queued' | 'processing' | 'completed' | 'failed' | 'cancelled'
+          created_by?: string | null
+          created_at?: string
+          started_at?: string | null
+          completed_at?: string | null
+        }
+        Update: {
+          id?: string
+          batch_name?: string | null
+          total_urls?: number
+          processed_count?: number
+          success_count?: number
+          failed_count?: number
+          status?: 'queued' | 'processing' | 'completed' | 'failed' | 'cancelled'
+          created_by?: string | null
+          created_at?: string
+          started_at?: string | null
+          completed_at?: string | null
+        }
+      }
+      scraping_queue: {
+        Row: {
+          id: string
+          batch_id: string
+          target_url: string
+          platform: string
+          status: 'pending' | 'processing' | 'completed' | 'failed' | 'permanently_failed'
+          retry_count: number
+          error_message: string | null
+          result_data: any | null
+          inserted_at: string
+          started_at: string | null
+          completed_at: string | null
+        }
+        Insert: {
+          id?: string
+          batch_id: string
+          target_url: string
+          platform: string
+          status?: 'pending' | 'processing' | 'completed' | 'failed' | 'permanently_failed'
+          retry_count?: number
+          error_message?: string | null
+          result_data?: any | null
+          inserted_at?: string
+          started_at?: string | null
+          completed_at?: string | null
+        }
+        Update: {
+          id?: string
+          batch_id?: string
+          target_url?: string
+          platform?: string
+          status?: 'pending' | 'processing' | 'completed' | 'failed' | 'permanently_failed'
+          retry_count?: number
+          error_message?: string | null
+          result_data?: any | null
+          inserted_at?: string
+          started_at?: string | null
+          completed_at?: string | null
+        }
+      }
     }
   }
 }
