@@ -247,6 +247,7 @@ export const navigationItems: NavigationItem[] = [
     icon: "shopping-cart",
     priority: 6,
     submenu: [
+      { text: "出荷管理システムV1.0", link: "/tools/shipping-manager", icon: "truck", status: "ready", priority: 0 },
       { text: "受注一覧", link: "/juchu", icon: "list", status: "pending", priority: 1 },
       { text: "出荷管理", link: "/shukka", icon: "truck", status: "pending", priority: 2 },
       { text: "返品管理", link: "/henpin", icon: "alert-circle", status: "pending", priority: 3 },
