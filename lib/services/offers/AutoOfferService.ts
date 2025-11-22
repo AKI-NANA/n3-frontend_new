@@ -101,13 +101,41 @@ export class AutoOfferService {
   async getProductOfferSettings(
     productId: string
   ): Promise<ProductOfferSettings | null> {
-    // TODO: Implement database query
-    // SELECT sku, auto_offer_enabled, min_profit_margin_jpy, max_discount_rate,
-    //        purchase_price_jpy, price_jpy
-    // FROM products_master
-    // WHERE id = ?
+    try {
+      const { data, error } = await supabase
+        .from('products_master')
+        .select('sku, auto_offer_enabled, min_profit_margin_jpy, max_discount_rate, purchase_price_jpy, price_jpy, ddp_price_usd')
+        .eq('id', productId)
+        .single();
 
-    throw new Error('Not yet implemented');
+      if (error) {
+        console.error('Error fetching product offer settings:', error);
+        return null;
+      }
+
+      if (!data) {
+        console.warn(`Product not found: ${productId}`);
+        return null;
+      }
+
+      // Auto-offer disabled
+      if (!data.auto_offer_enabled) {
+        return null;
+      }
+
+      // Map database fields to interface
+      return {
+        sku: data.sku,
+        autoOfferEnabled: data.auto_offer_enabled,
+        minProfitMarginJpy: data.min_profit_margin_jpy || 0,
+        maxDiscountRate: data.max_discount_rate || 0,
+        purchasePriceJpy: data.purchase_price_jpy || 0,
+        currentListingPriceUsd: data.ddp_price_usd || data.price_jpy * this.JPY_TO_USD_RATE || 0,
+      };
+    } catch (error) {
+      console.error('Unexpected error in getProductOfferSettings:', error);
+      return null;
+    }
   }
 
   /**
@@ -128,14 +156,91 @@ export class AutoOfferService {
     productId: string,
     requestedOfferPrice?: number
   ): Promise<OfferCalculation> {
-    // TODO: Implement offer calculation logic
     // 1. Get product settings
-    // 2. Calculate fees (eBay + PayPal)
-    // 3. Calculate break-even point
-    // 4. Apply discount constraints
-    // 5. Return calculation with details
+    const settings = await this.getProductOfferSettings(productId);
 
-    throw new Error('Not yet implemented');
+    if (!settings) {
+      // Auto-offer not enabled or product not found
+      return {
+        offerPrice: null,
+        isProfitable: false,
+        breakEvenPrice: 0,
+        minimumOfferPrice: 0,
+        calculationDetails: {
+          purchasePrice: 0,
+          fixedCosts: 0,
+          ebayFees: 0,
+          paypalFees: 0,
+          shippingCost: 0,
+          minProfitMargin: 0,
+          discountFromListing: 0,
+          maxAllowedDiscount: 0,
+        },
+      };
+    }
+
+    const purchasePriceUsd = this.convertJpyToUsd(settings.purchasePriceJpy);
+    const minProfitMarginUsd = this.convertJpyToUsd(settings.minProfitMarginJpy);
+    const listingPrice = settings.currentListingPriceUsd;
+
+    // 2. Calculate fees (eBay + PayPal)
+    // Use listing price as base for fee calculation
+    const ebayFees = this.calculateFees(listingPrice);
+
+    // 3. Calculate break-even point
+    // Break-even = Purchase Price + Fees + Min Profit Margin
+    // Note: Fees are recalculated based on actual sale price later
+    const fixedCosts = 0; // Can be extended with shipping, handling, etc.
+    const shippingCost = 0; // Assuming DDP (shipping included in price)
+
+    const breakEvenPrice = purchasePriceUsd + fixedCosts + shippingCost + minProfitMarginUsd;
+
+    // 4. Apply discount constraints
+    // Maximum discount allowed from listing price
+    const maxAllowedDiscount = listingPrice * settings.maxDiscountRate;
+    const minPriceFromDiscount = listingPrice - maxAllowedDiscount;
+
+    // The minimum offer price is the HIGHER of:
+    // - Break-even price (to prevent losses)
+    // - Min price from discount constraint
+    const minimumOfferPrice = Math.max(breakEvenPrice, minPriceFromDiscount);
+
+    // 5. Calculate final offer price
+    // Add small buffer above minimum (e.g., +$1) to ensure profitability
+    const bufferAmount = 1.0;
+    let finalOfferPrice = minimumOfferPrice + bufferAmount;
+
+    // If buyer requested a specific price, check if it's acceptable
+    if (requestedOfferPrice !== undefined) {
+      if (requestedOfferPrice >= minimumOfferPrice) {
+        finalOfferPrice = requestedOfferPrice;
+      } else {
+        // Buyer's offer is too low, propose our minimum instead
+        finalOfferPrice = minimumOfferPrice;
+      }
+    }
+
+    // Recalculate fees based on final offer price
+    const actualEbayFees = this.calculateFees(finalOfferPrice);
+    const actualProfit = finalOfferPrice - purchasePriceUsd - actualEbayFees - fixedCosts - shippingCost;
+    const isProfitable = actualProfit >= minProfitMarginUsd;
+
+    return {
+      offerPrice: Math.round(finalOfferPrice * 100) / 100, // Round to 2 decimal places
+      isProfitable,
+      breakEvenPrice: Math.round(breakEvenPrice * 100) / 100,
+      minimumOfferPrice: Math.round(minimumOfferPrice * 100) / 100,
+      calculationDetails: {
+        purchasePrice: purchasePriceUsd,
+        fixedCosts,
+        ebayFees: actualEbayFees,
+        paypalFees: finalOfferPrice * this.DEFAULT_PAYPAL_FEE_RATE + this.DEFAULT_PAYPAL_FIXED_FEE,
+        shippingCost,
+        minProfitMargin: minProfitMarginUsd,
+        discountFromListing: listingPrice - finalOfferPrice,
+        maxAllowedDiscount,
+      },
+    };
   }
 
   /**
@@ -189,13 +294,64 @@ export class AutoOfferService {
     offerPrice: number,
     buyerId?: string
   ): Promise<OfferSendResult> {
-    // TODO: Implement eBay API call to send offer
-    // 1. Validate offer price > 0
-    // 2. Call eBay API (RespondToBestOffer or AddMemberMessage)
-    // 3. Log offer activity
-    // 4. Return result
+    try {
+      // 1. Validate offer price
+      if (offerPrice <= 0) {
+        return {
+          success: false,
+          errorMessage: 'Offer price must be greater than 0',
+          timestamp: new Date(),
+        };
+      }
 
-    throw new Error('Not yet implemented');
+      console.log('Sending offer to buyer:', { itemId, offerPrice, buyerId });
+
+      // 2. Call eBay API to send offer
+      // Note: This will be implemented in Phase 4 (API Integration)
+      // For now, we'll call the API route when it's available
+      const response = await fetch('/api/ebay/auto-offer/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          itemId,
+          offerPrice,
+          buyerId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Offer send failed:', errorData);
+        return {
+          success: false,
+          errorMessage: errorData.error || 'Failed to send offer',
+          timestamp: new Date(),
+        };
+      }
+
+      const result = await response.json();
+
+      // 3. Log successful offer
+      console.log('Offer sent successfully:', result);
+
+      // 4. Return result
+      return {
+        success: true,
+        offerId: result.offerId,
+        offerPrice,
+        buyerId,
+        timestamp: new Date(),
+      };
+    } catch (error) {
+      console.error('Error sending offer:', error);
+      return {
+        success: false,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error occurred',
+        timestamp: new Date(),
+      };
+    }
   }
 
   /**

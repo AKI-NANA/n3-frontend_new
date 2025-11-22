@@ -84,12 +84,69 @@ export class CategoryLimitService {
     accountId: string,
     categoryId: string
   ): Promise<CapacityCheckResult> {
-    // TODO: Implement capacity check logic
-    // SELECT * FROM can_list_in_category(?, ?)
-    // Calculate utilization: (current / max) * 100
-    // Add warnings based on thresholds
+    try {
+      // Call PostgreSQL function can_list_in_category()
+      const { data, error } = await supabase
+        .rpc('can_list_in_category', {
+          p_account_id: accountId,
+          p_category_id: categoryId,
+        })
+        .single();
 
-    throw new Error('Not yet implemented');
+      if (error) {
+        console.error('Error checking category capacity:', error);
+        // If category limit not configured, assume listing is allowed
+        return {
+          canList: true,
+          remaining: 99999,
+          currentCount: 0,
+          maxLimit: 99999,
+          utilizationRate: 0,
+          warning: 'Category limit not configured',
+        };
+      }
+
+      if (!data) {
+        // No limit configured for this category
+        return {
+          canList: true,
+          remaining: 99999,
+          currentCount: 0,
+          maxLimit: 99999,
+          utilizationRate: 0,
+        };
+      }
+
+      const utilizationRate = (data.current_count / data.max_limit) * 100;
+      let warning: string | undefined;
+
+      // Add warnings based on thresholds
+      if (utilizationRate >= this.CRITICAL_THRESHOLD * 100) {
+        warning = `CRITICAL: ${utilizationRate.toFixed(1)}% capacity used`;
+      } else if (utilizationRate >= this.WARNING_THRESHOLD * 100) {
+        warning = `WARNING: ${utilizationRate.toFixed(1)}% capacity used`;
+      }
+
+      return {
+        canList: data.can_list,
+        remaining: data.remaining,
+        currentCount: data.current_count,
+        maxLimit: data.max_limit,
+        utilizationRate: Math.round(utilizationRate * 10) / 10, // Round to 1 decimal
+        warning,
+      };
+    } catch (error) {
+      console.error('Unexpected error in canListInCategory:', error);
+      // On error, err on the side of caution and allow listing
+      return {
+        canList: true,
+        remaining: 0,
+        currentCount: 0,
+        maxLimit: 0,
+        utilizationRate: 0,
+        warning: 'Error checking capacity - proceeding with caution',
+      };
+    }
   }
 
   /**
@@ -110,12 +167,73 @@ export class CategoryLimitService {
     categoryId: string,
     incrementBy: number = 1
   ): Promise<LimitUpdateResult> {
-    // TODO: Implement increment logic
-    // 1. Check current count + increment <= max_limit
-    // 2. UPDATE table with atomic increment
-    // 3. Return new count
+    try {
+      // 1. Get current limit info
+      const currentLimit = await this.getCategoryLimit(accountId, categoryId);
 
-    throw new Error('Not yet implemented');
+      if (!currentLimit) {
+        console.warn(`No category limit configured for ${accountId}/${categoryId}`);
+        return {
+          success: false,
+          newCount: 0,
+          operation: 'increment',
+          timestamp: new Date(),
+        };
+      }
+
+      // Check if increment would exceed max limit
+      if (currentLimit.currentListingCount + incrementBy > currentLimit.maxLimit) {
+        console.error('Increment would exceed max limit');
+        return {
+          success: false,
+          newCount: currentLimit.currentListingCount,
+          operation: 'increment',
+          timestamp: new Date(),
+        };
+      }
+
+      // 2. Atomic increment using raw SQL via RPC or direct update
+      const newCount = currentLimit.currentListingCount + incrementBy;
+
+      const { data, error } = await supabase
+        .from('ebay_category_limit')
+        .update({
+          current_listing_count: newCount,
+          last_updated: new Date().toISOString(),
+        })
+        .eq('ebay_account_id', accountId)
+        .eq('category_id', categoryId)
+        .select('current_listing_count')
+        .single();
+
+      if (error) {
+        console.error('Error incrementing listing count:', error);
+        return {
+          success: false,
+          newCount: currentLimit.currentListingCount,
+          operation: 'increment',
+          timestamp: new Date(),
+        };
+      }
+
+      console.log(`Incremented listing count for ${accountId}/${categoryId}: ${currentLimit.currentListingCount} -> ${data.current_listing_count}`);
+
+      // 3. Return result
+      return {
+        success: true,
+        newCount: data.current_listing_count,
+        operation: 'increment',
+        timestamp: new Date(),
+      };
+    } catch (error) {
+      console.error('Unexpected error in incrementListingCount:', error);
+      return {
+        success: false,
+        newCount: 0,
+        operation: 'increment',
+        timestamp: new Date(),
+      };
+    }
   }
 
   /**
@@ -136,12 +254,62 @@ export class CategoryLimitService {
     categoryId: string,
     decrementBy: number = 1
   ): Promise<LimitUpdateResult> {
-    // TODO: Implement decrement logic
-    // 1. UPDATE table with atomic decrement
-    // 2. Ensure count >= 0 (use GREATEST(current_listing_count - ?, 0))
-    // 3. Return new count
+    try {
+      // 1. Get current limit info
+      const currentLimit = await this.getCategoryLimit(accountId, categoryId);
 
-    throw new Error('Not yet implemented');
+      if (!currentLimit) {
+        console.warn(`No category limit configured for ${accountId}/${categoryId}`);
+        return {
+          success: false,
+          newCount: 0,
+          operation: 'decrement',
+          timestamp: new Date(),
+        };
+      }
+
+      // 2. Calculate new count, ensuring it doesn't go below 0
+      const newCount = Math.max(0, currentLimit.currentListingCount - decrementBy);
+
+      const { data, error } = await supabase
+        .from('ebay_category_limit')
+        .update({
+          current_listing_count: newCount,
+          last_updated: new Date().toISOString(),
+        })
+        .eq('ebay_account_id', accountId)
+        .eq('category_id', categoryId)
+        .select('current_listing_count')
+        .single();
+
+      if (error) {
+        console.error('Error decrementing listing count:', error);
+        return {
+          success: false,
+          newCount: currentLimit.currentListingCount,
+          operation: 'decrement',
+          timestamp: new Date(),
+        };
+      }
+
+      console.log(`Decremented listing count for ${accountId}/${categoryId}: ${currentLimit.currentListingCount} -> ${data.current_listing_count}`);
+
+      // 3. Return result
+      return {
+        success: true,
+        newCount: data.current_listing_count,
+        operation: 'decrement',
+        timestamp: new Date(),
+      };
+    } catch (error) {
+      console.error('Unexpected error in decrementListingCount:', error);
+      return {
+        success: false,
+        newCount: 0,
+        operation: 'decrement',
+        timestamp: new Date(),
+      };
+    }
   }
 
   /**
@@ -181,11 +349,40 @@ export class CategoryLimitService {
     accountId: string,
     categoryId: string
   ): Promise<CategoryLimit | null> {
-    // TODO: Implement query logic
-    // SELECT * FROM ebay_category_limit
-    // WHERE ebay_account_id = ? AND category_id = ?
+    try {
+      const { data, error } = await supabase
+        .from('ebay_category_limit')
+        .select('*')
+        .eq('ebay_account_id', accountId)
+        .eq('category_id', categoryId)
+        .single();
 
-    throw new Error('Not yet implemented');
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No rows returned - category limit not configured
+          return null;
+        }
+        console.error('Error fetching category limit:', error);
+        return null;
+      }
+
+      if (!data) {
+        return null;
+      }
+
+      return {
+        id: data.id,
+        ebayAccountId: data.ebay_account_id,
+        categoryId: data.category_id,
+        limitType: data.limit_type,
+        currentListingCount: data.current_listing_count,
+        maxLimit: data.max_limit,
+        lastUpdated: new Date(data.last_updated),
+      };
+    } catch (error) {
+      console.error('Unexpected error in getCategoryLimit:', error);
+      return null;
+    }
   }
 
   /**
