@@ -14,6 +14,9 @@ import {
   MessageSquare,
   ExternalLink,
   X,
+  FileText,
+  CheckCircle,
+  AlertCircle,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -35,6 +38,16 @@ const OrderDetailPanel: React.FC = () => {
     selectedOrder?.finalShippingCostJPY?.toString() || ""
   );
 
+  // 古物台帳ステータス
+  const [kobutsuStatus, setKobutsuStatus] = useState<{
+    exists: boolean;
+    ledgerId?: string;
+    aiStatus?: string;
+    rpaStatus?: string;
+    pdfPath?: string;
+    imagePath?: string;
+  } | null>(null);
+
   // 選択注文が変更されたらフォームをリセット
   useEffect(() => {
     if (selectedOrder) {
@@ -45,8 +58,42 @@ const OrderDetailPanel: React.FC = () => {
       setFinalShippingCostJPY(
         selectedOrder.finalShippingCostJPY?.toString() || ""
       );
+
+      // 古物台帳ステータスを取得
+      fetchKobutsuStatus();
     }
   }, [selectedOrder]);
+
+  // 古物台帳ステータスを取得
+  const fetchKobutsuStatus = async () => {
+    if (!selectedOrder || selectedOrder.purchaseStatus !== "仕入れ済み") {
+      setKobutsuStatus(null);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/order/complete-acquisition?orderId=${selectedOrder.id}`
+      );
+      const result = await response.json();
+
+      if (result.success && result.exists) {
+        setKobutsuStatus({
+          exists: true,
+          ledgerId: result.data.ledger_id,
+          aiStatus: result.data.ai_extraction_status,
+          rpaStatus: result.data.rpa_pdf_status,
+          pdfPath: result.data.proof_pdf_path,
+          imagePath: result.data.source_image_path,
+        });
+      } else {
+        setKobutsuStatus({ exists: false });
+      }
+    } catch (error) {
+      console.error("古物台帳ステータス取得エラー:", error);
+      setKobutsuStatus(null);
+    }
+  };
 
   if (!selectedOrder) {
     return (
@@ -85,14 +132,45 @@ const OrderDetailPanel: React.FC = () => {
     updateOrderDetails(selectedOrder.id, updates);
   };
 
-  // III-1. [仕入れ済み]ボタンの処理
-  const handleMarkAsPurchased = () => {
+  // III-1. [仕入れ済み]ボタンの処理（トリプルアクションAPI連携）
+  const handleMarkAsPurchased = async () => {
     const cost = Number(actualPurchaseCostJPY);
-    if (actualPurchaseUrl && !isNaN(cost) && cost > 0) {
-      markAsPurchased(selectedOrder.id, actualPurchaseUrl, cost);
-    } else {
-      // エラー処理（例: トースト表示）
+    if (!actualPurchaseUrl || isNaN(cost) || cost <= 0) {
       console.error("仕入れ実行にはURLと仕入れ値の入力が必要です。");
+      alert("仕入れ先URLと仕入れ値を入力してください。");
+      return;
+    }
+
+    try {
+      // トリプルアクションAPIを呼び出し
+      const response = await fetch("/api/order/complete-acquisition", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId: selectedOrder.id,
+          actualPurchaseUrl,
+          actualPurchaseCostJPY: cost,
+          finalShippingCostJPY: finalShippingCostJPY
+            ? Number(finalShippingCostJPY)
+            : undefined,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // ローカルストアを更新
+        markAsPurchased(selectedOrder.id, actualPurchaseUrl, cost);
+        alert(
+          `仕入れ実行が完了しました。\n古物台帳ID: ${result.data.ledgerId}\n確定純利益: ¥${result.data.finalProfit.toLocaleString()}`
+        );
+      } else {
+        console.error("仕入れ実行エラー:", result.error);
+        alert(`仕入れ実行に失敗しました: ${result.error}`);
+      }
+    } catch (error) {
+      console.error("API呼び出しエラー:", error);
+      alert("仕入れ実行中にエラーが発生しました。");
     }
   };
 
@@ -243,6 +321,96 @@ const OrderDetailPanel: React.FC = () => {
               : "仕入れ実行完了"}
           </Button>
         </section>
+
+        {/* -------------------- 古物台帳ステータスセクション -------------------- */}
+        {selectedOrder.purchaseStatus === "仕入れ済み" && (
+          <section className="border-t pt-4 space-y-3">
+            <h4 className="text-lg font-semibold flex items-center gap-2 text-purple-700">
+              <FileText className="w-5 h-5" /> 古物台帳記録
+            </h4>
+
+            {kobutsuStatus === null ? (
+              <div className="text-sm text-gray-500">読み込み中...</div>
+            ) : kobutsuStatus.exists ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  <span className="text-sm font-medium text-green-700">
+                    登録済み
+                  </span>
+                </div>
+
+                <div className="bg-green-50 p-3 rounded space-y-2 text-sm">
+                  <p>
+                    <strong>台帳ID:</strong>{" "}
+                    <span className="font-mono">{kobutsuStatus.ledgerId}</span>
+                  </p>
+                  <p>
+                    <strong>AI抽出:</strong>{" "}
+                    <span
+                      className={clsx(
+                        "px-2 py-1 rounded text-xs",
+                        kobutsuStatus.aiStatus === "completed"
+                          ? "bg-green-100 text-green-700"
+                          : kobutsuStatus.aiStatus === "processing"
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-gray-100 text-gray-700"
+                      )}
+                    >
+                      {kobutsuStatus.aiStatus}
+                    </span>
+                  </p>
+                  <p>
+                    <strong>PDF取得:</strong>{" "}
+                    <span
+                      className={clsx(
+                        "px-2 py-1 rounded text-xs",
+                        kobutsuStatus.rpaStatus === "completed"
+                          ? "bg-green-100 text-green-700"
+                          : kobutsuStatus.rpaStatus === "processing"
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-gray-100 text-gray-700"
+                      )}
+                    >
+                      {kobutsuStatus.rpaStatus}
+                    </span>
+                  </p>
+
+                  {kobutsuStatus.pdfPath && (
+                    <a
+                      href={kobutsuStatus.pdfPath}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                    >
+                      <FileText className="w-4 h-4" />
+                      証明書PDFを開く
+                    </a>
+                  )}
+
+                  {kobutsuStatus.imagePath && (
+                    <a
+                      href={kobutsuStatus.imagePath}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      商品画像を開く
+                    </a>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+                <span className="text-sm font-medium text-red-700">
+                  未登録（台帳記録に失敗している可能性があります）
+                </span>
+              </div>
+            )}
+          </section>
+        )}
 
         {/* -------------------- ツール間連携セクション -------------------- */}
         <section className="border-t pt-4 space-y-3">
