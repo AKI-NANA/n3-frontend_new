@@ -71,6 +71,8 @@ PHASE*.md
 
 # SQL
 *.sql
+# ただし、database/migrationsディレクトリ内のSQLファイルは追跡する
+!database/migrations/*.sql
 
 # 不要ファイルパターン（自動追加）
 *_backup.*
