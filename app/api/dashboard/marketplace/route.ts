@@ -1,7 +1,8 @@
 // 📁 格納パス: app/api/dashboard/marketplace/route.ts
-// 依頼内容: モール別パフォーマンスデータを提供するAPIエンドポイント
+// 依頼内容: モール別パフォーマンスデータを提供するAPIエンドポイント（実データ統合版）
 
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
 /**
  * モール別パフォーマンスデータを取得するGETエンドポイント
@@ -19,41 +20,7 @@ import { NextRequest, NextResponse } from "next/server";
  */
 export async function GET(request: NextRequest) {
   try {
-    // 実際にはSupabaseのSales_OrdersとIntegratedPricingServiceから取得
-    // const marketplaceData = await fetchMarketplacePerformance();
-
-    // モックデータ
-    const marketplaceData = [
-      {
-        marketplace: "eBay",
-        salesCount: 450,
-        profit: 155000,
-        unhandledInquiry: 3,
-        unshippedOrders: 5,
-      },
-      {
-        marketplace: "Shopee",
-        salesCount: 120,
-        profit: 32000,
-        unhandledInquiry: 1,
-        unshippedOrders: 0,
-      },
-      {
-        marketplace: "Amazon",
-        salesCount: 88,
-        profit: 28000,
-        unhandledInquiry: 0,
-        unshippedOrders: 2,
-      },
-      {
-        marketplace: "Qoo10",
-        salesCount: 30,
-        profit: 8500,
-        unhandledInquiry: 0,
-        unshippedOrders: 0,
-      },
-    ];
-
+    const marketplaceData = await fetchMarketplacePerformance();
     return NextResponse.json(marketplaceData);
   } catch (error) {
     console.error("[Dashboard Marketplace API] Error:", error);
@@ -68,11 +35,72 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * モール別パフォーマンスをデータベースから取得する（実装予定）
+ * モール別パフォーマンスをデータベースから取得する
  */
 async function fetchMarketplacePerformance() {
-  // 実際の実装:
-  // 1. Sales_Ordersからモール別の販売個数と純利益を集計
-  // 2. inquiry_messagesから未対応問い合わせを集計
-  // 3. ordersから未出荷受注を集計
+  const supabase = await createClient();
+
+  // 今月の開始日を計算
+  const now = new Date();
+  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const currentMonthStartStr = currentMonthStart.toISOString().split("T")[0];
+
+  // 対象モール
+  const marketplaces = ["eBay", "Shopee", "Amazon", "Qoo10"];
+
+  // モール別データを集計
+  const marketplaceData = await Promise.all(
+    marketplaces.map(async (marketplace) => {
+      // 1. 販売個数と純利益（products_masterまたはaccounting_final_ledgerから）
+      // products_masterのlisting_historyやtarget_marketplacesを確認
+      const { data: products } = await supabase
+        .from("products_master")
+        .select("profit_amount_usd, quantity, target_marketplaces, updated_at")
+        .contains("target_marketplaces", [marketplace])
+        .gte("updated_at", currentMonthStartStr);
+
+      const salesCount = (products || []).reduce(
+        (sum, p) => sum + (p.quantity || 1),
+        0
+      );
+      const profit = (products || []).reduce((sum, p) => {
+        const profitUsd = p.profit_amount_usd || 0;
+        return sum + profitUsd * 150; // USD to JPY (概算)
+      }, 0);
+
+      // 2. 未対応問い合わせ件数（inquiry_messagesテーブルから、存在しない場合は0）
+      let unhandledInquiry = 0;
+      const { data: inquiries, error: inquiryError } = await supabase
+        .from("inquiry_messages")
+        .select("id")
+        .eq("marketplace", marketplace)
+        .eq("status", "unhandled");
+
+      if (!inquiryError && inquiries) {
+        unhandledInquiry = inquiries.length;
+      }
+
+      // 3. 未出荷件数（ordersテーブルから、存在しない場合は0）
+      let unshippedOrders = 0;
+      const { data: orders, error: ordersError } = await supabase
+        .from("orders")
+        .select("id")
+        .eq("marketplace", marketplace)
+        .eq("shipping_status", "unshipped");
+
+      if (!ordersError && orders) {
+        unshippedOrders = orders.length;
+      }
+
+      return {
+        marketplace,
+        salesCount,
+        profit: Math.round(profit),
+        unhandledInquiry,
+        unshippedOrders,
+      };
+    })
+  );
+
+  return marketplaceData;
 }

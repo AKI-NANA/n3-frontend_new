@@ -1,7 +1,8 @@
 // 📁 格納パス: app/api/dashboard/alerts/route.ts
-// 依頼内容: ダッシュボードのアラート情報を提供するAPIエンドポイント
+// 依頼内容: ダッシュボードのアラート情報を提供するAPIエンドポイント（実データ統合版）
 
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 import {
   getInquiryClassifier,
   InquiryMessage,
@@ -23,7 +24,6 @@ export async function GET(request: NextRequest) {
     const classifier = getInquiryClassifier();
 
     // 2. メッセージデータを取得
-    // 実際にはSupabaseの inquiry_messages テーブルから未対応メッセージを取得
     const messages = await fetchUnhandledMessages();
 
     // 3. メッセージを分類し、緊急対応カテゴリの件数を集計
@@ -33,11 +33,9 @@ export async function GET(request: NextRequest) {
     ).length;
 
     // 4. 本日支払期限のタスク件数を取得
-    // 実際にはGoogleカレンダーAPIまたは会計管理DBから取得
     const paymentDueCount = await fetchPaymentDueCount();
 
     // 5. 未対応タスク件数を集計
-    // 未対応問い合わせ + 未出荷受注
     const unhandledInquiryCount = classifiedMessages.filter(
       (msg) => msg.category === "standard" || msg.category === "urgent"
     ).length;
@@ -63,93 +61,74 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * 未対応のメッセージを取得する（モック実装）
- * 実際にはSupabaseから取得
+ * 未対応のメッセージをSupabaseから取得する
  */
 async function fetchUnhandledMessages(): Promise<InquiryMessage[]> {
-  // モックデータ（実際にはSupabaseクエリ）
-  // const { data, error } = await supabase
-  //   .from('inquiry_messages')
-  //   .select('*')
-  //   .eq('status', 'unhandled')
-  //   .order('received_at', { ascending: false });
+  const supabase = await createClient();
 
-  const mockMessages: InquiryMessage[] = [
-    {
-      id: "msg_001",
-      title: "Your account is limited - Action required",
-      senderEmail: "security@ebay.com",
-      body: "Your eBay account has been limited due to seller performance issues. Please respond within 24 hours.",
-      marketplace: "eBay",
-      receivedAt: new Date().toISOString(),
-    },
-    {
-      id: "msg_002",
-      title: "Case opened - Buyer requested refund",
-      senderEmail: "cases@ebay.com",
-      body: "A buyer has opened a case for item #123456. Please provide a response.",
-      marketplace: "eBay",
-      receivedAt: new Date().toISOString(),
-    },
-    {
-      id: "msg_003",
-      title: "Shipping label created",
-      senderEmail: "noreply@ebay.com",
-      body: "A shipping label has been created for order #789012.",
-      marketplace: "eBay",
-      receivedAt: new Date().toISOString(),
-    },
-    {
-      id: "msg_004",
-      title: "商品について質問があります",
-      senderEmail: "buyer123@example.com",
-      body: "この商品のサイズについて教えてください。",
-      marketplace: "Shopee",
-      receivedAt: new Date().toISOString(),
-    },
-    {
-      id: "msg_005",
-      title: "Monthly sales report",
-      senderEmail: "marketing@amazon.com",
-      body: "Your monthly sales report is now available.",
-      marketplace: "Amazon",
-      receivedAt: new Date().toISOString(),
-    },
-  ];
+  const { data, error } = await supabase
+    .from("inquiry_messages")
+    .select("id, title, sender_email, body, marketplace, received_at")
+    .eq("status", "unhandled")
+    .order("received_at", { ascending: false })
+    .limit(100);
 
-  return mockMessages;
+  if (error) {
+    console.warn("inquiry_messages table not found or error:", error.message);
+    // テーブルが存在しない場合は空配列を返す
+    return [];
+  }
+
+  // データを InquiryMessage 形式に変換
+  return (data || []).map((msg) => ({
+    id: msg.id,
+    title: msg.title || "",
+    senderEmail: msg.sender_email || "",
+    body: msg.body || "",
+    marketplace: msg.marketplace || "",
+    receivedAt: msg.received_at || new Date().toISOString(),
+  }));
 }
 
 /**
- * 本日支払期限のタスク件数を取得する（モック実装）
- * 実際にはGoogleカレンダーAPIまたは会計管理DBから取得
+ * 本日支払期限のタスク件数を取得する
  */
 async function fetchPaymentDueCount(): Promise<number> {
-  // モック実装
-  // 実際には:
-  // 1. Googleカレンダーから今日期限のイベントを取得
-  // 2. または会計管理DBの payment_tasks テーブルを検索
-  // const today = new Date().toISOString().split('T')[0];
-  // const { count } = await supabase
-  //   .from('payment_tasks')
-  //   .select('*', { count: 'exact' })
-  //   .eq('due_date', today)
-  //   .eq('status', 'pending');
+  const supabase = await createClient();
+  const today = new Date().toISOString().split("T")[0];
 
-  return 3; // モック値
+  // payment_tasksテーブルから今日期限のタスクを検索
+  const { count, error } = await supabase
+    .from("payment_tasks")
+    .select("*", { count: "exact", head: true })
+    .eq("due_date", today)
+    .eq("status", "pending");
+
+  if (error) {
+    console.warn("payment_tasks table not found or error:", error.message);
+    // テーブルが存在しない場合は0を返す
+    return 0;
+  }
+
+  return count || 0;
 }
 
 /**
- * 未出荷の受注件数を取得する（モック実装）
- * 実際には受注管理DBから取得
+ * 未出荷の受注件数を取得する
  */
 async function fetchUnshippedOrdersCount(): Promise<number> {
-  // モック実装
-  // 実際には:
-  // const { count } = await supabase
-  //   .from('orders')
-  //   .select('*', { count: 'exact' })
-  //   .eq('shipping_status', 'unshipped');
+  const supabase = await createClient();
 
-  return 5; // モック値
+  const { count, error } = await supabase
+    .from("orders")
+    .select("*", { count: "exact", head: true })
+    .eq("shipping_status", "unshipped");
+
+  if (error) {
+    console.warn("orders table not found or error:", error.message);
+    // テーブルが存在しない場合は0を返す
+    return 0;
+  }
+
+  return count || 0;
 }
