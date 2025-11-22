@@ -50,18 +50,49 @@ GEMINI_API_KEY=your_gemini_api_key
 
 ### 2. データベースマイグレーションの実行
 
-#### 方法1: Supabase ダッシュボード経由（推奨）
+#### 方法1: Supabase ダッシュボード経由（推奨・最も簡単）
 
-1. Supabase ダッシュボードにログイン
-2. 「SQL Editor」タブを開く
-3. `supabase/migrations/20250121_inquiry_knowledge_base.sql` の内容を貼り付け
-4. 「Run」をクリックして実行
-
-#### 方法2: APIエンドポイント経由
+1. **Supabase ダッシュボードにログイン**: https://app.supabase.com
+2. プロジェクトを選択
+3. 左メニューから「**SQL Editor**」を選択
+4. 「**New query**」をクリック
+5. **SQLを表示してコピー**：
 
 ```bash
+# ターミナルで以下のコマンドを実行
+cat supabase/migrations/20250121_inquiry_knowledge_base.sql
+```
+
+または、見やすく表示：
+
+```bash
+echo "======================================================================"
+echo "  以下のSQLをコピーして、Supabaseダッシュボードに貼り付けてください"
+echo "======================================================================"
+cat supabase/migrations/20250121_inquiry_knowledge_base.sql
+echo "======================================================================"
+```
+
+6. 表示されたSQLをコピーして、Supabaseの「SQL Editor」に貼り付け
+7. 「**Run**」ボタンをクリックして実行
+8. 成功メッセージが表示されれば完了！
+
+#### 方法2: Supabase CLI（開発者向け）
+
+```bash
+npx supabase login
+npx supabase link --project-ref <your-project-ref>
+npx supabase db push
+```
+
+#### 方法3: APIエンドポイント経由（制限あり）
+
+```bash
+# Next.jsアプリが起動している場合のみ
 curl -X POST http://localhost:3000/api/inquiry/migrate
 ```
+
+**⚠️ 注意**: APIエンドポイント経由には制限があるため、**方法1を強く推奨**します。
 
 ### 3. マイグレーション内容
 
