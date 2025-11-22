@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { parseGeminiOutput, formatParseErrors, generateGeminiPrompt, SAMPLE_GEMINI_OUTPUT, type GeminiOutput } from '@/lib/utils/geminiParser'
+import { HSKeywordDisplay } from '@/components/HSKeywordDisplay'
 
 interface HTSClassificationModalProps {
   product: {
@@ -408,15 +409,23 @@ MARKET_SCORE: 85"
                   </div>
                 ))}
               </div>
-              
+
+              {/* 選択されたHTSコードの関連キーワード */}
+              {selectedHTS && (
+                <HSKeywordDisplay
+                  htsCode={selectedHTS.hts_code}
+                  className="mt-4"
+                />
+              )}
+
               <div className="flex space-x-3">
-                <button 
+                <button
                   onClick={() => setStep(2)}
                   className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   ← 戻る
                 </button>
-                <button 
+                <button
                   onClick={handleSave}
                   disabled={loading || !selectedHTS}
                   className="flex-1 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 font-semibold"

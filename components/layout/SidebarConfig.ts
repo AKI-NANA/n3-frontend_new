@@ -421,6 +421,7 @@ export const navigationItems: NavigationItem[] = [
       { text: "eBay Token取得", link: "/api/ebay/auth/authorize", icon: "cog", status: "ready", priority: 4 },
       { text: "外注管理", link: "/admin/outsourcer-management", icon: "users", status: "ready", priority: 5 },
       { text: "データ収集補助", link: "/data-collection-helper", icon: "database", status: "ready", priority: 6 },
+      { text: "HSキーワード生成", link: "/admin/hs-keyword-generator", icon: "tag", status: "new", priority: 6.5, database: "hs_keywords" },
       { text: "マスター一覧表示", link: "/master-view", icon: "table", status: "ready", priority: 7 },
       { text: "ユーザー管理", link: "/users", icon: "users", status: "pending", priority: 8 },
       { text: "権限設定", link: "/permissions", icon: "shield", status: "pending", priority: 9 },
