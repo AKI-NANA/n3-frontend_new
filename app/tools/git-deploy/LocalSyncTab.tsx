@@ -166,7 +166,7 @@ export default function LocalSyncTab() {
       // ポーリング開始
       const interval = setInterval(() => {
         checkDiff()
-      }, 30000) // 30秒ごと
+      }, 10800000) // 3時間ごと
       ;(window as any).__syncPollingInterval = interval
     } else {
       // ポーリング停止
@@ -232,7 +232,7 @@ export default function LocalSyncTab() {
               ) : (
                 <>
                   <CheckCircle className="w-4 h-4 mr-2" />
-                  自動チェック開始 (30秒)
+                  自動チェック開始 (3時間)
                 </>
               )}
             </Button>
@@ -424,7 +424,7 @@ export default function LocalSyncTab() {
               </h3>
               <ul className="ml-6 list-disc space-y-1 text-sm text-muted-foreground">
                 <li>同じファイルを両方で同時に編集すると競合が発生します</li>
-                <li>自動チェック機能を使うと、30秒ごとに差分を確認できます</li>
+                <li>自動チェック機能を使うと、3時間ごとに差分を確認できます（システム監視も兼ねています）</li>
                 <li>重要な変更の前には必ずバックアップを取ってください</li>
                 <li>コンフリクトが発生した場合は、慎重に手動マージしてください</li>
               </ul>
