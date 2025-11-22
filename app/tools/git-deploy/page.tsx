@@ -24,9 +24,11 @@ import {
   Eye,
   Key,
   Database,
-  Trash2
+  Trash2,
+  GitMerge
 } from 'lucide-react'
 import CleanupTab from './CleanupTab'
+import LocalSyncTab from './LocalSyncTab'
 
 interface GitStatus {
   hasChanges: boolean
@@ -38,7 +40,7 @@ export default function GitDeployPage() {
   const [loading, setLoading] = useState(false)
   const [checkingStatus, setCheckingStatus] = useState(false)
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null)
-  const [activeTab, setActiveTab] = useState<'deploy' | 'commands' | 'guide' | 'cleanup'>('deploy')
+  const [activeTab, setActiveTab] = useState<'deploy' | 'commands' | 'guide' | 'cleanup' | 'local-sync'>('deploy')
   const [gitStatus, setGitStatus] = useState<GitStatus | null>(null)
   const [commitMessage, setCommitMessage] = useState('')
   const [diffInfo, setDiffInfo] = useState<any>(null)
@@ -665,6 +667,17 @@ export default function GitDeployPage() {
         >
           <Trash2 className="inline-block w-4 h-4 mr-2" />
           不要ファイル削除
+        </button>
+        <button
+          onClick={() => setActiveTab('local-sync')}
+          className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+            activeTab === 'local-sync'
+              ? 'border-blue-500 text-blue-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <GitMerge className="inline-block w-4 h-4 mr-2" />
+          Local Sync
         </button>
       </div>
 
@@ -2417,6 +2430,9 @@ export default function GitDeployPage() {
 
       {/* クリーンアップタブ */}
       {activeTab === 'cleanup' && <CleanupTab />}
+
+      {/* Local Sync タブ */}
+      {activeTab === 'local-sync' && <LocalSyncTab />}
     </div>
   )
 }
