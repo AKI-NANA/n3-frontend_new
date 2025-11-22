@@ -1,4 +1,4 @@
-// app/dashboard/page.tsx (UPDATED: 外部サービス依存を解消し、模擬データをインライン化)
+// app/dashboard/page.tsx (UPDATED: 会計・AI経営分析ハブを統合)
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,9 +11,13 @@ import {
   BarChart2,
   Check,
   Lightbulb,
-} from "lucide-react"; // LightbulbとCheckを追加
-import { useMemo } from "react";
+  Brain,
+  TrendingDown,
+  PieChart,
+} from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 
 // --- エラー解消のための模擬データとサービスロジックのインライン実装 ---
 
@@ -46,8 +50,57 @@ export default function DashboardPage() {
   const categoryPerformance = useMemo(() => getCategoryProfitPerformance(), []);
   const lowScoreItems = useMemo(() => getLowScoreItemsForImprovement(), []);
 
+  // 会計データの状態管理
+  const [financialData, setFinancialData] = useState<any>(null);
+  const [expenseBreakdown, setExpenseBreakdown] = useState<any[]>([]);
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  // 会計データを取得
+  useEffect(() => {
+    async function fetchAccountingData() {
+      try {
+        // 財務サマリーを取得
+        const financialRes = await fetch('/api/accounting/financial-summary?period=MONTHLY');
+        const financialJson = await financialRes.json();
+        if (financialJson.success) {
+          setFinancialData(financialJson.data);
+        }
+
+        // 経費内訳を取得
+        const expenseRes = await fetch('/api/accounting/expense-breakdown?period=MONTHLY');
+        const expenseJson = await expenseRes.json();
+        if (expenseJson.success) {
+          setExpenseBreakdown(expenseJson.data);
+        }
+
+        // AI分析結果を取得
+        const aiRes = await fetch('/api/accounting/ai-analysis?limit=1');
+        const aiJson = await aiRes.json();
+        if (aiJson.success && aiJson.data.length > 0) {
+          setAiAnalysis(aiJson.data[0]);
+        }
+      } catch (error) {
+        console.error('会計データ取得エラー:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchAccountingData();
+  }, []);
+
   // フォーマットヘルパー
   const formatCurrency = (amount: number) => `¥${amount.toLocaleString()}`;
+
+  // 経費内訳の円グラフ用データ
+  const expensePieData = expenseBreakdown.slice(0, 5).map(item => ({
+    name: item.account_title,
+    value: item.total_amount,
+  }));
+
+  // 円グラフの色
+  const COLORS = ['#8B5CF6', '#3B82F6', '#10B981', '#F59E0B', '#EF4444'];
 
   return (
     <div className="space-y-8 p-6 bg-gray-50 min-h-screen">
@@ -104,6 +157,72 @@ export default function DashboardPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* 🧠 AI経営方針提言パネル (指示書 III.B) */}
+      {aiAnalysis && (
+        <Card className="border-4 border-purple-500 shadow-xl bg-gradient-to-r from-purple-50 to-indigo-50">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xl font-bold flex items-center gap-2 text-purple-700">
+              <Brain className="h-6 w-6" /> 🧠 AI経営方針提言
+            </CardTitle>
+            <span className="text-sm text-gray-500">
+              分析日: {aiAnalysis.analysis_date}
+            </span>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* 現状の評価 */}
+            <div>
+              <h3 className="font-semibold text-lg text-gray-800 mb-2">📊 現状の評価</h3>
+              <p className="text-gray-700">{aiAnalysis.evaluation_summary}</p>
+            </div>
+
+            {/* 主要KPI */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="bg-white p-3 rounded-lg shadow">
+                <p className="text-sm text-gray-500">粗利率</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {aiAnalysis.gross_profit_rate?.toFixed(1)}%
+                </p>
+              </div>
+              <div className="bg-white p-3 rounded-lg shadow">
+                <p className="text-sm text-gray-500">純利益率</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {aiAnalysis.net_profit_rate?.toFixed(1)}%
+                </p>
+              </div>
+              <div className="bg-white p-3 rounded-lg shadow">
+                <p className="text-sm text-gray-500">経費率</p>
+                <p className="text-2xl font-bold text-orange-600">
+                  {aiAnalysis.expense_ratio?.toFixed(1)}%
+                </p>
+              </div>
+            </div>
+
+            {/* 課題点 */}
+            <div>
+              <h3 className="font-semibold text-lg text-gray-800 mb-2">⚠️ 課題点</h3>
+              <ul className="list-disc list-inside space-y-1">
+                {aiAnalysis.issues.map((issue: string, idx: number) => (
+                  <li key={idx} className="text-gray-700">{issue}</li>
+                ))}
+              </ul>
+            </div>
+
+            {/* 経営方針の提言 */}
+            <div>
+              <h3 className="font-semibold text-lg text-gray-800 mb-2">💡 経営方針の提言</h3>
+              <ul className="space-y-2">
+                {aiAnalysis.policy_recommendation.map((recommendation: string, idx: number) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <span className="text-purple-600 font-bold">{idx + 1}.</span>
+                    <span className="text-gray-700">{recommendation}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* KPIサマリー (指示書 I.A) */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -242,6 +361,121 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* 会計分析セクション (指示書 III.A) */}
+      {financialData && (
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* 月次P/Lサマリー */}
+          <Card className="border-t-4 border-t-indigo-500">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <TrendingUp className="h-5 w-5 text-indigo-600" />{" "}
+                月次P/Lサマリー
+              </CardTitle>
+              <p className="text-sm text-gray-500">
+                {financialData.periodStart} 〜 {financialData.periodEnd}
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <p className="text-sm text-gray-500">総売上</p>
+                  <p className="text-2xl font-bold text-gray-800">
+                    {formatCurrency(financialData.totalRevenue)}
+                  </p>
+                </div>
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <p className="text-sm text-gray-500">売上原価</p>
+                  <p className="text-2xl font-bold text-gray-800">
+                    {formatCurrency(financialData.totalCOGS)}
+                  </p>
+                </div>
+                <div className="bg-green-50 p-3 rounded-lg">
+                  <p className="text-sm text-gray-500">粗利</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {formatCurrency(financialData.grossProfit)}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    粗利率: {financialData.grossProfitRate.toFixed(1)}%
+                  </p>
+                </div>
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <p className="text-sm text-gray-500">総経費</p>
+                  <p className="text-2xl font-bold text-gray-800">
+                    {formatCurrency(financialData.totalExpenses)}
+                  </p>
+                </div>
+              </div>
+              <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-300">
+                <p className="text-sm text-gray-500">純利益</p>
+                <p className="text-3xl font-bold text-blue-600">
+                  {formatCurrency(financialData.netProfit)}
+                </p>
+                <p className="text-sm text-gray-600 mt-1">
+                  純利益率: {financialData.netProfitRate.toFixed(1)}%
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 経費の内訳（円グラフ） */}
+          <Card className="border-t-4 border-t-orange-500">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <PieChart className="h-5 w-5 text-orange-600" />{" "}
+                経費の内訳
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {expensePieData.length > 0 ? (
+                <>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <RechartsPieChart>
+                      <Pie
+                        data={expensePieData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={(entry) => `${entry.name}`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {expensePieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value: any) => formatCurrency(Number(value))}
+                      />
+                    </RechartsPieChart>
+                  </ResponsiveContainer>
+                  <div className="mt-4 space-y-2">
+                    {expenseBreakdown.slice(0, 5).map((item, idx) => (
+                      <div key={idx} className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: COLORS[idx % COLORS.length] }}
+                          />
+                          <span className="text-sm text-gray-700">{item.account_title}</span>
+                        </div>
+                        <span className="text-sm font-semibold text-gray-800">
+                          {formatCurrency(item.total_amount)} ({item.percentage.toFixed(1)}%)
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <p className="text-center text-gray-500 py-8">
+                  経費データがありません
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

@@ -136,6 +136,149 @@ export type Database = {
           updated_at: string
         }
       }
+      expense_master: {
+        Row: {
+          id: string
+          keyword: string
+          category_id: string
+          account_title: string
+          description: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          keyword: string
+          category_id: string
+          account_title: string
+          description: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          keyword?: string
+          category_id?: string
+          account_title?: string
+          description?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      accounting_final_ledger: {
+        Row: {
+          id: string
+          date: string
+          account_title: string
+          amount: number
+          category: string
+          transaction_summary: string
+          order_id: string | null
+          is_verified: boolean
+          money_cloud_transaction_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          date: string
+          account_title: string
+          amount: number
+          category: string
+          transaction_summary: string
+          order_id?: string | null
+          is_verified?: boolean
+          money_cloud_transaction_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          date?: string
+          account_title?: string
+          amount?: number
+          category?: string
+          transaction_summary?: string
+          order_id?: string | null
+          is_verified?: boolean
+          money_cloud_transaction_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      ai_analysis_results: {
+        Row: {
+          id: string
+          analysis_date: string
+          evaluation_summary: string
+          gross_profit_rate: number | null
+          net_profit_rate: number | null
+          expense_ratio: number | null
+          cash_balance: number | null
+          issues: string[]
+          policy_recommendation: string[]
+          reference_data_ids: string[]
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          analysis_date: string
+          evaluation_summary: string
+          gross_profit_rate?: number | null
+          net_profit_rate?: number | null
+          expense_ratio?: number | null
+          cash_balance?: number | null
+          issues: string[]
+          policy_recommendation: string[]
+          reference_data_ids: string[]
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          analysis_date?: string
+          evaluation_summary?: string
+          gross_profit_rate?: number | null
+          net_profit_rate?: number | null
+          expense_ratio?: number | null
+          cash_balance?: number | null
+          issues?: string[]
+          policy_recommendation?: string[]
+          reference_data_ids?: string[]
+          created_at?: string
+        }
+      }
+      money_cloud_sync_logs: {
+        Row: {
+          id: string
+          sync_type: string
+          sync_status: string
+          synced_records_count: number
+          error_message: string | null
+          sync_started_at: string | null
+          sync_completed_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          sync_type: string
+          sync_status: string
+          synced_records_count?: number
+          error_message?: string | null
+          sync_started_at?: string | null
+          sync_completed_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          sync_type?: string
+          sync_status?: string
+          synced_records_count?: number
+          error_message?: string | null
+          sync_started_at?: string | null
+          sync_completed_at?: string | null
+          created_at?: string
+        }
+      }
     }
   }
 }
