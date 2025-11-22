@@ -2,7 +2,7 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   // ワークスペースルートの明示的な設定
-  outputFileTracingRoot: '/Users/aritahiroaki/n3-frontend_new',
+  // outputFileTracingRoot: '/Users/aritahiroaki/n3-frontend_new',
   
   // ビルドから除外するパターン
   pageExtensions: ['tsx', 'ts', 'jsx', 'js'],
