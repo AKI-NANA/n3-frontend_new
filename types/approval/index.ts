@@ -42,18 +42,24 @@ export interface ApprovalProduct {
   category?: string
   condition?: string
   brand?: string
-  
+
   // AI分析
   ai_analysis?: {
     discontinued?: boolean
     limited_edition?: boolean
     left_handed?: boolean
   }
-  
+
   // 競合
   japanese_sellers_count?: number
   overseas_sellers_absent?: boolean
-  
+
+  // EUリスク関連フィールド
+  eu_risk_flag?: boolean
+  eu_risk_reason?: string | null
+  suggested_title?: string | null
+  eu_ar_status?: string | null
+
   // タイムスタンプ
   created_at: string
   updated_at: string

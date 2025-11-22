@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { ApprovalProductModal } from '@/components/approval/ApprovalProductModal'
 import { ListingStrategyControl, ListingStrategy } from '@/components/approval/ListingStrategyControl'
+import { VeroRiskSection } from '@/components/approval/VeroRiskSection'
 import { AlertCircle, CheckCircle2, AlertTriangle } from 'lucide-react'
 
 interface Product {
@@ -38,6 +39,11 @@ interface Product {
   filter_passed?: boolean  // 🔥 修正: filter_status → filter_passed
   filter_checked_at?: string
   filter_reasons?: string[] | string
+  // EUリスク関連フィールド
+  eu_risk_flag?: boolean
+  eu_risk_reason?: string | null
+  suggested_title?: string | null
+  eu_ar_status?: string | null
 }
 
 // 不完全なフィールドを検出する関数
@@ -204,6 +210,7 @@ export default function ApprovalPage() {
     search: '',
     dataCompleteness: 'all',
     listingReadiness: 'all',
+    euRisk: 'all', // 'all' | 'clear' | 'unclear'
   })
 
   const supabase = createClient()
@@ -246,7 +253,7 @@ export default function ApprovalPage() {
     } else if (filters.dataCompleteness === 'incomplete') {
       filtered = filtered.filter(p => !isDataComplete(p))
     }
-    
+
     if (filters.listingReadiness === 'ready') {
       filtered = filtered.filter(p => {
         const isComplete = isDataComplete(p)
@@ -261,6 +268,13 @@ export default function ApprovalPage() {
         const hasStock = (p.inventory_quantity || p.stock_quantity || 0) > 0
         return !(isComplete && isApproved && hasStock)
       })
+    }
+
+    // EUリスクフィルター
+    if (filters.euRisk === 'clear') {
+      filtered = filtered.filter(p => p.eu_risk_flag === false)
+    } else if (filters.euRisk === 'unclear') {
+      filtered = filtered.filter(p => p.eu_risk_flag === true)
     }
 
     if (filters.source !== 'all') {
@@ -350,10 +364,50 @@ export default function ApprovalPage() {
     setShowListingStrategyControl(true)
   }
 
-  // 🔥 出品戦略確定時の処理
+  // 🔥 出品戦略確定時の処理（EUリスクチェック統合）
   const handleStrategyConfirm = async (strategy: ListingStrategy) => {
     try {
-      const response = await fetch('/api/approval/create-schedule', {
+      // ステップ1: EUリスクチェックAPI呼び出し
+      const decisionResponse = await fetch('/api/research/decision', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          productIds: Array.from(selectedIds),
+          action: 'approve'
+        })
+      })
+
+      const decisionResult = await decisionResponse.json()
+
+      // ブロックされた商品がある場合はエラー表示
+      if (!decisionResponse.ok || !decisionResult.success) {
+        console.error('[ERROR] Decision API Error:', decisionResult)
+
+        // 出品ブロックエラーの詳細表示
+        if (decisionResult.blockedProducts && decisionResult.blockedProducts.length > 0) {
+          const blockedList = decisionResult.blockedProducts
+            .map((p: any) => `• SKU: ${p.sku}\n  理由: ${p.reason}`)
+            .join('\n\n')
+
+          alert(
+            `⛔ 出品ブロック: 法的リスクのため登録できません\n\n` +
+            `${decisionResult.message}\n\n` +
+            `ブロックされた商品:\n${blockedList}`
+          )
+        } else {
+          alert(`❌ 承認に失敗しました: ${decisionResult.message || '不明なエラー'}`)
+        }
+
+        setShowListingStrategyControl(false)
+        return
+      }
+
+      console.log('[DEBUG] Decision API Success:', decisionResult)
+
+      // ステップ2: 承認が成功した場合、出品スケジュール作成
+      const scheduleResponse = await fetch('/api/approval/create-schedule', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -364,16 +418,16 @@ export default function ApprovalPage() {
         })
       })
 
-      const result = await response.json()
-      
-      console.log('[DEBUG] API Response:', { response, result })
+      const scheduleResult = await scheduleResponse.json()
 
-      if (!response.ok) {
-        console.error('[ERROR] API Error Details:', result)
-        throw new Error(result.error || '承認処理に失敗しました')
+      console.log('[DEBUG] Schedule API Response:', { scheduleResponse, scheduleResult })
+
+      if (!scheduleResponse.ok) {
+        console.error('[ERROR] Schedule API Error Details:', scheduleResult)
+        throw new Error(scheduleResult.error || 'スケジュール作成に失敗しました')
       }
 
-      alert(`✅ ${result.message}\n\n出品スケジュール管理ページで確認できます。`)
+      alert(`✅ ${scheduleResult.message}\n\n出品スケジュール管理ページで確認できます。`)
       setSelectedIds(new Set())
       setShowListingStrategyControl(false)
       setShowConfirmModal(false)
@@ -593,6 +647,16 @@ export default function ApprovalPage() {
                 ]}
               />
               <FilterSelect
+                label="EUリスク"
+                value={filters.euRisk}
+                onChange={(v) => setFilters({ ...filters, euRisk: v })}
+                options={[
+                  { value: 'all', label: 'すべて' },
+                  { value: 'clear', label: 'クリア' },
+                  { value: 'unclear', label: '未クリア' },
+                ]}
+              />
+              <FilterSelect
                 label="仕入れ元"
                 value={filters.source}
                 onChange={(v) => setFilters({ ...filters, source: v })}
@@ -687,6 +751,7 @@ export default function ApprovalPage() {
                   search: '',
                   dataCompleteness: 'all',
                   listingReadiness: 'all',
+                  euRisk: 'all',
                 })}
                 className="px-2 py-1 text-xs bg-muted text-foreground rounded hover:bg-muted/80 transition-colors"
               >

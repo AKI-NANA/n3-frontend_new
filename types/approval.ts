@@ -19,6 +19,11 @@ export interface Product {
   rejection_reason: string | null
   condition_name?: string
   seller_name?: string
+  // EUリスク関連フィールド
+  eu_risk_flag?: boolean
+  eu_risk_reason?: string | null
+  suggested_title?: string | null
+  eu_ar_status?: string | null
 }
 
 export interface ApprovalStats {

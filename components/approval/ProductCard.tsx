@@ -6,6 +6,7 @@
 'use client'
 
 import { ApprovalProduct, CompletenessCheck } from '@/types/approval'
+import { VeroRiskSection } from '@/components/approval/VeroRiskSection'
 import Image from 'next/image'
 
 interface ProductCardProps {
@@ -179,6 +180,14 @@ export function ProductCard({
             </div>
           )}
         </div>
+
+        {/* EUリスク警告セクション */}
+        <VeroRiskSection
+          euRiskFlag={product.eu_risk_flag || false}
+          euRiskReason={product.eu_risk_reason}
+          suggestedTitle={product.suggested_title}
+          euArStatus={product.eu_ar_status}
+        />
 
         {/* アクションボタン */}
         {product.approval_status === 'pending' && (
