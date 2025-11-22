@@ -96,13 +96,16 @@ const ShippingManagementPage: React.FC = () => {
     // 実際にはRPAやプリンタ連携APIを呼び出す
   };
 
-  // 出荷完了と連携 (双方向連携)
-  const handleCompleteShipping = () => {
+  // 個別請求証明書アップロードと出荷完了
+  const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
+  const [isUploadingInvoice, setIsUploadingInvoice] = useState(false);
+
+  const handleCompleteShipping = async () => {
     if (!selectedOrder) {
       alert("出荷完了には受注IDの選択が必要です。");
       return;
     }
-    // 必須化: 個別請求の場合のPDF/画像アップロードUIの表示をシミュレート
+
     const tracking = prompt("追跡番号を入力してください (必須):");
     const cost = prompt("確定送料を入力してください (必須):");
 
@@ -111,28 +114,67 @@ const ShippingManagementPage: React.FC = () => {
       return;
     }
 
-    // DB更新シミュレーション
-    const newOrders = orders.map((o) =>
-      o.id === selectedOrder.id
-        ? {
-            ...o,
-            shippingStatus: "COMPLETED",
-            finalShippingCost: parseFloat(cost),
-            trackingNumber: tracking,
-          }
-        : o
-    );
-    setOrders(newOrders);
+    // 個別請求の場合は証明書アップロードが必須
+    const isIndividualBilling = true; // 実際には配送業者から判定
+    if (isIndividualBilling && !invoiceFile) {
+      alert("個別請求の場合、送料証明書のアップロードが必須です。");
+      return;
+    }
 
-    // 受注管理ツールへのフィードバックをシミュレート (双方向連携)
-    console.log(
-      `[FEEDBACK] 受注管理DBへ出荷完了ステータス、送料(${cost})、追跡番号(${tracking})をフィードバックしました。`
-    );
-    alert(
-      `受注 ${selectedOrder.id} の出荷が完了し、データ連携が実行されました。`
-    );
-    setSelectedOrder(null);
-    setScannedId("");
+    setIsUploadingInvoice(true);
+
+    try {
+      if (invoiceFile) {
+        // 個別請求証明書をアップロード
+        const response = await fetch("/api/shipping/upload-invoice", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            Order_ID: selectedOrder.id,
+            Carrier: "JAPAN_POST",
+            Final_Shipping_Cost_JPY: parseFloat(cost),
+            Tracking_Number: tracking,
+            Invoice_File: invoiceFile.name, // 実際にはbase64またはFile
+            Uploaded_By: "staff",
+          }),
+        });
+
+        const data = await response.json();
+        if (!data.success) {
+          alert(`アップロードエラー: ${data.message}`);
+          setIsUploadingInvoice(false);
+          return;
+        }
+
+        console.log(`[SUCCESS] 証明書アップロード完了。Group ID: ${data.groupId}`);
+      }
+
+      // DB更新
+      const newOrders = orders.map((o) =>
+        o.id === selectedOrder.id
+          ? {
+              ...o,
+              shippingStatus: "COMPLETED" as const,
+              finalShippingCost: parseFloat(cost),
+              trackingNumber: tracking,
+              invoiceGroupId: invoiceFile ? `INV-${Date.now()}` : null,
+            }
+          : o
+      );
+      setOrders(newOrders);
+
+      alert(
+        `受注 ${selectedOrder.id} の出荷が完了し、送料証明書が紐付けられました。`
+      );
+      setSelectedOrder(null);
+      setScannedId("");
+      setInvoiceFile(null);
+    } catch (error) {
+      console.error("[ShippingManagement] 出荷完了エラー:", error);
+      alert("出荷完了処理に失敗しました。");
+    } finally {
+      setIsUploadingInvoice(false);
+    }
   };
 
   // 税務対策: 経費証明書不備アラートのシミュレーション
@@ -201,9 +243,18 @@ const ShippingManagementPage: React.FC = () => {
                     {selectedOrder.shippingStatus === "READY" && (
                       <div className="mt-4 p-3 border border-dashed border-red-400 bg-red-50 text-sm">
                         <FileUp className="h-4 w-4 inline mr-2 text-red-600" />
-                        **個別請求:**
-                        出荷完了前に送料証明書PDF/画像をアップロードしてください。
-                        <Input type="file" className="mt-2" />
+                        <strong>個別請求:</strong> 出荷完了前に送料証明書PDF/画像をアップロードしてください。
+                        <Input
+                          type="file"
+                          accept=".pdf,.png,.jpg,.jpeg"
+                          onChange={(e) => setInvoiceFile(e.target.files?.[0] || null)}
+                          className="mt-2"
+                        />
+                        {invoiceFile && (
+                          <p className="text-xs text-green-700 mt-1">
+                            ✓ {invoiceFile.name}
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>

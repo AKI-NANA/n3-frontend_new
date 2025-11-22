@@ -12,7 +12,7 @@ import {
   Check,
   Lightbulb,
 } from "lucide-react"; // LightbulbとCheckを追加
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
 // --- エラー解消のための模擬データとサービスロジックのインライン実装 ---
@@ -35,12 +35,35 @@ const getLowScoreItemsForImprovement = () => [
   { orderId: "SKU-012", category: "家電・カメラ", seoScore: 62 },
 ];
 
-// --- 既存のモックデータ ---
-const MOCK_OUTSTANDING_INVOICE_COUNT = 7; // 出荷管理から連携される
-const MOCK_LISTING_LIMIT_REACHED = true;
-
 // ダッシュボードコンポーネント
 export default function DashboardPage() {
+  const [outstandingInvoiceCount, setOutstandingInvoiceCount] = useState(0);
+  const [complianceMessage, setComplianceMessage] = useState("");
+  const [coverageRate, setCoverageRate] = useState(0);
+
+  // コンプライアンスアラートを取得
+  useEffect(() => {
+    const fetchComplianceAlert = async () => {
+      try {
+        const response = await fetch("/api/compliance/alerts");
+        const data = await response.json();
+        if (data.success) {
+          setOutstandingInvoiceCount(data.alert.count);
+          setComplianceMessage(data.alert.message);
+          setCoverageRate(data.coverage || 0);
+        }
+      } catch (error) {
+        console.error("[Dashboard] コンプライアンスアラート取得エラー:", error);
+      }
+    };
+
+    fetchComplianceAlert();
+    // 5分ごとに再取得
+    const interval = setInterval(fetchComplianceAlert, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const MOCK_LISTING_LIMIT_REACHED = true;
   // インライン化した模擬アナリティクスサービスの呼び出し
   const medianProfit = useMemo(() => getMedianFinalProfit(), []);
   const categoryPerformance = useMemo(() => getCategoryProfitPerformance(), []);
@@ -65,15 +88,24 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           {/* 経費証明不一致アラート (指示書 IV.) */}
-          {MOCK_OUTSTANDING_INVOICE_COUNT > 0 && (
+          {outstandingInvoiceCount > 0 && (
             <div className="p-3 bg-red-100 rounded-lg border border-red-300 flex justify-between items-center">
-              <p className="font-semibold text-red-800">
-                <span className="text-2xl font-extrabold mr-2">
-                  {MOCK_OUTSTANDING_INVOICE_COUNT}
-                </span>{" "}
-                件の出荷済み受注に対し、**送料証明書が紐付けられていません**。
-              </p>
-              <Button variant="destructive" size="sm">
+              <div>
+                <p className="font-semibold text-red-800">
+                  <span className="text-2xl font-extrabold mr-2">
+                    {outstandingInvoiceCount}
+                  </span>{" "}
+                  件の出荷済み受注に対し、<strong>送料証明書が紐付けられていません</strong>。
+                </p>
+                <p className="text-xs text-red-600 mt-1">
+                  経費証明率: {(coverageRate * 100).toFixed(1)}%
+                </p>
+              </div>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => (window.location.href = "/accounting/invoice-management")}
+              >
                 請求書登録へ
               </Button>
             </div>
@@ -96,7 +128,7 @@ export default function DashboardPage() {
           )}
 
           {/* アラートがない場合 */}
-          {!MOCK_OUTSTANDING_INVOICE_COUNT && !MOCK_LISTING_LIMIT_REACHED && (
+          {outstandingInvoiceCount === 0 && !MOCK_LISTING_LIMIT_REACHED && (
             <div className="text-center text-green-600 font-medium py-3">
               <Check className="h-5 w-5 inline mr-2" />{" "}
               現在、緊急対応を要するアラートはありません。
