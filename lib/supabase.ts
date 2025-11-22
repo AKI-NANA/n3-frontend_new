@@ -136,6 +136,129 @@ export type Database = {
           updated_at: string
         }
       }
+      products_master: {
+        Row: {
+          id: string
+          sku: string
+          title: string | null
+          title_en: string | null
+          english_title: string | null
+          price_jpy: number | null
+          purchase_price_jpy: number | null
+          ddp_price_usd: number | null
+          profit_amount_usd: number | null
+          profit_margin: number | null
+          profit_margin_percent: number | null
+          listing_score: number | null
+          score_calculated_at: string | null
+          score_details: any | null
+          category_name: string | null
+          category_id: string | null
+          hts_code: string | null
+          listing_data: any | null
+          scraped_data: any | null
+          images: string[] | null
+          eu_responsible_company_name: string | null
+          eu_responsible_city: string | null
+          // New offer-related fields
+          auto_offer_enabled: boolean
+          min_profit_margin_jpy: number | null
+          max_discount_rate: number | null
+          // Timestamps
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          sku: string
+          title?: string | null
+          title_en?: string | null
+          english_title?: string | null
+          price_jpy?: number | null
+          purchase_price_jpy?: number | null
+          ddp_price_usd?: number | null
+          profit_amount_usd?: number | null
+          profit_margin?: number | null
+          profit_margin_percent?: number | null
+          listing_score?: number | null
+          score_calculated_at?: string | null
+          score_details?: any | null
+          category_name?: string | null
+          category_id?: string | null
+          hts_code?: string | null
+          listing_data?: any | null
+          scraped_data?: any | null
+          images?: string[] | null
+          eu_responsible_company_name?: string | null
+          eu_responsible_city?: string | null
+          auto_offer_enabled?: boolean
+          min_profit_margin_jpy?: number | null
+          max_discount_rate?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          sku?: string
+          title?: string | null
+          title_en?: string | null
+          english_title?: string | null
+          price_jpy?: number | null
+          purchase_price_jpy?: number | null
+          ddp_price_usd?: number | null
+          profit_amount_usd?: number | null
+          profit_margin?: number | null
+          profit_margin_percent?: number | null
+          listing_score?: number | null
+          score_calculated_at?: string | null
+          score_details?: any | null
+          category_name?: string | null
+          category_id?: string | null
+          hts_code?: string | null
+          listing_data?: any | null
+          scraped_data?: any | null
+          images?: string[] | null
+          eu_responsible_company_name?: string | null
+          eu_responsible_city?: string | null
+          auto_offer_enabled?: boolean
+          min_profit_margin_jpy?: number | null
+          max_discount_rate?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      ebay_category_limit: {
+        Row: {
+          id: string
+          ebay_account_id: string
+          category_id: string
+          limit_type: '10000' | '50000' | 'other'
+          current_listing_count: number
+          max_limit: number
+          last_updated: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          ebay_account_id: string
+          category_id: string
+          limit_type: '10000' | '50000' | 'other'
+          current_listing_count?: number
+          max_limit: number
+          last_updated?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          ebay_account_id?: string
+          category_id?: string
+          limit_type?: '10000' | '50000' | 'other'
+          current_listing_count?: number
+          max_limit?: number
+          last_updated?: string
+          created_at?: string
+        }
+      }
     }
   }
 }
