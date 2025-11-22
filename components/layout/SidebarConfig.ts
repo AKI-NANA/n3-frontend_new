@@ -49,7 +49,14 @@ export const navigationItems: NavigationItem[] = [
     link: "/communication-hub",
     priority: 3
   },
-  
+  {
+    id: "cashflow-dashboard",
+    label: "💰 資金繰り予測ダッシュボード",
+    icon: "trending-up",
+    link: "/finance/cashflow-dashboard",
+    priority: 4
+  },
+
   // ==============================================
   // ✅ products_master 対応ツール（17個）
   // ==============================================
@@ -57,7 +64,7 @@ export const navigationItems: NavigationItem[] = [
     id: "integrated-tools",
     label: "統合ツール",
     icon: "database",
-    priority: 2,
+    priority: 5,
     submenu: [
       { 
         text: "01_ダッシュボード", 
@@ -205,7 +212,7 @@ export const navigationItems: NavigationItem[] = [
     id: "listing-tools",
     label: "出品ツール",
     icon: "upload",
-    priority: 3,
+    priority: 6,
     submenu: [
       { text: "出品スケジューラー", link: "/listing-management", icon: "calendar", status: "ready", priority: 1 },
       { text: "一括出品", link: "/bulk-listing", icon: "list", status: "ready", priority: 2 },
@@ -224,7 +231,7 @@ export const navigationItems: NavigationItem[] = [
     id: "products",
     label: "商品管理",
     icon: "cube",
-    priority: 4,
+    priority: 7,
     submenu: [
       { text: "商品一覧", link: "/shohin", icon: "list", status: "pending", priority: 1 },
       { text: "商品登録", link: "/shohin/add", icon: "plus", status: "pending", priority: 2 },
@@ -240,7 +247,7 @@ export const navigationItems: NavigationItem[] = [
     id: "inventory",
     label: "在庫管理",
     icon: "warehouse",
-    priority: 5,
+    priority: 8,
     submenu: [
       { text: "在庫監視システム", link: "/inventory-monitoring", icon: "bar-chart", status: "ready", priority: 1 },
       { text: "在庫一覧", link: "/zaiko", icon: "bar-chart", status: "pending", priority: 2 },
@@ -259,7 +266,7 @@ export const navigationItems: NavigationItem[] = [
     id: "orders",
     label: "受注管理",
     icon: "shopping-cart",
-    priority: 6,
+    priority: 9,
     submenu: [
       { text: "受注一覧", link: "/juchu", icon: "list", status: "pending", priority: 1 },
       { text: "出荷管理", link: "/shukka", icon: "truck", status: "pending", priority: 2 },
@@ -282,7 +289,7 @@ export const navigationItems: NavigationItem[] = [
     id: "research",
     label: "リサーチ",
     icon: "target",
-    priority: 7,
+    priority: 10,
     submenu: [
       { text: "eBay リサーチ", link: "/research/ebay-research", icon: "globe", status: "ready", priority: 1 },
       { text: "市場リサーチ", link: "/research/market-research", icon: "trending-up", status: "ready", priority: 2 },
@@ -299,7 +306,7 @@ export const navigationItems: NavigationItem[] = [
     id: "analytics",
     label: "分析",
     icon: "bar-chart",
-    priority: 8,
+    priority: 11,
     submenu: [
       { text: "売上分析", link: "/analytics/sales", icon: "dollar-sign", status: "ready", priority: 1 },
       { text: "在庫回転率", link: "/analytics/inventory", icon: "trending-up", status: "ready", priority: 2 },
@@ -318,7 +325,7 @@ export const navigationItems: NavigationItem[] = [
     id: "ai",
     label: "AI制御",
     icon: "robot",
-    priority: 9,
+    priority: 12,
     submenu: [
       { text: "AI分析", link: "/ai/analysis", icon: "zap", status: "pending", priority: 1 },
       { text: "需要予測", link: "/ai/demand", icon: "target", status: "pending", priority: 2 },
@@ -334,7 +341,7 @@ export const navigationItems: NavigationItem[] = [
     id: "accounting",
     label: "記帳会計",
     icon: "calculator",
-    priority: 10,
+    priority: 13,
     submenu: [
       { text: "売上管理", link: "/uriage", icon: "dollar-sign", status: "pending", priority: 1 },
       { text: "仕入管理", link: "/shiire", icon: "file-text", status: "pending", priority: 2 },
@@ -350,7 +357,7 @@ export const navigationItems: NavigationItem[] = [
     id: "sourcing",
     label: "仕入れ・買取",
     icon: "package",
-    priority: 11,
+    priority: 14,
     submenu: [
       { text: "BUYMA仕入れシミュレーター", link: "/tools/buyma-simulator", icon: "globe", status: "ready", priority: 1 },
       { text: "古物買取管理", link: "/tools/kobutsu-management", icon: "archive", status: "ready", priority: 2 },
@@ -369,7 +376,7 @@ export const navigationItems: NavigationItem[] = [
     id: "external",
     label: "外部連携",
     icon: "link",
-    priority: 12,
+    priority: 15,
     submenu: [
       { text: "Yahoo!オークション", link: "/yahoo-auction-dashboard", icon: "shopping-cart", status: "ready", priority: 1 },
       { text: "eBay", link: "/ebay", icon: "globe", status: "ready", priority: 2 },
@@ -389,7 +396,7 @@ export const navigationItems: NavigationItem[] = [
     id: "content",
     label: "コンテンツ制作",
     icon: "file-text",
-    priority: 13,
+    priority: 16,
     submenu: [
       { text: "AIラジオ生成", link: "/tools/ai-radio-generator", icon: "radio", status: "ready", priority: 1 },
       { text: "統合コンテンツ生成", link: "/tools/integrated-content", icon: "file-text", status: "ready", priority: 2 },
@@ -407,7 +414,7 @@ export const navigationItems: NavigationItem[] = [
     id: "health",
     label: "健康・ライフ",
     icon: "heart",
-    priority: 14,
+    priority: 17,
     submenu: [
       { text: "パーソナル予防医療", link: "/tools/preventive-health", icon: "heart", status: "ready", priority: 1 },
       { text: "予防医療プラットフォーム", link: "/tools/preventive-health-platform", icon: "activity", status: "ready", priority: 2 },
@@ -426,7 +433,7 @@ export const navigationItems: NavigationItem[] = [
     id: "system",
     label: "システム管理",
     icon: "settings",
-    priority: 15,
+    priority: 18,
     submenu: [
       { text: "🏥 システムヘルスチェック", link: "/system-health", icon: "check-circle", status: "ready", priority: 0 },
       { text: "Git & デプロイ", link: "/tools/git-deploy", icon: "git-branch", status: "ready", priority: 1 },
@@ -450,7 +457,7 @@ export const navigationItems: NavigationItem[] = [
     id: "other-tools",
     label: "その他ツール",
     icon: "tool",
-    priority: 16,
+    priority: 19,
     submenu: [
       { text: "出品ツールハブ", link: "/tools", icon: "upload", status: "ready", priority: 1 },
       { text: "スクレイピング", link: "/tools/scraping", icon: "database", status: "ready", priority: 2 },
@@ -471,7 +478,7 @@ export const navigationItems: NavigationItem[] = [
     id: "settings",
     label: "設定",
     icon: "cog",
-    priority: 17,
+    priority: 20,
     submenu: [
       { text: "ユーザー管理", link: "/settings/users", icon: "users", status: "pending", priority: 1 },
       { text: "API設定", link: "/settings/api", icon: "database", status: "pending", priority: 2 },
@@ -487,7 +494,7 @@ export const navigationItems: NavigationItem[] = [
     id: "development",
     label: "開発ガイド",
     icon: "git-branch",
-    priority: 18,
+    priority: 21,
     submenu: [
       { text: "📝 開発指示書管理", link: "/dev-instructions", icon: "file-text", status: "ready", priority: 0 },
       { text: "🚀 リアルタイム開発ダッシュボード", link: "/dev-guide", icon: "zap", status: "ready", priority: 1, database: "products_master" },
