@@ -8,6 +8,23 @@
 import { createClient } from '@/utils/supabase/server';
 import type { ForwarderApiCredential } from '@/src/db/marketplace_db_schema';
 
+// フォワーダー固有のAPIクライアントをインポート
+import {
+  getFedexDdpRate,
+  createFedexShipment,
+  getFedexTracking,
+} from './forwarders/fedexApiClient';
+import {
+  getDhlDdpRate,
+  createDhlShipment,
+  getDhlTracking,
+} from './forwarders/dhlApiClient';
+import {
+  getShipAndCoRate,
+  createShipAndCoShipment,
+  getShipAndCoTracking,
+} from './forwarders/shipandcoApiClient';
+
 // ----------------------------------------------------
 // 型定義
 // ----------------------------------------------------
@@ -184,36 +201,45 @@ export async function getDdpShippingRate(
     throw new Error(`フォワーダー認証情報が見つかりません: ${request.forwarder_name}`);
   }
 
-  // フォワーダーAPIエンドポイント
-  const endpoint = '/api/v1/rates/ddp';
-
-  const requestBody = {
-    origin_country: request.source_country,
-    destination_country: request.destination_country,
-    weight_g: request.weight_g,
-    declared_value: request.declared_value_usd,
-    service_type: 'DDP',
-  };
-
   try {
-    // 実際のAPIレスポンスの形式に合わせて調整する
-    const apiResponse = await callForwarderApi<any>(
-      credential,
-      endpoint,
-      'POST',
-      requestBody
-    );
+    // フォワーダー名に応じて適切なAPIクライアントを使用
+    const forwarderNameLower = request.forwarder_name.toLowerCase();
 
-    // レスポンスをパースして返却
-    return {
-      base_shipping_cost: apiResponse.base_cost || 0,
-      ddp_processing_fee: apiResponse.ddp_fee || 0,
-      repack_fee: apiResponse.repack_fee || 0,
-      insurance_fee: apiResponse.insurance_fee || 0,
-      total_cost: apiResponse.total_cost || 0,
-      estimated_delivery_days: apiResponse.delivery_days || 7,
-      currency: apiResponse.currency || 'USD',
-    };
+    if (forwarderNameLower.includes('fedex')) {
+      return await getFedexDdpRate(credential, request);
+    } else if (forwarderNameLower.includes('dhl')) {
+      return await getDhlDdpRate(credential, request);
+    } else if (forwarderNameLower.includes('ship') && forwarderNameLower.includes('co')) {
+      return await getShipAndCoRate(credential, request);
+    } else {
+      // カスタムフォワーダーまたは未対応のフォワーダーの場合、汎用APIを使用
+      const endpoint = '/api/v1/rates/ddp';
+
+      const requestBody = {
+        origin_country: request.source_country,
+        destination_country: request.destination_country,
+        weight_g: request.weight_g,
+        declared_value: request.declared_value_usd,
+        service_type: 'DDP',
+      };
+
+      const apiResponse = await callForwarderApi<any>(
+        credential,
+        endpoint,
+        'POST',
+        requestBody
+      );
+
+      return {
+        base_shipping_cost: apiResponse.base_cost || 0,
+        ddp_processing_fee: apiResponse.ddp_fee || 0,
+        repack_fee: apiResponse.repack_fee || 0,
+        insurance_fee: apiResponse.insurance_fee || 0,
+        total_cost: apiResponse.total_cost || 0,
+        estimated_delivery_days: apiResponse.delivery_days || 7,
+        currency: apiResponse.currency || 'USD',
+      };
+    }
   } catch (error) {
     console.error('DDP料金取得エラー:', error);
 
@@ -251,71 +277,77 @@ export async function createShippingInstruction(
     throw new Error(`フォワーダー認証情報が見つかりません: ${request.forwarder_name}`);
   }
 
-  // フォワーダーAPIエンドポイント
-  const endpoint = '/api/v1/shipments/create';
-
-  // 配送先国に対応する倉庫住所を取得
-  const warehouseAddress = credential.warehouse_address_json.find(
-    addr => addr.country === request.source_country
-  );
-
-  if (!warehouseAddress) {
-    throw new Error(
-      `倉庫住所が見つかりません: ${request.source_country} (フォワーダー: ${request.forwarder_name})`
-    );
-  }
-
-  const requestBody = {
-    order_reference: request.order_id,
-    service_type: request.service_type,
-    origin_country: request.source_country,
-    destination: {
-      name: request.destination_address.name,
-      address1: request.destination_address.address_line1,
-      address2: request.destination_address.address_line2,
-      city: request.destination_address.city,
-      state: request.destination_address.state,
-      postal_code: request.destination_address.postal_code,
-      country: request.destination_address.country,
-      phone: request.destination_address.phone,
-      email: request.destination_address.email,
-    },
-    package: {
-      weight_g: request.package_weight_g,
-      declared_value: request.declared_value_usd,
-      hs_code: request.hs_code,
-    },
-    special_instructions: {
-      repack: request.remove_branding !== false, // デフォルトtrue
-      remove_branding: request.remove_branding !== false,
-      notes: request.repack_instructions || 'Remove all Amazon branding and repack in plain packaging',
-    },
-  };
-
   try {
-    const apiResponse = await callForwarderApi<any>(
-      credential,
-      endpoint,
-      'POST',
-      requestBody
-    );
+    // フォワーダー名に応じて適切なAPIクライアントを使用
+    const forwarderNameLower = request.forwarder_name.toLowerCase();
 
-    return {
-      success: true,
-      shipment_id: apiResponse.shipment_id,
-      tracking_number: apiResponse.tracking_number,
-      warehouse_address: {
-        name: warehouseAddress.city + ' Warehouse',
-        address_line1: warehouseAddress.address_line1,
-        address_line2: warehouseAddress.address_line2,
-        city: warehouseAddress.city,
-        state: warehouseAddress.state,
-        postal_code: warehouseAddress.postal_code,
-        country: warehouseAddress.country,
-      },
-      estimated_pickup_date: apiResponse.estimated_pickup_date,
-      message: apiResponse.message || '配送指示が正常に作成されました',
-    };
+    if (forwarderNameLower.includes('fedex')) {
+      return await createFedexShipment(credential, request);
+    } else if (forwarderNameLower.includes('dhl')) {
+      return await createDhlShipment(credential, request);
+    } else if (forwarderNameLower.includes('ship') && forwarderNameLower.includes('co')) {
+      return await createShipAndCoShipment(credential, request);
+    } else {
+      // カスタムフォワーダーまたは未対応のフォワーダーの場合、汎用APIを使用
+      const endpoint = '/api/v1/shipments/create';
+
+      const warehouseAddress = credential.warehouse_address_json.find(
+        (addr) => addr.country === request.source_country
+      );
+
+      if (!warehouseAddress) {
+        throw new Error(
+          `倉庫住所が見つかりません: ${request.source_country} (フォワーダー: ${request.forwarder_name})`
+        );
+      }
+
+      const requestBody = {
+        order_reference: request.order_id,
+        service_type: request.service_type,
+        origin_country: request.source_country,
+        destination: {
+          name: request.destination_address.name,
+          address1: request.destination_address.address_line1,
+          address2: request.destination_address.address_line2,
+          city: request.destination_address.city,
+          state: request.destination_address.state,
+          postal_code: request.destination_address.postal_code,
+          country: request.destination_address.country,
+          phone: request.destination_address.phone,
+          email: request.destination_address.email,
+        },
+        package: {
+          weight_g: request.package_weight_g,
+          declared_value: request.declared_value_usd,
+          hs_code: request.hs_code,
+        },
+        special_instructions: {
+          repack: request.remove_branding !== false,
+          remove_branding: request.remove_branding !== false,
+          notes:
+            request.repack_instructions || 'Remove all Amazon branding and repack in plain packaging',
+        },
+      };
+
+      const apiResponse = await callForwarderApi<any>(credential, endpoint, 'POST', requestBody);
+
+      return {
+        success: true,
+        shipment_id: apiResponse.shipment_id,
+        tracking_number: apiResponse.tracking_number,
+        warehouse_address: {
+          name: warehouseAddress.city + ' Warehouse',
+          address_line1: warehouseAddress.address_line1,
+          address_line2: warehouseAddress.address_line2,
+          city: warehouseAddress.city,
+          state: warehouseAddress.state,
+          postal_code: warehouseAddress.postal_code,
+          country: warehouseAddress.country,
+        },
+        estimated_pickup_date: apiResponse.estimated_pickup_date,
+        message: apiResponse.message || '配送指示が正常に作成されました',
+      };
+    }
   } catch (error) {
     console.error('配送指示作成エラー:', error);
     throw new Error(`配送指示の作成に失敗しました: ${error}`);
@@ -339,22 +371,30 @@ export async function getTrackingInfo(
     throw new Error(`フォワーダー認証情報が見つかりません: ${forwarderName}`);
   }
 
-  const endpoint = `/api/v1/tracking/${trackingNumber}`;
-
   try {
-    const apiResponse = await callForwarderApi<any>(
-      credential,
-      endpoint,
-      'GET'
-    );
+    // フォワーダー名に応じて適切なAPIクライアントを使用
+    const forwarderNameLower = forwarderName.toLowerCase();
 
-    return {
-      tracking_number: trackingNumber,
-      status: apiResponse.status || 'PENDING',
-      current_location: apiResponse.current_location,
-      estimated_delivery_date: apiResponse.estimated_delivery_date,
-      events: apiResponse.events || [],
-    };
+    if (forwarderNameLower.includes('fedex')) {
+      return await getFedexTracking(credential, trackingNumber);
+    } else if (forwarderNameLower.includes('dhl')) {
+      return await getDhlTracking(credential, trackingNumber);
+    } else if (forwarderNameLower.includes('ship') && forwarderNameLower.includes('co')) {
+      return await getShipAndCoTracking(credential, trackingNumber);
+    } else {
+      // カスタムフォワーダーまたは未対応のフォワーダーの場合、汎用APIを使用
+      const endpoint = `/api/v1/tracking/${trackingNumber}`;
+
+      const apiResponse = await callForwarderApi<any>(credential, endpoint, 'GET');
+
+      return {
+        tracking_number: trackingNumber,
+        status: apiResponse.status || 'PENDING',
+        current_location: apiResponse.current_location,
+        estimated_delivery_date: apiResponse.estimated_delivery_date,
+        events: apiResponse.events || [],
+      };
+    }
   } catch (error) {
     console.error('追跡情報取得エラー:', error);
 
