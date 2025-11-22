@@ -45,17 +45,36 @@ async function syncToShopee(
   newPrice?: number
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Shopee APIの呼び出し
-    // ※ 実装例: 実際のShopee API統合が必要
-    console.log(`[Shopee同期] 商品ID: ${productId}, アクション: ${action}`)
+    const { updateShopeeStock, updateShopeePrice, delistShopeeItem } = await import('@/lib/shopee/api-client')
 
-    // TODO: 実際のShopee API呼び出しを実装
-    // const response = await fetch('/api/shopee/update-listing', {
-    //   method: 'POST',
-    //   body: JSON.stringify({ productId, action, newStock, newPrice })
-    // })
+    // 商品のShopee Item IDを取得
+    const { data: product, error: productError } = await supabase
+      .from('products')
+      .select('shopee_item_id, shopee_model_id')
+      .eq('id', productId)
+      .single()
 
-    // 仮の成功レスポンス
+    if (productError || !product || !product.shopee_item_id) {
+      return { success: false, error: 'Shopee Item IDが見つかりません' }
+    }
+
+    console.log(`[Shopee同期] Item ID: ${product.shopee_item_id}, アクション: ${action}`)
+
+    switch (action) {
+      case 'update_stock':
+        if (newStock !== undefined) {
+          return await updateShopeeStock(product.shopee_item_id, product.shopee_model_id, newStock)
+        }
+        break
+      case 'update_price':
+        if (newPrice !== undefined) {
+          return await updateShopeePrice(product.shopee_item_id, product.shopee_model_id, newPrice)
+        }
+        break
+      case 'delist':
+        return await delistShopeeItem(product.shopee_item_id)
+    }
+
     return { success: true }
   } catch (error: any) {
     console.error('[Shopee同期] エラー:', error)
@@ -73,6 +92,8 @@ async function syncToEbay(
   newPrice?: number
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    const { updateEbayStock, updateEbayPrice, endEbayListing } = await import('@/lib/ebay/api-client')
+
     // 商品のeBay Listing IDを取得
     const { data: product, error: productError } = await supabase
       .from('products')
@@ -86,20 +107,21 @@ async function syncToEbay(
 
     console.log(`[eBay同期] Listing ID: ${product.ebay_listing_id}, アクション: ${action}`)
 
-    // eBay APIの呼び出し
-    // ※ 実装例: 実際のeBay API統合が必要
-    // TODO: 実際のeBay API呼び出しを実装
-    // const response = await fetch('/api/ebay/update-listing', {
-    //   method: 'POST',
-    //   body: JSON.stringify({
-    //     listingId: product.ebay_listing_id,
-    //     action,
-    //     newStock,
-    //     newPrice
-    //   })
-    // })
+    switch (action) {
+      case 'update_stock':
+        if (newStock !== undefined) {
+          return await updateEbayStock(product.ebay_listing_id, newStock)
+        }
+        break
+      case 'update_price':
+        if (newPrice !== undefined) {
+          return await updateEbayPrice(product.ebay_listing_id, newPrice)
+        }
+        break
+      case 'delist':
+        return await endEbayListing(product.ebay_listing_id)
+    }
 
-    // 仮の成功レスポンス
     return { success: true }
   } catch (error: any) {
     console.error('[eBay同期] エラー:', error)
@@ -117,13 +139,37 @@ async function syncToMercari(
   newPrice?: number
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log(`[Mercari同期] 商品ID: ${productId}, アクション: ${action}`)
+    const { updateMercariItem, deleteMercariItem } = await import('@/lib/mercari/api-client')
 
-    // Mercari APIの呼び出し
-    // ※ 実装例: 実際のMercari API統合が必要
-    // TODO: 実際のMercari API呼び出しを実装
+    // 商品のMercari Item IDを取得
+    const { data: product, error: productError } = await supabase
+      .from('products')
+      .select('mercari_item_id')
+      .eq('id', productId)
+      .single()
 
-    // 仮の成功レスポンス
+    if (productError || !product || !product.mercari_item_id) {
+      return { success: false, error: 'Mercari Item IDが見つかりません' }
+    }
+
+    console.log(`[Mercari同期] Item ID: ${product.mercari_item_id}, アクション: ${action}`)
+
+    switch (action) {
+      case 'update_stock':
+        if (newStock !== undefined) {
+          const status = newStock > 0 ? 'on_sale' : 'sold_out'
+          return await updateMercariItem(product.mercari_item_id, { status })
+        }
+        break
+      case 'update_price':
+        if (newPrice !== undefined) {
+          return await updateMercariItem(product.mercari_item_id, { price: newPrice })
+        }
+        break
+      case 'delist':
+        return await deleteMercariItem(product.mercari_item_id)
+    }
+
     return { success: true }
   } catch (error: any) {
     console.error('[Mercari同期] エラー:', error)

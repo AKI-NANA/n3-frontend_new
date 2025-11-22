@@ -1,15 +1,31 @@
 {
   "crons": [
     {
-      "path": "/api/cron/inventory-tracking?type=NORMAL_FREQUENCY",
+      "path": "/api/scheduler/execute?task_id=repeat-order-daily",
       "schedule": "0 2 * * *"
     },
     {
-      "path": "/api/cron/inventory-tracking?type=HIGH_FREQUENCY",
+      "path": "/api/scheduler/execute?task_id=health-score-daily",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/scheduler/execute?task_id=inventory-tracking-normal",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/scheduler/execute?task_id=inventory-tracking-high",
       "schedule": "*/30 * * * *"
     },
     {
-      "path": "/api/inventory-sync/worker",
+      "path": "/api/scheduler/execute?task_id=auction-cycle-hourly",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/scheduler/execute?task_id=message-poll-5min",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/scheduler/execute?task_id=inventory-sync-worker",
       "schedule": "*/5 * * * *"
     }
   ]
